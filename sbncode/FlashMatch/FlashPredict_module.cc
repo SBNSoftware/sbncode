@@ -392,7 +392,7 @@ void FlashPredict::produce(art::Event& evt)
       unsigned flashUId = origFlash.ophsInVolume * 10 + origFlash.flashId;
       bool mets_in_map = flashMetricsMap.find(flashUId) != flashMetricsMap.end();
       FlashMetrics flash_tmp = (mets_in_map) ?
-        flashMetricsMap[flashUId] : computeFlashMetrics<SimpleFlash>(origFlash);
+        flashMetricsMap[flashUId] : getFlashMetrics(origFlash);
       if(mets_in_map){
         mf::LogDebug("FlashPredict")
           << "Reusing metrics previously computed, for flashUId " << flashUId;
@@ -797,18 +797,15 @@ FlashPredict::ChargeMetrics FlashPredict::computeChargeMetrics(
 }
 
 
-template <typename Flash_t> FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
-  const Flash_t& orig_flash) const
+FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
+  const std::vector<recob::OpHit>& ophits) const
 {
-  const OpHitIt opH_beg = orig_flash.opH_beg;
-  const OpHitIt opH_end = orig_flash.opH_end;
-
   std::unique_ptr<TH1F> ophY = std::make_unique<TH1F>("ophY", "", fYBins, fYLow, fYHigh);
   std::unique_ptr<TH1F> ophZ = std::make_unique<TH1F>("ophZ", "", fZBins, fZLow, fZHigh);
   std::unique_ptr<TH1F> oph2Y = std::make_unique<TH1F>("oph2Y", "", fYBins, fYLow, fYHigh);
   std::unique_ptr<TH1F> oph2Z = std::make_unique<TH1F>("oph2Z", "", fZBins, fZLow, fZHigh);
 
-  double peSumMax_wallX = wallXWithMaxPE(opH_beg, opH_end);
+  double peSumMax_wallX = wallXWithMaxPE(ophits);
 
   double sum = 0.;
   double sum_PE = 0.;
@@ -818,8 +815,8 @@ template <typename Flash_t> FlashPredict::FlashMetrics FlashPredict::computeFlas
   double sum_PE2Y  = 0.; double sum_PE2Z  = 0.;
   double sum_PE2Y2 = 0.; double sum_PE2Z2 = 0.;
 
-  for(auto oph=opH_beg; oph!=opH_end; ++oph){
-    int opChannel = oph->OpChannel();
+  for(auto& oph : ophits) {
+    int opChannel = oph.OpChannel();
     auto& opDet = fGeometry->OpDetGeoFromOpChannel(opChannel);
     auto opDetXYZ = opDet.GetCenter();
 
@@ -835,7 +832,7 @@ template <typename Flash_t> FlashPredict::FlashMetrics FlashPredict::computeFlas
       }
     }
 
-    double ophPE  = oph->PE();
+    double ophPE  = oph.PE();
     double ophPE2 = ophPE * ophPE;
     sum       += 1.0;
     sum_PE    += ophPE;
@@ -866,8 +863,6 @@ template <typename Flash_t> FlashPredict::FlashMetrics FlashPredict::computeFlas
   if (sum_PE > 0.) {
     FlashMetrics flash;
     flash.metric_ok = true;
-    flash.id = orig_flash.flashId;
-    flash.activity = orig_flash.ophsInVolume;
     flash.pe    = sum_PE;
     flash.unpe  = sum_unPE;
     flash.y_skew = ophY->GetSkewness();
@@ -876,7 +871,7 @@ template <typename Flash_t> FlashPredict::FlashMetrics FlashPredict::computeFlas
     flash.z_kurt = ophZ->GetKurtosis();
     // Flash widths
     // flash.xw = fractTimeWithFractionOfLight(orig_flash, flash.pe, fFlashPEFraction);
-    flash.xw = fractTimeWithFractionOfLight(orig_flash, sum_PE2, fFlashPEFraction, true);
+//    flash.xw = fractTimeWithFractionOfLight(orig_flash, sum_PE2, fFlashPEFraction, true);
     // flash.xw = fractTimeWithFractionOfLight(orig_flash, flash.unpe, fFlashPEFraction, false, true); // TODO:
     // TODO: low values of flash.xw <0.5 are indicative of good
     // mcT0-flash_time matching, so akin to matching to prompt light
@@ -909,7 +904,6 @@ template <typename Flash_t> FlashPredict::FlashMetrics FlashPredict::computeFlas
     // TODO: using _hypo_x make further corrections to _flash_time to
     // account for light transport time and/or rising edge
     // double flash_time = timeCorrections(orig_flash.maxpeak_time, hypo_x);
-    flash.time = orig_flash.maxpeak_time;
     flash.x = peSumMax_wallX;
     flash.x_gl = flashXGl(flash.h_x, flash.x);
 
@@ -935,16 +929,30 @@ template <typename Flash_t> FlashPredict::FlashMetrics FlashPredict::computeFlas
   }
   else {
     std::string channels;
-    for(auto oph=opH_beg; oph!=opH_end; ++oph) channels += std::to_string(oph->OpChannel()) + ' ';
+    for(auto oph : ophits) channels += std::to_string(oph.OpChannel()) + ' ';
     mf::LogError("FlashPredict")
       << "Really odd that I landed here, this shouldn't had happen.\n"
       << "sum:          \t" << sum << "\n"
       << "sum_PE:       \t" << sum_PE << "\n"
       << "sum_unPE:     \t" << sum_unPE << "\n"
-      << "opHits size:  \t" << std::distance(opH_beg, opH_end) << "\n"
+      << "opHits size:  \t" << ophits.size() << "\n"
       << "channels:     \t" << channels << std::endl;
     return {};
   }
+}
+
+FlashPredict::FlashMetrics FlashPredict::getFlashMetrics(
+  const FlashPredict::SimpleFlash& sf) const
+{
+  std::vector<recob::OpHit> ophits;
+  const OpHitIt oph_beg = sf.opH_beg;
+  const OpHitIt oph_end = sf.opH_end;
+  std::copy(oph_beg, oph_end, std::back_inserter(ophits));
+
+  auto fm = computeFlashMetrics(ophits);
+  fm.id = sf.flashId;
+  fm.time = sf.maxpeak_time;
+  return fm;
 }
 
 
@@ -1801,15 +1809,15 @@ double FlashPredict::opHitTime(const recob::OpHit& oph) const
 }
 
 
-double FlashPredict::wallXWithMaxPE(const OpHitIt opH_beg,
-                                    const OpHitIt opH_end) const
+double FlashPredict::wallXWithMaxPE(
+  const std::vector<recob::OpHit>& ophits) const
 {
   std::map<double, double> opdetX_PE {{-99999., 0.}};
-  for(auto oph=opH_beg; oph!=opH_end; ++oph){
-    double ophPE = oph->PE();
+  for(auto oph : ophits){
+    double ophPE = oph.PE();
     double ophPE2 = ophPE*ophPE;
     double opdetX = fGeometry->OpDetGeoFromOpChannel(
-      oph->OpChannel()).GetCenter().X();
+      oph.OpChannel()).GetCenter().X();
     bool stored = false;
     for(auto& m : opdetX_PE){
       if(std::abs(m.first - opdetX) < 5.) {

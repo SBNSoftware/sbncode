@@ -1,0 +1,486 @@
+diff --git a/sbncode/FlashMatch/FlashPredict.hh b/sbncode/FlashMatch/FlashPredict.hh
+index 29d585db..571568fa 100644
+--- a/sbncode/FlashMatch/FlashPredict.hh
++++ b/sbncode/FlashMatch/FlashPredict.hh
+@@ -33,7 +33,7 @@
+ #include "lardataobj/RecoBase/SpacePoint.h"
+ #include "lardataobj/RecoBase/Slice.h"
+ #include "lardataobj/RecoBase/OpHit.h"
+-// #include "lardataobj/RecoBase/OpFlash.h"
++#include "lardataobj/RecoBase/OpFlash.h"
+ #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
+ #include "larsim/MCCheater/ParticleInventoryService.h"
+ #include "larsim/Utils/TruthMatchUtils.h"
+@@ -275,9 +275,16 @@ private:
+     const std::vector<art::Ptr<simb::MCParticle>>& mcParticles) const;
+   ChargeMetrics computeChargeMetrics(
+     const ChargeDigest& chargeDigest) const;
++  FlashMetrics computeCommonFlashMetrics(const std::vector<recob::OpHit>& ophit) const;
+   FlashMetrics computeFlashMetrics(const SimpleFlash& simpleFlash) const;
++//  FlashMetrics computeFlashMetrics(const recob::OpFlash opflash) const;
+   Score computeScore(const ChargeMetrics& charge,
+                      const FlashMetrics& flash) const;
++  std::tuple<FlashMetrics, Score, bool> getFlashScore(
++    const ChargeMetrics& charge,
++    const std::vector<SimpleFlash>& simpleflashes,
++    const unsigned hitsInVolume,
++    std::map<unsigned, FlashMetrics>& flashMetricsMap);
+   Score computeScore3D(const ChargeMetrics& charge,
+                        const FlashMetrics& flash) const;
+   std::tuple<double, double, double, double> hypoFlashX_fits(// LEGACY
+@@ -382,6 +389,7 @@ private:
+   const bool fCorrectDriftDistance;
+   // const bool fUseCalo; TODO: Use calorimetry
+   const bool fUseARAPUCAS;
++  const bool fUseXARAPUCAs;
+   const bool fStoreMCInfo;
+   const ReferenceMetrics fRM;
+   const bool fNoAvailableMetrics, fMakeTree;
+@@ -420,6 +428,7 @@ private:
+ 
+   // Tree variables
+   TTree* _flashmatch_nuslice_tree;
++  TTree* _ara_flashmatch_nuslice_tree;
+   unsigned _charge_id, _charge_activity;
+   int _charge_pdgc;
+   double _charge_x_gl, _charge_x, _charge_y, _charge_z,
+@@ -435,6 +444,19 @@ private:
+   double _petoq;
+   double _score, _scr_y, _scr_z, _scr_rr, _scr_ratio,
+     _scr_slope, _scr_petoq;
++
++  unsigned _ara_flash_id, _ara_flash_activity;
++  double _ara_flash_x, _ara_flash_yb, _ara_flash_zb,
++    _ara_flash_x_gl, _ara_flash_y, _ara_flash_z,
++    _ara_flash_xw, _ara_flash_yw, _ara_flash_zw,
++    _ara_flash_rr, _ara_flash_ratio, _ara_flash_slope,
++    _ara_flash_pe, _ara_flash_unpe, _ara_flash_time,
++    _ara_hypo_x, _ara_hypo_x_err, _ara_hypo_x_rr, _ara_hypo_x_ratio,
++    _ara_y_skew, _ara_z_skew, _ara_y_kurt, _ara_z_kurt;
++  double _ara_petoq;
++  double _ara_score, _ara_scr_y, _ara_scr_z, _ara_scr_rr, _ara_scr_ratio,
++    _ara_scr_slope, _ara_scr_petoq;
++
+   unsigned _evt, _run, _sub;
+   unsigned _slices = -1; unsigned _is_nu = -1;
+   double _mcT0 = -9999.;
+@@ -455,6 +477,7 @@ private:
+   static constexpr int kNoPFPInEvt = -12;
+   static constexpr int kNoSlcInEvt = -13;
+   struct BookKeeping {
++
+     int job_bookkeeping, events_processed;
+     unsigned events, nopfpneutrino, noslice,
+       nullophittime, nonvalidophit;
+diff --git a/sbncode/FlashMatch/FlashPredict_module.cc b/sbncode/FlashMatch/FlashPredict_module.cc
+index 6815aaa5..5ea21c90 100644
+--- a/sbncode/FlashMatch/FlashPredict_module.cc
++++ b/sbncode/FlashMatch/FlashPredict_module.cc
+@@ -30,6 +30,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
+   , fUse3DMetrics(p.get<bool>("Use3DMetrics", false)) // use metrics that depend on (X,Y,Z)
+   , fCorrectDriftDistance(p.get<bool>("CorrectDriftDistance", false)) // require light and charge to coincide, different requirements for SBND and ICARUS
+   , fUseARAPUCAS(p.get<bool>("UseARAPUCAS", false))
++  , fUseXARAPUCAs(p.get<bool>("UseXARAPUCAs", false))
+   , fStoreMCInfo(p.get<bool>("StoreMCInfo", false))
+     // , fUseCalo(p.get<bool>("UseCalo", false))
+   , fRM(loadMetrics(p.get<std::string>("InputFileName")))
+@@ -179,6 +180,16 @@ void FlashPredict::produce(art::Event& evt)
+     _hypo_x_ratio  = -9999.;
+     _score         = -9999.;
+     _mcT0          = -9999.;
++    _ara_flash_time    = -9999.;
++    _ara_flash_pe      = -9999.;
++    _ara_flash_unpe    = -9999.;
++    _ara_flash_rr      = -9999.;
++    _ara_flash_ratio   = -9999.;
++    _ara_hypo_x        = -9999.;
++    _ara_hypo_x_err    = -9999.;
++    _ara_hypo_x_rr     = -9999.;
++    _ara_hypo_x_ratio  = -9999.;
++    _ara_score         = -9999.;
+   }
+   bk.events++;
+ 
+@@ -270,6 +281,31 @@ void FlashPredict::produce(art::Event& evt)
+   std::vector<recob::OpHit> opHits(ophits_h->size());
+   copyOpHitsInFlashFindingWindow(opHits, ophits_h);
+ 
++  // load OpHits previously created
++  art::Handle<std::vector<recob::OpHit>> ophits_ara_h;
++  if(fUseXARAPUCAs) {
++    evt.getByLabel(fOpHitARAProducer, ophits_ara_h);
++    if(!ophits_ara_h.isValid()) {
++      mf::LogError("FlashPredict")
++        << "No optical hits from producer module "
++        << fOpHitARAProducer;
++      bk.nonvalidophit++;
++      updateBookKeeping();
++      for(size_t pId=0; pId<pfps_h->size(); pId++) {
++        if(!pfps_h->at(pId).IsPrimary()) continue;
++        const art::Ptr<recob::PFParticle> pfp_ptr(pfps_h, pId);
++        sFM_v->emplace_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
++                                Flash(kNoScrPE), Score(kNoOpHInEvt)));
++        util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
++      }
++      evt.put(std::move(sFM_v));
++      evt.put(std::move(pfp_sFM_assn_v));
++      return;
++    }
++  }
++  std::vector<recob::OpHit> opHits_ara(ophits_ara_h->size());
++  if(fUseXARAPUCAs) copyOpHitsInFlashFindingWindow(opHits_ara, ophits_ara_h);
++
+   if(fUseARAPUCAS && !fOpHitARAProducer.empty()){
+     art::Handle<std::vector<recob::OpHit>> ophits_ara_h;
+     evt.getByLabel(fOpHitARAProducer, ophits_ara_h);
+@@ -288,16 +324,27 @@ void FlashPredict::produce(art::Event& evt)
+   }
+ 
+ 
+-  std::vector<recob::OpHit> opHitsRght, opHitsLeft;
++  std::vector<recob::OpHit> opHitsRght, opHitsLeft, opHitsRght_ara, opHitsLeft_ara;
+   const std::vector<SimpleFlash> simpleFlashes = (fSBND) ?
+     makeSimpleFlashes(opHits, opHitsRght, opHitsLeft) : makeSimpleFlashes(opHits);
++
++  std::vector<SimpleFlash> simpleFlashes_ara;
++  if(fUseXARAPUCAs) simpleFlashes_ara =
++    makeSimpleFlashes(opHits_ara, opHitsRght_ara, opHitsLeft_ara);
++
+   auto is_flash_in_time = [this](const SimpleFlash& f) -> bool
+   { return (fBeamSpillTimeStart<=f.maxpeak_time &&
+             f.maxpeak_time<=fBeamSpillTimeEnd); };
+   auto flash_in_time = std::find_if(simpleFlashes.begin(), simpleFlashes.end(),
+                                     is_flash_in_time);
++  auto flash_in_time_ara = std::find_if(simpleFlashes_ara.begin(), simpleFlashes_ara.end(),
++                                    is_flash_in_time);
++
+   if(simpleFlashes.empty() ||
+-     flash_in_time == simpleFlashes.end()){
++     flash_in_time == simpleFlashes.end() ||
++     (fUseXARAPUCAs && 
++     (flash_in_time_ara == simpleFlashes_ara.end() ||
++     simpleFlashes_ara.empty()))){
+     mf::LogWarning("FlashPredict")
+       << "No SimpleFlashes in beam window [" << fBeamSpillTimeStart << ", " << fBeamSpillTimeEnd << "], "
+       << "\nor the sum of PE is less or equal to " << fMinFlashPE << " or 0."
+@@ -348,53 +395,11 @@ void FlashPredict::produce(art::Event& evt)
+       continue;
+     }
+ 
+-    FlashMetrics flash = {};
+-    Score score = {std::numeric_limits<double>::max()};
+-    bool hits_ophits_concurrence = false;
+-    for(auto& simpleFlash : simpleFlashes) {
+-      unsigned ophsInVolume = simpleFlash.ophsInVolume;
+-      if(hitsInVolume != ophsInVolume){
+-        if(fSBND){
+-          if(fForceConcurrence) continue;
+-          else if((hitsInVolume < kActivityInBoth) &&
+-                  (ophsInVolume < kActivityInBoth)) {
+-            continue;
+-          }
+-        }
+-        else if(fICARUS){
+-          if((hitsInVolume < kActivityInBoth) &&
+-             (ophsInVolume < kActivityInBoth)) {
+-            continue;
+-          }
+-          else if(fForceConcurrence && hitsInVolume == kActivityInBoth) continue;
+-        }
+-      }
+-      hits_ophits_concurrence = true;
++    auto [flash, score, hits_ophits_concurrence] = getFlashScore(charge,
++                                                                 simpleFlashes,
++                                                                 hitsInVolume,
++                                                                 flashMetricsMap);
+ 
+-      unsigned flashUId = simpleFlash.ophsInVolume * 10 + simpleFlash.flashId;
+-      bool mets_in_map = flashMetricsMap.find(flashUId) != flashMetricsMap.end();
+-      FlashMetrics flash_tmp = (mets_in_map) ?
+-        flashMetricsMap[flashUId] : computeFlashMetrics(simpleFlash);
+-      if(mets_in_map){
+-        mf::LogDebug("FlashPredict")
+-          << "Reusing metrics previously computed, for flashUId " << flashUId;
+-      }
+-      else
+-        flashMetricsMap[flashUId] = flash_tmp;
+-
+-      Score score_tmp = (fUse3DMetrics) ? computeScore3D(charge, flash_tmp) :
+-        computeScore(charge, flash_tmp);
+-      if(0. <= score_tmp.total && score_tmp.total < score.total
+-         && flash_tmp.metric_ok){
+-        score = score_tmp;
+-        flash = flash_tmp;
+-        // // TODO: create charge.xb and/or charge.xb_gl
+-        // if (fCorrectDriftDistance){
+-        //   charge.x = driftCorrection(charge.xb, flash.time);
+-        //   charge.x_gl  = xGlCorrection(charge.x_gl, charge.xb, flash.time);
+-        // }
+-      }
+-    } // for simpleFlashes
+     if(!hits_ophits_concurrence) {
+       std::string extra_message = (!fForceConcurrence) ? "" :
+         "\nConsider setting ForceConcurrence to false to lower requirements";
+@@ -514,6 +519,60 @@ void FlashPredict::initTree(void)
+   _flashmatch_nuslice_tree->Branch("scr_petoq", &_scr_petoq, "scr_petoq/D");
+   _flashmatch_nuslice_tree->Branch("is_nu", &_is_nu, "is_nu/I");
+   _flashmatch_nuslice_tree->Branch("mcT0", &_mcT0, "mcT0/D");
++
++  if(fUseXARAPUCAs) { // Edit variables
++    _ara_flashmatch_nuslice_tree = tfs->make<TTree>("ara_nuslicetree", "nu FlashPredict tree");
++    _ara_flashmatch_nuslice_tree->Branch("evt", &_evt, "evt/I");
++    _ara_flashmatch_nuslice_tree->Branch("run", &_run, "run/I");
++    _ara_flashmatch_nuslice_tree->Branch("sub", &_sub, "sub/I");
++    _ara_flashmatch_nuslice_tree->Branch("slices", &_slices, "slices/I");
++    _ara_flashmatch_nuslice_tree->Branch("flash_id", &_ara_flash_id, "flash_id/I");
++    _ara_flashmatch_nuslice_tree->Branch("flash_activity", &_ara_flash_activity, "flash_activity/I");
++    _ara_flashmatch_nuslice_tree->Branch("flash_x", &_ara_flash_x, "flash_x/D");
++    _ara_flashmatch_nuslice_tree->Branch("flash_yb", &_ara_flash_yb, "flash_yb/D");
++    _ara_flashmatch_nuslice_tree->Branch("flash_zb", &_ara_flash_zb, "flash_zb/D");
++    _ara_flashmatch_nuslice_tree->Branch("flash_x_gl", &_ara_flash_x_gl, "flash_x_gl/D");
++    _ara_flashmatch_nuslice_tree->Branch("flash_y", &_ara_flash_y, "flash_y/D");
++    _ara_flashmatch_nuslice_tree->Branch("flash_z", &_ara_flash_z, "flash_z/D");
++    _ara_flashmatch_nuslice_tree->Branch("flash_xw", &_ara_flash_xw, "flash_xw/D");
++    _ara_flashmatch_nuslice_tree->Branch("flash_yw", &_ara_flash_yw, "flash_yw/D");
++    _ara_flashmatch_nuslice_tree->Branch("flash_zw", &_ara_flash_zw, "flash_zw/D");
++    _ara_flashmatch_nuslice_tree->Branch("flash_rr", &_ara_flash_rr, "flash_rr/D");
++    _ara_flashmatch_nuslice_tree->Branch("flash_ratio", &_ara_flash_ratio, "flash_ratio/D");
++    _ara_flashmatch_nuslice_tree->Branch("flash_slope", &_ara_flash_slope, "flash_slope/D");
++    _ara_flashmatch_nuslice_tree->Branch("flash_pe", &_ara_flash_pe, "flash_pe/D");
++    _ara_flashmatch_nuslice_tree->Branch("flash_unpe", &_ara_flash_unpe, "flash_unpe/D");
++    _ara_flashmatch_nuslice_tree->Branch("flash_time", &_ara_flash_time, "flash_time/D");
++    _ara_flashmatch_nuslice_tree->Branch("hypo_x", &_ara_hypo_x, "hypo_x/D");
++    _ara_flashmatch_nuslice_tree->Branch("hypo_x_err", &_ara_hypo_x_err, "hypo_x_err/D");
++    _ara_flashmatch_nuslice_tree->Branch("hypo_x_rr", &_ara_hypo_x_rr, "hypo_x_rr/D");
++    _ara_flashmatch_nuslice_tree->Branch("hypo_x_ratio", &_ara_hypo_x_ratio, "hypo_x_ratio/D");
++    _ara_flashmatch_nuslice_tree->Branch("y_skew", &_ara_y_skew, "y_skew/D");
++    _ara_flashmatch_nuslice_tree->Branch("z_skew", &_ara_z_skew, "z_skew/D");
++    _ara_flashmatch_nuslice_tree->Branch("y_kurt", &_ara_y_kurt, "y_kurt/D");
++    _ara_flashmatch_nuslice_tree->Branch("z_kurt", &_ara_z_kurt, "z_kurt/D");
++    _ara_flashmatch_nuslice_tree->Branch("charge_id", &_charge_id, "charge_id/I");
++    _ara_flashmatch_nuslice_tree->Branch("charge_activity", &_charge_activity, "charge_activity/I");
++    _ara_flashmatch_nuslice_tree->Branch("charge_x", &_charge_x, "charge_x/D");
++    _ara_flashmatch_nuslice_tree->Branch("charge_x_gl", &_charge_x_gl, "charge_x_gl/D");
++    _ara_flashmatch_nuslice_tree->Branch("charge_y", &_charge_y, "charge_y/D");
++    _ara_flashmatch_nuslice_tree->Branch("charge_z", &_charge_z, "charge_z/D");
++    _ara_flashmatch_nuslice_tree->Branch("charge_x_glw", &_charge_x_glw, "charge_xglw/D");
++    _ara_flashmatch_nuslice_tree->Branch("charge_yw", &_charge_yw, "charge_yw/D");
++    _ara_flashmatch_nuslice_tree->Branch("charge_zw", &_charge_zw, "charge_zw/D");
++    _ara_flashmatch_nuslice_tree->Branch("charge_slope", &_charge_slope, "charge_slope/D");
++    _ara_flashmatch_nuslice_tree->Branch("charge_q", &_charge_q, "charge_q/D");
++    _ara_flashmatch_nuslice_tree->Branch("petoq", &_ara_petoq, "petoq/D");
++    _ara_flashmatch_nuslice_tree->Branch("score", &_ara_score, "score/D");
++  _flashmatch_nuslice_tree->Branch("scr_y", &_ara_scr_y, "scr_y/D");
++    _ara_flashmatch_nuslice_tree->Branch("scr_z", &_ara_scr_z, "scr_z/D");
++    _ara_flashmatch_nuslice_tree->Branch("scr_rr", &_ara_scr_rr, "scr_rr/D");
++    _ara_flashmatch_nuslice_tree->Branch("scr_ratio", &_ara_scr_ratio, "scr_ratio/D");
++    _ara_flashmatch_nuslice_tree->Branch("scr_slope", &_ara_scr_slope, "scr_slope/D");
++    _ara_flashmatch_nuslice_tree->Branch("scr_petoq", &_ara_scr_petoq, "scr_petoq/D");
++    _ara_flashmatch_nuslice_tree->Branch("is_nu", &_is_nu, "is_nu/I");
++    _ara_flashmatch_nuslice_tree->Branch("mcT0", &_mcT0, "mcT0/D");
++  }
+ }
+ 
+ 
+@@ -779,18 +838,18 @@ FlashPredict::ChargeMetrics FlashPredict::computeChargeMetrics(
+ }
+ 
+ 
+-FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
+-  const SimpleFlash& simpleFlash) const
++FlashPredict::FlashMetrics FlashPredict::computeCommonFlashMetrics(
++  const std::vector<recob::OpHit>& ophit_vec) const
+ {
+-  const OpHitIt opH_beg = simpleFlash.opH_beg;
+-  const OpHitIt opH_end = simpleFlash.opH_end;
++//  OpHitIt oph_beg = ophit_vec.begin();
++//  OpHitIt oph_end = ophit_vec.end();
+ 
+   std::unique_ptr<TH1F> ophY = std::make_unique<TH1F>("ophY", "", fYBins, fYLow, fYHigh);
+   std::unique_ptr<TH1F> ophZ = std::make_unique<TH1F>("ophZ", "", fZBins, fZLow, fZHigh);
+   std::unique_ptr<TH1F> oph2Y = std::make_unique<TH1F>("oph2Y", "", fYBins, fYLow, fYHigh);
+   std::unique_ptr<TH1F> oph2Z = std::make_unique<TH1F>("oph2Z", "", fZBins, fZLow, fZHigh);
+ 
+-  double peSumMax_wallX = wallXWithMaxPE(opH_beg, opH_end);
++//  double peSumMax_wallX = wallXWithMaxPE(opH_beg, opH_end);
+ 
+   double sum = 0.;
+   double sum_PE = 0.;
+@@ -800,8 +859,8 @@ FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
+   double sum_PE2Y  = 0.; double sum_PE2Z  = 0.;
+   double sum_PE2Y2 = 0.; double sum_PE2Z2 = 0.;
+ 
+-  for(auto oph=opH_beg; oph!=opH_end; ++oph){
+-    int opChannel = oph->OpChannel();
++  for(auto& oph : ophit_vec){
++    int opChannel = oph.OpChannel();
+     auto& opDet = fGeometry->OpDetGeoFromOpChannel(opChannel);
+     auto opDetXYZ = opDet.GetCenter();
+ 
+@@ -817,7 +876,7 @@ FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
+       }
+     }
+ 
+-    double ophPE  = oph->PE();
++    double ophPE  = oph.PE();
+     double ophPE2 = ophPE * ophPE;
+     sum       += 1.0;
+     sum_PE    += ophPE;
+@@ -833,7 +892,7 @@ FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
+     oph2Z->Fill(opDetXYZ.Z(), ophPE2);
+ 
+     if(fICARUS){
+-      if(std::abs(peSumMax_wallX-opDetXYZ.X()) > 5.) sum_unPE += ophPE;
++//      if(std::abs(peSumMax_wallX-opDetXYZ.X()) > 5.) sum_unPE += ophPE;
+     }
+     else {// fSBND
+       if(is_pmt_vis) {
+@@ -845,11 +904,11 @@ FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
+     }
+   } // for opHits
+ 
++  mf::LogError("FlashPredict")
++    << "PE Sum: "<< sum_PE << std::endl;
+   if (sum_PE > 0.) {
+     FlashMetrics flash;
+     flash.metric_ok = true;
+-    flash.id = simpleFlash.flashId;
+-    flash.activity = simpleFlash.ophsInVolume;
+     flash.pe    = sum_PE;
+     flash.unpe  = sum_unPE;
+     flash.y_skew = ophY->GetSkewness();
+@@ -858,7 +917,7 @@ FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
+     flash.z_kurt = ophZ->GetKurtosis();
+     // Flash widths
+     // flash.xw = fractTimeWithFractionOfLight(simpleFlash, flash.pe, fFlashPEFraction);
+-    flash.xw = fractTimeWithFractionOfLight(simpleFlash, sum_PE2, fFlashPEFraction, true);
++//    flash.xw = fractTimeWithFractionOfLight(simpleFlash, sum_PE2, fFlashPEFraction, true);
+     // flash.xw = fractTimeWithFractionOfLight(simpleFlash, flash.unpe, fFlashPEFraction, false, true); // TODO:
+     // TODO: low values of flash.xw <0.5 are indicative of good
+     // mcT0-flash_time matching, so akin to matching to prompt light
+@@ -891,8 +950,8 @@ FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
+     // TODO: using _hypo_x make further corrections to _flash_time to
+     // account for light transport time and/or rising edge
+     // double flash_time = timeCorrections(simpleFlash.maxpeak_time, hypo_x);
+-    flash.time = simpleFlash.maxpeak_time;
+-    flash.x = peSumMax_wallX;
++//    flash.time = simpleFlash.maxpeak_time;
++//    flash.x = peSumMax_wallX;
+     flash.x_gl = flashXGl(flash.h_x, flash.x);
+ 
+     // Fractional widths
+@@ -917,18 +976,49 @@ FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
+   }
+   else {
+     std::string channels;
+-    for(auto oph=opH_beg; oph!=opH_end; ++oph) channels += std::to_string(oph->OpChannel()) + ' ';
++    for(auto oph : ophit_vec) channels += std::to_string(oph.OpChannel()) + ' ';
+     mf::LogError("FlashPredict")
+       << "Really odd that I landed here, this shouldn't had happen.\n"
+       << "sum:          \t" << sum << "\n"
+       << "sum_PE:       \t" << sum_PE << "\n"
+       << "sum_unPE:     \t" << sum_unPE << "\n"
+-      << "opHits size:  \t" << std::distance(opH_beg, opH_end) << "\n"
++      << "opHits size:  \t" << ophit_vec.size() << "\n"
+       << "channels:     \t" << channels << std::endl;
+     return {};
+   }
+ }
+ 
++FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
++  const FlashPredict::SimpleFlash& simpleflash) const
++{
++  std::vector<recob::OpHit> ophit;
++  const OpHitIt oph_beg = simpleflash.opH_beg;
++  const OpHitIt oph_end = simpleflash.opH_end;
++  std::copy(oph_beg, oph_end, std::back_inserter(ophit));
++
++//  for(auto& oph : ophit) {
++//      mf::LogError("FlashPredict")
++//        << "OpHit Channel" << oph.OpChannel() << std::endl;
++//  }
++
++  FlashPredict::FlashMetrics Flash = FlashPredict::computeCommonFlashMetrics(ophit);
++  Flash.id = simpleflash.flashId;
++  mf::LogError("FlashPredict")
++    << "Flash PESum" << Flash.pe << std::endl;
++
++  return Flash;
++}
++
++
++// FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
++//  const& recob::OpFlash opflash) const
++//{
++//  std::vector<art::Ptr<recob::OpHit>> ophit_v = OpFlashToOpHitAssns.at(i_flash);
++//  std::vector<recob::OpHit> ophits;
++//  for(auto& oph : ophits_v) ophits.push_back(oph);
++//  FlashPredict::FlashMetrics Flash = FlashPredict::computeCommonFlashMetrics(ophits);
++//  return Flash;
++//}
+ 
+ FlashPredict::Score FlashPredict::computeScore(
+   const ChargeMetrics& charge,
+@@ -1005,6 +1095,62 @@ FlashPredict::Score FlashPredict::computeScore(
+   return score;
+ }
+ 
++std::tuple<FlashPredict::FlashMetrics, FlashPredict::Score, bool> FlashPredict::getFlashScore(
++  const FlashPredict::ChargeMetrics& charge,
++  const std::vector<FlashPredict::SimpleFlash>& simpleFlashes,
++  const unsigned hitsInVolume,
++  std::map<unsigned, FlashPredict::FlashMetrics>& flashMetricsMap) 
++{
++  FlashMetrics flash = {};
++  Score score = {std::numeric_limits<double>::max()};
++  bool hits_ophits_concurrence = false;
++  for(auto& simpleFlash : simpleFlashes) {
++    unsigned ophsInVolume = simpleFlash.ophsInVolume;
++    if(hitsInVolume != ophsInVolume){
++      if(fSBND){
++        if(fForceConcurrence) continue;
++        else if((hitsInVolume < kActivityInBoth) &&
++                (ophsInVolume < kActivityInBoth)) {
++          continue;
++        }
++      }
++      else if(fICARUS){
++        if((hitsInVolume < kActivityInBoth) &&
++           (ophsInVolume < kActivityInBoth)) {
++          continue;
++        }
++        else if(fForceConcurrence && hitsInVolume == kActivityInBoth) continue;
++      }
++    }
++    hits_ophits_concurrence = true;
++
++    unsigned flashUId = simpleFlash.ophsInVolume * 10 + simpleFlash.flashId;
++    bool mets_in_map = flashMetricsMap.find(flashUId) != flashMetricsMap.end();
++    FlashMetrics flash_tmp = (mets_in_map) ?
++      flashMetricsMap[flashUId] : computeFlashMetrics(simpleFlash);
++    if(mets_in_map){
++      mf::LogDebug("FlashPredict")
++        << "Reusing metrics previously computed, for flashUId " << flashUId;
++    }
++    else
++      flashMetricsMap[flashUId] = flash_tmp;
++
++   Score score_tmp = (fUse3DMetrics) ? computeScore3D(charge, flash_tmp) :
++      computeScore(charge, flash_tmp);
++    if(0. <= score_tmp.total && score_tmp.total < score.total
++       && flash_tmp.metric_ok){
++      score = score_tmp;
++      flash = flash_tmp;
++      // // TODO: create charge.xb and/or charge.xb_gl
++      // if (fCorrectDriftDistance){
++      //   charge.x = driftCorrection(charge.xb, flash.time);
++      //   charge.x_gl  = xGlCorrection(charge.x_gl, charge.xb, flash.time);
++      // }
++    }
++  } // for simpleFlashes
++  return {flash, score, hits_ophits_concurrence};
++}  
++
+ 
+ FlashPredict::Score FlashPredict::computeScore3D(
+   const ChargeMetrics& charge,

@@ -275,7 +275,9 @@ private:
     const std::vector<art::Ptr<simb::MCParticle>>& mcParticles) const;
   ChargeMetrics computeChargeMetrics(
     const ChargeDigest& chargeDigest) const;
-  template <typename Flash_t> FlashMetrics computeFlashMetrics(const Flash_t& origFlash) const;
+  FlashMetrics computeFlashMetrics(const std::vector<recob::OpHit>& ophits) const;
+  FlashMetrics getFlashMetrics(
+    const FlashPredict::SimpleFlash& sf) const;
   Score computeScore(const ChargeMetrics& charge,
                      const FlashMetrics& flash) const;
   Score computeScore3D(const ChargeMetrics& charge,
@@ -341,8 +343,7 @@ private:
   unsigned sbndPDinTPC(const int pdChannel) const;
   unsigned icarusPDinTPC(const int pdChannel) const;
   double opHitTime(const recob::OpHit& oph) const;
-  double wallXWithMaxPE(const OpHitIt opH_beg,
-                        const OpHitIt opH_end) const;
+  double wallXWithMaxPE(const std::vector<recob::OpHit>& ophits) const;
   double fractTimeWithFractionOfLight(
     const SimpleFlash& simpleFlash,
     const double sum_pe, const double fraction_pe,

@@ -1,0 +1,114 @@
+diff --git a/sbncode/FlashMatch/FlashPredict.hh b/sbncode/FlashMatch/FlashPredict.hh
+index 571568fa..dcabf346 100644
+--- a/sbncode/FlashMatch/FlashPredict.hh
++++ b/sbncode/FlashMatch/FlashPredict.hh
+@@ -428,7 +428,6 @@ private:
+ 
+   // Tree variables
+   TTree* _flashmatch_nuslice_tree;
+-  TTree* _ara_flashmatch_nuslice_tree;
+   unsigned _charge_id, _charge_activity;
+   int _charge_pdgc;
+   double _charge_x_gl, _charge_x, _charge_y, _charge_z,
+@@ -444,19 +443,6 @@ private:
+   double _petoq;
+   double _score, _scr_y, _scr_z, _scr_rr, _scr_ratio,
+     _scr_slope, _scr_petoq;
+-
+-  unsigned _ara_flash_id, _ara_flash_activity;
+-  double _ara_flash_x, _ara_flash_yb, _ara_flash_zb,
+-    _ara_flash_x_gl, _ara_flash_y, _ara_flash_z,
+-    _ara_flash_xw, _ara_flash_yw, _ara_flash_zw,
+-    _ara_flash_rr, _ara_flash_ratio, _ara_flash_slope,
+-    _ara_flash_pe, _ara_flash_unpe, _ara_flash_time,
+-    _ara_hypo_x, _ara_hypo_x_err, _ara_hypo_x_rr, _ara_hypo_x_ratio,
+-    _ara_y_skew, _ara_z_skew, _ara_y_kurt, _ara_z_kurt;
+-  double _ara_petoq;
+-  double _ara_score, _ara_scr_y, _ara_scr_z, _ara_scr_rr, _ara_scr_ratio,
+-    _ara_scr_slope, _ara_scr_petoq;
+-
+   unsigned _evt, _run, _sub;
+   unsigned _slices = -1; unsigned _is_nu = -1;
+   double _mcT0 = -9999.;
+diff --git a/sbncode/FlashMatch/FlashPredict_module.cc b/sbncode/FlashMatch/FlashPredict_module.cc
+index 5ea21c90..6af9e222 100644
+--- a/sbncode/FlashMatch/FlashPredict_module.cc
++++ b/sbncode/FlashMatch/FlashPredict_module.cc
+@@ -180,16 +180,6 @@ void FlashPredict::produce(art::Event& evt)
+     _hypo_x_ratio  = -9999.;
+     _score         = -9999.;
+     _mcT0          = -9999.;
+-    _ara_flash_time    = -9999.;
+-    _ara_flash_pe      = -9999.;
+-    _ara_flash_unpe    = -9999.;
+-    _ara_flash_rr      = -9999.;
+-    _ara_flash_ratio   = -9999.;
+-    _ara_hypo_x        = -9999.;
+-    _ara_hypo_x_err    = -9999.;
+-    _ara_hypo_x_rr     = -9999.;
+-    _ara_hypo_x_ratio  = -9999.;
+-    _ara_score         = -9999.;
+   }
+   bk.events++;
+ 
+@@ -519,60 +509,6 @@ void FlashPredict::initTree(void)
+   _flashmatch_nuslice_tree->Branch("scr_petoq", &_scr_petoq, "scr_petoq/D");
+   _flashmatch_nuslice_tree->Branch("is_nu", &_is_nu, "is_nu/I");
+   _flashmatch_nuslice_tree->Branch("mcT0", &_mcT0, "mcT0/D");
+-
+-  if(fUseXARAPUCAs) { // Edit variables
+-    _ara_flashmatch_nuslice_tree = tfs->make<TTree>("ara_nuslicetree", "nu FlashPredict tree");
+-    _ara_flashmatch_nuslice_tree->Branch("evt", &_evt, "evt/I");
+-    _ara_flashmatch_nuslice_tree->Branch("run", &_run, "run/I");
+-    _ara_flashmatch_nuslice_tree->Branch("sub", &_sub, "sub/I");
+-    _ara_flashmatch_nuslice_tree->Branch("slices", &_slices, "slices/I");
+-    _ara_flashmatch_nuslice_tree->Branch("flash_id", &_ara_flash_id, "flash_id/I");
+-    _ara_flashmatch_nuslice_tree->Branch("flash_activity", &_ara_flash_activity, "flash_activity/I");
+-    _ara_flashmatch_nuslice_tree->Branch("flash_x", &_ara_flash_x, "flash_x/D");
+-    _ara_flashmatch_nuslice_tree->Branch("flash_yb", &_ara_flash_yb, "flash_yb/D");
+-    _ara_flashmatch_nuslice_tree->Branch("flash_zb", &_ara_flash_zb, "flash_zb/D");
+-    _ara_flashmatch_nuslice_tree->Branch("flash_x_gl", &_ara_flash_x_gl, "flash_x_gl/D");
+-    _ara_flashmatch_nuslice_tree->Branch("flash_y", &_ara_flash_y, "flash_y/D");
+-    _ara_flashmatch_nuslice_tree->Branch("flash_z", &_ara_flash_z, "flash_z/D");
+-    _ara_flashmatch_nuslice_tree->Branch("flash_xw", &_ara_flash_xw, "flash_xw/D");
+-    _ara_flashmatch_nuslice_tree->Branch("flash_yw", &_ara_flash_yw, "flash_yw/D");
+-    _ara_flashmatch_nuslice_tree->Branch("flash_zw", &_ara_flash_zw, "flash_zw/D");
+-    _ara_flashmatch_nuslice_tree->Branch("flash_rr", &_ara_flash_rr, "flash_rr/D");
+-    _ara_flashmatch_nuslice_tree->Branch("flash_ratio", &_ara_flash_ratio, "flash_ratio/D");
+-    _ara_flashmatch_nuslice_tree->Branch("flash_slope", &_ara_flash_slope, "flash_slope/D");
+-    _ara_flashmatch_nuslice_tree->Branch("flash_pe", &_ara_flash_pe, "flash_pe/D");
+-    _ara_flashmatch_nuslice_tree->Branch("flash_unpe", &_ara_flash_unpe, "flash_unpe/D");
+-    _ara_flashmatch_nuslice_tree->Branch("flash_time", &_ara_flash_time, "flash_time/D");
+-    _ara_flashmatch_nuslice_tree->Branch("hypo_x", &_ara_hypo_x, "hypo_x/D");
+-    _ara_flashmatch_nuslice_tree->Branch("hypo_x_err", &_ara_hypo_x_err, "hypo_x_err/D");
+-    _ara_flashmatch_nuslice_tree->Branch("hypo_x_rr", &_ara_hypo_x_rr, "hypo_x_rr/D");
+-    _ara_flashmatch_nuslice_tree->Branch("hypo_x_ratio", &_ara_hypo_x_ratio, "hypo_x_ratio/D");
+-    _ara_flashmatch_nuslice_tree->Branch("y_skew", &_ara_y_skew, "y_skew/D");
+-    _ara_flashmatch_nuslice_tree->Branch("z_skew", &_ara_z_skew, "z_skew/D");
+-    _ara_flashmatch_nuslice_tree->Branch("y_kurt", &_ara_y_kurt, "y_kurt/D");
+-    _ara_flashmatch_nuslice_tree->Branch("z_kurt", &_ara_z_kurt, "z_kurt/D");
+-    _ara_flashmatch_nuslice_tree->Branch("charge_id", &_charge_id, "charge_id/I");
+-    _ara_flashmatch_nuslice_tree->Branch("charge_activity", &_charge_activity, "charge_activity/I");
+-    _ara_flashmatch_nuslice_tree->Branch("charge_x", &_charge_x, "charge_x/D");
+-    _ara_flashmatch_nuslice_tree->Branch("charge_x_gl", &_charge_x_gl, "charge_x_gl/D");
+-    _ara_flashmatch_nuslice_tree->Branch("charge_y", &_charge_y, "charge_y/D");
+-    _ara_flashmatch_nuslice_tree->Branch("charge_z", &_charge_z, "charge_z/D");
+-    _ara_flashmatch_nuslice_tree->Branch("charge_x_glw", &_charge_x_glw, "charge_xglw/D");
+-    _ara_flashmatch_nuslice_tree->Branch("charge_yw", &_charge_yw, "charge_yw/D");
+-    _ara_flashmatch_nuslice_tree->Branch("charge_zw", &_charge_zw, "charge_zw/D");
+-    _ara_flashmatch_nuslice_tree->Branch("charge_slope", &_charge_slope, "charge_slope/D");
+-    _ara_flashmatch_nuslice_tree->Branch("charge_q", &_charge_q, "charge_q/D");
+-    _ara_flashmatch_nuslice_tree->Branch("petoq", &_ara_petoq, "petoq/D");
+-    _ara_flashmatch_nuslice_tree->Branch("score", &_ara_score, "score/D");
+-  _flashmatch_nuslice_tree->Branch("scr_y", &_ara_scr_y, "scr_y/D");
+-    _ara_flashmatch_nuslice_tree->Branch("scr_z", &_ara_scr_z, "scr_z/D");
+-    _ara_flashmatch_nuslice_tree->Branch("scr_rr", &_ara_scr_rr, "scr_rr/D");
+-    _ara_flashmatch_nuslice_tree->Branch("scr_ratio", &_ara_scr_ratio, "scr_ratio/D");
+-    _ara_flashmatch_nuslice_tree->Branch("scr_slope", &_ara_scr_slope, "scr_slope/D");
+-    _ara_flashmatch_nuslice_tree->Branch("scr_petoq", &_ara_scr_petoq, "scr_petoq/D");
+-    _ara_flashmatch_nuslice_tree->Branch("is_nu", &_is_nu, "is_nu/I");
+-    _ara_flashmatch_nuslice_tree->Branch("mcT0", &_mcT0, "mcT0/D");
+-  }
+ }
+ 
+ 
