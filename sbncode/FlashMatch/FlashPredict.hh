@@ -33,7 +33,7 @@
 #include "lardataobj/RecoBase/SpacePoint.h"
 #include "lardataobj/RecoBase/Slice.h"
 #include "lardataobj/RecoBase/OpHit.h"
-// #include "lardataobj/RecoBase/OpFlash.h"
+#include "lardataobj/RecoBase/OpFlash.h"
 #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
 #include "larsim/Utils/TruthMatchUtils.h"
@@ -278,6 +278,10 @@ private:
   FlashMetrics computeFlashMetrics(const std::vector<recob::OpHit>& ophits) const;
   FlashMetrics getFlashMetrics(
     const FlashPredict::SimpleFlash& sf) const;
+  FlashMetrics getFlashMetrics(
+    const recob::OpFlash& opflash,
+    std::vector<art::Ptr<recob::OpHit>> ophit_v,
+    unsigned id) const;
   Score computeScore(const ChargeMetrics& charge,
                      const FlashMetrics& flash) const;
   Score computeScore3D(const ChargeMetrics& charge,
@@ -374,6 +378,7 @@ private:
   const std::string fFlashType;
   const art::InputTag fPandoraProducer, fSpacePointProducer,
     fOpHitProducer, fOpHitARAProducer;//, fCaloProducer, fTrackProducer;
+  const std::vector<std::string> fOpFlashProducer, fOpFlashHitProducer;
   const double fBeamSpillTimeStart, fBeamSpillTimeEnd;
   const double fFlashFindingTimeStart, fFlashFindingTimeEnd;
   const double fFlashStart, fFlashEnd;

@@ -17,6 +17,8 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fSpacePointProducer(p.get<std::string>("SpacePointProducer"))
   , fOpHitProducer(p.get<std::string>("OpHitProducer"))
   , fOpHitARAProducer(p.get<std::string>("OpHitARAProducer", ""))
+  , fOpFlashProducer(p.get<std::vector<std::string>>("OpFlashProducer"))
+  , fOpFlashHitProducer(p.get<std::vector<std::string>>("OpFlashhitProducer"))
     // , fCaloProducer(p.get<std::string>("CaloProducer"))
     // , fTrackProducer(p.get<std::string>("TrackProducer"))
   , fBeamSpillTimeStart(p.get<double>("BeamSpillTimeStart")) //us
@@ -250,7 +252,7 @@ void FlashPredict::produce(art::Event& evt)
 
   // load OpHits previously created
   std::vector<SimpleFlash> simpleFlashes;
-  std::vector<recob::OpHit> opHitsRght, opHitsLeft, opHits;;
+  std::vector<recob::OpHit> opHitsRght, opHitsLeft, opHits;
   std::vector<FlashMetrics> flashMetrics;
   if(fIsSimple) {
     art::Handle<std::vector<recob::OpHit>> ophits_h;
@@ -326,13 +328,31 @@ void FlashPredict::produce(art::Event& evt)
     std::copy(simpleFlashes_tmp.begin(), simpleFlashes_tmp.end(), std::back_inserter(simpleFlashes));
     for(auto& sf : simpleFlashes) flashMetrics.push_back(getFlashMetrics(sf));
     }
+  } else {
+    std::vector<FlashMetrics> flashMetrics_tmp;
+    for(unsigned i_tpc=0;i_tpc < fOpFlashProducer.size(); i_tpc++) {
+      art::Handle<std::vector<recob::OpFlash>> opflashes_h;
+      evt.getByLabel(fOpFlashProducer[i_tpc], opflashes_h);    
+      if(opflashes_h->empty()) continue;
+      // Check that there are OpFlashes
+      art::FindManyP<recob::OpHit> OpFlashToOpHitAssns(opflashes_h, evt, fOpFlashHitProducer[i_tpc]);
+      for(unsigned opf=0;opf<opflashes_h->size();opf++) {
+        auto& opflash = (*opflashes_h)[opf];
+        mf:: LogInfo("FlashPredict")
+          << "TPC: " << i_tpc << "\n"
+          << "OpT: " << opflash.XCenter() << std::endl;
+        if(opflash.AbsTime()<fFlashFindingTimeStart || opflash.AbsTime()>fFlashFindingTimeEnd) continue;
+        std::vector<art::Ptr<recob::OpHit>> ophit_v = OpFlashToOpHitAssns.at(opf);      
+        flashMetrics_tmp.push_back(getFlashMetrics(opflash, ophit_v, opf));
+      }
+    }
+    std::copy(flashMetrics_tmp.begin(), flashMetrics_tmp.end(), std::back_inserter(flashMetrics));
   }
 
   mf::LogInfo("FlashPredict")
     << "SimpleFlashes found: " << simpleFlashes.size() << "\n"
     << "Metrics calculated: " << flashMetrics.size() << std::endl;
 
-  // TODO: Get vector of intime OpFlashes and set allFlashes if !fIsSimple
 
   ChargeDigestMap chargeDigestMap = makeChargeDigest(evt, pfps_h);
 
@@ -944,6 +964,24 @@ FlashPredict::FlashMetrics FlashPredict::getFlashMetrics(
   return fm;
 }
 
+FlashPredict::FlashMetrics FlashPredict::getFlashMetrics(
+  const recob::OpFlash& opflash,
+  std::vector<art::Ptr<recob::OpHit>> ophit_v,
+  unsigned id) const
+{
+  std::vector<recob::OpHit> ophits;
+  for(unsigned i=0; i< ophit_v.size(); i++) {
+    auto oph_p = ophit_v[i];
+    recob::OpHit oph = *(oph_p);
+    ophits.push_back(oph);
+  }
+
+  auto fm = computeFlashMetrics(ophits);
+  fm.id = id;
+  fm.time = opflash.AbsTime();
+  fm.activity = (opflash.XCenter() < 0) ? 100 : 200;
+  return fm;
+}
 
 FlashPredict::Score FlashPredict::computeScore(
   const ChargeMetrics& charge,
