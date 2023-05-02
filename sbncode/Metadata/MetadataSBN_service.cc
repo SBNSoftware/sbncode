@@ -200,6 +200,8 @@ void util::MetadataSBN::postBeginJob()
 // PostOpenFile callback.
 void util::MetadataSBN::postOpenInputFile(std::string const& fn)
 {
+  std::lock_guard lock(fMutex);
+
   // save parent input files here
   // 08/06 DBrailsford: Only save the parent string if the string is filled.  The string still exists (with 0 characters) for generation stage files.  See redmine issue 20124
   if (fn.length() > 0) md.fParents.insert(fn);
@@ -210,6 +212,8 @@ void util::MetadataSBN::postOpenInputFile(std::string const& fn)
 // PostEvent callback.
 void util::MetadataSBN::postEvent(art::Event const& evt, art::ScheduleContext)
 {
+  std::lock_guard lock(fMutex);
+
   art::RunNumber_t run = evt.run();
   art::SubRunNumber_t subrun = evt.subRun();
   art::EventNumber_t event = evt.event();
@@ -233,6 +237,8 @@ void util::MetadataSBN::postEvent(art::Event const& evt, art::ScheduleContext)
 // PostSubRun callback.
 void util::MetadataSBN::postBeginSubRun(art::SubRun const& sr)
 {
+  std::lock_guard lock(fMutex);
+
   art::RunNumber_t run = sr.run();
   art::SubRunNumber_t subrun = sr.subRun();
   art::SubRunID srid = sr.id();
@@ -248,6 +254,8 @@ void util::MetadataSBN::postBeginSubRun(art::SubRun const& sr)
 // PostEndSubRun callback.
 void util::MetadataSBN::postEndSubRun(art::SubRun const& sr)
 {
+  std::lock_guard lock(fMutex);
+
   art::Handle< sumdata::POTSummary > potListHandle;
   double fTotPOT = 0;
   if(sr.getByLabel(fPOTModuleLabel,potListHandle)){
@@ -271,6 +279,8 @@ std::string Escape(const std::string& s)
 //--------------------------------------------------------------------
 std::string util::MetadataSBN::GetParentsString() const
 {
+  std::lock_guard lock(fMutex);
+
   if(md.fParents.empty()) return "";
 
   unsigned int c = 0;
@@ -293,6 +303,8 @@ std::string util::MetadataSBN::GetParentsString() const
 //--------------------------------------------------------------------
 std::string util::MetadataSBN::GetRunsString() const
 {
+  std::lock_guard lock(fMutex);
+
   unsigned int c = 0;
 
   std::string ret = "[\n";
@@ -312,6 +324,8 @@ void util::MetadataSBN::GetMetadataMaps(std::map<std::string, std::string>& strs
 					std::map<std::string, double>& doubles,
                                         std::map<std::string, std::string>& objs)
 {
+  std::lock_guard lock(fMutex);
+
   strs.clear(); ints.clear(); doubles.clear(); objs.clear();
 
   objs["application"] = "{\"family\": \""+std::get<0>(md.fapplication)+"\", \"name\": \""+std::get<1>(md.fapplication)+"\", \"version\": \""+std::get<2>(md.fapplication)+"\"}";
@@ -359,6 +373,8 @@ void util::MetadataSBN::GetMetadataMaps(std::map<std::string, std::string>& strs
 // PostCloseFile callback.
 void util::MetadataSBN::postCloseInputFile()
 {
+  std::lock_guard lock(fMutex);
+
   //update end time
   md.fend_time = time(0);
 

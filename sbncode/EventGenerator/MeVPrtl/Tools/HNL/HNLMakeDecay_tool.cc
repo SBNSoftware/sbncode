@@ -48,12 +48,13 @@
 namespace evgen {
 namespace ldm {
 /**
-*  @brief  HNLMakeDecay class definiton
-*
-*  Implementation of HNL decay ->mupi taken from:
-*      https://arxiv.org/abs/1610.08512
-*      https://arxiv.org/abs/0901.3589
-*/
+ *  @brief  HNLMakeDecay class definiton
+ *
+ *  Implementation of HNL decay ->mupi taken from:
+ *      https://arxiv.org/abs/1610.08512
+ *      https://arxiv.org/abs/0901.3589
+ *      https://link.springer.com/article/10.1140/epjc/s10052-021-08861-y
+ */
 class HNLMakeDecay : public IMeVPrtlDecay {
 public:
   /**
@@ -145,7 +146,7 @@ private:
   double NuDiLepDecayWidth(double hnl_mass, double u4, int nu_pdg, int lep_pdg);
   double TriNuDecayWidth(double hnl_mass, double u4tot);
   double NuP0DecayWidth(double hnl_mass, double u4tot, double m0_mass, double m0_decay_const);
-  double NuV0DecayWidth(double hnl_mass, double u4tot, double m0_mass, double m0_g_const);
+  double NuV0DecayWidth(double hnl_mass, double u4tot, double m0_mass, double m0_decay_const, double m0_g_const);
   double LepPiWidth(double hnl_mass, double u4, double lep_mass);
   double Nul1l2Width(double hnl_mass, double ue4, double um4, double ut4,int lepplus_pdg,int lepminus_pdg);
   
@@ -219,7 +220,7 @@ double HNLMakeDecay::NuEtaPWidth(double hnl_mass, double ue4, double um4, double
   return NuP0DecayWidth(hnl_mass, ue4 + um4 + ut4, Constants::Instance().etap_mass, Constants::Instance().fetap); 
 }
 double HNLMakeDecay::NuRho0Width(double hnl_mass, double ue4, double um4, double ut4) {
-  return NuV0DecayWidth(hnl_mass, ue4 + um4 + ut4, Constants::Instance().rho_mass, Constants::Instance().grho); 
+  return NuV0DecayWidth(hnl_mass, ue4 + um4 + ut4, Constants::Instance().rho_mass, Constants::Instance().frho, Constants::Instance().grho); 
 }
 double HNLMakeDecay::NuMuEWidth(double hnl_mass, double ue4, double um4, double ut4) {
   return Nul1l2Width(hnl_mass, ue4,um4,ut4,11,13)+Nul1l2Width(hnl_mass, ue4,um4,ut4,13,11); 
@@ -387,7 +388,7 @@ double HNLMakeDecay::TriNuDecayWidth(double hnl_mass, double u4tot) {
 //   return (1+2*y)*(1-y)*sqrt(lambda(1,x,y));
 // }
 
-double HNLMakeDecay::NuV0DecayWidth(double hnl_mass, double u4tot, double m0_mass, double m0_g_const) {
+double HNLMakeDecay::NuV0DecayWidth(double hnl_mass, double u4tot, double m0_mass, double m0_decay_const, double m0_g_const) {
   
   if (m0_mass > hnl_mass) {
     return 0;
@@ -398,7 +399,7 @@ double HNLMakeDecay::NuV0DecayWidth(double hnl_mass, double u4tot, double m0_mas
   
   double mu_m0 = m0_mass*m0_mass / hnl_mass*hnl_mass;
   
-  double width=((u4tot*Gfermi*Gfermi*hnl_mass_pow3*m0_g_const*m0_g_const) / (16*M_PI*m0_mass*m0_mass) * (1+2*m0_mass*m0_mass/(hnl_mass*hnl_mass)) * (1-mu_m0)*(1-mu_m0));
+  double width=((u4tot*Gfermi*Gfermi*hnl_mass_pow3*m0_decay_const*m0_decay_const*m0_g_const*m0_g_const) / (16*M_PI*m0_mass*m0_mass) * (1+2*m0_mass*m0_mass/(hnl_mass*hnl_mass)) * (1-mu_m0)*(1-mu_m0));
   
   return width; 
   

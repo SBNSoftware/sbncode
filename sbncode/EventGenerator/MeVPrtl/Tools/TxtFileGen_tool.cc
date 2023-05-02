@@ -66,8 +66,7 @@ private:
   std::string fFluxCopyMethod;
   bool fRandomizeFiles;
   int fNSkipLines;
-  double fPOTPerMeson;
-  int fPDGCode;
+  bool fVerbose;
 
   // info for tracking files
   unsigned fFileIndex;
@@ -115,8 +114,7 @@ void TxtFileGen::configure(fhicl::ParameterSet const &pset)
   fFluxCopyMethod = pset.get<std::string>("FluxCopyMethod", "IFDH");
   fRandomizeFiles = pset.get<bool>("RandomizeFiles");
   fNSkipLines = pset.get<int>("NSkipLines");
-  fPOTPerMeson = pset.get<double>("POTPerMeson");
-  fPDGCode = pset.get<int>("PDGCode");
+  fVerbose = pset.get<bool>("Verbose", false);
 
   std::cout << "Searching for flux files at path: " << fSearchPath << std::endl;
   std::cout << "With patterns:\n";
@@ -193,7 +191,7 @@ std::string TxtFileGen::GetNextEntry() {
       fFileIndex = 0;
     }
 
-    std::cout << "New file: " << fFluxFiles[fFileIndex] << " at index: " << fFileIndex << " of: " << fFluxFiles.size() << std::endl;
+    if (fVerbose) std::cout << "New file: " << fFluxFiles[fFileIndex] << " at index: " << fFileIndex << " of: " << fFluxFiles.size() << std::endl;
     fCurrentFile.open(fFluxFiles[fFileIndex]);
 
     // count the number of lines
@@ -239,9 +237,6 @@ std::string TxtFileGen::GetNextEntry() {
     for (lines = 0; lines < fNSkipLines && std::getline(fCurrentFile,line); lines++);
   }
 
-  // count the POT
-  fAccumulatedPOT += fPOTPerMeson;
-
   return thisline;
 }
 
@@ -251,19 +246,20 @@ simb::MCFlux TxtFileGen::GetNext() {
 }
   
 simb::MCFlux TxtFileGen::MakeMCFlux(std::string line) {
-  std::cout << "Parsing line: " << line << std::endl;
+  // std::cout << "Parsing line: " << line << std::endl;
 
   // read the 4-vector off the line
-  double E, px, py, pz;
+  double E, px, py, pz, npot, wgt;
+  int pdgcode;
   std::stringstream l4vec(line);
-  l4vec >> px >> py >> pz >> E;
+  l4vec >> px >> py >> pz >> E >> pdgcode >> wgt >> npot;
 
-  std::cout << "Values: " << px << " " << py << " " << pz << " " << E << std::endl;
+  if (fVerbose) std::cout << "Values: " << px << " " << py << " " << pz << " " << E << " " << pdgcode << " " << wgt << std::endl;
 
   simb::MCFlux flux;
   
   flux.fFluxType = simb::kSimple_Flux; // number for file gen....
-  flux.fnimpwt   = 1; // All the same weight!
+  flux.fnimpwt   = wgt;
   flux.fvx       = 0; // At the target -- TODO is this ok???
   flux.fvy       = 0;
   flux.fvz       = 0;
@@ -275,7 +271,7 @@ simb::MCFlux TxtFileGen::MakeMCFlux(std::string line) {
   flux.fpppz     = pz;
   flux.fppenergy  = E;
   flux.fppmedium = -1;
-  flux.fptype    = fPDGCode;
+  flux.fptype    = pdgcode;
   flux.fndecay   = -1;
   flux.fmuparpx  = -1;
   flux.fmuparpy  = -1;
@@ -309,6 +305,9 @@ simb::MCFlux TxtFileGen::MakeMCFlux(std::string line) {
 
   // placeholder for time
   flux.fxpoint = 0.;
+
+  // Update the POT
+  fAccumulatedPOT += npot;
 
   return flux;  
 }
