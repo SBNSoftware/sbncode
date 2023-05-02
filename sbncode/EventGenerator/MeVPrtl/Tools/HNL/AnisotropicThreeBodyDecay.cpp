@@ -176,8 +176,8 @@ double evgen::ldm::AnThreeBD::MSqDM(double (&C)[6], double z2_num, double z2_ll,
 
 /*Return the total maximum matrix-element-squared for a given M_HNL,Lepton_PDG, Polarization and mixing matrix element
   Currently optimized for electrons and muons for m_HNl<388 MeV
-  The values returned by this function were calculated using 10e7 iterations of the monte Carlo Algorith used when no value is found. If the theory regarding anysotropic decays is changed this values must be calculated again
-  This function can be improved, but the maximun is not trivial to estimate, as the allowed Dalitz region restricts the use of some algorithms */
+  This function returns values of the maximum previously calculated using multiple iterations of MSqDM function, as the maximum is not trivial to estimate, mainly because the allowed Dalitz region restricts the use of some algorithms. 
+ */
 double evgen::ldm::AnThreeBD::MaxMSqDM(double m_HNL, int  LeptonPDG, double Ue4, double Umu4, double Ut4, double m_p, double m_m, double Pol, double (&C)[6], bool Majorana)
 {
   double Ce4 = 0;
@@ -185,7 +185,10 @@ double evgen::ldm::AnThreeBD::MaxMSqDM(double m_HNL, int  LeptonPDG, double Ue4,
   double Ct4 = 0;
 
   /*If the pair of leptons are electrons or muons and m_HNl<388 MeV dont calculate the maximum
-    And access a previously calculated value to save computation time */
+    And access a previously calculated value to save computation time. The values of the maximum included here were calculated using
+ 10e7 iterations of the MSqDM function, and saving only the bigger value among them. The mass ranges were chosen to ensure at least 10e-3 acceptance
+in the rejection sampling method used in AnisotropicThreeBodyDist.  If the theory regarding anysotropic decays is changed this values must be calculated again.
+ */
   if (Majorana) {
     if(LeptonPDG == 13) { 
       if(m_HNL <= 0.22) {
