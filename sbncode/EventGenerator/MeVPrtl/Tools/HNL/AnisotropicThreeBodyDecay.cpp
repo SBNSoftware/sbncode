@@ -186,7 +186,7 @@ double evgen::ldm::AnThreeBD::MaxMSqDM(double m_HNL, int  LeptonPDG, double Ue4,
 
   /*If the pair of leptons are electrons or muons and m_HNl<388 MeV dont calculate the maximum
     And access a previously calculated value to save computation time. The values of the maximum included here were calculated using
- 10e7 iterations of the MSqDM function, and saving only the bigger value among them. The mass ranges were chosen to ensure at least 10e-3 acceptance
+ 10e7 iterations of the MSqDM function, given random points inside the Decay Dalitz for each iteration and saving only the bigger value among them. The mass ranges were chosen to ensure at least 10e-3 acceptance
 in the rejection sampling method used in AnisotropicThreeBodyDist.  If the theory regarding anysotropic decays is changed this values must be calculated again.
  */
   if (Majorana) {
