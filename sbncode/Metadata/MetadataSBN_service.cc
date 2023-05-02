@@ -200,8 +200,6 @@ void util::MetadataSBN::postBeginJob()
 // PostOpenFile callback.
 void util::MetadataSBN::postOpenInputFile(std::string const& fn)
 {
-  std::lock_guard lock(fMutex);
-
   // save parent input files here
   // 08/06 DBrailsford: Only save the parent string if the string is filled.  The string still exists (with 0 characters) for generation stage files.  See redmine issue 20124
   if (fn.length() > 0) md.fParents.insert(fn);
@@ -279,8 +277,6 @@ std::string Escape(const std::string& s)
 //--------------------------------------------------------------------
 std::string util::MetadataSBN::GetParentsString() const
 {
-  std::lock_guard lock(fMutex);
-
   if(md.fParents.empty()) return "";
 
   unsigned int c = 0;
@@ -303,8 +299,6 @@ std::string util::MetadataSBN::GetParentsString() const
 //--------------------------------------------------------------------
 std::string util::MetadataSBN::GetRunsString() const
 {
-  std::lock_guard lock(fMutex);
-
   unsigned int c = 0;
 
   std::string ret = "[\n";
@@ -324,8 +318,6 @@ void util::MetadataSBN::GetMetadataMaps(std::map<std::string, std::string>& strs
 					std::map<std::string, double>& doubles,
                                         std::map<std::string, std::string>& objs)
 {
-  std::lock_guard lock(fMutex);
-
   strs.clear(); ints.clear(); doubles.clear(); objs.clear();
 
   objs["application"] = "{\"family\": \""+std::get<0>(md.fapplication)+"\", \"name\": \""+std::get<1>(md.fapplication)+"\", \"version\": \""+std::get<2>(md.fapplication)+"\"}";
@@ -373,8 +365,6 @@ void util::MetadataSBN::GetMetadataMaps(std::map<std::string, std::string>& strs
 // PostCloseFile callback.
 void util::MetadataSBN::postCloseInputFile()
 {
-  std::lock_guard lock(fMutex);
-
   //update end time
   md.fend_time = time(0);
 
