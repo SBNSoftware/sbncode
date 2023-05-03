@@ -67,7 +67,7 @@ namespace sbn {
   class Razzled : public art::EDProducer {
   public:
     explicit Razzled(fhicl::ParameterSet const& p);
-  
+
     Razzled(Razzled const&) = delete;
     Razzled(Razzled&&) = delete;
     Razzled& operator=(Razzled const&) = delete;
@@ -79,7 +79,7 @@ namespace sbn {
   private:
     art::ServiceHandle<art::TFileService> tfs;
 
-    art::InputTag fPFPLabel, fClusterLabel, fTrackLabel, fShowerLabel, fCaloLabel, 
+    art::InputTag fPFPLabel, fClusterLabel, fTrackLabel, fShowerLabel, fCaloLabel,
       fMCSLabel, fChi2Label, fRangeLabel, fClosestApproachLabel, fStoppingChi2Label;
 
     const float fMinTrackLength, fMinShowerEnergy;
@@ -139,8 +139,8 @@ namespace sbn {
     void FillTrueParticleMetrics(const detinfo::DetectorClocksData &clockData, const std::vector<art::Ptr<recob::Hit>> &hits);
 
     void FillPFPMetrics(const art::Ptr<recob::PFParticle> &pfp, const std::map<size_t, art::Ptr<recob::PFParticle>> &pfpMap,
-			const art::FindManyP<recob::Cluster> &pfpsToClusters, const art::FindManyP<recob::Hit> &clustersToHits,
-			const art::FindOneP<larpandoraobj::PFParticleMetadata> &pfpsToMetadata);
+                        const art::FindManyP<recob::Cluster> &pfpsToClusters, const art::FindManyP<recob::Hit> &clustersToHits,
+                        const art::FindOneP<larpandoraobj::PFParticleMetadata> &pfpsToMetadata);
 
     void FillPandoraTrackIDScoreVars(const std::map<std::string, float> &propertiesMap);
 
@@ -159,7 +159,7 @@ namespace sbn {
     void FillShowerMetrics(const art::Ptr<recob::Shower> &shower, const std::vector<art::Ptr<recob::Hit>> &hits);
 
     void FillShowerConversionGap(const art::Ptr<recob::PFParticle> &pfp, const std::map<size_t, art::Ptr<recob::PFParticle>> &pfpMap,
-				 const art::Ptr<recob::Shower> &shower, const art::FindOneP<recob::Vertex> &pfpsToVertices);
+                                 const art::Ptr<recob::Shower> &shower, const art::FindOneP<recob::Vertex> &pfpsToVertices);
 
     bool InFV(const TVector3 &pos);
 
@@ -182,7 +182,7 @@ namespace sbn {
     , fRangeLabel(p.get<std::string>("RangeLabel"), std::string("muon"))
     , fClosestApproachLabel(p.get<std::string>("ClosestApproachLabel"))
     , fStoppingChi2Label(p.get<std::string>("StoppingChi2Label"))
-    , fMinTrackLength(p.get<float>("MinTrackLength"))    
+    , fMinTrackLength(p.get<float>("MinTrackLength"))
     , fMinShowerEnergy(p.get<float>("MinShowerEnergy"))
     , fMakeTree(p.get<bool>("MakeTree"))
     , fRunMVA(p.get<bool>("RunMVA"))
@@ -198,7 +198,7 @@ namespace sbn {
       if(!fMakeTree && !fRunMVA)
         throw cet::exception("Razzled") << "Configured to do nothing";
 
-      if(fRunMVA) 
+      if(fRunMVA)
         {
           if(fMethodName == "" || fWeightFile == "")
             throw cet::exception("Razzled") << "Trying to run MVA with inputs not set: MethodName: " << fMethodName << " and WeightFile: " << fWeightFile;
@@ -345,7 +345,7 @@ namespace sbn {
 
     const std::map<size_t, art::Ptr<recob::PFParticle>> pfpMap = this->GetPFPMap(pfps);
 
-    for(auto const& pfp : pfps) 
+    for(auto const& pfp : pfps)
       {
         this->ClearTreeValues();
 
@@ -367,13 +367,13 @@ namespace sbn {
             const std::vector<art::Ptr<anab::Calorimetry>> calos = tracksToCalos.at(track.key());
             if(calos.size() != 3)
               continue;
-          
+
             const unsigned int maxHits = std::max({ calos[0]->dEdx().size(), calos[1]->dEdx().size(), calos[2]->dEdx().size()});
             const int bestPlane        = (calos[2]->dEdx().size() == maxHits) ? 2 : (calos[0]->dEdx().size() == maxHits) ? 0 : (calos[1]->dEdx().size() == maxHits) ? 1 : -1;
-          
+
             if(bestPlane < 0 || bestPlane > 3)
               throw cet::exception("Dazzle") << "Best plane: " << bestPlane;
-          
+
             const std::vector<art::Ptr<anab::ParticleID>> chi2s = tracksToChi2s.at(track.key());
             if(chi2s.size() == 3)
               this->FillChi2PIDMetrics(chi2s[bestPlane]);
@@ -381,7 +381,7 @@ namespace sbn {
             const art::Ptr<recob::MCSFitResult> mcs = tracksToMCSs.at(track.key());
             if(mcs.isNonnull())
               this->FillMCSMetrics(mcs);
-          
+
             const art::Ptr<RangeP> rangeP = tracksToRangePs.at(track.key());
             if(rangeP.isNonnull() && mcs.isNonnull())
               this->FillMomDiff(rangeP, mcs);
@@ -394,7 +394,7 @@ namespace sbn {
             if(stoppingChi2.isNonnull())
               this->FillStoppingChi2Metrics(stoppingChi2);
           }
-         
+
         if(shower.isNonnull())
           {
             if(shower->best_plane() < 0 || shower->Energy().at(shower->best_plane()) < fMinShowerEnergy)
@@ -405,7 +405,7 @@ namespace sbn {
             this->FillShowerMetrics(shower, showerHits);
             this->FillShowerConversionGap(pfp, pfpMap, shower, pfpsToVertices);
           }
-    
+
         if(fRunMVA)
           {
             MVAPID mvaPID = this->RunMVA();
@@ -416,7 +416,7 @@ namespace sbn {
         if(fMakeTree)
           {
             std::vector<art::Ptr<recob::Hit>> hits;
-          
+
             const std::vector<art::Ptr<recob::Cluster>> clusters = pfpsToClusters.at(pfp.key());
             for(auto const& cluster : clusters)
               {
@@ -455,7 +455,7 @@ namespace sbn {
     pfp_chargeEndFrac   = -5.f; pfp_chargeFracSpread   = -5.f; pfp_linearFitDiff    = -5.f;
     pfp_linearFitLength = -5.f; pfp_linearFitGapLength = -5.f; pfp_linearFitRMS     = -5.f;
     pfp_openAngleDiff   = -5.f; pfp_secondaryPCARatio  = -5.f; pfp_tertiaryPCARatio = -5.f;
-    pfp_vertexDist      = -5.f; 
+    pfp_vertexDist      = -5.f;
 
     trk_length              = -5.f; trk_chi2PIDMuon           = -5.f; trk_chi2PIDProton      = -5.f;
     trk_chi2PIDMuonPionDiff = -5.f; trk_mcsScatterMean        = -5.f; trk_mcsScatterMaxRatio = -5.f;
@@ -487,9 +487,9 @@ namespace sbn {
         totalTrueHitEnergy = std::accumulate(ides.cbegin(), ides.cend(), totalTrueHitEnergy,
                                              [bestMatch](float sum, auto const& ide) { return (std::abs(ide.trackID) == bestMatch) ? sum + ide.energy : sum; });
       }
-    
+
     const std::vector<const sim::IDE*> allIDEs = bt_serv->TrackIdToSimIDEs_Ps(bestMatch);
-    
+
     float totalTrueEnergy = std::accumulate(allIDEs.cbegin(), allIDEs.cend(), 0.f,
                                             [](float sum, auto const& ide) { return sum + ide->energy; });
 
@@ -500,7 +500,7 @@ namespace sbn {
 
     if(trueParticle == NULL)
       return;
-    
+
     truePdg        = trueParticle->PdgCode();
     trueType       = this->PDGString(truePdg);
     trueEndProcess = trueParticle->EndProcess();
@@ -544,7 +544,7 @@ namespace sbn {
 
     if(parentIter == pfpMap.end())
       return;
-    
+
     const art::Ptr<recob::PFParticle> parent = parentIter->second;
 
     recoPrimary = parent->IsPrimary();
@@ -598,7 +598,7 @@ namespace sbn {
   {
     if(mcs->scatterAngles().empty())
       return;
-    
+
     unsigned int counter = 0;
     float maxScatter = 0.f, meanScatter = 0.f;
 
@@ -611,10 +611,10 @@ namespace sbn {
         meanScatter += angle;
         counter++;
       }
-    
+
     if(!counter)
       return;
-    
+
     trk_mcsScatterMean     = meanScatter / counter;
     trk_mcsScatterMaxRatio = maxScatter / meanScatter;
   }
@@ -724,14 +724,14 @@ namespace sbn {
   }
 
   void Razzled::FillShowerConversionGap(const art::Ptr<recob::PFParticle> &pfp, const std::map<size_t, art::Ptr<recob::PFParticle>> &pfpMap,
-					const art::Ptr<recob::Shower> &shower, const art::FindOneP<recob::Vertex> &pfpsToVertices)
+                                        const art::Ptr<recob::Shower> &shower, const art::FindOneP<recob::Vertex> &pfpsToVertices)
   {
     const int parentId     = pfp->Parent();
     auto const& parentIter = pfpMap.find(parentId);
 
     if(parentIter == pfpMap.end())
       return;
-    
+
     const art::Ptr<recob::PFParticle> parent = parentIter->second;
 
     const art::Ptr<recob::Vertex> vertex = pfpsToVertices.at(parent.key());
