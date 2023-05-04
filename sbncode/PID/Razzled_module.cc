@@ -463,7 +463,7 @@ namespace sbn {
     pfp_numDaughters    = -5.f;  pfp_maxDaughterHits    = -50.f; pfp_trackScore       = -1.f;
     pfp_chargeEndFrac   = -1.f;  pfp_chargeFracSpread   = -1.f;  pfp_linearFitDiff    = -1.f;
     pfp_linearFitLength = -50.f; pfp_linearFitGapLength = -1.f;  pfp_linearFitRMS     = -1.f;
-    pfp_openAngleDiff   = -1.f;  pfp_secondaryPCARatio  = -1.f;  pfp_tertiaryPCARatio = -1.f;
+    pfp_openAngleDiff   = -10.f; pfp_secondaryPCARatio  = -1.f;  pfp_tertiaryPCARatio = -1.f;
     pfp_vertexDist      = -50.f;
 
     trk_length              = -100.f; trk_chi2PIDMuon           = -10.f;  trk_chi2PIDProton      = -10.f;
