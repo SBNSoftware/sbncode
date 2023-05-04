@@ -129,7 +129,8 @@ namespace sbn {
     std::string trueType, trueEndProcess;
     float energyComp, energyPurity;
 
-    bool recoPrimary, trackContained, showerContained;
+    bool recoPrimary, trackContained, showerContained, unambiguousSlice, goodTrack, goodShower;
+    int recoPDG;
     float trackStartX, trackStartY, trackStartZ, trackEndX, trackEndY, trackEndZ,
       showerStartX, showerStartY, showerStartZ, showerEndX, showerEndY, showerEndZ;
 
@@ -262,6 +263,8 @@ namespace sbn {
         pfpTree->Branch("energyPurity", &energyPurity);
 
         pfpTree->Branch("recoPrimary", &recoPrimary);
+        pfpTree->Branch("unambiguousSlice", &unambiguousSlice);
+        pfpTree->Branch("recoPDG", &recoPDG);
 
         pfpTree->Branch("trackStartX", &trackStartX);
         pfpTree->Branch("trackStartY", &trackStartY);
@@ -270,6 +273,7 @@ namespace sbn {
         pfpTree->Branch("trackEndY", &trackEndY);
         pfpTree->Branch("trackEndZ", &trackEndZ);
         pfpTree->Branch("trackContained", &trackContained);
+        pfpTree->Branch("goodTrack", &goodTrack);
 
         pfpTree->Branch("showerStartX", &showerStartX);
         pfpTree->Branch("showerStartY", &showerStartY);
@@ -278,6 +282,7 @@ namespace sbn {
         pfpTree->Branch("showerEndY", &showerEndY);
         pfpTree->Branch("showerEndZ", &showerEndZ);
         pfpTree->Branch("showerContained", &showerContained);
+        pfpTree->Branch("goodShower", &goodShower);
 
         pfpTree->Branch("pfp_numDaughters", &pfp_numDaughters);
         pfpTree->Branch("pfp_maxDaughterHits", &pfp_maxDaughterHits);
@@ -327,7 +332,7 @@ namespace sbn {
     art::FindOneP<recob::Vertex> pfpsToVertices(pfpHandle, e, fPFPLabel);
     art::FindOneP<larpandoraobj::PFParticleMetadata> pfpsToMetadata(pfpHandle, e, fPFPLabel);
     art::FindManyP<recob::Cluster> pfpsToClusters(pfpHandle, e, fPFPLabel);
-    art::FindManyP<recob::Hit> clustersToHits(clusterHandle, e, fPFPLabel);
+    art::FindManyP<recob::Hit> clustersToHits(clusterHandle, e, fClusterLabel);
 
     art::FindOneP<recob::Track> pfpsToTracks(pfpHandle, e, fTrackLabel);
     art::FindManyP<anab::Calorimetry> tracksToCalos(trackHandle, e, fCaloLabel);
@@ -349,16 +354,18 @@ namespace sbn {
       {
         this->ClearTreeValues();
 
-        this->FillPFPMetrics(pfp, pfpMap, pfpsToClusters, clustersToHits, pfpsToMetadata);
-
         const art::Ptr<recob::Track> track   = pfpsToTracks.at(pfp.key());
         const art::Ptr<recob::Shower> shower = pfpsToShowers.at(pfp.key());
 
         if(track.isNull() && shower.isNull())
           continue;
 
+        this->FillPFPMetrics(pfp, pfpMap, pfpsToClusters, clustersToHits, pfpsToMetadata);
+
         if(track.isNonnull())
           {
+            goodTrack = true;
+
             if(track->Length() < fMinTrackLength)
               continue;
 
@@ -397,6 +404,8 @@ namespace sbn {
 
         if(shower.isNonnull())
           {
+            goodShower = true;
+
             if(shower->best_plane() < 0 || shower->Energy().at(shower->best_plane()) < fMinShowerEnergy)
               continue;
 
@@ -441,15 +450,15 @@ namespace sbn {
 
     truePdg = -5; trueType = ""; trueEndProcess = ""; energyComp = -5.f; energyPurity = -5.f;
 
-    recoPrimary = false;
+    recoPrimary = false; unambiguousSlice = false; recoPDG = -5;
 
     trackStartX    = -999.f; trackStartY = -999.f; trackStartZ = -999.f;
     trackEndX      = -999.f; trackEndY   = -999.f; trackEndZ   = -999.f;
-    trackContained = false;
+    trackContained = false;  goodTrack   = false;
 
     showerStartX    = -999.f; showerStartY = -999.f; showerStartZ = -999.f;
     showerEndX      = -999.f; showerEndY   = -999.f; showerEndZ   = -999.f;
-    showerContained = false;
+    showerContained = false;  goodShower   = false;
 
     pfp_numDaughters    = -5.f; pfp_maxDaughterHits    = -5.f; pfp_trackScore       = -5.f;
     pfp_chargeEndFrac   = -5.f; pfp_chargeFracSpread   = -5.f; pfp_linearFitDiff    = -5.f;
@@ -510,6 +519,7 @@ namespace sbn {
                                const art::FindManyP<recob::Cluster> &pfpsToClusters, const art::FindManyP<recob::Hit> &clustersToHits,
                                const art::FindOneP<larpandoraobj::PFParticleMetadata> &pfpsToMetadata)
   {
+    recoPDG          = pfp->PdgCode();
     pfp_numDaughters = pfp->Daughters().size();
 
     for(auto const& daughterID : pfp->Daughters())
@@ -539,15 +549,26 @@ namespace sbn {
     const std::map<std::string, float> propertiesMap = metadata->GetPropertiesMap();
     this->FillPandoraTrackIDScoreVars(propertiesMap);
 
-    const int parentId     = pfp->Parent();
-    auto const& parentIter = pfpMap.find(parentId);
+    auto const& parentIter = pfpMap.find(pfp->Parent());
 
     if(parentIter == pfpMap.end())
       return;
 
-    const art::Ptr<recob::PFParticle> parent = parentIter->second;
+    art::Ptr<recob::PFParticle> parent = parentIter->second;
 
     recoPrimary = parent->IsPrimary();
+
+    while(!parent->IsPrimary())
+      {
+        auto const& parentIter2 = pfpMap.find(parent->Parent());
+
+        if(parentIter2 == pfpMap.end())
+          return;
+
+        parent = parentIter2->second;
+      }
+
+    unambiguousSlice = pfp->PdgCode() == 13 || pfp->PdgCode() == 11;
   }
 
   void Razzled::FillPandoraTrackIDScoreVars(const std::map<std::string, float> &propertiesMap)
@@ -569,8 +590,9 @@ namespace sbn {
   {
     auto propertiesMapIter = propertiesMap.find(name);
     if(propertiesMapIter == propertiesMap.end())
-      throw cet::exception("Razzled") << "Error finding variable -- " << name;
-    var = propertiesMapIter->second;
+      std::cout << "Razzled Module -- Error finding variable -- " << name << std::endl;
+    else
+      var = propertiesMapIter->second;
   }
 
 

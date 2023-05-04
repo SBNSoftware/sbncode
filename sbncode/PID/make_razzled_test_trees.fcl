@@ -1,0 +1,19 @@
+#include "cafmakerjob_sbnd.fcl"
+
+physics.producers.pandoraRazzled: @local::razzled_sbnd
+
+physics.runprod: [ pandoraTrackMCS, pandoraTrackRange, pandoraTrackClosestApproach, pandoraTrackStoppingChi2, pandoraRazzled ]
+
+physics.producers.pandoraRazzled.MakeTree: true
+physics.producers.pandoraRazzled.RunMVA:   false
+
+source.inputCommands: [ "keep *",
+		      	"drop *_crtstrips_*_*",
+		      	"drop *_crtclustering_*_*",
+		      	"drop *_crtspacepoints_*_*",
+			"drop *_crttracks_*_*",
+			"drop *_crtspacepointmatching_*_*",
+			"drop *_crtspacepointmatchingSCE_*_*",
+			"drop *_crttrackmatching_*_*",
+			"drop *_crttrackmatchingSCE_*_*"
+	              ]
