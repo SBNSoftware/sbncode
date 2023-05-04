@@ -460,18 +460,18 @@ namespace sbn {
     showerEndX      = -999.f; showerEndY   = -999.f; showerEndZ   = -999.f;
     showerContained = false;  goodShower   = false;
 
-    pfp_numDaughters    = -5.f; pfp_maxDaughterHits    = -5.f; pfp_trackScore       = -5.f;
-    pfp_chargeEndFrac   = -5.f; pfp_chargeFracSpread   = -5.f; pfp_linearFitDiff    = -5.f;
-    pfp_linearFitLength = -5.f; pfp_linearFitGapLength = -5.f; pfp_linearFitRMS     = -5.f;
-    pfp_openAngleDiff   = -5.f; pfp_secondaryPCARatio  = -5.f; pfp_tertiaryPCARatio = -5.f;
-    pfp_vertexDist      = -5.f;
+    pfp_numDaughters    = -5.f;  pfp_maxDaughterHits    = -50.f; pfp_trackScore       = -1.f;
+    pfp_chargeEndFrac   = -1.f;  pfp_chargeFracSpread   = -1.f;  pfp_linearFitDiff    = -1.f;
+    pfp_linearFitLength = -50.f; pfp_linearFitGapLength = -1.f;  pfp_linearFitRMS     = -1.f;
+    pfp_openAngleDiff   = -1.f;  pfp_secondaryPCARatio  = -1.f;  pfp_tertiaryPCARatio = -1.f;
+    pfp_vertexDist      = -50.f;
 
-    trk_length              = -5.f; trk_chi2PIDMuon           = -5.f; trk_chi2PIDProton      = -5.f;
-    trk_chi2PIDMuonPionDiff = -5.f; trk_mcsScatterMean        = -5.f; trk_mcsScatterMaxRatio = -5.f;
-    trk_meanDCA             = -5.f; trk_stoppingdEdxChi2Ratio = -5.f; trk_chi2Pol0dEdxFit    = -5.f;
-    trk_momDiff             = -5.f;
+    trk_length              = -100.f; trk_chi2PIDMuon           = -10.f;  trk_chi2PIDProton      = -10.f;
+    trk_chi2PIDMuonPionDiff = -100.f; trk_mcsScatterMean        = -100.f; trk_mcsScatterMaxRatio = -1.f;
+    trk_meanDCA             = -5.f;   trk_stoppingdEdxChi2Ratio = -5.f;   trk_chi2Pol0dEdxFit    = -5.f;
+    trk_momDiff             = -10.f;
 
-    shw_bestdEdx      = -5.f; shw_convGap           = -5.f; shw_openAngle = -5.f;
+    shw_bestdEdx      = -5.f; shw_convGap           = -5.f; shw_openAngle = -10.f;
     shw_modHitDensity = -5.f; shw_sqrtEnergyDensity = -5.f;
   }
 
@@ -549,6 +549,13 @@ namespace sbn {
     const std::map<std::string, float> propertiesMap = metadata->GetPropertiesMap();
     this->FillPandoraTrackIDScoreVars(propertiesMap);
 
+    if(pfp->IsPrimary())
+      {
+	recoPrimary = true;
+	unambiguousSlice = pfp->PdgCode() == 13 || pfp->PdgCode() == 11;
+	return;
+      }
+
     auto const& parentIter = pfpMap.find(pfp->Parent());
 
     if(parentIter == pfpMap.end())
@@ -568,7 +575,7 @@ namespace sbn {
         parent = parentIter2->second;
       }
 
-    unambiguousSlice = pfp->PdgCode() == 13 || pfp->PdgCode() == 11;
+    unambiguousSlice = parent->PdgCode() == 13 || parent->PdgCode() == 11;
   }
 
   void Razzled::FillPandoraTrackIDScoreVars(const std::map<std::string, float> &propertiesMap)
@@ -581,6 +588,7 @@ namespace sbn {
     this->FillPandoraTrackIDScoreVar(propertiesMap, pfp_linearFitGapLength, "LArThreeDLinearFitFeatureTool_MaxFitGapLength");
     this->FillPandoraTrackIDScoreVar(propertiesMap, pfp_linearFitRMS, "LArThreeDLinearFitFeatureTool_SlidingLinearFitRMS");
     this->FillPandoraTrackIDScoreVar(propertiesMap, pfp_openAngleDiff, "LArThreeDOpeningAngleFeatureTool_AngleDiff");
+    pfp_openAngleDiff *= TMath::RadToDeg();
     this->FillPandoraTrackIDScoreVar(propertiesMap, pfp_secondaryPCARatio, "LArThreeDPCAFeatureTool_SecondaryPCARatio");
     this->FillPandoraTrackIDScoreVar(propertiesMap, pfp_tertiaryPCARatio, "LArThreeDPCAFeatureTool_TertiaryPCARatio");
     this->FillPandoraTrackIDScoreVar(propertiesMap, pfp_vertexDist, "LArThreeDVertexDistanceFeatureTool_VertexDistance");
@@ -590,7 +598,7 @@ namespace sbn {
   {
     auto propertiesMapIter = propertiesMap.find(name);
     if(propertiesMapIter == propertiesMap.end())
-      std::cout << "Razzled Module -- Error finding variable -- " << name << std::endl;
+      {}//      std::cout << "Razzled Module -- Error finding variable -- " << name << std::endl;
     else
       var = propertiesMapIter->second;
   }
@@ -694,7 +702,8 @@ namespace sbn {
 
     const float length = shower->Length();
     shw_openAngle      = TMath::RadToDeg() * shower->OpenAngle();
-
+    if(shw_openAngle < 0)
+      std::cout << "============================ shw_openAngle: " << shw_openAngle << std::endl;
     const TVector3 start = shower->ShowerStart();
     const TVector3 end   = start + length * shower->Direction();
 
