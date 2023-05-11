@@ -253,7 +253,7 @@ libdir	fq_dir		lib
 ####################################
 product			version		qual	flags		<table_format=2>
 genie_xsec		v3_04_00	-
-larcv2			v2_1_0		-
+larcv2			v2_1_1		-
 larsoft			v09_74_01	-
 sbnanaobj		v09_21_00	-
 sbndaq_artdaq_core	v1_07_00of0	-
@@ -317,11 +317,11 @@ end_product_list
 #
 ####################################
 
-qualifier	larsoft		sbnobj		sbnanaobj	sbndaq_artdaq_core  genie_xsec              sbndata larcv2         systematicstools  nusystematics notes
-c7:debug	c7:debug	c7:debug	c7:debug	c7:s120:debug       AR2320i00000:e1000:k250 -nq-    c7:p392:debug  c7:debug	     c7:debug	    -nq-
-c7:prof		c7:prof		c7:prof		c7:prof		c7:s120:prof        AR2320i00000:e1000:k250 -nq-    c7:p392:prof   c7:prof	     c7:prof	    -nq-
-e20:debug	e20:debug	e20:debug	e20:debug	e20:s120:debug      AR2320i00000:e1000:k250 -nq-    e20:p392:debug e20:debug	     e20:debug	    -nq-
-e20:prof	e20:prof	e20:prof	e20:prof	e20:s120:prof       AR2320i00000:e1000:k250 -nq-    e20:p392:prof  e20:prof	     e20:prof	    -nq-
+qualifier	larsoft		sbnobj		sbnanaobj	sbndaq_artdaq_core  genie_xsec              sbndata larcv2          systematicstools  nusystematics notes
+c7:debug	c7:debug	c7:debug	c7:debug	c7:s120:debug       AR2320i00000:e1000:k250 -nq-    c7:debug:p3913  c7:debug	     c7:debug	    -nq-
+c7:prof		c7:prof		c7:prof		c7:prof		c7:s120:prof        AR2320i00000:e1000:k250 -nq-    c7:p3913:prof   c7:prof	     c7:prof	    -nq-
+e20:debug	e20:debug	e20:debug	e20:debug	e20:s120:debug      AR2320i00000:e1000:k250 -nq-    debug:e20:p3913 e20:debug	     e20:debug	    -nq-
+e20:prof	e20:prof	e20:prof	e20:prof	e20:s120:prof       AR2320i00000:e1000:k250 -nq-    e20:p3913:prof   e20:prof	     e20:prof	    -nq-
 
 end_qualifier_list
 ####################################
