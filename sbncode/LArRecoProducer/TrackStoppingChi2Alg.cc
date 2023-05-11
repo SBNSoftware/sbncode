@@ -39,6 +39,9 @@ sbn::StoppingChi2Fit sbn::TrackStoppingChi2Alg::RunFit(const anab::Calorimetry& 
 {
 
   std::vector<float> dEdxVec, resRangeVec;
+  if(calo.Range() == -999)
+    return StoppingChi2Fit();
+
   // Fill the dEdx vs res range vectors, ignoring the first/last points
   for (size_t i = 1; i < calo.dEdx().size() - 1; i++) {
     const float thisdEdx(calo.dEdx()[i]);
