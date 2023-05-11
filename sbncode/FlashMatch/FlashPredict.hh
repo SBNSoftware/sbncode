@@ -42,6 +42,8 @@
 #include "TTree.h"
 #include "TF1.h"
 #include "TFile.h"
+#include "TKey.h"
+#include "TDirectory.h"
 #include "TH1.h"
 #include "TH2.h"
 #include "TProfile3D.h"
@@ -194,6 +196,9 @@ public:
     double rr, ratio, slope, pe, unpe, time;
     double h_x, h_xerr, h_xrr, h_xratio;
     double y_skew, z_skew, y_kurt, z_kurt;
+    double opxw = 0.; double opx = 0.;
+    double opyw = 0.; double opy = 0.;
+    double opzw = 0.; double opz = 0.;
     bool metric_ok;
     FlashMetrics(unsigned id_, unsigned activity_,
                  double x_, double yb_, double zb_,
@@ -387,6 +392,7 @@ private:
   const bool fOnlyCollectionWires;
   const bool fForceConcurrence;
   const bool fUse3DMetrics;
+  const bool fUseOpCoords;
   const bool fCorrectDriftDistance;
   // const bool fUseCalo; TODO: Use calorimetry
   const bool fUseARAPUCAS;
