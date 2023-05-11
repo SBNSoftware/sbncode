@@ -80,7 +80,8 @@ namespace sbn {
     art::ServiceHandle<art::TFileService> tfs;
 
     art::InputTag fPFPLabel, fClusterLabel, fTrackLabel, fShowerLabel, fCaloLabel,
-      fMCSLabel, fChi2Label, fRangeLabel, fClosestApproachLabel, fStoppingChi2Label;
+      fMCSLabel, fChi2Label, fRangeLabel, fClosestApproachLabel, fStoppingChi2Label,
+      fDazzleLabel, fRazzleLabel;
 
     const float fMinTrackLength, fMinShowerEnergy;
     const bool fMakeTree, fRunMVA;
@@ -125,15 +126,19 @@ namespace sbn {
     TMVA::Reader* reader;
     TTree* pfpTree;
 
-    int truePdg;
+    int truePDG;
     std::string trueType, trueEndProcess;
     float energyComp, energyPurity;
 
     bool recoPrimary, trackContained, showerContained, unambiguousSlice, goodTrack, goodShower;
     int recoPDG;
     float trackStartX, trackStartY, trackStartZ, trackEndX, trackEndY, trackEndZ,
-      showerStartX, showerStartY, showerStartZ, showerEndX, showerEndY, showerEndZ;
+      showerStartX, showerStartY, showerStartZ, showerEndX, showerEndY, showerEndZ,
+      showerEnergy;
 
+    float dazzleMuonScore, dazzlePionScore, dazzleProtonScore, dazzleOtherScore,
+      razzleElectronScore, razzlePhotonScore, razzleOtherScore;
+    int dazzlePDG, razzlePDG;
 
     void ClearTreeValues();
 
@@ -157,10 +162,14 @@ namespace sbn {
 
     void FillStoppingChi2Metrics(const art::Ptr<StoppingChi2Fit> &stoppingChi2);
 
+    void FillDazzleMetrics(const art::Ptr<sbn::MVAPID> &dazzle);
+
     void FillShowerMetrics(const art::Ptr<recob::Shower> &shower, const std::vector<art::Ptr<recob::Hit>> &hits);
 
     void FillShowerConversionGap(const art::Ptr<recob::PFParticle> &pfp, const std::map<size_t, art::Ptr<recob::PFParticle>> &pfpMap,
                                  const art::Ptr<recob::Shower> &shower, const art::FindOneP<recob::Vertex> &pfpsToVertices);
+
+    void FillRazzleMetrics(const art::Ptr<sbn::MVAPID> &dazzle);
 
     bool InFV(const TVector3 &pos);
 
@@ -183,6 +192,8 @@ namespace sbn {
     , fRangeLabel(p.get<std::string>("RangeLabel"), std::string("muon"))
     , fClosestApproachLabel(p.get<std::string>("ClosestApproachLabel"))
     , fStoppingChi2Label(p.get<std::string>("StoppingChi2Label"))
+    , fDazzleLabel(p.get<std::string>("DazzleLabel"))
+    , fRazzleLabel(p.get<std::string>("RazzleLabel"))
     , fMinTrackLength(p.get<float>("MinTrackLength"))
     , fMinShowerEnergy(p.get<float>("MinShowerEnergy"))
     , fMakeTree(p.get<bool>("MakeTree"))
@@ -256,7 +267,7 @@ namespace sbn {
             pfpTree->Branch("bestPDG", &bestPDG);
           }
 
-        pfpTree->Branch("truePdg", &truePdg);
+        pfpTree->Branch("truePDG", &truePDG);
         pfpTree->Branch("trueType", &trueType);
         pfpTree->Branch("trueEndProcess", &trueEndProcess);
         pfpTree->Branch("energyComp", &energyComp);
@@ -272,6 +283,11 @@ namespace sbn {
         pfpTree->Branch("trackEndX", &trackEndX);
         pfpTree->Branch("trackEndY", &trackEndY);
         pfpTree->Branch("trackEndZ", &trackEndZ);
+        pfpTree->Branch("dazzleMuonScore", &dazzleMuonScore);
+        pfpTree->Branch("dazzlePionScore", &dazzlePionScore);
+        pfpTree->Branch("dazzleProtonScore", &dazzleProtonScore);
+        pfpTree->Branch("dazzleOtherScore", &dazzleOtherScore);
+        pfpTree->Branch("dazzlePDG", &dazzlePDG);
         pfpTree->Branch("trackContained", &trackContained);
         pfpTree->Branch("goodTrack", &goodTrack);
 
@@ -281,6 +297,11 @@ namespace sbn {
         pfpTree->Branch("showerEndX", &showerEndX);
         pfpTree->Branch("showerEndY", &showerEndY);
         pfpTree->Branch("showerEndZ", &showerEndZ);
+        pfpTree->Branch("showerEnergy", &showerEnergy);
+        pfpTree->Branch("razzleElectronScore", &razzleElectronScore);
+        pfpTree->Branch("razzlePhotonScore", &razzlePhotonScore);
+        pfpTree->Branch("razzleOtherScore", &razzleOtherScore);
+        pfpTree->Branch("razzlePDG", &razzlePDG);
         pfpTree->Branch("showerContained", &showerContained);
         pfpTree->Branch("goodShower", &goodShower);
 
@@ -341,9 +362,11 @@ namespace sbn {
     art::FindOneP<RangeP> tracksToRangePs(trackHandle, e, fRangeLabel);
     art::FindOneP<ScatterClosestApproach> tracksToClosestApproaches(trackHandle, e, fClosestApproachLabel);
     art::FindOneP<StoppingChi2Fit> tracksToStoppingChi2s(trackHandle, e, fStoppingChi2Label);
+    art::FindOneP<sbn::MVAPID> tracksToDazzles(trackHandle, e, fDazzleLabel);
 
     art::FindOneP<recob::Shower> pfpsToShowers(pfpHandle, e, fShowerLabel);
     art::FindManyP<recob::Hit> showersToHits(showerHandle, e, fShowerLabel);
+    art::FindOneP<sbn::MVAPID> showersToRazzles(showerHandle, e, fRazzleLabel);
 
     auto mvaPIDVec = std::make_unique<std::vector<MVAPID>>();
     auto pfpAssns  = std::make_unique<art::Assns<recob::PFParticle, MVAPID>>();
@@ -400,6 +423,10 @@ namespace sbn {
             const art::Ptr<StoppingChi2Fit> stoppingChi2 = tracksToStoppingChi2s.at(track.key());
             if(stoppingChi2.isNonnull())
               this->FillStoppingChi2Metrics(stoppingChi2);
+
+            const art::Ptr<sbn::MVAPID> dazzle = tracksToDazzles.at(track.key());
+            if(dazzle.isNonnull())
+              this->FillDazzleMetrics(dazzle);
           }
 
         if(shower.isNonnull())
@@ -409,10 +436,16 @@ namespace sbn {
             if(shower->best_plane() < 0 || shower->Energy().at(shower->best_plane()) < fMinShowerEnergy)
               continue;
 
+            showerEnergy = shower->Energy().at(shower->best_plane());
+
             const std::vector<art::Ptr<recob::Hit>> showerHits = showersToHits.at(shower.key());
 
             this->FillShowerMetrics(shower, showerHits);
             this->FillShowerConversionGap(pfp, pfpMap, shower, pfpsToVertices);
+
+            const art::Ptr<sbn::MVAPID> razzle = showersToRazzles.at(track.key());
+            if(razzle.isNonnull())
+              this->FillRazzleMetrics(razzle);
           }
 
         if(fRunMVA)
@@ -448,7 +481,7 @@ namespace sbn {
     protonScore = -5.f; otherScore    = -5.f; bestScore   = -5.f;
     bestPDG     = -5;
 
-    truePdg = -5; trueType = ""; trueEndProcess = ""; energyComp = -5.f; energyPurity = -5.f;
+    truePDG = -5; trueType = ""; trueEndProcess = ""; energyComp = -5.f; energyPurity = -5.f;
 
     recoPrimary = false; unambiguousSlice = false; recoPDG = -5;
 
@@ -458,6 +491,7 @@ namespace sbn {
 
     showerStartX    = -999.f; showerStartY = -999.f; showerStartZ = -999.f;
     showerEndX      = -999.f; showerEndY   = -999.f; showerEndZ   = -999.f;
+    showerEnergy    = -999.f;
     showerContained = false;  goodShower   = false;
 
     pfp_numDaughters    = -5.f;  pfp_maxDaughterHits    = -50.f; pfp_trackScore       = -1.f;
@@ -510,8 +544,8 @@ namespace sbn {
     if(trueParticle == NULL)
       return;
 
-    truePdg        = trueParticle->PdgCode();
-    trueType       = this->PDGString(truePdg);
+    truePDG        = trueParticle->PdgCode();
+    trueType       = this->PDGString(truePDG);
     trueEndProcess = trueParticle->EndProcess();
   }
 
@@ -551,9 +585,9 @@ namespace sbn {
 
     if(pfp->IsPrimary())
       {
-	recoPrimary = true;
-	unambiguousSlice = pfp->PdgCode() == 13 || pfp->PdgCode() == 11;
-	return;
+        recoPrimary = true;
+        unambiguousSlice = pfp->PdgCode() == 13 || pfp->PdgCode() == 11;
+        return;
       }
 
     auto const& parentIter = pfpMap.find(pfp->Parent());
@@ -654,7 +688,7 @@ namespace sbn {
     const float rangeMom = rangeP->range_p;
     const float mcsMom   = mcs->fwdMomentum();
 
-    trk_momDiff = (rangeMom > 0 && mcsMom > 0) ? (mcsMom - rangeMom) / rangeMom : -5.f;
+    trk_momDiff = (rangeMom > 0 && mcsMom > 0) ? (mcsMom - rangeMom) / rangeMom : -10.f;
   }
 
   void Razzled::FillChi2PIDMetrics(const art::Ptr<anab::ParticleID> &pid)
@@ -676,10 +710,13 @@ namespace sbn {
               {
               case 13:
                 trk_chi2PIDMuon = AlgScore.fValue;
+                break;
               case 211:
                 chi2PIDPion = AlgScore.fValue;
+                break;
               case 2212:
                 trk_chi2PIDProton = AlgScore.fValue;
+                break;
               }
           }
       }
@@ -694,6 +731,18 @@ namespace sbn {
 
     trk_stoppingdEdxChi2Ratio = (pol0Chi2 > 0.f && expChi2 > 0.f) ? pol0Chi2 / expChi2 : -5.f;
     trk_chi2Pol0dEdxFit       = stoppingChi2->pol0Fit;
+  }
+
+  void Razzled::FillDazzleMetrics(const art::Ptr<sbn::MVAPID> &dazzle)
+  {
+    const std::map<int, float> map = dazzle->mvaScoreMap;
+
+    dazzleMuonScore   = map.at(13);
+    dazzlePionScore   = map.at(211);
+    dazzleProtonScore = map.at(2212);
+    dazzleOtherScore  = map.at(0);
+
+    dazzlePDG = dazzle->BestPDG();
   }
 
   void Razzled::FillShowerMetrics(const art::Ptr<recob::Shower> &shower, const std::vector<art::Ptr<recob::Hit>> &hits)
@@ -775,6 +824,17 @@ namespace sbn {
 
     shw_convGap = (shower->ShowerStart() - vertexTV3).Mag();
     shw_convGap = std::min(shw_convGap, 50.f);
+  }
+
+  void Razzled::FillRazzleMetrics(const art::Ptr<sbn::MVAPID> &razzle)
+  {
+    const std::map<int, float> map = razzle->mvaScoreMap;
+
+    razzleElectronScore = map.at(11);
+    razzlePhotonScore   = map.at(22);
+    razzleOtherScore    = map.at(0);
+
+    razzlePDG = razzle->BestPDG();
   }
 
   bool Razzled::InFV(const TVector3 &pos)
