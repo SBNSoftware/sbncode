@@ -1,8 +1,10 @@
-#include "cafmakerjob_sbnd.fcl"
+#include "cafmakerjob_sbnd_sce.fcl"
 
-physics.producers.pandoraRazzled: @local::razzled_sbnd
+physics.producers.pandoraRazzled: @local::razzled_sbnd_sce
 
-physics.runprod: [ pandoraTrackMCS, pandoraTrackRange, pandoraTrackClosestApproach, pandoraTrackStoppingChi2, pandoraRazzled ]
+physics.runprod: [ pandoraTrackMCS, pandoraTrackRange, pandoraTrackClosestApproach, pandoraTrackStoppingChi2,  pandoraTrackDazzle,
+		   pandoraShowerSelectionVars, pandoraShowerRazzle,
+		   pandoraRazzled ]
 
 physics.producers.pandoraRazzled.MakeTree: true
 physics.producers.pandoraRazzled.RunMVA:   false
