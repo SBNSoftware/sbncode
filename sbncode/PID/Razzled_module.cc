@@ -126,7 +126,7 @@ namespace sbn {
     TMVA::Reader* reader;
     TTree* pfpTree;
 
-    int truePDG;
+    int truePDG, trueMotherPDG;
     std::string trueType, trueEndProcess;
     float energyComp, energyPurity;
 
@@ -268,6 +268,7 @@ namespace sbn {
           }
 
         pfpTree->Branch("truePDG", &truePDG);
+        pfpTree->Branch("trueMotherPDG", &trueMotherPDG);
         pfpTree->Branch("trueType", &trueType);
         pfpTree->Branch("trueEndProcess", &trueEndProcess);
         pfpTree->Branch("energyComp", &energyComp);
@@ -443,7 +444,7 @@ namespace sbn {
             this->FillShowerMetrics(shower, showerHits);
             this->FillShowerConversionGap(pfp, pfpMap, shower, pfpsToVertices);
 
-            const art::Ptr<sbn::MVAPID> razzle = showersToRazzles.at(track.key());
+            const art::Ptr<sbn::MVAPID> razzle = showersToRazzles.at(shower.key());
             if(razzle.isNonnull())
               this->FillRazzleMetrics(razzle);
           }
@@ -481,7 +482,7 @@ namespace sbn {
     protonScore = -5.f; otherScore    = -5.f; bestScore   = -5.f;
     bestPDG     = -5;
 
-    truePDG = -5; trueType = ""; trueEndProcess = ""; energyComp = -5.f; energyPurity = -5.f;
+    truePDG = -5; trueMotherPDG = -5; trueType = ""; trueEndProcess = ""; energyComp = -5.f; energyPurity = -5.f;
 
     recoPrimary = false; unambiguousSlice = false; recoPDG = -5;
 
@@ -489,10 +490,17 @@ namespace sbn {
     trackEndX      = -999.f; trackEndY   = -999.f; trackEndZ   = -999.f;
     trackContained = false;  goodTrack   = false;
 
+    dazzleMuonScore  = -2.f; dazzlePionScore = -2.f; dazzleProtonScore = -2.f;
+    dazzleOtherScore = -2.f;
+    dazzlePDG        = -1;
+
     showerStartX    = -999.f; showerStartY = -999.f; showerStartZ = -999.f;
     showerEndX      = -999.f; showerEndY   = -999.f; showerEndZ   = -999.f;
     showerEnergy    = -999.f;
     showerContained = false;  goodShower   = false;
+
+    razzleElectronScore = -2.f; razzlePhotonScore = -2.f; razzleOtherScore = -2.f;
+    razzlePDG           = -1;
 
     pfp_numDaughters    = -5.f;  pfp_maxDaughterHits    = -50.f; pfp_trackScore       = -1.f;
     pfp_chargeEndFrac   = -1.f;  pfp_chargeFracSpread   = -1.f;  pfp_linearFitDiff    = -1.f;
@@ -547,6 +555,13 @@ namespace sbn {
     truePDG        = trueParticle->PdgCode();
     trueType       = this->PDGString(truePDG);
     trueEndProcess = trueParticle->EndProcess();
+
+    const simb::MCParticle* trueMother = particleInv->TrackIdToParticle_P(trueParticle->Mother());
+
+    if(trueMother == NULL)
+      trueMotherPDG = 0;
+    else
+      trueMotherPDG = trueMother->PdgCode();
   }
 
   void Razzled::FillPFPMetrics(const art::Ptr<recob::PFParticle> &pfp, const std::map<size_t, art::Ptr<recob::PFParticle>> &pfpMap,
