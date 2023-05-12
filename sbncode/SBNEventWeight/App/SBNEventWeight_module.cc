@@ -59,7 +59,11 @@ SBNEventWeight::SBNEventWeight(fhicl::ParameterSet const& p)
   fGenieModuleLabel(p.get<std::string>("generator_module_label", "generator")),
   fAllowMissingTruth(p.get<bool>("AllowMissingTruth"))
 {
-  const size_t n_func = fWeightManager.Configure(p, *this);
+  const size_t n_func = fWeightManager.Configure(p,
+                                                 [this](std::string const& type, std::string const& instance) -> auto&
+                                                 {
+                                                   return createEngine(0, type, instance);
+                                                 });
   if (n_func > 0) {
     produces<std::vector<sbn::evwgh::EventWeightMap> >();
     produces<art::Assns<simb::MCTruth, sbn::evwgh::EventWeightMap> >();
@@ -105,11 +109,10 @@ void SBNEventWeight::beginRun(art::Run& run) {
     p->push_back(it.second->fParameterSet);
   }
 
-  run.put(std::move(p));
+  run.put(std::move(p), art::fullRun());
 }
 
   }  // namespace evwgh
 }  // namespace sbn
 
 DEFINE_ART_MODULE(sbn::evwgh::SBNEventWeight)
-
