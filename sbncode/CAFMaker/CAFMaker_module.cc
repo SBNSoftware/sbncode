@@ -1230,11 +1230,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // get the number of events generated in the gen stage
   unsigned n_gen_evt = 0;
   for (const art::ProcessConfiguration &process: evt.processHistory()) {
-    fhicl::ParameterSet gen_config;
-    bool success = evt.getProcessParameterSet(process.processName(), gen_config);
-    if (success && gen_config.has_key("source") && gen_config.has_key("source.maxEvents") && gen_config.has_key("source.module_type") ) {
-      int max_events = gen_config.get<int>("source.maxEvents");
-      std::string module_type = gen_config.get<std::string>("source.module_type");
+    std::optional<fhicl::ParameterSet> gen_config = evt.getProcessParameterSet(process.processName());
+    if (gen_config && gen_config->has_key("source") && gen_config->has_key("source.maxEvents") && gen_config->has_key("source.module_type") ) {
+      int max_events = gen_config->get<int>("source.maxEvents");
+      std::string module_type = gen_config->get<std::string>("source.module_type");
       if (module_type == "EmptyEvent") {
         n_gen_evt += max_events;
       }

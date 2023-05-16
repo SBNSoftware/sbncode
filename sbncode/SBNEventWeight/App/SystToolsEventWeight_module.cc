@@ -217,11 +217,10 @@ void SystToolsEventWeight::beginRun(art::Run& run) {
     }
   }
 
-  run.put(std::move(p));
+  run.put(std::move(p), art::fullRun());
 
 }
 
 }  // namespace sbn::evwgh
 
 DEFINE_ART_MODULE(sbn::evwgh::SystToolsEventWeight)
-
