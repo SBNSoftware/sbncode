@@ -39,6 +39,7 @@
 #include "sbncode/GeometryTools/TPCGeoAlg.h"
 #include "sbnobj/Common/Reco/SimpleFlashMatchVars.h"
 #include "sbnobj/Common/Reco/StoppingChi2Fit.h"
+#include "sbnobj/Common/Reco/OpT0FinderResult.h"
 #include "sbncode/LArRecoProducer/TrackStoppingChi2Alg.h"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
 
@@ -106,7 +107,7 @@ namespace sbn {
 
     // Module labels
     std::string fMCParticleModuleLabel, fGeneratorModuleLabel, fCosmicModuleLabel, fPFParticleModuleLabel, fHitModuleLabel, fTrackModuleLabel, fSliceModuleLabel, 
-      fFlashMatchModuleLabel, fCRTTrackMatchModuleLabel, fCRTHitMatchModuleLabel, fCalorimetryModuleLabel;
+      fFlashMatchModuleLabel, fCRTTrackMatchModuleLabel, fCRTHitMatchModuleLabel, fCalorimetryModuleLabel, fOpT0ModuleLabel;
 
     // MVA location and type for loading
     std::string fMVAName, fMVAFileName, fCCNuMuMVAName, fCCNuMuMVAFileName, fCCNuEMVAName, fCCNuEMVAFileName, fNCMVAName, fNCMVAFileName;
@@ -157,6 +158,12 @@ namespace sbn {
     float pds_FMPE;                       // the total number of photoelectrons in the associated flash
     float pds_FMTime;                     // the time associated with the flash [us]
 
+    // OpT0Finder Variables
+    float pds_OpT0Time;                   // the time of the flash
+    float pds_OpT0Score;                  // the goodness-of-match score
+    float pds_OpT0MeasuredPE;             // the measured PE in the flash
+    float pds_OpT0HypothesisPE;           // the PE in the charge-based predicted flash
+
     // CRT Track and Hit Matching Variables
     float crt_TrackScore;                // a combination of the DCA and angle between the best matched TPC & CRT tracks
     float crt_HitScore;                  // the best distance from an extrapolated TPC track to a CRT hit [cm]
@@ -182,6 +189,7 @@ namespace sbn {
     fCRTTrackMatchModuleLabel     (p.get<std::string>("CRTTrackMatchModuleLabel")),
     fCRTHitMatchModuleLabel       (p.get<std::string>("CRTHitMatchModuleLabel")),
     fCalorimetryModuleLabel       (p.get<std::string>("CalorimetryModuleLabel")),
+    fOpT0ModuleLabel              (p.get<std::string>("OpT0ModuleLabel")),
     fMVAName                      (p.get<std::string>("MVAName")),
     fMVAFileName                  (p.get<std::string>("MVAFileName")),
     fCCNuMuMVAName                (p.get<std::string>("CCNuMuMVAName")),
@@ -225,6 +233,11 @@ namespace sbn {
           fSliceTree->Branch("pds_FMTotalScore",&pds_FMTotalScore);
           fSliceTree->Branch("pds_FMPE",&pds_FMPE);
           fSliceTree->Branch("pds_FMTime",&pds_FMTime);
+
+          fSliceTree->Branch("pds_OpT0Time",&pds_OpT0Time);
+          fSliceTree->Branch("pds_OpT0Score",&pds_OpT0Score);
+          fSliceTree->Branch("pds_OpT0MeasuredPE",&pds_OpT0MeasuredPE);
+          fSliceTree->Branch("pds_OpT0HypothesisPE",&pds_OpT0HypothesisPE);
 
           fSliceTree->Branch("crt_TrackScore",&crt_TrackScore);
           fSliceTree->Branch("crt_HitScore",&crt_HitScore);
@@ -281,6 +294,8 @@ namespace sbn {
     tpc_NuWeightedDirZ = -999999.; tpc_StoppingChi2CosmicRatio = -4.;
 
     pds_FMTotalScore = -999999.; pds_FMPE = -999999.; pds_FMTime = -500.;
+
+    pds_OpT0Time = -500.; pds_OpT0Score = -999999.; pds_OpT0MeasuredPE = -999999.; pds_OpT0HypothesisPE = -999999.;
 
     crt_TrackScore = -4.; crt_HitScore = -4.; crt_TrackTime = -3000; crt_HitTime = -3000;
 
@@ -381,6 +396,7 @@ namespace sbn {
 
     art::FindManyP<larpandoraobj::PFParticleMetadata> pfpMetadataAssoc(handlePFPs, e, fPFParticleModuleLabel);
     art::FindManyP<sbn::SimpleFlashMatch> pfpFMAssoc(handlePFPs, e, fFlashMatchModuleLabel);
+    art::FindManyP<sbn::OpT0Finder> sliceOpT0Assoc(handleSlices, e, fOpT0ModuleLabel);
 
     for(auto const &slice : slices)
       {
@@ -396,6 +412,7 @@ namespace sbn {
 
         const std::vector<art::Ptr<larpandoraobj::PFParticleMetadata> > pfpMetaVec = pfpMetadataAssoc.at(primary.key());
         const std::vector<art::Ptr<sbn::SimpleFlashMatch> > pfpFMVec = pfpFMAssoc.at(primary.key());
+        std::vector<art::Ptr<sbn::OpT0Finder> > sliceOpT0Vec = sliceOpT0Assoc.at(slice.key());
         const std::vector<art::Ptr<anab::T0> > sliceCRTTrackT0s = this->GetCRTTrackT0s(e, slice, handlePFPs, handleSlices);
         const std::vector<art::Ptr<anab::T0> > sliceCRTHitT0s = this->GetCRTHitT0s(e, slice, handlePFPs, handleSlices);
 
@@ -412,7 +429,19 @@ namespace sbn {
         pds_FMTotalScore = flashmatch->score.total;
         pds_FMPE = flashmatch->light.pe;
         pds_FMTime = std::max(flashmatch->time, -100.);
-      
+
+        if(sliceOpT0Vec.size() > 0)
+          {
+            std::sort(sliceOpT0Vec.begin(), sliceOpT0Vec.end(),
+                      [](auto const& a, auto const& b)
+                      { return a->score > b->score; });
+
+            pds_OpT0Time         = sliceOpT0Vec[0]->time;
+            pds_OpT0Score        = sliceOpT0Vec[0]->score;
+            pds_OpT0MeasuredPE   = sliceOpT0Vec[0]->measPE;
+            pds_OpT0HypothesisPE = sliceOpT0Vec[0]->hypoPE;
+          }
+
 	if(!fTrainingMode || fEvaluateResultInTrainingMode)
 	  {
 	    const float score       = fMVAReader.EvaluateMVA(fMVAName);

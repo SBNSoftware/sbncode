@@ -16,6 +16,7 @@ crumbs_sbnd:
   CRTTrackMatchModuleLabel:		"crttrackt0"
   CRTHitMatchModuleLabel:		"crthitt0"
   CalorimetryModuleLabel:		"pandoraCalo"
+  OpT0ModuleLabel:			"opt0finder"
   
   MVAName:                              "BDT"
   MVAFileName:                          "CRUMBS/CRUMBS_SBND.weights.xml"
