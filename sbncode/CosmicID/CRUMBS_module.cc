@@ -293,9 +293,9 @@ namespace sbn {
     tpc_NuEigenRatioInSphere = -999999.; tpc_NuNFinalStatePfos = -999999.; tpc_NuNHitsTotal = -999999.; tpc_NuNSpacePointsInSphere = -999999.; tpc_NuVertexY = -999999.;
     tpc_NuWeightedDirZ = -999999.; tpc_StoppingChi2CosmicRatio = -4.;
 
-    pds_FMTotalScore = -999999.; pds_FMPE = -999999.; pds_FMTime = -500.;
+    pds_FMTotalScore = -10.; pds_FMPE = -5000.; pds_FMTime = -500.;
 
-    pds_OpT0Time = -500.; pds_OpT0Score = -999999.; pds_OpT0MeasuredPE = -999999.; pds_OpT0HypothesisPE = -999999.;
+    pds_OpT0Time = -1.; pds_OpT0Score = -5000.; pds_OpT0MeasuredPE = -10000.; pds_OpT0HypothesisPE = -10000.;
 
     crt_TrackScore = -4.; crt_HitScore = -4.; crt_TrackTime = -3000; crt_HitTime = -3000;
 
