@@ -906,6 +906,7 @@ bool HNLMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
     }
   }
 
+  std::cout << flux.C3 << std::endl;
   if (!has_allowed_decay) {
     throw cet::exception("HNLMakeDecay Tool: BAD MASS. Configured mass (" + std::to_string(flux.mass) +
          ") is smaller than any configured decay.");
@@ -948,6 +949,7 @@ bool HNLMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
   double total_width = TotalWidth(flux);
   double total_lifetime_ns = Constants::Instance().hbar / total_width;
   double total_mean_dist = total_lifetime_ns * flux.mom.Gamma() * flux.mom.Beta() * Constants::Instance().c_cm_per_ns;
+  
 
   if (fVerbose){  
     std::cout <<"Trinu Branching Ratio: " << HNLMakeDecay::TriNuWidth(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;
