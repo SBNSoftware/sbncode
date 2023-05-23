@@ -46,7 +46,7 @@ decay_hnl: {
 decay_tau_hnl: {
   tool_type: HNLMakeDecay
   Decays: ["nu_mu_mu"]
-  WidthDecays: ["nu_nu_nu", "nu_mu_mu", "nu_e_e", "nu_pi0", "nu_eta", "nu_etap", "nu_rho0"]
+  WidthDecays: ["nu_nu_nu", "nu_mu_mu", "nu_e_e", "nu_pi0", "nu_eta", "nu_etap", "nu_rho0", "nu_mu_e"]
   Majorana: false
   DecayIsThreeBodyAnisotropic: false
   ReferenceUE4: 0.
