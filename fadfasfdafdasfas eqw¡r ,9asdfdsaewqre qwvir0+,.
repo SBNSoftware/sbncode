@@ -1,0 +1,9 @@
+a094dca HEAD@{0}: commit: Fix minor bug regarding calculation of HNL total decaywidth
+4c3c64f HEAD@{1}: pull origin: Merge made by the 'recursive' strategy.
+b2cd496 HEAD@{2}: commit: Add information about maximum calculation for MSqDM function
+7a61fa7 HEAD@{3}: commit: Add information about Maximum calculation of MD:x
+38f5504 HEAD@{4}: commit: Toggle off ThreBodyAnisotropicDecay by default
+4739e75 HEAD@{5}: commit: Fixed notation, improved code clarity and moved polarization calculation to Kaon2HNLFlux_tool.cc
+866dd9b HEAD@{6}: checkout: moving from fc83944300a61f3d3a7e3a2470a7e619380b0c2e to feature/Luispelegrina_HNL3BAn
+fc83944 HEAD@{7}: checkout: moving from develop to v09_69_01
+4effffd HEAD@{8}: clone: from github.com:SBNSoftware/sbncode.git
