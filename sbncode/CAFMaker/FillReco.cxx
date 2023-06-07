@@ -134,17 +134,16 @@ namespace caf
     //srmatch.flashClassification = match.flashClassification;
     std::cout << "match type : " << std::to_string(static_cast<int>(match.flashClassification)) << "\n";
     std::cout << "matchedCRThits.size : "<< match.matchedCRTHits.size() << "\n";
-    //std::cout << "srmatch.matchedCRTHits.size = " << srmatch.matchedCRTHits.size() << "\n";
     for(const auto& matchedCRTHit : match.matchedCRTHits){
       std::cout << "CRTPMTTimeDiff = "<< matchedCRTHit.PMTTimeDiff << "\n";
-      /*caf::MatchedCRT matchedCRT;
+      caf::SRMatchedCRT matchedCRT;
       matchedCRT.PMTTimeDiff = matchedCRTHit.PMTTimeDiff; 
       matchedCRT.time = matchedCRTHit.time;
       matchedCRT.sys = matchedCRTHit.sys;
       matchedCRT.region = matchedCRTHit.region;
-      srmatch.matchedCRTHits.push_back(matchedCRT);*/
+      srmatch.matchedCRTHits.push_back(matchedCRT);
     }
-
+    std::cout << "srmatch.matchedCRTHits.size = " << srmatch.matchedCRTHits.size() << "\n";
   }
 
   void FillOpFlash(const recob::OpFlash &flash,
