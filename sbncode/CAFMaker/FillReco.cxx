@@ -112,6 +112,41 @@ namespace caf
     srtrack.hitb.plane = track.plane2;
   }
 
+  void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,
+		       caf::SRCRTPMTMatch &srmatch,
+		       bool allowEmpty){
+    // allowEmpty does not (yet) matter here                                                                                                                                                 
+    (void) allowEmpty;
+    //srmatch.setDefault();
+    std::cout << "filling CRTPMT Match : flash time = " << match.flashTime << "\n";
+    srmatch.flashID = match.flashID;
+    srmatch.flashTime_us = match.flashTime;
+    srmatch.flashGateTime = match.flashGateTime;
+    srmatch.firstOpHitPeakTime = match.firstOpHitPeakTime;
+    srmatch.firstOpHitStartTime = match.firstOpHitStartTime;
+    srmatch.flashInGate = match.flashInGate;
+    srmatch.flashInBeam = match.flashInBeam;
+    srmatch.flashPE = match.flashPE;
+    srmatch.flashPosition = SRVector3D (match.flashPosition.X(), match.flashPosition.Y(), match.flashPosition.Z());
+    srmatch.flashYWidth = match.flashYWidth;
+    srmatch.flashZWidth = match.flashZWidth;
+    srmatch.flashClassification = static_cast<int>(match.flashClassification);
+    //srmatch.flashClassification = match.flashClassification;
+    std::cout << "match type : " << std::to_string(static_cast<int>(match.flashClassification)) << "\n";
+    std::cout << "matchedCRThits.size : "<< match.matchedCRTHits.size() << "\n";
+    //std::cout << "srmatch.matchedCRTHits.size = " << srmatch.matchedCRTHits.size() << "\n";
+    for(const auto& matchedCRTHit : match.matchedCRTHits){
+      std::cout << "CRTPMTTimeDiff = "<< matchedCRTHit.PMTTimeDiff << "\n";
+      /*caf::MatchedCRT matchedCRT;
+      matchedCRT.PMTTimeDiff = matchedCRTHit.PMTTimeDiff; 
+      matchedCRT.time = matchedCRTHit.time;
+      matchedCRT.sys = matchedCRTHit.sys;
+      matchedCRT.region = matchedCRTHit.region;
+      srmatch.matchedCRTHits.push_back(matchedCRT);*/
+    }
+
+  }
+
   void FillOpFlash(const recob::OpFlash &flash,
                   std::vector<recob::OpHit const*> const& hits,
                   int cryo, 
