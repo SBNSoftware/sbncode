@@ -97,6 +97,18 @@ double hnl_momentum(double kaon_mass, double lep_mass, double hnl_mass) {
     -2 * lep_mass * lep_mass * hnl_mass * hnl_mass) / ( 2 * kaon_mass );
 }
 
+/* Polarization of a HNL emerging from a two body meson decay (M-> l N)
+   m_l is the mass of the lepton and m_M the mass of the parent meson
+   See arXiv:2109.10358 for more details */
+double PolHNL(double m_HNL, double m_l, double m_M)
+{
+  double yl = m_l / m_M;
+  double yHNL =  m_HNL / m_M;
+  double numterm = (yl*yl - yHNL * yHNL) * sqrt(pow(yHNL,4) + (1.0 - yl * yl)*(1.0 - yl * yl) - 2.0 * yHNL * yHNL * (1.0 + yl * yl));
+  double denterm = pow(yl,4) + pow(yHNL,4) - 2.0 * yl * yl * yHNL * yHNL - yl * yl - yHNL * yHNL;
+  return numterm / denterm;
+}
+
 double SMKaonBR(int kaon_pdg) {
   // The Kaons in Dk2nu file only include those that decay to neutrinos.
   //
@@ -240,11 +252,22 @@ bool Kaon2HNLFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux &h
   hnl.mass = fM;
 
   hnl.meson_pdg = kaon.meson_pdg;
-  hnl.secondary_pdg = (is_muon ? 11 : 13) * (kaon.meson_pdg > 0 ? 1 : -1);
+  hnl.secondary_pdg = (is_muon ? 13 : 11) * (kaon.meson_pdg > 0 ? 1 : -1);
   hnl.generator = 1; // kHNL
 
   // equivalent neutrino energy
   hnl.equiv_enu = EnuLab(flux.fnecm, hnl.mmom, hnl.pos);
+
+
+  // Get the HNL Polarization 
+  double meson_mass = Constants::Instance().kplus_mass;
+  if(abs(hnl.meson_pdg) == 321) {
+    meson_mass = Constants::Instance().kplus_mass;
+  }else if(abs(hnl.meson_pdg) == 211) {
+    meson_mass = Constants::Instance().piplus_mass;
+  }
+  
+  hnl.polarization = PolHNL(fM , lep_mass, meson_mass);
 
   return true;
 }
