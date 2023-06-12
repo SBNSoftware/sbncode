@@ -149,6 +149,8 @@ void SystToolsEventWeight::produce(art::Event& e) {
           systtools::SystParamHeader const &sph = fParamHeaderHelper.GetHeader( r.pid );
           std::string prettyName = sph.prettyName;
 
+          if(sph.isResponselessParam) continue;
+
           if(fDebugMode){
             std::cout << "[SystToolsEventWeight::produce]       pid of this resp = " << r.pid << "\n"
                       << "[SystToolsEventWeight::produce]       prettyName of this resp = " << prettyName << "\n"
@@ -267,7 +269,6 @@ void SystToolsEventWeight::beginRun(art::Run& run) {
 
         std::vector<float> widths { sph.paramVariations.begin(), sph.paramVariations.end() };
 
-        sbn::evwgh::EventWeightParameterSet fParameterSet;
         fParameterSet.AddParameter(sph.prettyName, std::move(widths));
 
       }
