@@ -35,6 +35,7 @@
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "sbnobj/Common/CRT/CRTTrack.hh"
+#include "sbnobj/Common/CRT/CRTPMTMatching.hh"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 
@@ -192,6 +193,9 @@ namespace caf
                   int cryo,
                   caf::SROpFlash &srflash,
                   bool allowEmpty = false);
+  void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,
+		  caf::SRCRTPMTMatch &srmatch,
+		  bool allowEmpty = false);
 
   template<class T, class U>
   void CopyPropertyIfSet( const std::map<std::string, T>& props, const std::string& search, U& value );
