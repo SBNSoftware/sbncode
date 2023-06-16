@@ -250,6 +250,12 @@ namespace caf
       Comment("Label of sbn CRT tracks."),
       "crttrack" // same for icarus and sbnd
     };
+    
+    Atom<string> CRTPMTLabel {
+      Name("CRTPMTLabel"),
+      Comment("Label for the CRTPMT Matched variables from the crtpmt data product"),
+      "crtpmt" // this variable exists in icaruscode, pretty sure it does not yet exist in sbnd
+    };
 
     Atom<string> OpFlashLabel {
       Name("OpFlashLabel"),
