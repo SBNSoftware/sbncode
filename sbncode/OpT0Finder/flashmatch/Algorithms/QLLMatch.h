@@ -129,6 +129,9 @@ namespace flashmatch {
     bool _use_minuit;  ///< Minimize or not
     
     double _saturated_thresh; // threshold for hypothesis PE to ignore due to saturated measured PE 
+    double _nonlinear_thresh; // parameters to correct for nonlinear **PMT** effects
+    double _nonlinear_slope;  // parameters to correct for nonlinear **PMT** effects
+    double _nonlinear_offset; // parameters to correct for nonlinear **PMT** effects
 
     std::vector<double>  _penalty_threshold_v;
     std::vector<double>  _penalty_value_v;

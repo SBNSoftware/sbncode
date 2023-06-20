@@ -26,6 +26,9 @@ namespace flashmatch {
     _chi_error = pset.get<double>("ChiErrorWidth");
     _use_minuit = pset.get<bool>("UseMinuit");
     _saturated_thresh = pset.get<double>("SaturatedThreshold");
+    _nonlinear_thresh = pset.get<double>("NonLinearThreshold");
+    _nonlinear_slope  = pset.get<double>("NonLinearSlope");
+    _nonlinear_offset = pset.get<double>("NonLinearOffset");
     _pe_observation_threshold = pset.get<double>("PEObservationThreshold", 1.e-6);
     _pe_hypothesis_threshold  = pset.get<double>("PEHypothesisThreshold", 1.e-6);
     _migrad_tolerance         = pset.get<double>("MIGRADTolerance", 0.1);
@@ -143,19 +146,25 @@ namespace flashmatch {
     // initialize the measurement flash 
     auto    one_measurement = flash;
 
-    // ** temp saturated opdets fix ** 
+    // ** temp saturated opdets+nonlinear fix ** 
     // - when the measured flash PE is equal to 0 and the hypothesis is large, assume that the 
     //   measured flash PE was set to 0 due to saturation
     if (_saturated_thresh > 0){
       for (size_t pmt_index = 0; pmt_index < DetectorSpecs::GetME().NOpDets(); ++pmt_index ) { 
+        // if above the saturated threshold 
         if (one_measurement.pe_v[pmt_index] == 0 && one_hypothesis.pe_v[pmt_index] >= _saturated_thresh){
           if (std::find(_channel_mask.begin(), _channel_mask.end(), pmt_index) != _channel_mask.end())
             std::cout << "Guessing " << pmt_index << " is saturated, setting hypothesis to 0..." << std::endl;
           one_hypothesis.pe_v[pmt_index] = 0;
         }
+        // if above the nonlinear threshold, correct for the nonlinear effect 
+        if (one_hypothesis.pe_v[pmt_index] > _nonlinear_thresh){
+          double corr_pe = one_hypothesis.pe_v[pmt_index]*_nonlinear_slope + _nonlinear_offset; 
+          one_hypothesis.pe_v[pmt_index] = corr_pe;
+        }
       }
     }
-    // ** end saturated fix ** 
+    // ** end saturated + nonlinear fix ** 
 
     res.hypothesis = one_hypothesis.pe_v;
     

@@ -28,6 +28,9 @@ QLLMatch: {
   ChiErrorWidth: 0 # applies an additional uncertainty in the denominator of the chisq calculation proportional to H
   UseMinuit: false
   SaturatedThreshold: -1. # -1. if not correcting for saturated PMTs, otherwise a value > 0 will be the threshold value  
+  NonLinearThreshold: 5.0e3 # tuned for SBND, corrects for nonlinearity at high light, **only used if SaturatedThreshold>0** 
+  NonLinearSlope: 0.75  # tuned for SBND, corrects for nonlinearity at high light, **only used if SaturatedThreshold>0** 
+  NonLinearOffset: 0.75e3  # tuned for SBND, corrects for nonlinearity at high light, **only used if SaturatedThreshold>0** 
   PEPenaltyThreshold: []
   PEPenaltyValue: []
   XPenaltyThreshold: 30
