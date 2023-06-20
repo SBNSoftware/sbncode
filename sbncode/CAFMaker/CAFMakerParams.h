@@ -137,6 +137,11 @@ namespace caf
       "fmatch" // same for icarus and sbnd
     };
 
+    fhicl::OptionalSequence<std::string> FlashMatchSuffixes {
+      Name("FlashMatchSuffixes"),
+      Comment("List of suffixes to add to SimpleFlash")
+    };
+
     Atom<string> CRUMBSLabel {
       Name("CRUMBSLabel"),
       Comment("Base label of CRUMBS ID producer."),
