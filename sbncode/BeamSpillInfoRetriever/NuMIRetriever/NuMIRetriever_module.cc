@@ -19,7 +19,7 @@
 #include "larcorealg/Geometry/Exceptions.h"
 
 #include "artdaq-core/Data/Fragment.hh"
-#include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerV2Fragment.hh"
+#include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerV3Fragment.hh"
 
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
@@ -104,9 +104,9 @@ void sbn::NuMIRetriever::produce(art::Event &e)
   // TODO: long-term goal -- can we fix this?
   if (e.event() == 1) return;
 
-  int gate_type = 0;
+  //  int gate_type = 0;
   art::Handle< std::vector<artdaq::Fragment> > raw_data_ptr;
-  e.getByLabel(raw_data_label_, "ICARUSTriggerV2", raw_data_ptr);
+  e.getByLabel(raw_data_label_, "ICARUSTriggerV3", raw_data_ptr);
   auto const & raw_data = (*raw_data_ptr);
 
   double t_current_event  = 0;
@@ -116,145 +116,143 @@ void sbn::NuMIRetriever::produce(art::Event &e)
   for(auto raw_datum : raw_data){
 
     uint64_t artdaq_ts = raw_datum.timestamp();
-    icarus::ICARUSTriggerV2Fragment frag(raw_datum);
+    icarus::ICARUSTriggerV3Fragment frag(raw_datum);
     std::string data = frag.GetDataString();
     char *buffer = const_cast<char*>(data.c_str());
-    icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerV2String(buffer);
-    gate_type = datastream_info.gate_type;
-    number_of_gates_since_previous_event = frag.getDeltaGatesNuMI();
+    icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerV3String(buffer);
+    //gate_type = datastream_info.gate_type;
+    number_of_gates_since_previous_event = frag.getDeltaGatesNuMIMaj();
 
     t_current_event = static_cast<double>(artdaq_ts)/(1000000000.); //check this offset... 
-    if(gate_type == 2)
-      t_previous_event = (static_cast<double>(frag.getLastTimestampNuMI()))/(1000000000.);
-    else
-      t_previous_event = (static_cast<double>(frag.getLastTimestampOther()))/(1000000000.);
+    
+    t_previous_event = (static_cast<double>(frag.getLastTimestampNuMIMaj()))/(1000000000.);
+    
 
   }
 
   std::cout << std::setprecision(19) << "Previous : " << t_previous_event << ", Current : " << t_current_event << std::endl;
   //We only want to process NuMI gates, i.e. type 2
-  if(gate_type == 2)
-  {
-    // Keep track of the number of beam gates the DAQ thinks
-    //   are in this job   
-    TotalBeamSpills += number_of_gates_since_previous_event;
-    
-    // Fill up the BFP cache with times starting at the previous event
-    //
-    // If the difference in time between events is bigger than the fcl-provided TimeWindow, then 
-    // we won't be able to fill up the cache to be big enough. In that case, resize the window as 
-    // necessary. 
-    double this_window_size = t_current_event - t_previous_event + 2*fTimePad;
-    if (this_window_size > fTimeWindow) {
-      std::cout << "Resizing time window from: " << fTimeWindow << " to: " << this_window_size << std::endl;
-      fTimeWindow = this_window_size;
-      MakeBFP();
-    }
-
-    // DO NOT CHANGE THESE LINES OR THEIR ORDER
-    // If you really think you need to, please reach out to grayputnam <at> uchicago.edu
-    bfp->FillCache(t_current_event + fTimePad);
-    bfp->FillCache(t_previous_event - fTimePad);
-    std::vector<double> times_temps = bfp->GetTimeList(fDeviceUsedForTiming);
-
-    int spill_count = 0;
-    // Iterating through each of the beamline times
-    for (size_t i = 0; i < times_temps.size(); i++) {
-
-      // Only continue if these times are matched to our DAQ time
-      // plus or minus some time padding, currently using 3.3 ms
-      // which is half the Booster Rep Rate
-      if(e.event() != 1){//We already addressed the "first event" above 
-        if(times_temps[i] > t_current_event){continue;}
-        if(times_temps[i] <= t_previous_event){continue;}
-      }
-
-      //count found spills
-      spill_count++;
-
-      //initialize all devices found in NuMISpillInfo.h in sbnobj
-      double HRNDIR = -1.;
-      double NSLINA = -1.;
-      double NSLINB = -1.;
-      double NSLINC = -1.;
-      double NSLIND = -1.;
-      double TOR101 = -1.;
-      double TORTGT = -1.;
-      double TR101D = -1.;
-      double TRTGTD = -1.;
-      std::vector< double > HP121;
-      std::vector< double > VP121;
-      std::vector< double > HPTGT;
-      std::vector< double > VPTGT;
-      std::vector< double > HITGT;
-      std::vector< double > VITGT;
-      std::vector< double > MTGTDS;
-      double TRTGTD_time = -1.;
-      std::cout << "Grabbing IFBeam info!" << std::endl;
-      try{bfp->GetNamedData(times_temps[i], "E:TRTGTD@",&TRTGTD,&TRTGTD_time);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-      try{bfp->GetNamedData(times_temps[i], "E:TR101D",&TR101D);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-      try{bfp->GetNamedData(times_temps[i], "E:HRNDIR",&HRNDIR);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-      try{bfp->GetNamedData(times_temps[i], "E:NSLINA",&NSLINA);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-      try{bfp->GetNamedData(times_temps[i], "E:NSLINB",&NSLINB);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-      try{bfp->GetNamedData(times_temps[i], "E:NSLINC",&NSLINC);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-      try{bfp->GetNamedData(times_temps[i], "E:NSLIND",&NSLIND);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-      try{bfp->GetNamedData(times_temps[i], "E:TOR101",&TOR101);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-      try{bfp->GetNamedData(times_temps[i], "E:TORTGT",&TORTGT);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-      // BPM Positions and Intensities - they each have 7 elements
-      // First is an average value of a few batches (often 2,3,4)
-      // used for auto-tuning, so we should disregard it
-      
-      try{HP121 = bfp->GetNamedVector(times_temps[i], "E:HP121[]");}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-      try{VP121 = bfp->GetNamedVector(times_temps[i], "E:VP121[]");}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " <<"got exception: " << we.what() << "\n";}
-      try{HPTGT = bfp->GetNamedVector(times_temps[i], "E:HPTGT[]");}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " <<"got exception: " << we.what() << "\n";}
-      try{VPTGT = bfp->GetNamedVector(times_temps[i], "E:VPTGT[]");}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " <<"got exception: " << we.what() << "\n";}
-      try{HITGT = bfp->GetNamedVector(times_temps[i], "E:HITGT[]");}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " <<"got exception: " << we.what() << "\n";}
-      try{VITGT = bfp->GetNamedVector(times_temps[i], "E:VITGT[]");}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " <<"got exception: " << we.what() << "\n";}
-      try{MTGTDS = bfp->GetNamedVector(times_temps[i], "E:MTGTDS[]");}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " <<"got exception: " << we.what() << "\n";}
-      
-      std::cout << "Finished getting IFBeam info" << std::endl;
-      std::cout << "BFP Time: " << times_temps[i] << " TOROID Time: " << TRTGTD_time << " TOROID COUNT: " << TRTGTD << std::endl;
-      unsigned long int time_closest_int = (int) TRTGTD_time;
-      double time_closest_ns = (TRTGTD_time - time_closest_int)*1000000000;
-
-      sbn::NuMISpillInfo NuMIbeamInfo;
-      NuMIbeamInfo.TORTGT = TORTGT*1e12; //include factor of 1e12 protons in POT calculation
-      NuMIbeamInfo.TOR101 = TOR101*1e12; //include factor of 1e12 protons in POT calculation
-      NuMIbeamInfo.TRTGTD = TRTGTD*1e12; //include factor of 1e12 protons in POT calculation 
-      NuMIbeamInfo.TR101D = TR101D*1e12; //include factor of 1e12 protons in POT calculation 
-      NuMIbeamInfo.HRNDIR = HRNDIR;
-      NuMIbeamInfo.NSLINA = NSLINA;
-      NuMIbeamInfo.NSLINB = NSLINB;
-      NuMIbeamInfo.NSLINC = NSLINC;
-      NuMIbeamInfo.NSLIND = NSLIND;
-      
-      NuMIbeamInfo.HP121 = HP121;
-      NuMIbeamInfo.VP121 = VP121;
-      NuMIbeamInfo.HPTGT = HPTGT;
-      NuMIbeamInfo.VPTGT = VPTGT;
-      NuMIbeamInfo.HITGT = HITGT;
-      NuMIbeamInfo.VITGT = VITGT;
-      NuMIbeamInfo.MTGTDS = MTGTDS;
-
-      NuMIbeamInfo.time = times_temps[i];
-      NuMIbeamInfo.event = e.event();
-      NuMIbeamInfo.spill_time_s = time_closest_int;
-      NuMIbeamInfo.spill_time_ns = time_closest_ns;
-      // Save the Number of DAQ Gates in the first saved spill
-      if (spill_count == 1) {
-        NuMIbeamInfo.daq_gates = number_of_gates_since_previous_event;
-      }
-      else {
-        NuMIbeamInfo.daq_gates = 0;
-      }
-      
-      fOutbeamInfos.push_back(NuMIbeamInfo);
-    }
-    if(spill_count > number_of_gates_since_previous_event)
-      std::cout << "Event Spills : " << spill_count << ", DAQ Spills : " << number_of_gates_since_previous_event << " \t \t ::: WRONG!"<< std::endl;
-    else
-      std::cout << "Event Spills : " << spill_count << ", DAQ Spills : " << number_of_gates_since_previous_event << std::endl;
+ 
+  // Keep track of the number of beam gates the DAQ thinks
+  //   are in this job   
+  TotalBeamSpills += number_of_gates_since_previous_event;
+  
+  // Fill up the BFP cache with times starting at the previous event
+  //
+  // If the difference in time between events is bigger than the fcl-provided TimeWindow, then 
+  // we won't be able to fill up the cache to be big enough. In that case, resize the window as 
+  // necessary. 
+  double this_window_size = t_current_event - t_previous_event + 2*fTimePad;
+  if (this_window_size > fTimeWindow) {
+    std::cout << "Resizing time window from: " << fTimeWindow << " to: " << this_window_size << std::endl;
+    fTimeWindow = this_window_size;
+    MakeBFP();
   }
+  
+  // DO NOT CHANGE THESE LINES OR THEIR ORDER
+  // If you really think you need to, please reach out to grayputnam <at> uchicago.edu
+  bfp->FillCache(t_current_event + fTimePad);
+  bfp->FillCache(t_previous_event - fTimePad);
+  std::vector<double> times_temps = bfp->GetTimeList(fDeviceUsedForTiming);
+  
+  int spill_count = 0;
+  // Iterating through each of the beamline times
+  for (size_t i = 0; i < times_temps.size(); i++) {
+    
+    // Only continue if these times are matched to our DAQ time
+    // plus or minus some time padding, currently using 3.3 ms
+    // which is half the Booster Rep Rate
+    if(e.event() != 1){//We already addressed the "first event" above 
+      if(times_temps[i] > t_current_event){continue;}
+      if(times_temps[i] <= t_previous_event){continue;}
+    }
+    
+    //count found spills
+    spill_count++;
+    
+    //initialize all devices found in NuMISpillInfo.h in sbnobj
+    double HRNDIR = -1.;
+    double NSLINA = -1.;
+    double NSLINB = -1.;
+    double NSLINC = -1.;
+    double NSLIND = -1.;
+    double TOR101 = -1.;
+    double TORTGT = -1.;
+    double TR101D = -1.;
+    double TRTGTD = -1.;
+    std::vector< double > HP121;
+    std::vector< double > VP121;
+    std::vector< double > HPTGT;
+    std::vector< double > VPTGT;
+    std::vector< double > HITGT;
+    std::vector< double > VITGT;
+    std::vector< double > MTGTDS;
+    double TRTGTD_time = -1.;
+    std::cout << "Grabbing IFBeam info!" << std::endl;
+    try{bfp->GetNamedData(times_temps[i], "E:TRTGTD@",&TRTGTD,&TRTGTD_time);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+    try{bfp->GetNamedData(times_temps[i], "E:TR101D",&TR101D);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+    try{bfp->GetNamedData(times_temps[i], "E:HRNDIR",&HRNDIR);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+    try{bfp->GetNamedData(times_temps[i], "E:NSLINA",&NSLINA);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+    try{bfp->GetNamedData(times_temps[i], "E:NSLINB",&NSLINB);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+    try{bfp->GetNamedData(times_temps[i], "E:NSLINC",&NSLINC);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+    try{bfp->GetNamedData(times_temps[i], "E:NSLIND",&NSLIND);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+    try{bfp->GetNamedData(times_temps[i], "E:TOR101",&TOR101);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+    try{bfp->GetNamedData(times_temps[i], "E:TORTGT",&TORTGT);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+    // BPM Positions and Intensities - they each have 7 elements
+    // First is an average value of a few batches (often 2,3,4)
+    // used for auto-tuning, so we should disregard it
+    
+    try{HP121 = bfp->GetNamedVector(times_temps[i], "E:HP121[]");}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+    try{VP121 = bfp->GetNamedVector(times_temps[i], "E:VP121[]");}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " <<"got exception: " << we.what() << "\n";}
+    try{HPTGT = bfp->GetNamedVector(times_temps[i], "E:HPTGT[]");}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " <<"got exception: " << we.what() << "\n";}
+    try{VPTGT = bfp->GetNamedVector(times_temps[i], "E:VPTGT[]");}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " <<"got exception: " << we.what() << "\n";}
+    try{HITGT = bfp->GetNamedVector(times_temps[i], "E:HITGT[]");}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " <<"got exception: " << we.what() << "\n";}
+    try{VITGT = bfp->GetNamedVector(times_temps[i], "E:VITGT[]");}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " <<"got exception: " << we.what() << "\n";}
+    try{MTGTDS = bfp->GetNamedVector(times_temps[i], "E:MTGTDS[]");}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " <<"got exception: " << we.what() << "\n";}
+    
+    std::cout << "Finished getting IFBeam info" << std::endl;
+    std::cout << "BFP Time: " << times_temps[i] << " TOROID Time: " << TRTGTD_time << " TOROID COUNT: " << TRTGTD << std::endl;
+    unsigned long int time_closest_int = (int) TRTGTD_time;
+    double time_closest_ns = (TRTGTD_time - time_closest_int)*1000000000;
+    
+    sbn::NuMISpillInfo NuMIbeamInfo;
+    NuMIbeamInfo.TORTGT = TORTGT*1e12; //include factor of 1e12 protons in POT calculation
+    NuMIbeamInfo.TOR101 = TOR101*1e12; //include factor of 1e12 protons in POT calculation
+    NuMIbeamInfo.TRTGTD = TRTGTD*1e12; //include factor of 1e12 protons in POT calculation 
+    NuMIbeamInfo.TR101D = TR101D*1e12; //include factor of 1e12 protons in POT calculation 
+    NuMIbeamInfo.HRNDIR = HRNDIR;
+    NuMIbeamInfo.NSLINA = NSLINA;
+    NuMIbeamInfo.NSLINB = NSLINB;
+    NuMIbeamInfo.NSLINC = NSLINC;
+    NuMIbeamInfo.NSLIND = NSLIND;
+    
+    NuMIbeamInfo.HP121 = HP121;
+    NuMIbeamInfo.VP121 = VP121;
+    NuMIbeamInfo.HPTGT = HPTGT;
+    NuMIbeamInfo.VPTGT = VPTGT;
+    NuMIbeamInfo.HITGT = HITGT;
+    NuMIbeamInfo.VITGT = VITGT;
+    NuMIbeamInfo.MTGTDS = MTGTDS;
+    
+    NuMIbeamInfo.time = times_temps[i];
+    NuMIbeamInfo.event = e.event();
+    NuMIbeamInfo.spill_time_s = time_closest_int;
+    NuMIbeamInfo.spill_time_ns = time_closest_ns;
+      // Save the Number of DAQ Gates in the first saved spill
+    if (spill_count == 1) {
+      NuMIbeamInfo.daq_gates = number_of_gates_since_previous_event;
+      }
+    else {
+      NuMIbeamInfo.daq_gates = 0;
+    }
+    
+    fOutbeamInfos.push_back(NuMIbeamInfo);
+    }
+  if(spill_count > number_of_gates_since_previous_event)
+    std::cout << "Event Spills : " << spill_count << ", DAQ Spills : " << number_of_gates_since_previous_event << " \t \t ::: WRONG!"<< std::endl;
+  else
+    std::cout << "Event Spills : " << spill_count << ", DAQ Spills : " << number_of_gates_since_previous_event << std::endl;
+  
 }
 
 void sbn::NuMIRetriever::beginSubRun(art::SubRun& sr)
