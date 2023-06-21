@@ -176,9 +176,11 @@ class CAFMaker : public art::EDProducer {
   std::string fFlatCafFilename;
   std::string fFlatCafBlindFilename;
   std::string fFlatCafPrescaleFilename;
+  
+  std::string fSourceFile;
 
   bool fFirstInSubRun;
-  bool fFirstInFile;
+  unsigned int fIndexInFile = SRHeader::NoSourceIndex;
   bool fFirstBlindInFile;
   bool fFirstPrescaleInFile;
   int fFileNumber;
@@ -233,6 +235,8 @@ class CAFMaker : public art::EDProducer {
 
   std::string DeriveFilename(const std::string& inname,
                              const std::string& ext) const;
+
+  static std::string Basename(const std::string& path);
 
   void AddEnvToFile(TFile* f);
   void AddMetadataToFile(TFile* f,
@@ -528,6 +532,15 @@ CAFMaker::~CAFMaker()
 }
 
 //......................................................................
+std::string CAFMaker::Basename(const std::string& path)
+{
+  // C++17: use filesystem library (Clang 7 still not compliant)
+  constexpr char sep = '/';
+  std::size_t const iSep = path.rfind(sep);
+  return (iSep == std::string::npos)? path: path.substr(iSep + 1);
+}
+
+//......................................................................
 std::string CAFMaker::DeriveFilename(const std::string& inname,
                                      const std::string& ext) const
 {
@@ -544,6 +557,9 @@ std::string CAFMaker::DeriveFilename(const std::string& inname,
 
 //......................................................................
 void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
+  
+  std::string const inputBasename = Basename(fb.fileName()); // includes suffix
+  
   if ((fParams.CreateCAF() && !fFile) ||
       (fParams.CreateFlatCAF() && !fFlatFile) ||
       (fParams.CreateBlindedCAF() && (!fFileb || !fFilep))) {
@@ -593,9 +609,10 @@ void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
   }
 
   fFileNumber ++;
-  fFirstInFile = true;
+  fIndexInFile = 0;
   fFirstBlindInFile = true;
   fFirstPrescaleInFile = true;
+  fSourceFile = inputBasename;
 
 }
 
@@ -912,7 +929,7 @@ void CAFMaker::InitializeOutfiles()
   fTotalEvents = 0;
   fBlindEvents = 0;
   fPrescaleEvents = 0;
-  fFirstInFile = false;
+  fIndexInFile = SRHeader::NoSourceIndex;
   fFirstInSubRun = false;
   // fCycle = -5;
   // fBatch = -5;
@@ -1037,6 +1054,8 @@ bool CAFMaker::GetPsetParameter(const fhicl::ParameterSet& pset,
 //......................................................................
 void CAFMaker::produce(art::Event& evt) noexcept {
 
+  bool const firstInFile = (fIndexInFile++ == 0);
+  
   // is this event real data?
   bool isRealData = evt.isRealData();
 
@@ -1882,7 +1901,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.hdr.ismc    = !isRealData;
   rec.hdr.det     = fDet;
   rec.hdr.fno     = fFileNumber;
-  if(fFirstInFile)
+  if(firstInFile)
   {
     rec.hdr.nbnbinfo = fBNBInfo.size();
     rec.hdr.bnbinfo = fBNBInfo;
@@ -1893,7 +1912,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   
   rec.hdr.ngenevt = n_gen_evt;
   rec.hdr.mctype  = mctype;
-  rec.hdr.first_in_file = fFirstInFile;
+  rec.hdr.sourceName = fSourceFile;
+  rec.hdr.sourceIndex = fIndexInFile;
+  rec.hdr.first_in_file = firstInFile;
   rec.hdr.first_in_subrun = fFirstInSubRun;
   rec.hdr.triggerinfo = srtrigger;
   // rec.hdr.cycle = fCycle;
@@ -1966,7 +1987,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   }
 
 // reset
-  fFirstInFile = false;
   fFirstInSubRun = false;
   srcol->push_back(rec);
   evt.put(std::move(srcol));
