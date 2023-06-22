@@ -106,6 +106,7 @@
 #include "sbnobj/Common/Reco/ScatterClosestApproach.h"
 #include "sbnobj/Common/Reco/StoppingChi2Fit.h"
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
+#include "sbnobj/Common/POTAccounting/EXTCountInfo.h"
 #include "sbnobj/Common/POTAccounting/NuMISpillInfo.h"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
@@ -184,6 +185,8 @@ class CAFMaker : public art::EDProducer {
   int fFileNumber;
   double fTotalPOT;
   double fSubRunPOT;
+  unsigned int fOffbeamBNBGates;
+  unsigned int fOffbeamNuMIGates;
   double fTotalSinglePOT;
   double fTotalEvents;
   double fBlindEvents;
@@ -738,6 +741,16 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
   else if(auto pot_handle = sr.getHandle<sumdata::POTSummary>(fParams.GenLabel())){
     fSubRunPOT = pot_handle->totgoodpot;
     fTotalPOT += fSubRunPOT;
+  }
+  else if (auto bnb_offbeam_spill = sr.getHandle<std::vector<sbn::EXTCountInfo>>(fParams.OffbeamBNBCountDataLabel())){
+    for(const auto& spill: *bnb_offbeam_spill) {
+      fOffbeamBNBGates += spill.gates_since_last_trigger;
+    }
+  }
+  else if (auto numi_offbeam_spill = sr.getHandle<std::vector<sbn::EXTCountInfo>>(fParams.OffbeamNuMICountDataLabel())){
+    for(const auto& spill: *numi_offbeam_spill) {
+      fOffbeamNuMIGates += spill.gates_since_last_trigger;
+    }
   }
   else{
     if(!fParams.BNBPOTDataLabel().empty() || !fParams.GenLabel().empty() || !fParams.NuMIPOTDataLabel().empty()){
@@ -1888,6 +1901,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     rec.hdr.bnbinfo = fBNBInfo;
     rec.hdr.nnumiinfo = fNuMIInfo.size();
     rec.hdr.numiinfo = fNuMIInfo;
+    rec.hdr.noffbeambnb = fOffbeamBNBGates;
+    rec.hdr.noffbeamnumi = fOffbeamNuMIGates;
     rec.hdr.pot   = fSubRunPOT;
   }
   
