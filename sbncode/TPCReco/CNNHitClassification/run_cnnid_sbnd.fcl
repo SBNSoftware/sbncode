@@ -32,16 +32,10 @@ physics:
       BatchSize:                    256 
       WireLabel:                    "caldata"
       HitModuleLabel:               "gaushit"
- # 		TrackModuleLabel: "pandoraTrack"
-#			ShowerModuleLabel: "pandoraShower"
-			PFParticleModuleLabel: "pandora"
       ClusterModuleLabel:           "pandora"
-#      PFParticleModuleLabel:        "pandoraSCE"
-      DoNeutrinoOnly:               true
- #     DoClusters:               true
- #     DoPFPs:               true
+      PFParticleModuleLabel:        "pandora"
 			SparseLengthCut: 150
-			SparseRate: 3
+			SparseRate: 5
       Views:                        []
       PointIdAlg: @local::pointidalg_sbnd
     }
@@ -58,6 +52,7 @@ outputs:
  out1:
  {
    module_type: RootOutput
+  #  fileName:    "/pnfs/sbnd/scratch/users/munjung/cnnid_job/%ifb_cnn.root"
    fileName:    "%ifb_cnn.root"
    dataTier:    "full-reconstructed"
    fastCloning: true
