@@ -342,7 +342,7 @@ void FlashPredict::produce(art::Event& evt)
       evt.getByLabel(fOpFlashProducer[i_tpc], opflashes_h);    
       if(opflashes_h->empty()) continue;
       // Check that there are OpFlashes
-      art::FindManyP<recob::OpHit> OpFlashToOpHitAssns(opflashes_h, evt, fOpFlashHitProducer[i_tpc]);
+      art::FindnyP<recob::OpHit> OpFlashToOpHitAssns(opflashes_h, evt, fOpFlashHitProducer[i_tpc]);
       for(unsigned opf=0;opf<opflashes_h->size();opf++) {
         auto& opflash = (*opflashes_h)[opf];
         mf:: LogInfo("FlashPredict")
@@ -569,12 +569,6 @@ FlashPredict::ReferenceMetrics FlashPredict::loadMetrics(
   }
 
   TFile *topfile = new TFile(fname.c_str(), "READ");
-  auto dirsinfile = topfile->GetListOfKeys();
-  if(!dirsinfile->Contains(fFlashType.c_str())) {
-    throw cet::exception("FlashPredict")
-      << "Metrics file " << inputFilename
-      << " doesn't contain TDirectoryFile " << fFlashType << "\n";
-  }
   TDirectoryFile *infile = (TDirectoryFile*)topfile->Get(fFlashType.c_str());
   auto metricsInFile = infile->GetListOfKeys();
   if(!metricsInFile->Contains("dy_h1") ||
