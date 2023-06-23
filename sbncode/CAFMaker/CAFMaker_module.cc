@@ -732,34 +732,57 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
   fOffbeamBNBGates = 0;
   fOffbeamNuMIGates = 0;
 
-  if(auto bnb_spill = sr.getHandle<std::vector<sbn::BNBSpillInfo>>(fParams.BNBPOTDataLabel())){
+  auto bnb_spill          = sr.getHandle<std::vector<sbn::BNBSpillInfo>>(fParams.BNBPOTDataLabel());
+  auto numi_spill         = sr.getHandle<std::vector<sbn::NuMISpillInfo>>(fParams.NuMIPOTDataLabel());
+  auto bnb_offbeam_spill  = sr.getHandle<std::vector<sbn::EXTCountInfo>>(fParams.OffbeamBNBCountDataLabel());
+  auto numi_offbeam_spill = sr.getHandle<std::vector<sbn::EXTCountInfo>>(fParams.OffbeamNuMICountDataLabel());
+
+  if((bnb_spill && numi_spill) || (bnb_spill && bnb_offbeam_spill) || (bnb_spill && numi_offbeam_spill) ||
+     (numi_spill && bnb_offbeam_spill) || (numi_spill && numi_offbeam_spill) || (bnb_offbeam_spill && numi_offbeam_spill)) {
+    std::cout << "Expected at most one of " << fParams.BNBPOTDataLabel() << ", "
+              << fParams.NuMIPOTDataLabel() << ", " << fParams.OffbeamBNBCountDataLabel() << ", and "
+              << fParams.OffbeamNuMICountDataLabel() << ". Found ";
+    if(bnb_spill) std::cout << fParams.BNBPOTDataLabel() << " ";
+    if(numi_spill) std::cout << fParams.NuMIPOTDataLabel() << " ";
+    if(bnb_offbeam_spill) std::cout << fParams.OffbeamBNBCountDataLabel() << " ";
+    if(numi_offbeam_spill) std::cout << fParams.OffbeamNuMICountDataLabel();
+    std::cout << std::endl;
+    abort();
+  }
+
+  if(bnb_spill){
     FillExposure(*bnb_spill, fBNBInfo, fSubRunPOT);
     fTotalPOT += fSubRunPOT;
   }
-  else if (auto numi_spill = sr.getHandle<std::vector<sbn::NuMISpillInfo>>(fParams.NuMIPOTDataLabel())) {
+  else if (numi_spill) {
     FillExposureNuMI(*numi_spill, fNuMIInfo, fSubRunPOT);
     fTotalPOT += fSubRunPOT;
+  }
+  else if (bnb_offbeam_spill){
+    for(const auto& spill: *bnb_offbeam_spill) {
+      fOffbeamBNBGates += spill.gates_since_last_trigger;
+    }
+  }
+  else if (numi_offbeam_spill){
+    for(const auto& spill: *numi_offbeam_spill) {
+      fOffbeamNuMIGates += spill.gates_since_last_trigger;
+    }
   }
   else if(auto pot_handle = sr.getHandle<sumdata::POTSummary>(fParams.GenLabel())){
     fSubRunPOT = pot_handle->totgoodpot;
     fTotalPOT += fSubRunPOT;
   }
-  else if (auto bnb_offbeam_spill = sr.getHandle<std::vector<sbn::EXTCountInfo>>(fParams.OffbeamBNBCountDataLabel())){
-    for(const auto& spill: *bnb_offbeam_spill) {
-      fOffbeamBNBGates += spill.gates_since_last_trigger;
-    }
-  }
-  else if (auto numi_offbeam_spill = sr.getHandle<std::vector<sbn::EXTCountInfo>>(fParams.OffbeamNuMICountDataLabel())){
-    for(const auto& spill: *numi_offbeam_spill) {
-      fOffbeamNuMIGates += spill.gates_since_last_trigger;
-    }
-  }
   else{
-    if(!fParams.BNBPOTDataLabel().empty() || !fParams.GenLabel().empty() || !fParams.NuMIPOTDataLabel().empty()){
+    if(!fParams.BNBPOTDataLabel().empty() || !fParams.GenLabel().empty() || !fParams.NuMIPOTDataLabel().empty() ||
+       !fParams.OffbeamBNBCountDataLabel().empty() || !fParams.OffbeamNuMICountDataLabel().empty()){
       std::cout << "Found neither BNB data POT info under '"
                 << fParams.BNBPOTDataLabel()
-                << "' not NuMIdata POT info under '"
+                << "' nor NuMIdata POT info under '"
                 << fParams.NuMIPOTDataLabel()
+                << "' nor BNB EXT Count info under '"
+                << fParams.OffbeamBNBCountDataLabel()
+                << "' nor NuMI EXT Count info under '"
+                << fParams.OffbeamNuMICountDataLabel()
                 << "' nor MC POT info under '"
                 << fParams.GenLabel() << "'"
                 << std::endl;
