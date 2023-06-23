@@ -120,7 +120,7 @@ namespace caf
     //srmatch.setDefault();
     std::cout << "filling CRTPMT Match : flash time = " << match.flashTime << "\n";
     srmatch.flashID = match.flashID;
-    srmatch.flashTime_us = match.flashTime;
+    srmatch.flashTime = match.flashTime;
     srmatch.flashGateTime = match.flashGateTime;
     srmatch.firstOpHitPeakTime = match.firstOpHitPeakTime;
     srmatch.firstOpHitStartTime = match.firstOpHitStartTime;
