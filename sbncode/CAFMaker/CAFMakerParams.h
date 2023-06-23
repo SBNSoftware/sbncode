@@ -106,14 +106,14 @@ namespace caf
 
     Atom<string> OffbeamBNBCountDataLabel {
       Name("OffbeamBNBCountDataLabel"),
-      Comment("Label of offbeam BNB EXT producer"),
-      "extinfo"
+      Comment("Label of BNB EXT module"),
+      "bnbextinfo"
     };
 
     Atom<string> OffbeamNuMICountDataLabel {
       Name("OffbeamNuMICountDataLabel"),
-      Comment("Label of offbeam NuMI EXT producer"),
-      "extinfo"
+      Comment("Label of NuMI EXT module"),
+      "numiextinfo"
     };
 
     Atom<string> G4Label {

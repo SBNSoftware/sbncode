@@ -776,6 +776,8 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
   fHasNuMIInfo = false;
 
   fSubRunPOT = 0;
+  fOffbeamBNBGates = 0;
+  fOffbeamNuMIGates = 0;
 
   if(auto bnb_spill = sr.getHandle<std::vector<sbn::BNBSpillInfo>>(fParams.BNBPOTDataLabel())){
     FillExposure(*bnb_spill, fBNBInfo, fSubRunPOT);
