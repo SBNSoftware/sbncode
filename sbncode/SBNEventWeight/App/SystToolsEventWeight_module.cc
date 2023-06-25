@@ -226,9 +226,6 @@ void SystToolsEventWeight::beginRun(art::Run& run) {
     }
 
     for( auto &sph : smd ){
-      if (fDebugMode) {
-        std::cout << "  sph.prettyName = " << sph.prettyName << std::endl;
-      }
 
       // responsless
       if(sph.isResponselessParam){
@@ -279,7 +276,7 @@ void SystToolsEventWeight::beginRun(art::Run& run) {
       }
 
       if (fDebugMode) {
-        std::cout << "  rwmode = " << rwmode << std::endl;
+        std::cout << "  sph.prettyName = " << sph.prettyName << ", rwmode = " << rwmode << " is added to the header" << std::endl;
       }
 
       fParameterSet.Configure(sp->GetFullyQualifiedName()+"_"+sph.prettyName, rwmode, sph.paramVariations.size());
