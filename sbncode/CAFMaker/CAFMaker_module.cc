@@ -737,8 +737,7 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
   auto bnb_offbeam_spill  = sr.getHandle<std::vector<sbn::EXTCountInfo>>(fParams.OffbeamBNBCountDataLabel());
   auto numi_offbeam_spill = sr.getHandle<std::vector<sbn::EXTCountInfo>>(fParams.OffbeamNuMICountDataLabel());
 
-  if((bnb_spill && numi_spill) || (bnb_spill && bnb_offbeam_spill) || (bnb_spill && numi_offbeam_spill) ||
-     (numi_spill && bnb_offbeam_spill) || (numi_spill && numi_offbeam_spill) || (bnb_offbeam_spill && numi_offbeam_spill)) {
+  if(bool(bnb_spill) + bool(numi_spill) + bool(bnb_offbeam_spill) + bool(numi_offbeam_spill) > 1) {
     std::cout << "Expected at most one of " << fParams.BNBPOTDataLabel() << ", "
               << fParams.NuMIPOTDataLabel() << ", " << fParams.OffbeamBNBCountDataLabel() << ", and "
               << fParams.OffbeamNuMICountDataLabel() << ". Found ";
