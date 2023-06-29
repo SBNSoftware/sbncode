@@ -702,10 +702,6 @@ namespace caf
                          caf::SRPFP& srpfp,
                          bool allowEmpty)
   {
-//    std::cout << "filling PFP CNN Score" << std::endl;
-//    std::cout << cnnscores.pfpTrackScore << "   " << cnnscores.pfpShowerScore << std::endl;
-//    float sum = cnnscores.pfpTrackScore+cnnscores.pfpShowerScore;
-//    std::cout << "sum : " << sum << std::endl;
     srpfp.cnnscore.track = cnnscores.pfpTrackScore;
     srpfp.cnnscore.shower = cnnscores.pfpShowerScore;
     srpfp.cnnscore.noise = cnnscores.pfpNoiseScore;
