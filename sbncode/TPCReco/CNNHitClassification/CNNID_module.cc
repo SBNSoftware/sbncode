@@ -3,8 +3,9 @@
 // Module Type: producer
 // File:        CNNID_module.cc
 //
-// Apply CNN to hits associated with Cluster to get track/shower/noise score
+// apply CNN to hits associated with cluster to get track/shower/noise score
 // score of a PFP is the average score of all associated hits
+// skip clear cosmic PFPs
 //
 // M.Jung munjung@uchicago.edu
 /////////////////////////////////////////////////////////////////////////////////////
@@ -101,19 +102,16 @@ namespace sbn {
 
   private:
     void produce(art::Event& e) override;
-
     float getAvgScore(std::vector<float> scores);
     size_t fBatchSize;
     nnet::PointIdAlg fPointIdAlg;
     anab::MVAWriter<4> fMVAWriter; 
-
     art::InputTag fWireProducerLabel;
     art::InputTag fHitModuleLabel;
     art::InputTag fClusterModuleLabel;
     art::InputTag fPFParticleModuleLabel;
     int fSparseLengthCut;
     int fSparseRate;
-
     std::vector<int> fViews;
 
   };
@@ -183,11 +181,10 @@ namespace sbn {
 
     // loop over PFPs
     for (const art::Ptr<recob::PFParticle> &thispfp : pfpList){
-      // std::cout << "**********************************************************" << std::endl;
       std::vector<float> PFPTrackScore; 
       std::vector<float> PFPShowerScore; 
       std::vector<float> PFPNoiseScore;
-      std::vector<float> PFPMichelScore;
+      // std::vector<float> PFPMichelScore;
       int nClusters = 0; 
 
       // skip clear cosmic PFPs
@@ -203,17 +200,16 @@ namespace sbn {
         float cluTrackScore = 0.;
         float cluShowerScore = 0.;
         float cluNoiseScore = 0.;
-        float cluMichelScore = 0.;
+        // float cluMichelScore = 0.;
 
         auto &cluHitPtrList = hitFMclu.at(cluster.key());
         int nHitsClu = cluHitPtrList.size();
-        if (nHitsClu == 0) continue;
+        if (nHitsClu < 5) continue; // at least 5 hits in cluster
         nClusters++;
 
         cryo = cluster->Plane().Cryostat;
         view = cluster->Plane().Plane;
         tpc = cluster->Plane().TPC;
-//        std::cout << "cluster on cyro " << cryo << " view " << view << " tpc " << tpc << " has " << nHitsClu << " hits " <<std::endl;
         fPointIdAlg.setWireDriftData(clockData, detProp, *wireHandle, view, tpc, cryo);
 
         // hits to apply CNN to (sparsely if nHitsClu > fSparseLengthCut)
@@ -242,7 +238,6 @@ namespace sbn {
         }
 
         size_t nhits = points.size();
-//        std::cout << "number of points to apply CNN " << nhits << std::endl;
         for (size_t h = 0; h < nhits; h++) {
           fMVAWriter.setOutput(hitID, keys[h], batch_out[h]);
           cluTrackScore += batch_out[h][0];
@@ -254,33 +249,28 @@ namespace sbn {
         cluShowerScore = cluShowerScore/nhits;
         cluNoiseScore = cluNoiseScore/nhits;
 
-        if (isnan(cluTrackScore)) cluTrackScore = -999.;
-        if (isnan(cluShowerScore)) cluShowerScore = -999.;
-        if (isnan(cluNoiseScore)) cluNoiseScore = -999.;
-
         PFPTrackScore.push_back(cluTrackScore);
         PFPShowerScore.push_back(cluShowerScore);
         PFPNoiseScore.push_back(cluNoiseScore);
-        PFPMichelScore.push_back(cluMichelScore);
+        // PFPMichelScore.push_back(cluMichelScore);
 
       }
-
-      std::cout << "PFP " << thispfp->Self() << " has " << nClusters << " clusters" << std::endl;
 
       // get average of score in PFPTrackScore
       if (nClusters == 0) continue;
       float avgPFPTrackScore = getAvgScore(PFPTrackScore);
       float avgPFPShowerScore = getAvgScore(PFPShowerScore);
       float avgPFPNoiseScore = getAvgScore(PFPNoiseScore);
-      float avgPFPMichelScore = getAvgScore(PFPMichelScore);
+      // float avgPFPMichelScore = getAvgScore(PFPMichelScore);
 
-      std::cout << "--------------------------------------" << std::endl;
-      std::cout << "PFP " << thispfp->Self() << " has average track score: " << avgPFPTrackScore << std::endl;
-      std::cout << "PFP " << thispfp->Self() << " has average shower score: " << avgPFPShowerScore << std::endl;
-      std::cout << "PFP " << thispfp->Self() << " has average noise score: " << avgPFPNoiseScore << std::endl;
-      std::cout << "PFP " << thispfp->Self() << " has average michel score: " << avgPFPMichelScore << std::endl;
-      std::cout << "--------------------------------------" << std::endl;
-      pfpScores->emplace_back(avgPFPTrackScore, avgPFPShowerScore, avgPFPNoiseScore, avgPFPMichelScore, nClusters);
+      // std::cout << "--------------------------------------" << std::endl;
+      // std::cout << "PFP " << thispfp->Self() << " has average track score: " << avgPFPTrackScore << std::endl;
+      // std::cout << "PFP " << thispfp->Self() << " has average shower score: " << avgPFPShowerScore << std::endl;
+      // std::cout << "PFP " << thispfp->Self() << " has average noise score: " << avgPFPNoiseScore << std::endl;
+      // std::cout << "PFP " << thispfp->Self() << " has average michel score: " << avgPFPMichelScore << std::endl;
+      // std::cout << "--------------------------------------" << std::endl;
+      // pfpScores->emplace_back(avgPFPTrackScore, avgPFPShowerScore, avgPFPNoiseScore, avgPFPMichelScore, nClusters);
+      pfpScores->emplace_back(avgPFPTrackScore, avgPFPShowerScore, avgPFPNoiseScore, nClusters);
       util::CreateAssn(*this, evt, *pfpScores, thispfp, *pfpAssns);
     }
     
@@ -293,8 +283,8 @@ namespace sbn {
   float CNNID::getAvgScore(std::vector<float> scores){
     int nScores = scores.size();
     int nGoodScores = 0;
-    float avgScore = 0.;
     float sumScore = 0.;
+    float avgScore = 0.;
     int erase_index = -1;
 
     // if valid score on all 3 clusters, remove outliers
@@ -312,7 +302,6 @@ namespace sbn {
 
     for (int i = 0; i < nScores; i++) {
       if (i == erase_index) {
-        std::cout << "skipping outlier score " << scores[i] << std::endl;
         continue;
       }
       sumScore += scores[i];
