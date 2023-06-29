@@ -32,17 +32,17 @@ namespace flashmatch {
 
     _qe_v.clear();
     _qe_refl_v.clear();
-    _qe_v = pset.get<std::vector<double> >("CCVCorrection",_qe_v);
-    _qe_refl_v = pset.get<std::vector<double> >("CCVCorrectionRefl",_qe_refl_v);
+    _qe_v = pset.get<std::vector<double> >("VUVEfficiency",_qe_v);
+    _qe_refl_v = pset.get<std::vector<double> >("VISEfficiency",_qe_refl_v);
     if(_qe_v.empty()) _qe_v.resize(DetectorSpecs::GetME().NOpDets(),1.0);
     if(_qe_refl_v.empty()) _qe_refl_v.resize(DetectorSpecs::GetME().NOpDets(),1.0);
     if(_qe_v.size() != DetectorSpecs::GetME().NOpDets()) {
-      FLASH_CRITICAL() << "CCVCorrection factor array has size " << _qe_v.size()
+      FLASH_CRITICAL() << "VUV Efficiency factor array has size " << _qe_v.size()
                        << " != number of opdet (" << DetectorSpecs::GetME().NOpDets() << ")!" << std::endl;
       throw OpT0FinderException();
     }
     if(_qe_refl_v.size() != DetectorSpecs::GetME().NOpDets()) {
-      FLASH_CRITICAL() << "CCVCorrectionRefl factor array has size " << _qe_refl_v.size()
+      FLASH_CRITICAL() << "VIS Efficiency factor array has size " << _qe_refl_v.size()
                        << " != number of opdet (" << DetectorSpecs::GetME().NOpDets() << ")!" << std::endl;
       throw OpT0FinderException();
     }
@@ -101,10 +101,12 @@ namespace flashmatch {
 
         double q = n_original_photons * visibility * _global_qe * _qe_v[op_det];
 
-        // (un)??Coated PMTs (and vis xarapucas) don't see direct photons
-        if (std::find(_uncoated_pmt_list.begin(), _uncoated_pmt_list.end(), op_det) != _uncoated_pmt_list.end()) {
-          q = 0;
-        }
+        // ** if the efficiencies are specified in qe_v and qe_refl **, don't need to differentiate between visible and vuv opdets 
+        // ** need this particularly for uncoated PMTs having vuv and vis efficiencies
+        // (un)??Coated PMTs (ands vis xarapucas) don't see direct photons
+        // if (std::find(_uncoated_pmt_list.begin(), _uncoated_pmt_list.end(), op_det) != _uncoated_pmt_list.end()) {
+        //   q = 0;
+        // }
 
         // std::cout << "OpDet: " << op_det << " [x,y,z] -> [q] : [" << pt.x << ", " << pt.y << ", " << pt.z << "] -> [" << q << "]" << std::endl;
 

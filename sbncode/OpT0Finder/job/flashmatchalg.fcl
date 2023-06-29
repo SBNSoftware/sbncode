@@ -74,8 +74,10 @@ PhotonLibHypothesis:
   GlobalQERefl: 0.03
   UseSemiAnalytical: true
   ChannelMask: []
-  CCVCorrection: []
-  CCVCorrectionRefl: []
+  VUVEfficiency: []
+  VISEfficiency: []
+#   CCVCorrection: []
+#   CCVCorrectionRefl: []
 }
 
 ChargeAnalytical:

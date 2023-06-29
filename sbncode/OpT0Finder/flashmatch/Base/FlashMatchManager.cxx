@@ -405,6 +405,12 @@ namespace flashmatch {
     }
   }
 
+  // void FlashMatchManager::SetVisibleChannels(std::vector<int> ch_visible) {
+  //   if (_alg_flash_hypothesis) {
+  //     _alg_flash_hypothesis->SetVisibleChannels(ch_visible);
+  //   }
+  // }
+
   #if USING_LARSOFT == 1
   void FlashMatchManager::SetSemiAnalyticalModel(std::unique_ptr<phot::SemiAnalyticalModel> model) {
     if (_alg_flash_hypothesis) {

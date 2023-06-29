@@ -49,6 +49,7 @@ namespace flashmatch {
 
     /// Sets the channels sensitive to visible light
     void SetUncoatedPMTs(std::vector<int> ch_uncoated) { _uncoated_pmt_list = ch_uncoated; }
+    // void SetVisibleChannels(std::vector<int> ch_visible) { _visible_ch_list = ch_visible; }
 
     #if USING_LARSOFT == 1
     /// Sets the semi analytical model
@@ -59,6 +60,7 @@ namespace flashmatch {
 
     std::vector<int> _channel_mask; ///< The list of channels to use
     std::vector<int> _uncoated_pmt_list; ///< A list of opdet sensitive to visible (reflected) light
+    // std::vector<int> _visible_ch_list; 
 
     #if USING_LARSOFT == 1
     std::unique_ptr<phot::SemiAnalyticalModel> _semi_model;
