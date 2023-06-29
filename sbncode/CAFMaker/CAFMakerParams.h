@@ -125,6 +125,12 @@ namespace caf
       "pandora"
     };
 
+    Atom<string> CNNScoreLabel {
+      Name("CNNScoreLabel"),
+      Comment("Base label of CNNScore producer."),
+      "cnnid"
+    };
+
     Atom<string> StubLabel {
       Name("StubLabel"),
       Comment("Base label of Stub producer."),
@@ -141,12 +147,6 @@ namespace caf
       Name("CRUMBSLabel"),
       Comment("Base label of CRUMBS ID producer."),
       "crumbs"
-    };
-
-    Atom<string> CNNScoreLabel {
-      Name("CNNScoreLabel"),
-      Comment("Base label of CNNScore producer."),
-      "cnnid"
     };
 
     Atom<bool> FillHits {

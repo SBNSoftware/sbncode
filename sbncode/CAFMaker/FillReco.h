@@ -116,7 +116,7 @@ namespace caf
   void FillCNNScore(const recob::PFParticle &particle,
                     const sbn::PFPCNNScore &cnnscores,
                     caf::SRPFP& srpfp,
-                    bool allowEmpty = true);
+                    bool allowEmpty = false);
 
   void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
                        const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,

@@ -709,7 +709,7 @@ namespace caf
     srpfp.cnnscore.track = cnnscores.pfpTrackScore;
     srpfp.cnnscore.shower = cnnscores.pfpShowerScore;
     srpfp.cnnscore.noise = cnnscores.pfpNoiseScore;
-    srpfp.cnnscore.michel = cnnscores.pfpMichelScore;
+    // srpfp.cnnscore.michel = cnnscores.pfpMichelScore;
     srpfp.cnnscore.ncluster = cnnscores.nClusters;
   }
 

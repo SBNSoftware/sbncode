@@ -1548,7 +1548,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       fmRanges.push_back(FindManyPStrict<sbn::RangeP>(slcTracks, evt, tag));
     }
 
-    art::FindOneP<sbn::PFPCNNScore> fmCNNScores =
+    art::FindOneP<sbn::PFPCNNScore> foCNNScores =
       FindOnePStrict<sbn::PFPCNNScore>(fmPFPart, evt,
           fParams.CNNScoreLabel() + slice_tag_suff);
 
@@ -1557,7 +1557,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     // get the primary particle
     size_t iPart;
-    for (iPart = 0; iPart < fmPFPart.size(); ++iPart ) {
+    for (iPart = 0; iPart < fmPFPart.size(); ++iPart) {
       const recob::PFParticle &thisParticle = *fmPFPart[iPart];
       if (thisParticle.IsPrimary()) break;
     }
@@ -1688,16 +1688,19 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
 
       art::Ptr<sbn::PFPCNNScore> cnnScores;
-      if (fmCNNScores.isValid()) {
-          cnnScores = fmCNNScores.at(iPart);
+      if (foCNNScores.isValid()) {
+        cnnScores = foCNNScores.at(iPart);
+        // print out  content of cnnScores
+        if (cnnScores) {
+          FillCNNScore(thisParticle, *cnnScores, pfp);
+        }
+        // auto cnncheck = *cnnScores;
+        // // print all content of cnnScores
+        // std::cout << "trackscore " << cnncheck.pfpTrackScore << std::endl;
+        // std::cout << "showerscore " << cnncheck.pfpShowerScore << std::endl;
+        // std::cout << "noise score " << cnncheck.pfpNoiseScore << std::endl;
+        // std::cout << "sum " << cnncheck.pfpTrackScore + cnncheck.pfpShowerScore + cnncheck.pfpNoiseScore << std::endl;
       }
-      FillCNNScore(thisParticle, *cnnScores, pfp);
-      auto cnncheck = *cnnScores;
-      // print all content of cnnScores
-      std::cout << "trackscore " << cnncheck.pfpTrackScore << std::endl;
-      std::cout << "showerscore " << cnncheck.pfpShowerScore << std::endl;
-      std::cout << "noise score " << cnncheck.pfpNoiseScore << std::endl;
-      std::cout << "sum " << cnncheck.pfpTrackScore + cnncheck.pfpShowerScore + cnncheck.pfpNoiseScore << std::endl;
 
       if (!thisTrack.empty())  { // it has a track!
         assert(thisTrack.size() == 1);
