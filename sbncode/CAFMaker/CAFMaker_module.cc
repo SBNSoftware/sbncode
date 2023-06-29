@@ -1606,18 +1606,17 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceFlashMatch(fmatch_map["fmatch"], recslc);
     FillSliceFlashMatchA(fmatch_map["fmatch"], recslc);
     FillSliceFlashMatchOp(fmatch_map["fmatchop"], recslc);
+    FillSliceFlashMatchOpA(fmatch_map["fmatchop"], recslc);
     auto sr_flash = fmatch_map.find("fmatchara");
-    if(sr_flash != fmatch_map.end()) {
+    if(sr_flash!=fmatch_map.end()) {
       FillSliceFlashMatchARA(fmatch_map["fmatchara"], recslc);
       FillSliceFlashMatchARAA(fmatch_map["fmatchara"], recslc);
     }
     sr_flash = fmatch_map.find("fmatchopara");
-    if(sr_flash != fmatch_map.end()) {                                                                                                     FillSliceFlashMatchARA(fmatch_map["fmatchara"], recslc);
-      FillSliceFlashMatchOpARAA(fmatch_map["fmatchopara"], recslc);
+    if(sr_flash != fmatch_map.end()) {
+      FillSliceFlashMatchOpARA(fmatch_map["fmatchopara"], recslc);
       FillSliceFlashMatchOpARAA(fmatch_map["fmatchopara"], recslc);
     }
-    FillSliceFlashMatchOpA(fmatch_map["fmatchop"], recslc);
-//    }
     FillSliceVertex(vertex, recslc);
     FillSliceCRUMBS(slcCRUMBS, recslc);
 
