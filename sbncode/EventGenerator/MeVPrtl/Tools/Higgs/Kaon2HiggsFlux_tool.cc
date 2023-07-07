@@ -245,7 +245,7 @@ bool Kaon2HiggsFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux 
 
   // isotropic decay
   TVector3 kaon_frame_momentum = RandomUnitVector() * higgs_momentum(kaon_mass, pion_mass, higs_mass);
-  std::cout << "Rest frame higgs P: " <<  higgs_momentum(kaon_mass, pion_mass, higs_mass) << std::endl;
+  // std::cout << "Rest frame higgs P: " <<  higgs_momentum(kaon_mass, pion_mass, higs_mass) << std::endl;
 
   // boost to lab frame
   TLorentzVector mom;

@@ -253,14 +253,14 @@ libdir	fq_dir		lib
 ####################################
 product			version		qual	flags		<table_format=2>
 genie_xsec		v3_04_00	-
-larcv2			v2_1_0		-
-larsoft			v09_71_00	-
-sbnanaobj		v09_20_05	-
-sbndaq_artdaq_core	v1_06_00of0	-
+larcv2			v2_1_2		-
+larsoft			v09_75_02	-
+sbnanaobj		v09_21_02	-
+sbndaq_artdaq_core	v1_08_00of0	-
 sbndata			v01_04		-
-sbnobj			v09_16_00	-
-systematicstools	v01_02_00	-
-nusystematics		v01_02_09	-
+sbnobj			v09_17_03	-
+systematicstools	v01_03_01	-
+nusystematics		v01_03_09	-
 cetmodules		v3_20_00	-	only_for_build
 end_product_list
 ####################################
@@ -317,11 +317,11 @@ end_product_list
 #
 ####################################
 
-qualifier	larsoft		sbnobj		sbnanaobj	sbndaq_artdaq_core  genie_xsec              sbndata larcv2         systematicstools  nusystematics notes
-c7:debug	c7:debug	c7:debug	c7:debug	c7:s117:debug       AR2320i00000:e1000:k250 -nq-    c7:p392:debug  c7:debug	     c7:debug	    -nq-
-c7:prof		c7:prof		c7:prof		c7:prof		c7:s117:prof        AR2320i00000:e1000:k250 -nq-    c7:p392:prof   c7:prof	     c7:prof	    -nq-
-e20:debug	e20:debug	e20:debug	e20:debug	e20:s117:debug      AR2320i00000:e1000:k250 -nq-    e20:p392:debug e20:debug	     e20:debug	    -nq-
-e20:prof	e20:prof	e20:prof	e20:prof	e20:s117:prof       AR2320i00000:e1000:k250 -nq-    e20:p392:prof  e20:prof	     e20:prof	    -nq-
+qualifier	larsoft		sbnobj		sbnanaobj	sbndaq_artdaq_core  genie_xsec              sbndata larcv2          systematicstools  nusystematics notes
+c7:debug	c7:debug	c7:debug	c7:debug	c7:s120a:debug       AR2320i00000:e1000:k250 -nq-    c7:debug:p3913  c7:debug	     c7:debug	    -nq-
+c7:prof		c7:prof		c7:prof		c7:prof		c7:s120a:prof        AR2320i00000:e1000:k250 -nq-    c7:p3913:prof   c7:prof	     c7:prof	    -nq-
+e20:debug	e20:debug	e20:debug	e20:debug	e20:s120a:debug      AR2320i00000:e1000:k250 -nq-    debug:e20:p3913 e20:debug	     e20:debug	    -nq-
+e20:prof	e20:prof	e20:prof	e20:prof	e20:s120a:prof       AR2320i00000:e1000:k250 -nq-    e20:p3913:prof   e20:prof	     e20:prof	    -nq-
 
 end_qualifier_list
 ####################################

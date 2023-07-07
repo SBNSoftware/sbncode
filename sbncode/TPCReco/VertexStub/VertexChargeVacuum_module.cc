@@ -257,6 +257,9 @@ void sbn::VertexChargeVacuum::produce(art::Event& evt)
   // If we are not correcting for SCE, then blank out the service
   if (!fCorrectSCE) sce = nullptr;
 
+  for (auto const &nt: fNormTools)
+    nt->setup(evt);
+  
   // get the PFParticle's and the associated data
   art::Handle<std::vector<recob::PFParticle>> pfparticle_handle;
   evt.getByLabel(fPFParticleLabel, pfparticle_handle);

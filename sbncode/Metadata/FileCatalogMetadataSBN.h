@@ -35,6 +35,7 @@
 #ifndef FILECATALOGMETADATASBN_H
 #define FILECATALOGMETADATASBN_H
 
+#include <mutex>
 #include "fhiclcpp/ParameterSet.h"
 #include "art/Framework/Services/Registry/ActivityRegistry.h"
 #include "art/Framework/Services/Registry/ServiceDeclarationMacros.h"
@@ -84,10 +85,11 @@ namespace util {
     std::vector<std::pair<std::string, std::string>> fParameters;
     std::string fPOTModuleLabel;
     double fTotPOT;
+    std::mutex fMutex;
   };
 
 } // namespace util
 
-DECLARE_ART_SERVICE(util::FileCatalogMetadataSBN, LEGACY)
+DECLARE_ART_SERVICE(util::FileCatalogMetadataSBN, SHARED)
 
 #endif

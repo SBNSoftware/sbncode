@@ -21,6 +21,7 @@
 #include "canvas/Persistency/Provenance/IDNumber.h"
 #include "fhiclcpp/ParameterSet.h"
 
+#include <mutex>
 #include <fstream>
 #include <set>
 #include <string>
@@ -60,15 +61,16 @@ namespace util{
       double fTotPOT=0.;
     };
 
-    metadata md;
-    std::set<art::SubRunID> fSubRunNumbers;
-
     void GetMetadataMaps(std::map<std::string, std::string>& strs,
                          std::map<std::string, int>& ints,
 			 std::map<std::string, double>& doubles,
                          std::map<std::string, std::string>& objs);
 
   private:
+
+    mutable std::mutex fMutex;
+    metadata md;
+    std::set<art::SubRunID> fSubRunNumbers;
 
     // Callbacks.
     void postBeginJob();
@@ -100,6 +102,6 @@ namespace util{
 
 } //namespace utils
 
-DECLARE_ART_SERVICE(util::MetadataSBN, LEGACY)
+DECLARE_ART_SERVICE(util::MetadataSBN, SHARED)
 
 #endif

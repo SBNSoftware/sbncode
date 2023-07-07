@@ -73,4 +73,3 @@ namespace flashmatch {
 }
 #endif
 /** @} */ // end of doxygen group 
-

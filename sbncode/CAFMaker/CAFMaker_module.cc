@@ -1230,11 +1230,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // get the number of events generated in the gen stage
   unsigned n_gen_evt = 0;
   for (const art::ProcessConfiguration &process: evt.processHistory()) {
-    fhicl::ParameterSet gen_config;
-    bool success = evt.getProcessParameterSet(process.processName(), gen_config);
-    if (success && gen_config.has_key("source") && gen_config.has_key("source.maxEvents") && gen_config.has_key("source.module_type") ) {
-      int max_events = gen_config.get<int>("source.maxEvents");
-      std::string module_type = gen_config.get<std::string>("source.module_type");
+    std::optional<fhicl::ParameterSet> gen_config = evt.getProcessParameterSet(process.processName());
+    if (gen_config && gen_config->has_key("source") && gen_config->has_key("source.maxEvents") && gen_config->has_key("source.module_type") ) {
+      int max_events = gen_config->get<int>("source.maxEvents");
+      std::string module_type = gen_config->get<std::string>("source.module_type");
       if (module_type == "EmptyEvent") {
         n_gen_evt += max_events;
       }
@@ -1311,6 +1310,23 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       srcrttracks.emplace_back();
       FillCRTTrack(crttracks[i], fParams.CRTUseTS0(), srcrttracks.back());
     }
+  }
+
+  // Get all of the CRTPMT Matches .. 
+  std::vector<caf::SRCRTPMTMatch> srcrtpmtmatches;
+  std::cout << "srcrtpmtmatches.size = " << srcrtpmtmatches.size() << "\n";
+  art::Handle<std::vector<sbn::crt::CRTPMTMatching>> crtpmtmatch_handle;
+  GetByLabelStrict(evt, fParams.CRTPMTLabel(), crtpmtmatch_handle);
+  if(crtpmtmatch_handle.isValid()){
+    std::cout << "valid handle! label: " << fParams.CRTPMTLabel() << "\n";
+    const std::vector<sbn::crt::CRTPMTMatching> &crtpmtmatches = *crtpmtmatch_handle;
+    for (unsigned i = 0; i < crtpmtmatches.size(); i++) {
+      srcrtpmtmatches.emplace_back();
+      FillCRTPMTMatch(crtpmtmatches[i],srcrtpmtmatches.back());
+    }
+  }
+  else{
+    std::cout << "crtpmtmatch_handle.isNOTValid!\n";
   }
 
   // Get all of the OpFlashes
@@ -1593,6 +1609,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceFlashMatchA(fmatch, recslc);
     FillSliceVertex(vertex, recslc);
     FillSliceCRUMBS(slcCRUMBS, recslc);
+    FillSliceBarycenter(slcHits, slcSpacePoints, recslc);
 
     // select slice
     if (!SelectSlice(recslc, fParams.CutClearCosmic())) continue;
@@ -1832,6 +1849,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     rec.true_particles  = true_particles;
   }
   rec.ntrue_particles = true_particles.size();
+  rec.crtpmt_matches = srcrtpmtmatches;
+  rec.ncrtpmt_matches = srcrtpmtmatches.size();
 
   // Fix the Reference time
   //
