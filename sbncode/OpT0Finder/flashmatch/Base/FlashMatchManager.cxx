@@ -33,52 +33,6 @@ namespace flashmatch {
   const std::string& FlashMatchManager::Name() const
   { return _name; }
 
-  /*
-  void FlashMatchManager::SetAlgo(BaseAlgorithm* alg)
-  {
-    _configured = false;
-    // Figure out the type of a provided algorithm
-    switch (alg->AlgorithmType()) {
-
-    // TPC filter
-    case kTPCFilter:
-      _alg_tpc_filter   = (BaseTPCFilter*)alg; break;
-
-    // Flash filter
-    case kFlashFilter:
-      _alg_flash_filter = (BaseFlashFilter*)alg; break;
-
-    // Match prohibit algo
-    case kMatchProhibit:
-      _alg_match_prohibit = (BaseProhibitAlgo*)alg; break;
-
-    // Flash matching
-    case kFlashMatch:
-      _alg_flash_match  = (BaseFlashMatch*)alg; break;
-
-    // Flash hypothesis
-    case kFlashHypothesis:
-      _alg_flash_hypothesis = (BaseFlashHypothesis*)alg; break;
-
-    // Other algorithms
-    case kCustomAlgo:
-      if(_custom_alg_m.find(alg->AlgorithmName()) != _custom_alg_m.end()) {
-	std::stringstream ss;
-	ss << "Duplicate name: " << alg->AlgorithmName() << std::endl;
-	throw OpT0FinderException(ss.str());
-      }
-      _custom_alg_m[alg->AlgorithmName()] = alg;
-      break;
-    // Fuck it
-    default:
-      std::stringstream ss;
-      ss << "Unsupported algorithm type: " << alg->AlgorithmType();
-      throw OpT0FinderException(ss.str());
-    }
-  }
-
-  */
-
   void FlashMatchManager::AddCustomAlgo(BaseAlgorithm* alg)
   {
     if(_custom_alg_m.find(alg->AlgorithmName()) != _custom_alg_m.end()) {
@@ -91,13 +45,6 @@ namespace flashmatch {
 
   void FlashMatchManager::Configure(const Config_t& main_cfg)
   {
-    /*
-    ::fcllite::ConfigManager cfg_mgr("FlashMatchManager");
-
-    cfg_mgr.AddCfgFile(_config_file);
-
-    auto const& main_cfg = cfg_mgr.Config();
-    */
     auto const& mgr_cfg = main_cfg.get<flashmatch::Config_t>(Name());
 
     _allow_reuse_flash = mgr_cfg.get<bool>("AllowReuseFlash");
@@ -390,6 +337,17 @@ namespace flashmatch {
     }
   }
 
+  void FlashMatchManager::SetChannelType(std::vector<int> ch_type) {
+    
+    if (!_alg_flash_hypothesis) {
+      throw OpT0FinderException("Flash hypothesis algorithm is required to set channel types!");
+    }
+    _alg_flash_hypothesis->SetChannelType(ch_type);
+    if (_alg_flash_match) {
+      _alg_flash_match->SetChannelType(ch_type);
+    }
+  }
+
   void FlashMatchManager::SetTPCCryo(int tpc, int cryo) {
     _tpc = tpc;
     _cryo = cryo;
@@ -404,12 +362,6 @@ namespace flashmatch {
       _alg_flash_hypothesis->SetUncoatedPMTs(ch_uncoated);
     }
   }
-
-  // void FlashMatchManager::SetVisibleChannels(std::vector<int> ch_visible) {
-  //   if (_alg_flash_hypothesis) {
-  //     _alg_flash_hypothesis->SetVisibleChannels(ch_visible);
-  //   }
-  // }
 
   #if USING_LARSOFT == 1
   void FlashMatchManager::SetSemiAnalyticalModel(std::unique_ptr<phot::SemiAnalyticalModel> model) {

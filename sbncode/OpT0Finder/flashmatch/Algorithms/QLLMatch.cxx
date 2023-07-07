@@ -150,17 +150,18 @@ namespace flashmatch {
     // - when the measured flash PE is equal to 0 and the hypothesis is large, assume that the 
     //   measured flash PE was set to 0 due to saturation
     if (_saturated_thresh > 0){
-      for (size_t pmt_index = 0; pmt_index < DetectorSpecs::GetME().NOpDets(); ++pmt_index ) { 
+      for (size_t ich = 0; ich < DetectorSpecs::GetME().NOpDets(); ++ich ) { 
         // if above the saturated threshold 
-        if (one_measurement.pe_v[pmt_index] == 0 && one_hypothesis.pe_v[pmt_index] >= _saturated_thresh){
-          if (std::find(_channel_mask.begin(), _channel_mask.end(), pmt_index) != _channel_mask.end())
-            std::cout << "Guessing " << pmt_index << " is saturated, setting hypothesis to 0..." << std::endl;
-          one_hypothesis.pe_v[pmt_index] = 0;
+        if (one_measurement.pe_v[ich] == 0 && one_hypothesis.pe_v[ich] >= _saturated_thresh){
+          if (std::find(_channel_mask.begin(), _channel_mask.end(), ich) != _channel_mask.end())
+            std::cout << "Guessing " << ich << " is saturated, setting hypothesis to 0..." << std::endl;
+          one_hypothesis.pe_v[ich] = 0;
         }
-        // if above the nonlinear threshold, correct for the nonlinear effect 
-        if (one_hypothesis.pe_v[pmt_index] > _nonlinear_thresh){
-          double corr_pe = one_hypothesis.pe_v[pmt_index]*_nonlinear_slope + _nonlinear_offset; 
-          one_hypothesis.pe_v[pmt_index] = corr_pe;
+        // if above the nonlinear threshol AND a pmt, correct for the nonlinear effect 
+        if ((one_hypothesis.pe_v[ich] > _nonlinear_thresh) && (_channel_type[ich] == 0)){
+          std::cout << "nonlinear pmt ch: " << ich << std::endl;
+          double corr_pe = one_hypothesis.pe_v[ich]*_nonlinear_slope + _nonlinear_offset; 
+          one_hypothesis.pe_v[ich] = corr_pe;
         }
       }
     }
@@ -374,7 +375,7 @@ FlashMatch_t QLLMatch::OnePMTMatch(const Flash_t& flash) {
   double QLLMatch::QLL(const Flash_t &hypothesis,
 		       const Flash_t &measurement) {
 
-    double nvalid_pmt = 0;
+    double nvalid_ch = 0;
 
     double PEtot_Hyp = 0;
     for (auto const &pe : hypothesis.pe_v)
@@ -390,23 +391,23 @@ FlashMatch_t QLLMatch::OnePMTMatch(const Flash_t& flash) {
 
     double O, H, Error;
 
-    for (size_t pmt_index = 0; pmt_index < hypothesis.pe_v.size(); ++pmt_index) {
+    for (size_t ich = 0; ich < hypothesis.pe_v.size(); ++ich) {
 
       // ignore OpDets that are in the opposite TPC that we're considering
-      if ( int(pmt_index)%2 != _tpc%2)
+      if ( int(ich)%2 != _tpc%2)
         continue;
 
-      if (std::find(_channel_mask.begin(), _channel_mask.end(), pmt_index) == _channel_mask.end())
+      if (std::find(_channel_mask.begin(), _channel_mask.end(), ich) == _channel_mask.end())
         continue;
         
-      O = measurement.pe_v[pmt_index]; // observation
-      H = hypothesis.pe_v[pmt_index];  // hypothesis
+      O = measurement.pe_v[ich]; // observation
+      H = hypothesis.pe_v[ich];  // hypothesis
 
       if( H < 0 ) throw OpT0FinderException("Cannot have hypothesis value < 0!");
 
       if(O < _pe_observation_threshold) {
         if (!_penalty_value_v.empty()) {
-          O = _penalty_value_v[pmt_index];
+          O = _penalty_value_v[ich];
         }
         else {
           O = _pe_observation_threshold;
@@ -414,7 +415,7 @@ FlashMatch_t QLLMatch::OnePMTMatch(const Flash_t& flash) {
       }
       if (H <= _pe_hypothesis_threshold) {
         if(!_penalty_threshold_v.empty()) {
-          H = _penalty_threshold_v[pmt_index];
+          H = _penalty_threshold_v[ich];
         }
         else {
           H = _pe_hypothesis_threshold;
@@ -429,30 +430,31 @@ FlashMatch_t QLLMatch::OnePMTMatch(const Flash_t& flash) {
 
         if(arg > 0. && !std::isnan(arg) && !std::isinf(arg)) {
           _current_llhd -= std::log10(arg);
-          nvalid_pmt += 1;
-          if(_converged) FLASH_INFO() <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " LHD "<<arg << " -LLHD " << -1 * std::log10(arg) << std::endl;
+          nvalid_ch += 1;
+          if(_converged) FLASH_INFO() <<"CH "<< ich <<" O/H " << O << " / " << H << " LHD "<<arg << " -LLHD " << -1 * std::log10(arg) << std::endl;
         }
         else if(!std::isnan(val) && !std::isinf(val)){
           _current_llhd -= val;
-          nvalid_pmt += 1;
-          if(_converged) FLASH_INFO() <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " -LLHD " << -1 * val << std::endl;
+          nvalid_ch += 1;
+          if(_converged) FLASH_INFO() <<"CH "<< ich <<" O/H " << O << " / " << H << " -LLHD " << -1 * val << std::endl;
         }
         else if (!std::isnan(val_2) && !std::isinf(val_2)){
           _current_llhd -= val_2;
-          nvalid_pmt += 1;
-          if(_converged) FLASH_INFO() <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " -LLHD " << -1 * val_2 << std::endl;
+          nvalid_ch += 1;
+          if(_converged) FLASH_INFO() <<"CH "<< ich <<" O/H " << O << " / " << H << " -LLHD " << -1 * val_2 << std::endl;
         }
       } else if (_mode == kSimpleLLHD) {
 
         double arg = (H - O * std::log(H));
         _current_llhd += arg;
-        if(_converged) FLASH_INFO() <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " ... -LLHD " << arg << std::endl;
+        if(_converged) FLASH_INFO() <<"CH "<< ich <<" O/H " << O << " / " << H << " ... -LLHD " << arg << std::endl;
 
       } else if (_mode == kChi2) {
 
         Error = H;
         _current_chi2 += std::pow((O - H), 2) / (Error + std::pow(_chi_error*Error,2));
-        nvalid_pmt += 1;
+        nvalid_ch += 1;
+        std::cout << "CH "<< ich <<" O/H " << O << " / " << H << " CHI2 " << std::pow((O - H), 2) / (Error + std::pow(_chi_error*Error,2)) << std::endl;
 
       } else {
         FLASH_ERROR() << "Unexpected mode" << std::endl;
@@ -460,12 +462,14 @@ FlashMatch_t QLLMatch::OnePMTMatch(const Flash_t& flash) {
       }
 
     }
-    //FLASH_DEBUG() <<"Mode " << (int)(_mode) << " Chi2 " << _current_chi2 << " LLHD " << _current_llhd << " nvalid " << nvalid_pmt << std::endl;
-    // std::cout << "Using " << nvalid_pmt <<  " optical detectors for the scoring in TPC " << _tpc << std::endl;
-    _current_chi2 /= nvalid_pmt;
-    _current_llhd /= (nvalid_pmt +1);
+    //FLASH_DEBUG() <<"Mode " << (int)(_mode) << " Chi2 " << _current_chi2 << " LLHD " << _current_llhd << " nvalid " << nvalid_ch << std::endl;
+    // std::cout << "Using " << nvalid_ch <<  " optical detectors for the scoring in TPC " << _tpc << std::endl;
+    _current_chi2 /= nvalid_ch;
+    std::cout << "chi2: " <<  _current_chi2 << std::endl;
+    std::cout << "nvalid_ch: " << nvalid_ch << std::endl;
+    _current_llhd /= (nvalid_ch +1);
     if(_converged)
-      FLASH_INFO() << "Combined LLHD: " << _current_llhd << " (divided by nvalid_pmt+1 = " << nvalid_pmt+1<<")"<<std::endl;
+      FLASH_INFO() << "Combined LLHD: " << _current_llhd << " (divided by nvalid_ch+1 = " << nvalid_ch+1<<")"<<std::endl;
 
     return (_mode == kChi2 ? _current_chi2 : _current_llhd);
   }

@@ -61,7 +61,10 @@ namespace flashmatch {
     void FillEstimate(const QCluster_t&, Flash_t&) const;
 
     /// Sets the channels to use
-    void SetChannelMask(std::vector<int> ch_mask) { _channel_mask = ch_mask; }
+    void SetChannelMask(std::vector<int> ch_mask) {_channel_mask = ch_mask; }
+
+    /// Sets the channel type (pmt vs arapuca)
+    void SetChannelType(std::vector<int> ch_type) {_channel_type = ch_type; }
 
     /// Sets the TPC and Cryo numbers
     virtual void SetTPCCryo(int tpc, int cryo) = 0;
@@ -78,6 +81,7 @@ namespace flashmatch {
     int _cryo = 0; ///< The Cryostat number to use
 
     std::vector<int> _channel_mask; ///< The list of channels to use
+    std::vector<int> _channel_type;
 
   };
 }
