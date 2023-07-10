@@ -28,14 +28,23 @@ public:
   double kplus_mass;
   double klong_mass;
   double tquark_mass;
+  double tau_mass;
+  double eta_mass;
+  double rho_mass;
+  double etap_mass;
 
   // Couplings
+  double fine_structure_constant;
   double Gfermi;
   double higgs_vev;
   double sin2thetaW;
   double gL;
   double gR;
   double fpion;
+  double feta;
+  double fetap;
+  double frho;
+  double grho;
 
   // unit conversion
   double hbar;
@@ -44,6 +53,12 @@ public:
   // kaon lifetimes
   double kplus_lifetime;
   double klong_lifetime;
+
+  // other lifetimes
+  double tau_lifetime;
+
+  // and widths
+  double rho_width;
 
   // kaon decay branching ratios
   double kaonp_mup_numu;
@@ -71,9 +86,9 @@ public:
 // Useful computations
 double twobody_momentum(double parent_mass, double childA_mass, double childB_mass);
 int calcPrtlRayWgt(double rest_frame_p, double M, TVector3 dir, TVector3 boost, double rand,
-                     double& lab_frame_p_out, double& costh_rest_out, double& wgt);
+                     double& lab_frame_p_out, double& costh_rest_out, double& wgt, bool verbose);
 double forwardPrtlEnergy(double parentM, double secM, double prtlM, double parentE);
-double secPDG2Mass(int pdg);
+double PDG2Mass(int pdg);
 
 // Minimum possible cos theta for a given decay
 double minKinematicCosTheta(double parentM, double secM, double prtlM, double parentE);

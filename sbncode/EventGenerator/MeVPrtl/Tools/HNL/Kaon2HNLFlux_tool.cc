@@ -19,7 +19,7 @@
 #include "sbncode/EventGenerator/MeVPrtl/Tools/Constants.h"
 
 #include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlFlux.h"
-#include "sbnobj/Common/EventGen/MeVPrtl/KaonParent.h"
+#include "sbnobj/Common/EventGen/MeVPrtl/MesonParent.h"
 
 // ROOT
 #include "TVector3.h"
@@ -95,6 +95,18 @@ double hnl_momentum(double kaon_mass, double lep_mass, double hnl_mass) {
        + lep_mass * lep_mass * lep_mass * lep_mass 
        + hnl_mass * hnl_mass * hnl_mass * hnl_mass 
     -2 * lep_mass * lep_mass * hnl_mass * hnl_mass) / ( 2 * kaon_mass );
+}
+
+/* Polarization of a HNL emerging from a two body meson decay (M-> l N)
+   m_l is the mass of the lepton and m_M the mass of the parent meson
+   See arXiv:2109.10358 for more details */
+double PolHNL(double m_HNL, double m_l, double m_M)
+{
+  double yl = m_l / m_M;
+  double yHNL =  m_HNL / m_M;
+  double numterm = (yl*yl - yHNL * yHNL) * sqrt(pow(yHNL,4) + (1.0 - yl * yl)*(1.0 - yl * yl) - 2.0 * yHNL * yHNL * (1.0 + yl * yl));
+  double denterm = pow(yl,4) + pow(yHNL,4) - 2.0 * yl * yl * yHNL * yHNL - yl * yl - yHNL * yHNL;
+  return numterm / denterm;
 }
 
 double SMKaonBR(int kaon_pdg) {
@@ -178,12 +190,12 @@ double Kaon2HNLFlux::MaxWeight() {
 
 bool Kaon2HNLFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux &hnl, double &weight) {
   // make the kaon parent
-  evgen::ldm::KaonParent kaon(flux);
-  if (abs(kaon.kaon_pdg) != 321) return false; // Only take charged kaons
+  evgen::ldm::MesonParent kaon(flux);
+  if (abs(kaon.meson_pdg) != 321) return false; // Only take charged kaons
 
   // select on the kaon
   if (fKDAROnly && (kaon.mom.P() > 1e-3 || kaon.pos.Z() < fTarget2Absorber)) return false;
-  if (fKDAROnly) std::cout << "FOUND KDAR\n";
+  if (fKDAROnly & fVerbose) std::cout << "FOUND KDAR\n";
 
   TLorentzVector Beam4 = BeamOrigin();
 
@@ -200,7 +212,7 @@ bool Kaon2HNLFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux &h
   bool is_muon = decay.second;
   double lep_mass = is_muon ? Constants::Instance().muon_mass : Constants::Instance().elec_mass;
 
-  std::cout << "BR: " << br << std::endl;
+  if (fVerbose) std::cout << "BR: " << br << std::endl;
 
   // ignore if we can't make this hnl
   // Ignore if branching ratio is exactly 0.
@@ -221,29 +233,41 @@ bool Kaon2HNLFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux &h
   hnl.mom = mom;
   hnl.mom.Transform(fBeam2Det);
 
-  hnl.kmom_beamcoord = kaon.mom;
+  hnl.mmom_beamcoord = kaon.mom;
   // also save the kaon momentum in the detector frame
-  hnl.kmom = kaon.mom;
-  hnl.kmom.Transform(fBeam2Det);
+  hnl.mmom = kaon.mom;
+  hnl.mmom.Transform(fBeam2Det);
 
   // and save the secondary momentum
-  hnl.sec = hnl.kmom - hnl.mom;
-  hnl.sec_beamcoord = hnl.kmom_beamcoord - hnl.mom_beamcoord;
+  hnl.sec = hnl.mmom - hnl.mom;
+  hnl.sec_beamcoord = hnl.mmom_beamcoord - hnl.mom_beamcoord;
 
   // The weight is the importance weight times the branching-ratio weight 
-  weight = kaon.weight * br / SMKaonBR(kaon.kaon_pdg);
+  weight = kaon.weight * br / SMKaonBR(kaon.meson_pdg);
 
   // set the mixing
   hnl.C1 = fMagUe4;
   hnl.C2 = fMagUm4;
+  hnl.C3 = 0.;
   hnl.mass = fM;
 
-  hnl.kaon_pdg = kaon.kaon_pdg;
-  hnl.secondary_pdg = (is_muon ? 11 : 13) * (kaon.kaon_pdg > 0 ? 1 : -1);
+  hnl.meson_pdg = kaon.meson_pdg;
+  hnl.secondary_pdg = (is_muon ? 13 : 11) * (kaon.meson_pdg > 0 ? 1 : -1);
   hnl.generator = 1; // kHNL
 
   // equivalent neutrino energy
-  hnl.equiv_enu = EnuLab(flux.fnecm, hnl.kmom, hnl.pos);
+  hnl.equiv_enu = EnuLab(flux.fnecm, hnl.mmom, hnl.pos);
+
+
+  // Get the HNL Polarization 
+  double meson_mass = Constants::Instance().kplus_mass;
+  if(abs(hnl.meson_pdg) == 321) {
+    meson_mass = Constants::Instance().kplus_mass;
+  }else if(abs(hnl.meson_pdg) == 211) {
+    meson_mass = Constants::Instance().piplus_mass;
+  }
+  
+  hnl.polarization = PolHNL(fM , lep_mass, meson_mass);
 
   return true;
 }

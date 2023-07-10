@@ -256,6 +256,12 @@ namespace caf
       Comment("Label of sbn CRT tracks."),
       "crttrack" // same for icarus and sbnd
     };
+    
+    Atom<string> CRTPMTLabel {
+      Name("CRTPMTLabel"),
+      Comment("Label for the CRTPMT Matched variables from the crtpmt data product"),
+      "crtpmt" // this variable exists in icaruscode, pretty sure it does not yet exist in sbnd
+    };
 
     Atom<string> OpFlashLabel {
       Name("OpFlashLabel"),
@@ -297,6 +303,12 @@ namespace caf
       Name("FillTrueParticles"),
       Comment("Whether to fill the rec.true_particles branch. The information on true particles"
               " will still be stored for the neutirno primaries and for trk/shw truth matching."),
+      true
+    };
+
+    Atom<bool> FillTrackCaloTruth {
+      Name("FillTrackCaloTruth"),
+      Comment("Whether to save truth information associated with CaloPoints"),
       true
     };
 

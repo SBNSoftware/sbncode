@@ -36,8 +36,8 @@ public:
    * @param cfg the input parameters for settings
    * @param the enging creator for the random seed (usually passed with *this)
    */
-  template <typename Module>
-  size_t Configure(fhicl::ParameterSet const& cfg, Module& module);
+  template <typename EngineCreator>
+  size_t Configure(fhicl::ParameterSet const& cfg, EngineCreator createEngine);
 
   /**
    * CORE FUNCTION: executes algorithms to assign a weight to the event as requested users. \n
@@ -62,8 +62,8 @@ private:
 };
 
 
-template <typename Module>
-size_t WeightManager::Configure(fhicl::ParameterSet const& p, Module& module) {
+template <typename EngineCreator>
+size_t WeightManager::Configure(fhicl::ParameterSet const& p, EngineCreator createEngine) {
   ::art::ServiceHandle<rndm::NuRandomService> seedservice;
 
   // Get list of weight functions
@@ -83,7 +83,8 @@ size_t WeightManager::Configure(fhicl::ParameterSet const& p, Module& module) {
       throw cet::exception(__FUNCTION__) << "Function " << func << " has been requested multiple times in fcl file!" << std::endl;
 
     // Create random engine for each rw function (name=func) (and seed it with random_seed set in the fcl)
-    CLHEP::HepRandomEngine& engine = seedservice->createEngine(module, "HepJamesRandom", func, ps_func, "random_seed");
+    CLHEP::HepRandomEngine& engine = seedservice->registerAndSeedEngine(createEngine("HepJamesRandom", func),
+                                                                        "HepJamesRandom", func, ps_func, "random_seed");
 
     wcalc->SetName(func);
     wcalc->SetType(func_type);
@@ -99,4 +100,3 @@ size_t WeightManager::Configure(fhicl::ParameterSet const& p, Module& module) {
 }  // namespace sbn
 
 #endif  // _SBN_WEIGHTMANAGER_H_
-

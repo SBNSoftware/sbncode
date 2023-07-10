@@ -68,8 +68,10 @@ private:
   geo::BoxBoundedGeo fBox;
   double fReferenceLabSolidAngle;
   double fReferencePrtlMass;
+  int fReferencePrimPDG;
   int fReferenceScndPDG;
-  double fReferenceKaonEnergy;
+  double fReferencePrimaryEnergy;
+  bool fVerbose;
 
   void CalculateMaxWeight();
 
@@ -94,6 +96,8 @@ WeightedRayTraceBox::~WeightedRayTraceBox()
 //------------------------------------------------------------------------------------------------------------------------------------------
 void WeightedRayTraceBox::configure(fhicl::ParameterSet const &pset)
 {
+  fVerbose = pset.get<bool>("Verbose", true);
+
   if (pset.has_key("Box")) {
     std::array<double, 6> box_config = pset.get<std::array<double, 6>>("Box");
     // xmin, xmax, ymin, ymax, zmin, zmax
@@ -104,15 +108,17 @@ void WeightedRayTraceBox::configure(fhicl::ParameterSet const &pset)
     fBox = geometry->DetectorEnclosureBox(pset.get<std::string>("Volume"));
   }
 
-  std::cout << "Detector Box." << std::endl;
-  std::cout << "X " << fBox.MinX() << " " << fBox.MaxX() << std::endl;
-  std::cout << "Y " << fBox.MinY() << " " << fBox.MaxY() << std::endl;
-  std::cout << "Z " << fBox.MinZ() << " " << fBox.MaxZ() << std::endl;
+  if (fVerbose){
+    std::cout << "Detector Box." << std::endl;
+    std::cout << "X " << fBox.MinX() << " " << fBox.MaxX() << std::endl;
+    std::cout << "Y " << fBox.MinY() << " " << fBox.MaxY() << std::endl;
+    std::cout << "Z " << fBox.MinZ() << " " << fBox.MaxZ() << std::endl;
+  }
 
-  fReferenceLabSolidAngle = pset.get<double>("ReferenceLabSolidAngle");
   fReferencePrtlMass = pset.get<double>("ReferencePrtlMass");
   fReferenceScndPDG = pset.get<int>("ReferenceScndPDG");
-  fReferenceKaonEnergy = pset.get<double>("ReferenceKaonEnergy");
+  fReferencePrimPDG = pset.get<int>("ReferencePrimPDG");
+  fReferencePrimaryEnergy = pset.get<double>("ReferencePrimaryEnergy");
 
   CalculateMaxWeight();
 
@@ -122,7 +128,7 @@ void WeightedRayTraceBox::configure(fhicl::ParameterSet const &pset)
   double p = twobody_momentum(kaonp_mass, pionp_mass, 0.);
 
   {
-    double beta = sqrt(fReferenceKaonEnergy*fReferenceKaonEnergy - kaonp_mass*kaonp_mass) / fReferenceKaonEnergy;
+    double beta = sqrt(fReferencePrimaryEnergy*fReferencePrimaryEnergy - fReferencePrimaryMass*fReferencePrimaryMass) / fReferencePrimaryEnergy;
     // Doen't affect weight
     double rand = 1.;
 
@@ -146,7 +152,7 @@ void WeightedRayTraceBox::configure(fhicl::ParameterSet const &pset)
     decay.ptype = 321;
     decay.pdpx = 0.;
     decay.pdpy = 0.;
-    decay.pdpz = sqrt(fReferenceKaonEnergy*fReferenceKaonEnergy - kaonp_mass*kaonp_mass);
+    decay.pdpz = sqrt(fReferencePrimaryEnergy*fReferencePrimaryEnergy - fReferencePrimaryMass*fReferencePrimaryMass);
     decay.necm = p;
     decay.vx = start.X();
     decay.vy = start.Y();
@@ -165,11 +171,11 @@ void WeightedRayTraceBox::configure(fhicl::ParameterSet const &pset)
 }
   
 void WeightedRayTraceBox::CalculateMaxWeight() {
-  double kplus_mass = Constants::Instance().kplus_mass;
-  double secondary_mass = secPDG2Mass(fReferenceScndPDG);
+  double primary_mass = PDG2Mass(fReferencePrimPDG);
+  double secondary_mass = PDG2Mass(fReferenceScndPDG);
+  double p = twobody_momentum(primary_mass, secondary_mass, fReferencePrtlMass);
 
-  double p = twobody_momentum(kplus_mass, secondary_mass, fReferencePrtlMass);
-  double beta = sqrt(fReferenceKaonEnergy*fReferenceKaonEnergy - kplus_mass*kplus_mass) / fReferenceKaonEnergy;
+  double beta = sqrt(fReferencePrimaryEnergy*fReferencePrimaryEnergy - primary_mass*primary_mass) / fReferencePrimaryEnergy;
 
   // Doen't affect weight
   double rand = 1.;
@@ -179,7 +185,7 @@ void WeightedRayTraceBox::CalculateMaxWeight() {
   TVector3 boost(beta, 0., 0.);
 
   double lab_frame_p, costh_rest, weight;
-  int err = calcPrtlRayWgt(p, fReferencePrtlMass, dir, boost, rand, lab_frame_p, costh_rest, weight);
+  int err = calcPrtlRayWgt(p, fReferencePrtlMass, dir, boost, rand, lab_frame_p, costh_rest, weight, fVerbose);
 
   if (err) { // Shouldn't happen
     throw cet::exception("Weighted Ray Trace: Bad max weight calculation.");
@@ -341,11 +347,11 @@ bool WeightedRayTraceBox::IntersectDetector(MeVPrtlFlux &flux, std::array<TVecto
 
   // calculate the weight and kinematics of sending the flux here
   TLorentzVector flux_mom_rest = flux.mom;
-  flux_mom_rest.Boost(-flux.kmom.BoostVector());
+  flux_mom_rest.Boost(-flux.mmom.BoostVector());
   double rest_frame_p = flux_mom_rest.Vect().Mag();
   double p_lab, costh_rest;
-  int err = calcPrtlRayWgt(rest_frame_p, flux.mom.M(), detloc - flux.pos.Vect(), flux.kmom.BoostVector(), GetRandom(), 
-      p_lab, costh_rest, weight);
+  int err = calcPrtlRayWgt(rest_frame_p, flux.mom.M(), detloc - flux.pos.Vect(), flux.mmom.BoostVector(), GetRandom(), 
+      p_lab, costh_rest, weight, fVerbose);
 
   // Kinematics don't work
   if (err) return false;
@@ -355,11 +361,11 @@ bool WeightedRayTraceBox::IntersectDetector(MeVPrtlFlux &flux, std::array<TVecto
 
   // And correct all the other variables
   flux.mom_beamcoord = flux.mom;
-  flux.mom_beamcoord.Boost(-flux.kmom.BoostVector());
-  flux.mom_beamcoord.Boost(flux.kmom_beamcoord.BoostVector());
+  flux.mom_beamcoord.Boost(-flux.mmom.BoostVector());
+  flux.mom_beamcoord.Boost(flux.mmom_beamcoord.BoostVector());
 
-  flux.sec = flux.kmom - flux.mom;
-  flux.sec_beamcoord = flux.kmom_beamcoord - flux.mom_beamcoord;
+  flux.sec = flux.mmom - flux.mom;
+  flux.sec_beamcoord = flux.mmom_beamcoord - flux.mom_beamcoord;
 
   // Compute the intersections for the selected point
   std::vector<TVector3> box_intersections = fBox.GetIntersections(flux.pos.Vect(), flux.mom.Vect().Unit());
@@ -375,17 +381,19 @@ bool WeightedRayTraceBox::IntersectDetector(MeVPrtlFlux &flux, std::array<TVecto
   // Turn the weight into an event weight
   weight *= SolidAngle(flux.pos.Vect()) / (4*M_PI);
 
-  std::cout << "From: " << flux.pos.X() << " " << flux.pos.Y() << " " << flux.pos.Z() << std::endl;
-  std::cout << "Solid Angle ratio is: " << (SolidAngle(flux.pos.Vect()) / (4*M_PI)) << std::endl;
+  if (fVerbose) {
+    std::cout << "From: " << flux.pos.X() << " " << flux.pos.Y() << " " << flux.pos.Z() << std::endl;
+    std::cout << "Solid Angle ratio is: " << (SolidAngle(flux.pos.Vect()) / (4*M_PI)) << std::endl;
 
-  std::cout << "Kaon 4P: " << flux.kmom.E() << " " << flux.kmom.Px() << " " << flux.kmom.Py() << " " << flux.kmom.Pz() << std::endl;
-  std::cout << "Selected Prtl 4P: " << flux.mom.E() << " " << flux.mom.Px() << " " << flux.mom.Py() << " " << flux.mom.Pz() << std::endl;
-  std::cout << "Selected Scdy 4P: " << flux.sec.E() << " " << flux.sec.Px() << " " << flux.sec.Py() << " " << flux.sec.Pz() << std::endl;
+    std::cout << "Primary 4P: " << flux.mmom.E() << " " << flux.mmom.Px() << " " << flux.mmom.Py() << " " << flux.mmom.Pz() << std::endl;
+    std::cout << "Selected Prtl 4P: " << flux.mom.E() << " " << flux.mom.Px() << " " << flux.mom.Py() << " " << flux.mom.Pz() << std::endl;
+    std::cout << "Selected Scdy 4P: " << flux.sec.E() << " " << flux.sec.Px() << " " << flux.sec.Py() << " " << flux.sec.Pz() << std::endl;
+  }
 
   // check the costh calc
   TLorentzVector flux_rest = flux.mom;
-  flux_rest.Boost(-flux.kmom.BoostVector());
-  std::cout << "Prtl lab costh: " << costh_rest << " " << flux.kmom.Vect().Unit().Dot(flux_rest.Vect().Unit()) << std::endl;
+  flux_rest.Boost(-flux.mmom.BoostVector());
+  if (fVerbose) std::cout << "Prtl lab costh: " << costh_rest << " " << flux.mmom.Vect().Unit().Dot(flux_rest.Vect().Unit()) << std::endl;
 
   return true;
 }

@@ -36,7 +36,7 @@
 #include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlTruth.h"
 #include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlFlux.h"
 #include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlDecay.h"
-#include "sbnobj/Common/EventGen/MeVPrtl/KaonParent.h"
+#include "sbnobj/Common/EventGen/MeVPrtl/MesonParent.h"
 
 #include "Tools/IMesonGen.h"
 #include "Tools/IMeVPrtlFlux.h"
@@ -116,16 +116,16 @@ void evgen::ldm::MeVPrtlTestRayTrace::analyze(const art::Event& evt)
 {
   // get the next MeVPrtl Truth 
   while (1) {
-    simb::MCFlux kaon = fGenTool->GetNext();
+    simb::MCFlux meson = fGenTool->GetNext();
 
-    evgen::ldm::KaonParent kaonp(kaon);
-    bool is_kaon = kaonp.kaon_pdg != 0;
+    evgen::ldm::MesonParent mesonp(meson);
+    bool is_kaon = mesonp.isKaon();
 
     // (void) is_kaon;
     if (is_kaon) { 
-     std::cout << "Flux is kaon (" << is_kaon << "). Weight: " << kaonp.weight << ". Produced with energy: " << kaonp.mom.E() 
-             << " M=" << kaonp.mom.M() << " P=(" << kaonp.mom.Px() << ", " << kaonp.mom.Py() << ", " << kaonp.mom.Pz() << ") At: ("
-             << kaonp.pos.X() << ", " << kaonp.pos.Y() << ", " << kaonp.pos.Z() << ")" << std::endl;
+     std::cout << "Flux is kaon (" << is_kaon << "). Weight: " << mesonp.weight << ". Produced with energy: " << mesonp.mom.E() 
+             << " M=" << mesonp.mom.M() << " P=(" << mesonp.mom.Px() << ", " << mesonp.mom.Py() << ", " << mesonp.mom.Pz() << ") At: ("
+             << mesonp.pos.X() << ", " << mesonp.pos.Y() << ", " << mesonp.pos.Z() << ")" << std::endl;
     }
 
     bool success;
@@ -133,7 +133,7 @@ void evgen::ldm::MeVPrtlTestRayTrace::analyze(const art::Event& evt)
     evgen::ldm::MeVPrtlFlux flux;
     double flux_weight;
 
-    success = fFluxTool->MakeFlux(kaon, flux, flux_weight);
+    success = fFluxTool->MakeFlux(meson, flux, flux_weight);
     if (!success) continue;
 
     std::cout << "New flux. E=" << flux.mom.E() << " At: (" << flux.pos.X() << ", " << flux.pos.Y() << ", " << flux.pos.Z() << ")" << std::endl;
@@ -142,9 +142,9 @@ void evgen::ldm::MeVPrtlTestRayTrace::analyze(const art::Event& evt)
 
 
     // See if an intersection is possible
-    double costh_crit = minKinematicCosTheta(flux.kmom.M(), flux.sec.M(), flux.mom.M(), flux.kmom.E());
+    double costh_crit = minKinematicCosTheta(flux.mmom.M(), flux.sec.M(), flux.mom.M(), flux.mmom.E());
     TVector3 det(0., 0., 0.); // detector should be near origin
-    double costh = flux.kmom.Vect().Unit().Dot((det - flux.pos.Vect()).Unit());
+    double costh = flux.mmom.Vect().Unit().Dot((det - flux.pos.Vect()).Unit());
     std::cout << "COSTH CRIT: " << costh_crit << " DETECTOR COSTH: " << costh << std::endl;
     if (costh < costh_crit) continue;
 

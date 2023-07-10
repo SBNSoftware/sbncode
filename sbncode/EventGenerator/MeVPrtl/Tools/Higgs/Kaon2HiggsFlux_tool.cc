@@ -19,7 +19,7 @@
 #include "sbncode/EventGenerator/MeVPrtl/Tools/IMeVPrtlFlux.h"
 
 #include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlFlux.h"
-#include "sbnobj/Common/EventGen/MeVPrtl/KaonParent.h"
+#include "sbnobj/Common/EventGen/MeVPrtl/MesonParent.h"
 
 // LArSoft includes
 #include "nugen/EventGeneratorBase/GENIE/EvtTimeShiftFactory.h"
@@ -214,8 +214,8 @@ double Kaon2HiggsFlux::MaxWeight() {
 bool Kaon2HiggsFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux &higgs, double &weight) {
 
   // make the kaon parent
-  evgen::ldm::KaonParent kaon(flux);
-  if (!kaon.kaon_pdg) return false; // parent wasn't a kaon
+  evgen::ldm::MesonParent kaon(flux);
+  if (!kaon.isKaon()) return false; // parent wasn't a kaon
 
   // select on the kaon
   if (fKDAROnly && (kaon.mom.P() > 1e-3 || kaon.pos.Z() < 72000.)) return false; //selects KDAR from absorber only.
@@ -238,14 +238,14 @@ bool Kaon2HiggsFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux 
   // get the momentum direction in the kaon parent rest frame
   double kaon_mass = kaon.mom.M();  
   double higs_mass = fM;
-  double pion_mass = TDatabasePDG::Instance()->GetParticle(PionPdg(kaon.kaon_pdg))->Mass();
+  double pion_mass = TDatabasePDG::Instance()->GetParticle(PionPdg(kaon.meson_pdg))->Mass();
 
   // ignore if we can't make this higgs
   if (kaon_mass - pion_mass < higs_mass) return false;
 
   // isotropic decay
   TVector3 kaon_frame_momentum = RandomUnitVector() * higgs_momentum(kaon_mass, pion_mass, higs_mass);
-  std::cout << "Rest frame higgs P: " <<  higgs_momentum(kaon_mass, pion_mass, higs_mass) << std::endl;
+  // std::cout << "Rest frame higgs P: " <<  higgs_momentum(kaon_mass, pion_mass, higs_mass) << std::endl;
 
   // boost to lab frame
   TLorentzVector mom;
@@ -257,14 +257,14 @@ bool Kaon2HiggsFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux 
   higgs.mom = mom;
   higgs.mom.Transform(fBeam2Det);
 
-  higgs.kmom_beamcoord = kaon.mom;
+  higgs.mmom_beamcoord = kaon.mom;
   // also save the kaon momentum in the detector frame
-  higgs.kmom = kaon.mom;
-  higgs.kmom.Transform(fBeam2Det);
+  higgs.mmom = kaon.mom;
+  higgs.mmom.Transform(fBeam2Det);
 
   // The weight is the importance weight times the branching-ratio weight 
-  weight = kaon.weight / SMKaonBR(kaon.kaon_pdg);
-  if (kaon.kaon_pdg == 130 /* KLong */) {
+  weight = kaon.weight / SMKaonBR(kaon.meson_pdg);
+  if (kaon.meson_pdg == 130 /* KLong */) {
     weight = weight * fKLBR;
   }
   else { // KPlus or KMinus
@@ -272,17 +272,17 @@ bool Kaon2HiggsFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux 
   }
 
   // and save the secondary momentum
-  higgs.sec = higgs.kmom - higgs.mom;
-  higgs.sec_beamcoord = higgs.kmom_beamcoord - higgs.mom_beamcoord;
+  higgs.sec = higgs.mmom - higgs.mom;
+  higgs.sec_beamcoord = higgs.mmom_beamcoord - higgs.mom_beamcoord;
 
   // set the mixing
   higgs.C1 = fMixingAngle;
   higgs.mass = fM;
 
-  higgs.kaon_pdg = kaon.kaon_pdg;
+  higgs.meson_pdg = kaon.meson_pdg;
   higgs.generator = 0; // kDissonantHiggs
-  higgs.secondary_pdg = PionPdg(kaon.kaon_pdg);
-  higgs.equiv_enu = EnuLab(flux.fnecm, higgs.kmom, higgs.pos);
+  higgs.secondary_pdg = PionPdg(kaon.meson_pdg);
+  higgs.equiv_enu = EnuLab(flux.fnecm, higgs.mmom, higgs.pos);
 
   return true;
 }

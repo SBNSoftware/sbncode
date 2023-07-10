@@ -1,0 +1,2 @@
+physics.producers.generator.Flux.M: @local::alpM
+physics.producers.generator.Decay.ReferenceALPMass: @local::alpM

@@ -2,6 +2,7 @@
 BEGIN_PROLOG
 
 hnlM: 0.265
+tau_hnlM: 0.45
 
 kaon2hnl: {
   tool_type: Kaon2HNLFlux
@@ -17,15 +18,44 @@ kaon2hnl: {
   SpillTimeConfig: "" #"evgb::EvtTimeFlat 10000 0" // 10us duration, no offset  
 }
 
+tau2hnl: {
+  tool_type: Tau2HNLFlux
+  M: @local::tau_hnlM
+  MagUt4: 1e-5
+  Beam2DetectorRotation: @local::icarus_numi_beam2detector_rotation
+  BeamOrigin: @local::icarus_numi_beam_origin
+
+  // timing config
+  SpillTimeConfig: "" #"evgb::EvtTimeFlat 10000 0" // 10us duration, no offset
+}
+
 decay_hnl: {
   tool_type: HNLMakeDecay
   Decays: ["mu_pi"]
   Majorana: true
+  DecayIsThreeBodyAnisotropic: false
   ReferenceUE4: 0
   ReferenceUM4: 1e-7
+  ReferenceUT4: 0
   ReferenceHNLMass: @local::hnlM
   ReferenceRayLength: 2100 # 21m
+  ReferenceRayDistance: 10400 # 104m
   ReferenceHNLEnergyFromKaonEnergy: 15. # GeV
+}
+
+decay_tau_hnl: {
+  tool_type: HNLMakeDecay
+  Decays: ["nu_mu_mu"]
+  WidthDecays: ["nu_nu_nu", "nu_mu_mu", "nu_e_e", "nu_pi0", "nu_eta", "nu_etap", "nu_rho0", "nu_mu_e"]
+  Majorana: false
+  DecayIsThreeBodyAnisotropic: false
+  ReferenceUE4: 0.
+  ReferenceUM4: 0.
+  ReferenceUT4: 1e-5
+  ReferenceHNLMass: @local::tau_hnlM
+  ReferenceRayLength: 2100 # 21m
+  ReferenceRayDistance: 10400 # 104m
+  ReferenceHNLEnergyFromTauEnergy: 25. # GeV
 }
 
 # RayTrace configs
@@ -42,15 +72,34 @@ mxdraytrace: @local::mixedweight_ray_trace_box
 mxdraytrace.ReferencePrtlMass: @local::hnlM # GeV
 mxdraytrace.ReferenceScndPDG: 13 # muon
 
+mcraytrace_tau: @local::rethrow_ray_trace_box
+mcraytrace_tau.ReferencePrtlMass: @local::tau_hnlM
+mcraytrace_tau.ReferenceScndPDG: 211 # pion
+mcraytrace_tau.ReferencePrimPDG: 15 # tau
+mcraytrace_tau.ReferencePrimaryEnergy: 25 # GeV
+mcraytrace_tau.NThrows: 100 
+
+wgtraytrace_tau: @local::weighted_ray_trace_box
+wgtraytrace_tau.ReferencePrtlMass: @local::tau_hnlM
+wgtraytrace_tau.ReferenceScndPDG: 211 # pion
+mcraytrace_tau.ReferencePrimPDG: 15 # tau
+wgtraytrace_tau.ReferencePrimaryEnergy: 25 # GeV
+
+mxdraytrace_tau: @local::mixedweight_ray_trace_box
+mxdraytrace_tau.ReferencePrtlMass: @local::tau_hnlM
+mxdraytrace_tau.ReferenceScndPDG: 211 # pion
+mcraytrace_tau.ReferencePrimPDG: 15 # tau
+mxdraytrace_tau.ReferencePrimaryEnergy: 25 # GeV
+
 # KDAR configs
 kaon2hnl_kdar: @local::kaon2hnl
 kaon2hnl_kdar.KDAROnly: true
 
 decay_hnl_kdar: @local::decay_hnl
-decay_hnl_kdar.ReferenceHNLEnergyFromKaonEnergy: 0.494
+decay_hnl_kdar.ReferenceHNLEnergyFromKaonEnergy: 0.493677
 
 mixedweight_ray_trace_box_kdar: @local::mixedweight_ray_trace_box
-mixedweight_ray_trace_box_kdar.ReferenceKaonEnergy: 0.494
+mixedweight_ray_trace_box_kdar.ReferencePriamryEnergy: 0.493677
 mixedweight_ray_trace_box_kdar.ReferenceLabSolidAngle: 1e-2
 mixedweight_ray_trace_box_kdar.MaxWeightFudge: 5
 
@@ -75,12 +124,27 @@ hnl_gen_kdar: {
 hnl_gen_kdar.RayTrace.ReferencePrtlMass: @local::hnlM # GeV
 hnl_gen_kdar.RayTrace.ReferenceScndPDG: 13 # muon
 
+hnl_tau_gen: {
+  module_type: MeVPrtlGen
+  Deweight: true
+  MesonGen: @local::numi_tau
+  Flux: @local::tau2hnl
+  RayTrace: @local::mxdraytrace_tau
+  Decay: @local::decay_tau_hnl
+}
+
 
 hnl: @local::hnl_gen
 hnl.Deweight: false
 hnl.Produce: false
 hnl.AnaOutput: true
+hnl.RayTrace: @local::wgtraytrace
 
+hnl_tau: @local::hnl_tau_gen
+hnl_tau.Deweight: false
+hnl_tau.Produce: false
+hnl_tau.AnaOutput: true
+hnl_tau.RayTrace: @local::wgtraytrace_tau
 
 hnl_test_raytrace: {
   module_type: MeVPrtlTestRayTrace

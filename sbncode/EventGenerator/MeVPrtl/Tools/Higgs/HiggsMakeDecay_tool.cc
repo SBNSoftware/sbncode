@@ -261,8 +261,10 @@ bool HiggsMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TV
     return false;
   }
 
+  double partial_to_total = (width_elec*fAllowElectronDecay + width_muon*fAllowMuonDecay + width_piplus*fAllowPionDecay + width_pizero*fAllowPi0Decay) / (width_elec + width_muon + width_piplus + width_pizero);
+
   // Scale by the allowed BR
-  weight *= (width_elec*fAllowElectronDecay + width_muon*fAllowMuonDecay + width_piplus*fAllowPionDecay + width_pizero*fAllowPi0Decay) / (width_elec + width_muon + width_piplus + width_pizero);
+  weight *= partial_to_total;
 
   // get the decay location
   double flat_rand = CLHEP::RandFlat::shoot(fEngine, 0, 1.);
@@ -295,9 +297,10 @@ bool HiggsMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TV
   p4B.Boost(flux.mom.BoostVector());
 
   // save the decay info
-  decay.decay_width = width_elec + width_muon + width_piplus + width_pizero; 
-  decay.mean_lifetime = lifetime_ns;
-  decay.mean_distance = mean_dist; 
+  decay.total_decay_width = width_elec + width_muon + width_piplus + width_pizero; 
+  decay.total_mean_lifetime = lifetime_ns;
+  decay.total_mean_distance = mean_dist; 
+  decay.allowed_decay_fraction = partial_to_total;
 
   decay.pos = decay_pos;
 

@@ -210,6 +210,8 @@ void util::MetadataSBN::postOpenInputFile(std::string const& fn)
 // PostEvent callback.
 void util::MetadataSBN::postEvent(art::Event const& evt, art::ScheduleContext)
 {
+  std::lock_guard lock(fMutex);
+
   art::RunNumber_t run = evt.run();
   art::SubRunNumber_t subrun = evt.subRun();
   art::EventNumber_t event = evt.event();
@@ -233,6 +235,8 @@ void util::MetadataSBN::postEvent(art::Event const& evt, art::ScheduleContext)
 // PostSubRun callback.
 void util::MetadataSBN::postBeginSubRun(art::SubRun const& sr)
 {
+  std::lock_guard lock(fMutex);
+
   art::RunNumber_t run = sr.run();
   art::SubRunNumber_t subrun = sr.subRun();
   art::SubRunID srid = sr.id();
@@ -248,6 +252,8 @@ void util::MetadataSBN::postBeginSubRun(art::SubRun const& sr)
 // PostEndSubRun callback.
 void util::MetadataSBN::postEndSubRun(art::SubRun const& sr)
 {
+  std::lock_guard lock(fMutex);
+
   art::Handle< sumdata::POTSummary > potListHandle;
   double fTotPOT = 0;
   if(sr.getByLabel(fPOTModuleLabel,potListHandle)){

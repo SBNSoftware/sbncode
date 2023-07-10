@@ -68,7 +68,7 @@ namespace caf
                   bool allowEmpty) {
 
     srhit.t0 = ( (long long)(hit.ts0()) /*u_int64_t to int64_t*/ + CRT_T0_reference_time )/1000.;
-    srhit.t1 = hit.ts1()/1000.-CRT_T1_reference_time; // ns -> us
+    srhit.t1 = hit.ts1()/1000.+CRT_T1_reference_time; // ns -> us
     srhit.time = use_ts0 ? srhit.t0 : srhit.t1;
 
     srhit.position.x = hit.x_pos;
@@ -112,7 +112,43 @@ namespace caf
     srtrack.hitb.plane = track.plane2;
   }
 
+  void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,
+		       caf::SRCRTPMTMatch &srmatch,
+		       bool allowEmpty){
+    // allowEmpty does not (yet) matter here                                                           
+    (void) allowEmpty;
+    //srmatch.setDefault();
+    std::cout << "filling CRTPMT Match : flash time = " << match.flashTime << "\n";
+    srmatch.flashID = match.flashID;
+    srmatch.flashTime_us = match.flashTime;
+    srmatch.flashGateTime = match.flashGateTime;
+    srmatch.firstOpHitPeakTime = match.firstOpHitPeakTime;
+    srmatch.firstOpHitStartTime = match.firstOpHitStartTime;
+    srmatch.flashInGate = match.flashInGate;
+    srmatch.flashInBeam = match.flashInBeam;
+    srmatch.flashPE = match.flashPE;
+    srmatch.flashPosition = SRVector3D (match.flashPosition.X(), match.flashPosition.Y(), match.flashPosition.Z());
+    srmatch.flashYWidth = match.flashYWidth;
+    srmatch.flashZWidth = match.flashZWidth;
+    srmatch.flashClassification = static_cast<int>(match.flashClassification);
+    //srmatch.flashClassification = match.flashClassification;
+    std::cout << "match type : " << std::to_string(static_cast<int>(match.flashClassification)) << "\n";
+    std::cout << "matchedCRThits.size : "<< match.matchedCRTHits.size() << "\n";
+    for(const auto& matchedCRTHit : match.matchedCRTHits){
+      std::cout << "CRTPMTTimeDiff = "<< matchedCRTHit.PMTTimeDiff << "\n";
+      caf::SRMatchedCRT matchedCRT;
+      matchedCRT.PMTTimeDiff = matchedCRTHit.PMTTimeDiff; 
+      matchedCRT.time = matchedCRTHit.time;
+      matchedCRT.sys = matchedCRTHit.sys;
+      matchedCRT.region = matchedCRTHit.region;
+      srmatch.matchedCRTHits.push_back(matchedCRT);
+    }
+    std::cout << "srmatch.matchedCRTHits.size = " << srmatch.matchedCRTHits.size() << "\n";
+  }
+
+
   void FillOpFlash(const recob::OpFlash &flash,
+                  std::vector<recob::OpHit const*> const& hits,
                   int cryo, 
                   caf::SROpFlash &srflash,
                   bool allowEmpty) {
@@ -121,6 +157,15 @@ namespace caf
 
     srflash.time = flash.Time();
     srflash.timewidth = flash.TimeWidth();
+
+    double firstTime = std::numeric_limits<double>::max();
+    for(const auto& hit: hits){
+      double const hitTime = hit->HasStartTime()? hit->StartTime(): hit->PeakTime();
+      if (firstTime > hitTime)
+        firstTime = hitTime;
+    }
+    srflash.firsttime = firstTime;
+
     srflash.cryo = cryo; // 0 in SBND, 0/1 for E/W in ICARUS
 
     // Sum over each wall, not very SBND-compliant
@@ -374,6 +419,48 @@ namespace caf
     }
   }
 
+  void FillSliceBarycenter(const std::vector<art::Ptr<recob::Hit>> &inputHits,
+                           const std::vector<art::Ptr<recob::SpacePoint>> &inputPoints,
+                           caf::SRSlice &slice)
+  {
+    unsigned int nHits = inputHits.size();
+    double sumCharge = 0.;
+    double sumX = 0.; double sumY = 0.; double sumZ = 0.;
+    double sumXX = 0.; double sumYY = 0.; double sumZZ = 0.;
+    double thisHitCharge, thisPointXYZ[3], chargeCenter[3], chargeWidth[3];
+
+    for ( unsigned int i = 0; i < nHits; i++ ) {
+      const recob::Hit &thisHit = *inputHits[i];
+      if ( thisHit.SignalType() != geo::kCollection ) continue;
+      art::Ptr<recob::SpacePoint> const& thisPoint = inputPoints.at(i);
+      if ( !thisPoint ) continue;
+
+      thisHitCharge = thisHit.Integral();
+      thisPointXYZ[0] = thisPoint->XYZ()[0];
+      thisPointXYZ[1] = thisPoint->XYZ()[1];
+      thisPointXYZ[2] = thisPoint->XYZ()[2];
+
+      sumCharge += thisHitCharge;
+      sumX += thisPointXYZ[0] * thisHitCharge;
+      sumY += thisPointXYZ[1] * thisHitCharge;
+      sumZ += thisPointXYZ[2] * thisHitCharge;
+      sumXX += thisPointXYZ[0] * thisPointXYZ[0] * thisHitCharge;
+      sumYY += thisPointXYZ[1] * thisPointXYZ[1] * thisHitCharge;
+      sumZZ += thisPointXYZ[2] * thisPointXYZ[2] * thisHitCharge;
+    }
+
+    if( sumCharge != 0 ) {
+      chargeCenter[0] = sumX / sumCharge;
+      chargeCenter[1] = sumY / sumCharge;
+      chargeCenter[2] = sumZ / sumCharge;
+      chargeWidth[0] = pow( (sumXX/sumCharge - pow(sumX/sumCharge, 2)), .5);
+      chargeWidth[1] = pow( (sumYY/sumCharge - pow(sumY/sumCharge, 2)), .5);
+      chargeWidth[2] = pow( (sumZZ/sumCharge - pow(sumZ/sumCharge, 2)), .5);
+
+      slice.charge_center.SetXYZ( chargeCenter[0], chargeCenter[1], chargeCenter[2] ); 
+      slice.charge_width.SetXYZ( chargeWidth[0], chargeWidth[1], chargeWidth[2] );
+    }
+  }
 
   //......................................................................
 
@@ -573,9 +660,14 @@ namespace caf
           if (h.key() == tps[i]) {
             p.wire = h->WireID().Wire;
             p.tpc = h->WireID().TPC;
+            p.channel = h->Channel();
             p.sumadc = h->SummedADC();
             p.integral = h->Integral();
             p.t = h->PeakTime();
+            p.width = h->RMS();
+            p.mult = h->Multiplicity();
+            p.start = h->StartTick();
+            p.end = h->EndTick();
           }
         }
 

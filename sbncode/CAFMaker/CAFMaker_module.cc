@@ -64,6 +64,8 @@
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
+#include "larevt/SpaceCharge/SpaceCharge.h"
+#include "larevt/SpaceChargeServices/SpaceChargeService.h"
 
 #include "art_root_io/TFileService.h"
 
@@ -1126,6 +1128,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clock_data);
   const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
 
+  auto const *sce = lar::providerFrom<spacecharge::SpaceChargeService>();
+
   // Collect the input TPC reco tags
   std::vector<std::string> pandora_tag_suffixes;
   fParams.PandoraTagSuffixes(pandora_tag_suffixes);
@@ -1227,11 +1231,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // get the number of events generated in the gen stage
   unsigned n_gen_evt = 0;
   for (const art::ProcessConfiguration &process: evt.processHistory()) {
-    fhicl::ParameterSet gen_config;
-    bool success = evt.getProcessParameterSet(process.processName(), gen_config);
-    if (success && gen_config.has_key("source") && gen_config.has_key("source.maxEvents") && gen_config.has_key("source.module_type") ) {
-      int max_events = gen_config.get<int>("source.maxEvents");
-      std::string module_type = gen_config.get<std::string>("source.module_type");
+    std::optional<fhicl::ParameterSet> gen_config = evt.getProcessParameterSet(process.processName());
+    if (gen_config && gen_config->has_key("source") && gen_config->has_key("source.maxEvents") && gen_config->has_key("source.module_type") ) {
+      int max_events = gen_config->get<int>("source.maxEvents");
+      std::string module_type = gen_config->get<std::string>("source.module_type");
       if (module_type == "EmptyEvent") {
         n_gen_evt += max_events;
       }
@@ -1286,8 +1289,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   art::Handle<std::vector<sbn::crt::CRTHit>> crthits_handle;
   GetByLabelStrict(evt, fParams.CRTHitLabel(), crthits_handle);
   // fill into event
-  int64_t CRT_T0_reference_time = fParams.ReferenceCRTT0ToBeam() ? -srtrigger.beam_gate_time_abs : 0; // ns, signed
-  double CRT_T1_reference_time = fParams.ReferenceCRTT1FromTriggerToBeam() ? srtrigger.trigger_within_gate : 0.;
+  //int64_t CRT_T0_reference_time = fParams.ReferenceCRTT0ToBeam() ? -srtrigger.beam_gate_time_abs : 0; // ns, signed
+  //double CRT_T1_reference_time = fParams.ReferenceCRTT1FromTriggerToBeam() ? srtrigger.trigger_within_gate : 0.;
+  int64_t CRT_T0_reference_time = isRealData ?  -srtrigger.beam_gate_time_abs : -fParams.CRTSimT0Offset();
+  double CRT_T1_reference_time = isRealData ? srtrigger.trigger_within_gate : -fParams.CRTSimT0Offset();
+
   if (crthits_handle.isValid()) {
     const std::vector<sbn::crt::CRTHit> &crthits = *crthits_handle;
     for (unsigned i = 0; i < crthits.size(); i++) {
@@ -1310,6 +1316,23 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
   }
 
+  // Get all of the CRTPMT Matches .. 
+  std::vector<caf::SRCRTPMTMatch> srcrtpmtmatches;
+  std::cout << "srcrtpmtmatches.size = " << srcrtpmtmatches.size() << "\n";
+  art::Handle<std::vector<sbn::crt::CRTPMTMatching>> crtpmtmatch_handle;
+  GetByLabelStrict(evt, fParams.CRTPMTLabel(), crtpmtmatch_handle);
+  if(crtpmtmatch_handle.isValid()){
+    std::cout << "valid handle! label: " << fParams.CRTPMTLabel() << "\n";
+    const std::vector<sbn::crt::CRTPMTMatching> &crtpmtmatches = *crtpmtmatch_handle;
+    for (unsigned i = 0; i < crtpmtmatches.size(); i++) {
+      srcrtpmtmatches.emplace_back();
+      FillCRTPMTMatch(crtpmtmatches[i],srcrtpmtmatches.back());
+    }
+  }
+  else{
+    std::cout << "crtpmtmatch_handle.isNOTValid!\n";
+  }
+
   // Get all of the OpFlashes
   std::vector<caf::SROpFlash> srflashes;
 
@@ -1320,9 +1343,18 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     if (flashes_handle.isValid()) {
       const std::vector<recob::OpFlash> &opflashes = *flashes_handle;
       int cryostat = ( pandora_tag_suffix.find("W") != std::string::npos ) ? 1 : 0;
+
+      // get associated OpHits for each OpFlash
+      art::FindMany<recob::OpHit> findManyHits(flashes_handle, evt, fParams.OpFlashLabel() + pandora_tag_suffix);
+
+      int iflash=0;
       for (const recob::OpFlash& flash : opflashes) {
+
+        std::vector<recob::OpHit const*> const& ophits = findManyHits.at(iflash);
+
         srflashes.emplace_back();
-        FillOpFlash(flash, cryostat, srflashes.back());
+        FillOpFlash(flash, ophits, cryostat, srflashes.back());
+        iflash++;
       }
     }
   }
@@ -1585,6 +1617,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceFlashMatchA(fmatch, recslc);
     FillSliceVertex(vertex, recslc);
     FillSliceCRUMBS(slcCRUMBS, recslc);
+    FillSliceBarycenter(slcHits, slcSpacePoints, recslc);
 
     // select slice
     if (!SelectSlice(recslc, fParams.CutClearCosmic())) continue;
@@ -1743,9 +1776,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
               fParams.TrackHitFillRRStartCut(), fParams.TrackHitFillRREndCut(),
               lar::providerFrom<geo::Geometry>(), dprop, trk);
         }
-        if (fmTrackHit.isValid()) {
-          if ( !isRealData ) FillTrackTruth(fmTrackHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, trk);
-        }
         if (fmCRTHitMatch.isValid()) {
           art::FindManyP<sbn::crt::CRTHit> CRTT02Hit = FindManyPStrict<sbn::crt::CRTHit>
               (fmCRTHitMatch.at(iPart), evt, fParams.CRTHitMatchLabel() + slice_tag_suff);
@@ -1759,6 +1789,16 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         if (fmCRTTrackMatch.isValid()) {
           FillTrackCRTTrack(fmCRTTrackMatch.at(iPart), trk);
         }
+        // Truth matching
+        if (fmTrackHit.isValid()) {
+          if ( !isRealData ) {
+            // Track -> particle matching
+            FillTrackTruth(fmTrackHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, trk);
+            // Hit truth information corresponding to Calo-Points
+            // Assumes truth matching and calo-points are filled
+            if (mc_particles.isValid() && fParams.FillTrackCaloTruth()) FillTrackCaloTruth(id_to_ide_map, *mc_particles, geometry, clock_data, sce, trk);
+          }
+        }
       } // thisTrack exists
 
       if (!thisShower.empty()) { // it has shower!
@@ -1768,7 +1808,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, shw);
 
         // We may have many residuals per shower depending on how many showers ar in the slice
-
         if (fmShowerRazzle.isValid() && fmShowerRazzle.at(iPart).size()==1) {
            FillShowerRazzle(fmShowerRazzle.at(iPart).front(), shw);
         }
@@ -1828,6 +1867,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     rec.true_particles  = true_particles;
   }
   rec.ntrue_particles = true_particles.size();
+  rec.crtpmt_matches = srcrtpmtmatches;
+  rec.ncrtpmt_matches = srcrtpmtmatches.size();
 
   // Fix the Reference time
   //

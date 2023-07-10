@@ -493,14 +493,8 @@ std::vector<float> GenieWeightCalc::GetWeight(art::Event& e, size_t inu) {
     art::Handle< std::vector<simb::GTruth> > gTruthHandle;
 
     // Actually go and get the stuff
-    e.getByLabel( fGenieModuleLabel, mcTruthHandle );
-    e.getByLabel( fGenieModuleLabel, gTruthHandle );
-
-    std::vector< art::Ptr<simb::MCTruth> > mclist;
-    art::fill_ptr_vector( mclist, mcTruthHandle );
-
-    std::vector< art::Ptr<simb::GTruth > > glist;
-    art::fill_ptr_vector( glist, gTruthHandle );
+    auto const& mclist = e.getProduct<std::vector<simb::MCTruth>>( fGenieModuleLabel );
+    auto const& glist = e.getProduct<std::vector<simb::GTruth>>( fGenieModuleLabel );
 
     size_t num_knobs = reweightVector.size();
 
@@ -512,7 +506,7 @@ std::vector<float> GenieWeightCalc::GetWeight(art::Event& e, size_t inu) {
       // back into the original genie::EventRecord needed to
       // compute the weights
       std::unique_ptr< genie::EventRecord >
-        genie_event( evgb::RetrieveGHEP(*mclist[inu], *glist[inu]) );
+        genie_event( evgb::RetrieveGHEP(mclist[inu], glist[inu]) );
 
       // Set the final lepton kinetic energy and scattering cosine
       // in the owned GENIE kinematics object. This is done during
@@ -547,7 +541,7 @@ std::vector<float> GenieWeightCalc::GetWeight(art::Event& e, size_t inu) {
 
       //NOTE: this line is to skip reweighting stange-CCQE events 
       //Among 7500 events, 207 of them are strange events; ~3%
-      if(glist[inu]->fIsStrange && std::find(ak.begin(), ak.end(),  kXSecTwkDial_MaCCQE) != ak.end()){
+      if(glist[inu].fIsStrange && std::find(ak.begin(), ak.end(),  kXSecTwkDial_MaCCQE) != ak.end()){
         weights[k] = 1;
       } else{
         weights[k] = reweightVector.at( k ).CalcWeight( *genie_event );
@@ -663,6 +657,3 @@ REGISTER_WEIGHTCALC(GenieWeightCalc)
 
   }  // namespace evwgh
 }  // namespace sbn
-
-
-

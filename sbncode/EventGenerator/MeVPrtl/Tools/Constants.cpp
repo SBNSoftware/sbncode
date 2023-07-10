@@ -13,19 +13,37 @@ Constants::Constants() {
   // Masses
   elec_mass = 0.0005109989461; // GeV https://pdg.lbl.gov/2020/listings/rpp2020-list-K-plus-minus.pdf
   muon_mass = 0.1056583745; // GeV https://pdg.lbl.gov/2020/listings/rpp2020-list-muon.pdf
+  tau_mass  = 1.77686; // GeV https://pdg.lbl.gov/2019/tables/rpp2019-sum-leptons.pdf
   piplus_mass = 0.13957039; // GeV https://pdg.lbl.gov/2020/tables/rpp2020-tab-mesons-light.pdf
   pizero_mass = 0.1349768; // GeV https://pdg.lbl.gov/2020/tables/rpp2020-tab-mesons-light.pdf
   kplus_mass = 0.493677; // GeV https://pdg.lbl.gov/2020/listings/rpp2020-list-K-plus-minus.pdf
   klong_mass = 0.497611; // GeV https://pdg.lbl.gov/2020/listings/rpp2020-list-K-zero.pdf
   tquark_mass = 172.76; // GeV https://pdg.lbl.gov/2020/tables/rpp2020-sum-quarks.pdf (direct measurements)
+  eta_mass = 0.547862; // GeV
+  rho_mass = 0.77526; // GeV https://pdg.lbl.gov/2019/listings/rpp2019-list-rho-770.pdf
+  etap_mass = 0.95778; // GeV
 
   // Couplings
+  fine_structure_constant = 7.2973525693e-3;// https://pdg.lbl.gov/2019/reviews/rpp2019-rev-phys-constants.pdf
   Gfermi = 1.166379e-5; // 1/GeV^2 https://pdg.lbl.gov/2020/reviews/rpp2020-rev-phys-constants.pdf
   higgs_vev = 1. / sqrt(sqrt(2)*Gfermi); // GeV (246.22)
   sin2thetaW = 0.2312; // electroweak mixing angle https://pdg.lbl.gov/2020/reviews/rpp2020-rev-phys-constants.pdf
   gL = -0.5 + sin2thetaW;
   gR = sin2thetaW;
+
   fpion = 0.1302; // Pion decay constant [GeV] https://pdg.lbl.gov/2020/reviews/rpp2020-rev-pseudoscalar-meson-decay-cons.pdf (FLAG 19 average)
+
+  // compute the eta decay constants
+  // From https://link.springer.com/article/10.1140/epjc/s10052-021-08861-y
+  double f0 = 0.148; // GeV
+  double f8 = 0.165; // GeV
+  double th0 = -6.9*M_PI/180; // rad
+  double th8 = -21.2*M_PI/180.; // rad
+  feta = cos(th8)*f8/sqrt(3) + sin(th0)*f0/sqrt(6); // eq 83
+  fetap = sin(th8)*f8/sqrt(3) - cos(th0)*f0/sqrt(6); // eq 83
+
+  frho = 0.171; // GeV^2
+  grho = 1 - 2*sin2thetaW; // https://link.springer.com/article/10.1140/epjc/s10052-021-08861-y
 
   // unit conversion
   hbar = 6.582119569e-16; // GeV*ns or eV*s https://pdg.lbl.gov/2020/reviews/rpp2020-rev-phys-constants.pdf
@@ -34,6 +52,12 @@ Constants::Constants() {
   // kaon lifetimes
   kplus_lifetime = 1.238e1; // ns https://pdg.lbl.gov/2020/listings/rpp2020-list-K-plus-minus.pdf
   klong_lifetime = 5.116e1; // ns https://pdg.lbl.gov/2020/listings/rpp2020-list-K-zero-L.pdf (FIT)
+
+  // other lifetimes
+  tau_lifetime = 290.3e-6; // ns https://pdg.lbl.gov/2019/tables/rpp2019-sum-leptons.pdf
+
+  // and widths
+  rho_width = 0.1478; // GeV https://pdg.lbl.gov/2019/listings/rpp2019-list-rho-770.pdf
 
   // Kaon decay branching ratios
   kaonp_mup_numu = 0.6356; // From PDG: https://pdg.lbl.gov/2020/listings/rpp2020-list-K-plus-minus.pdf
@@ -100,7 +124,7 @@ double twobody_momentum(double parent_mass, double childA_mass, double childB_ma
 //
 // Returns 0 if the calculation works. Returns -1 if the perscribed kinematics are not possible.
 int calcPrtlRayWgt(double rest_frame_p, double M, TVector3 dir, TVector3 boost, double rand,
-                     double& lab_frame_p_out, double& costh_rest_out, double& wgt)
+                     double& lab_frame_p_out, double& costh_rest_out, double& wgt, bool verbose)
 {
   // preset values
   lab_frame_p_out = 0.;
@@ -158,22 +182,24 @@ int calcPrtlRayWgt(double rest_frame_p, double M, TVector3 dir, TVector3 boost, 
   bool select_minus = minus_valid && (!plus_valid || (rand < threshold));
 
   // Prints out stuff
-  std::cout << "COSTH LAB: " << costh_lab << std::endl;
-  std::cout << "PREST: " << rest_frame_p << std::endl;
-  std::cout << "MASS: " << M << std::endl;
-  std::cout << "BETA: " << beta << std::endl;
-  std::cout << "GAMMA: " << gamma << std::endl;
+  if (verbose){ 
+    std::cout << "COSTH LAB: " << costh_lab << std::endl;
+    std::cout << "PREST: " << rest_frame_p << std::endl;
+    std::cout << "MASS: " << M << std::endl;
+    std::cout << "BETA: " << beta << std::endl;
+    std::cout << "GAMMA: " << gamma << std::endl;
 
-  std::cout << "COSTH REST PLUS: " << costh_rest_plus << std::endl;
-  std::cout << "COSTH REST MINUS: " << costh_rest_minus << std::endl;
-  std::cout << "PLAB PLUS: " << lab_frame_p_plus << std::endl;
-  std::cout << "PLAB MINUS: " << lab_frame_p_minus << std::endl;
-  std::cout << "WGT PLUS: " << plus_wgt << std::endl;
-  std::cout << "WGT MINUS: " << minus_wgt << std::endl;
+    std::cout << "COSTH REST PLUS: " << costh_rest_plus << std::endl;
+    std::cout << "COSTH REST MINUS: " << costh_rest_minus << std::endl;
+    std::cout << "PLAB PLUS: " << lab_frame_p_plus << std::endl;
+    std::cout << "PLAB MINUS: " << lab_frame_p_minus << std::endl;
+    std::cout << "WGT PLUS: " << plus_wgt << std::endl;
+    std::cout << "WGT MINUS: " << minus_wgt << std::endl;
 
-  if (select_plus) std::cout << "SELECTED PLUS" << std::endl;
-  else if (select_minus) std::cout << "SELECTED MINUS" << std::endl;
-  else std::cout << "SELECTED NONE" << std::endl;
+    if (select_plus) std::cout << "SELECTED PLUS" << std::endl;
+    else if (select_minus) std::cout << "SELECTED MINUS" << std::endl;
+    else std::cout << "SELECTED NONE" << std::endl;
+  }
 
   if (select_plus) {
     costh_rest_out = costh_rest_plus;
@@ -223,8 +249,9 @@ double forwardPrtlEnergy(double parentM, double secM, double prtlM, double paren
   double rand = 1.;
 
   double lab_frame_p_out, costh_rest_out, wgt;
+  bool verbose = false;
   int err = calcPrtlRayWgt(rest_prtlP, prtlM, dir, boost, rand,
-    lab_frame_p_out, costh_rest_out, wgt);
+    lab_frame_p_out, costh_rest_out, wgt, verbose);
   assert(!err);
   (void) err;
 
@@ -233,8 +260,15 @@ double forwardPrtlEnergy(double parentM, double secM, double prtlM, double paren
 }
 
 // TODO: use particle database
-double secPDG2Mass(int pdg) {
+double PDG2Mass(int pdg) {
   switch (pdg) {
+    case 321:
+    case -321:
+      return Constants::Instance().kplus_mass;
+    case 130:
+      return Constants::Instance().klong_mass;
+    case 221:
+      return Constants::Instance().eta_mass;
     case 11:
     case -11:
       return Constants::Instance().elec_mass;
@@ -243,6 +277,9 @@ double secPDG2Mass(int pdg) {
     case -13:
       return Constants::Instance().muon_mass;
       break;
+    case 15:
+    case -15:
+      return Constants::Instance().tau_mass;
     case 211:
     case -211:
       return Constants::Instance().piplus_mass;

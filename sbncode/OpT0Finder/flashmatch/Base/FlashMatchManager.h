@@ -103,7 +103,7 @@ namespace flashmatch {
     void SetUncoatedPMTs(std::vector<int> ch_uncoated);
 
     #if USING_LARSOFT == 1
-    void SetSemiAnalyticalModel(std::unique_ptr<SemiAnalyticalModel> model);
+    void SetSemiAnalyticalModel(std::unique_ptr<phot::SemiAnalyticalModel> model);
     #endif
 
   private:
@@ -148,4 +148,3 @@ namespace flashmatch {
 
 #endif
 /** @} */ // end of doxygen group 
-
