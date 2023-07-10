@@ -1288,8 +1288,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   art::Handle<std::vector<sbn::crt::CRTHit>> crthits_handle;
   GetByLabelStrict(evt, fParams.CRTHitLabel(), crthits_handle);
   // fill into event
-  int64_t CRT_T0_reference_time = fParams.ReferenceCRTT0ToBeam() ? -srtrigger.beam_gate_time_abs : 0; // ns, signed
-  double CRT_T1_reference_time = fParams.ReferenceCRTT1FromTriggerToBeam() ? srtrigger.trigger_within_gate : 0.;
+  //int64_t CRT_T0_reference_time = fParams.ReferenceCRTT0ToBeam() ? -srtrigger.beam_gate_time_abs : 0; // ns, signed
+  //double CRT_T1_reference_time = fParams.ReferenceCRTT1FromTriggerToBeam() ? srtrigger.trigger_within_gate : 0.;
+  int64_t CRT_T0_reference_time = isRealData ?  -srtrigger.beam_gate_time_abs : -fParams.CRTSimT0Offset();
+  double CRT_T1_reference_time = isRealData ? srtrigger.trigger_within_gate : -fParams.CRTSimT0Offset();
+
   if (crthits_handle.isValid()) {
     const std::vector<sbn::crt::CRTHit> &crthits = *crthits_handle;
     for (unsigned i = 0; i < crthits.size(); i++) {
