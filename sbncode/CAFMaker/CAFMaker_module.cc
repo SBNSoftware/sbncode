@@ -106,6 +106,7 @@
 #include "sbnobj/Common/Reco/ScatterClosestApproach.h"
 #include "sbnobj/Common/Reco/StoppingChi2Fit.h"
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
+#include "sbnobj/Common/POTAccounting/EXTCountInfo.h"
 #include "sbnobj/Common/POTAccounting/NuMISpillInfo.h"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
@@ -184,6 +185,8 @@ class CAFMaker : public art::EDProducer {
   int fFileNumber;
   double fTotalPOT;
   double fSubRunPOT;
+  unsigned int fOffbeamBNBGates;
+  unsigned int fOffbeamNuMIGates;
   double fTotalSinglePOT;
   double fTotalEvents;
   double fBlindEvents;
@@ -726,25 +729,59 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
   fBNBInfo.clear();
   fNuMIInfo.clear();
   fSubRunPOT = 0;
+  fOffbeamBNBGates = 0;
+  fOffbeamNuMIGates = 0;
 
-  if(auto bnb_spill = sr.getHandle<std::vector<sbn::BNBSpillInfo>>(fParams.BNBPOTDataLabel())){
+  auto bnb_spill          = sr.getHandle<std::vector<sbn::BNBSpillInfo>>(fParams.BNBPOTDataLabel());
+  auto numi_spill         = sr.getHandle<std::vector<sbn::NuMISpillInfo>>(fParams.NuMIPOTDataLabel());
+  auto bnb_offbeam_spill  = sr.getHandle<std::vector<sbn::EXTCountInfo>>(fParams.OffbeamBNBCountDataLabel());
+  auto numi_offbeam_spill = sr.getHandle<std::vector<sbn::EXTCountInfo>>(fParams.OffbeamNuMICountDataLabel());
+
+  if(bool(bnb_spill) + bool(numi_spill) + bool(bnb_offbeam_spill) + bool(numi_offbeam_spill) > 1) {
+    std::cout << "Expected at most one of " << fParams.BNBPOTDataLabel() << ", "
+              << fParams.NuMIPOTDataLabel() << ", " << fParams.OffbeamBNBCountDataLabel() << ", and "
+              << fParams.OffbeamNuMICountDataLabel() << ". Found ";
+    if(bnb_spill) std::cout << fParams.BNBPOTDataLabel() << " ";
+    if(numi_spill) std::cout << fParams.NuMIPOTDataLabel() << " ";
+    if(bnb_offbeam_spill) std::cout << fParams.OffbeamBNBCountDataLabel() << " ";
+    if(numi_offbeam_spill) std::cout << fParams.OffbeamNuMICountDataLabel();
+    std::cout << std::endl;
+    abort();
+  }
+
+  if(bnb_spill){
     FillExposure(*bnb_spill, fBNBInfo, fSubRunPOT);
     fTotalPOT += fSubRunPOT;
   }
-  else if (auto numi_spill = sr.getHandle<std::vector<sbn::NuMISpillInfo>>(fParams.NuMIPOTDataLabel())) {
+  else if (numi_spill) {
     FillExposureNuMI(*numi_spill, fNuMIInfo, fSubRunPOT);
     fTotalPOT += fSubRunPOT;
+  }
+  else if (bnb_offbeam_spill){
+    for(const auto& spill: *bnb_offbeam_spill) {
+      fOffbeamBNBGates += spill.gates_since_last_trigger;
+    }
+  }
+  else if (numi_offbeam_spill){
+    for(const auto& spill: *numi_offbeam_spill) {
+      fOffbeamNuMIGates += spill.gates_since_last_trigger;
+    }
   }
   else if(auto pot_handle = sr.getHandle<sumdata::POTSummary>(fParams.GenLabel())){
     fSubRunPOT = pot_handle->totgoodpot;
     fTotalPOT += fSubRunPOT;
   }
   else{
-    if(!fParams.BNBPOTDataLabel().empty() || !fParams.GenLabel().empty() || !fParams.NuMIPOTDataLabel().empty()){
+    if(!fParams.BNBPOTDataLabel().empty() || !fParams.GenLabel().empty() || !fParams.NuMIPOTDataLabel().empty() ||
+       !fParams.OffbeamBNBCountDataLabel().empty() || !fParams.OffbeamNuMICountDataLabel().empty()){
       std::cout << "Found neither BNB data POT info under '"
                 << fParams.BNBPOTDataLabel()
-                << "' not NuMIdata POT info under '"
+                << "' nor NuMIdata POT info under '"
                 << fParams.NuMIPOTDataLabel()
+                << "' nor BNB EXT Count info under '"
+                << fParams.OffbeamBNBCountDataLabel()
+                << "' nor NuMI EXT Count info under '"
+                << fParams.OffbeamNuMICountDataLabel()
                 << "' nor MC POT info under '"
                 << fParams.GenLabel() << "'"
                 << std::endl;
@@ -1910,6 +1947,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     rec.hdr.bnbinfo = fBNBInfo;
     rec.hdr.nnumiinfo = fNuMIInfo.size();
     rec.hdr.numiinfo = fNuMIInfo;
+    rec.hdr.noffbeambnb = fOffbeamBNBGates;
+    rec.hdr.noffbeamnumi = fOffbeamNuMIGates;
     rec.hdr.pot   = fSubRunPOT;
   }
   
