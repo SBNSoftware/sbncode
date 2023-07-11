@@ -68,7 +68,7 @@ namespace caf
                   bool allowEmpty) {
 
     srhit.t0 = ( (long long)(hit.ts0()) /*u_int64_t to int64_t*/ + CRT_T0_reference_time )/1000.;
-    srhit.t1 = hit.ts1()/1000.-CRT_T1_reference_time; // ns -> us
+    srhit.t1 = hit.ts1()/1000.+CRT_T1_reference_time; // ns -> us
     srhit.time = use_ts0 ? srhit.t0 : srhit.t1;
 
     srhit.position.x = hit.x_pos;
