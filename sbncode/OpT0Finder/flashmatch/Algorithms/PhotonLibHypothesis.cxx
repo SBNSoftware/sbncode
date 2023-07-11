@@ -110,11 +110,10 @@ namespace flashmatch {
 
         // std::cout << "OpDet: " << op_det << " [x,y,z] -> [q] : [" << pt.x << ", " << pt.y << ", " << pt.z << "] -> [" << q << "]" << std::endl;
 
-        if (std::find(_channel_mask.begin(), _channel_mask.end(), op_det) != _channel_mask.end()) {
+        if (trk.tpc_mask_v.at(op_det) == 0)
           flash.pe_v[op_det] += q;
-        } else {
-          flash.pe_v[op_det] = 0;
-        }
+        else
+          flash.pe_v[op_det] = 0.;
       }
 
       //
@@ -126,14 +125,11 @@ namespace flashmatch {
 
         double q = n_original_photons * visibility * _global_qe_refl * _qe_refl_v[op_det];
 
-        if (std::find(_channel_mask.begin(), _channel_mask.end(), op_det) != _channel_mask.end()) {
+        if (trk.tpc_mask_v.at(op_det) == 0)
           flash.pe_v[op_det] += q;
-        } else {
-          flash.pe_v[op_det] = 0;
-        }
-
+        else
+          flash.pe_v[op_det] = 0.;
       }
-
     }
   }
 

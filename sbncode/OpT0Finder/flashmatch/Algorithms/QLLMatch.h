@@ -144,6 +144,7 @@ namespace flashmatch {
     flashmatch::QCluster_t _var_trk;
     flashmatch::Flash_t    _hypothesis;  ///< Hypothesis PE distribution over PMTs
     flashmatch::Flash_t    _measurement; ///< Flash PE distribution over PMTs
+    std::vector<int> _match_mask; ///< OpDet Channel Mask for a cluster+flash pair 
 
     double _current_chi2;
     double _current_llhd;

@@ -89,12 +89,22 @@ namespace flashmatch {
 
     _construct_hypo_time = 0;
 
+    // combine cluster + flash mask for this match pair 
+    _match_mask.clear();
+    _match_mask.resize(DetectorSpecs::GetME().NOpDets(), 0);
+
+    for (size_t opch=0; opch < flash.pe_v.size(); opch++){
+      if (flash.pds_mask_v.at(opch)!=0 || pt_v.tpc_mask_v.at(opch)!=0){
+        _match_mask.at(opch) = 1;
+      }
+    }
     //
     // Prepare TPC
     //
     _raw_trk.resize(pt_v.size());
     double min_x =  1e20;
     double max_x = -1e20;
+    _raw_trk.tpc_mask_v = _match_mask;
     for (size_t i = 0; i < pt_v.size(); ++i) {
       auto const &pt = pt_v[i];
       _raw_trk[i] = pt;
@@ -146,23 +156,29 @@ namespace flashmatch {
     // initialize the measurement flash 
     auto    one_measurement = flash;
 
+    for (size_t ich = 0; ich < DetectorSpecs::GetME().NOpDets(); ++ich ) {
+      if (_match_mask.at(ich) != 0){
+          one_hypothesis.pe_v[ich] = 0.;
+          one_measurement.pe_v[ich] = 0.;
+      }
+    }
+
     // ** temp saturated opdets+nonlinear fix ** 
     // - when the measured flash PE is equal to 0 and the hypothesis is large, assume that the 
     //   measured flash PE was set to 0 due to saturation
     if (_saturated_thresh > 0){
-      for (size_t ich = 0; ich < DetectorSpecs::GetME().NOpDets(); ++ich ) { 
-        // if above the saturated threshold 
-        if (one_measurement.pe_v[ich] == 0 && one_hypothesis.pe_v[ich] >= _saturated_thresh){
-          if (std::find(_channel_mask.begin(), _channel_mask.end(), ich) != _channel_mask.end())
-            std::cout << "Guessing " << ich << " is saturated, setting hypothesis to 0..." << std::endl;
-          one_hypothesis.pe_v[ich] = 0;
-        }
-        // if above the nonlinear threshol AND a pmt, correct for the nonlinear effect 
-        if ((one_hypothesis.pe_v[ich] > _nonlinear_thresh) && (_channel_type[ich] == 0)){
-          std::cout << "nonlinear pmt ch: " << ich << std::endl;
+      for (size_t ich = 0; ich < DetectorSpecs::GetME().NOpDets(); ++ich ) {
+        // if above the nonlinear threshold AND a pmt AND not masked, correct for the nonlinear effect 
+        if ((one_hypothesis.pe_v[ich] > _nonlinear_thresh) && (_channel_type[ich] == 0) && (_match_mask.at(ich) == 0)){
           double corr_pe = one_hypothesis.pe_v[ich]*_nonlinear_slope + _nonlinear_offset; 
           one_hypothesis.pe_v[ich] = corr_pe;
         }
+        // if above the saturated threshold 
+        if ((one_measurement.pe_v[ich] == 0) &&( one_hypothesis.pe_v[ich] >= _saturated_thresh) && (_channel_type[ich] == 0)){
+          std::cout << "Guessing " << ich << " is saturated, setting hypothesis to 0" << std::endl;
+          one_hypothesis.pe_v[ich] = 0;
+        }
+
       }
     }
     // ** end saturated + nonlinear fix ** 
@@ -397,9 +413,9 @@ FlashMatch_t QLLMatch::OnePMTMatch(const Flash_t& flash) {
       if ( int(ich)%2 != _tpc%2)
         continue;
 
-      if (std::find(_channel_mask.begin(), _channel_mask.end(), ich) == _channel_mask.end())
+      if (_match_mask.at(ich)!=0)
         continue;
-        
+
       O = measurement.pe_v[ich]; // observation
       H = hypothesis.pe_v[ich];  // hypothesis
 
@@ -454,7 +470,6 @@ FlashMatch_t QLLMatch::OnePMTMatch(const Flash_t& flash) {
         Error = H;
         _current_chi2 += std::pow((O - H), 2) / (Error + std::pow(_chi_error*Error,2));
         nvalid_ch += 1;
-        std::cout << "CH "<< ich <<" O/H " << O << " / " << H << " CHI2 " << std::pow((O - H), 2) / (Error + std::pow(_chi_error*Error,2)) << std::endl;
 
       } else {
         FLASH_ERROR() << "Unexpected mode" << std::endl;
@@ -465,8 +480,6 @@ FlashMatch_t QLLMatch::OnePMTMatch(const Flash_t& flash) {
     //FLASH_DEBUG() <<"Mode " << (int)(_mode) << " Chi2 " << _current_chi2 << " LLHD " << _current_llhd << " nvalid " << nvalid_ch << std::endl;
     // std::cout << "Using " << nvalid_ch <<  " optical detectors for the scoring in TPC " << _tpc << std::endl;
     _current_chi2 /= nvalid_ch;
-    std::cout << "chi2: " <<  _current_chi2 << std::endl;
-    std::cout << "nvalid_ch: " << nvalid_ch << std::endl;
     _current_llhd /= (nvalid_ch +1);
     if(_converged)
       FLASH_INFO() << "Combined LLHD: " << _current_llhd << " (divided by nvalid_ch+1 = " << nvalid_ch+1<<")"<<std::endl;
