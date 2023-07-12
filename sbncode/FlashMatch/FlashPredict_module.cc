@@ -29,7 +29,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fFlashEnd(p.get<double>("FlashEnd"))  // in us w.r.t flash time
   , fTimeBins(timeBins())
   , fSelectNeutrino(p.get<bool>("SelectNeutrino", true)) // only attempt to match potential neutrino slices
-  , fOnlyCollectionWires(p.get<bool>("OnlyCollectionWires", true))
+  , fPlaneList(p.get<std::vector<int>>("PlaneList")) // Use 0, 1, 2 for SBND and 0, 1, 3 for ICARUS
   , fForceConcurrence(p.get<bool>("ForceConcurrence", false)) // require light and charge to coincide, different requirements for SBND and ICARUS
   , fUse3DMetrics(p.get<bool>("Use3DMetrics", false)) // use metrics that depend on (X,Y,Z)
   , fUseOpCoords(p.get<bool>("UseOpCoords", true)) // Use precalculated OpFlash coordinates
@@ -1418,9 +1418,9 @@ FlashPredict::ChargeDigestMap FlashPredict::makeChargeDigest(
         flashmatch::QCluster_t hitsClusters;
         std::set<unsigned> hitsTPCs;
         for(const auto& hit : hits) {
+          int hit_plane = (int)hit->View();
           geo::WireID wId = hit->WireID();
-          if(fOnlyCollectionWires &&
-             fGeometry->SignalType(wId) != geo::kCollection) continue;
+          if(std::find(fPlaneList.begin(), fPlaneList.end(), hit_plane) == fPlaneList.end()) continue;
           const double hitQ = hit->Integral();
           if(hitQ < fMinHitQ) continue;
           spacepointQ += hitQ;

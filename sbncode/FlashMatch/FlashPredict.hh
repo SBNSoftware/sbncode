@@ -389,7 +389,7 @@ private:
   const double fFlashStart, fFlashEnd;
   const unsigned fTimeBins;
   const bool fSelectNeutrino;
-  const bool fOnlyCollectionWires;
+  const std::vector<int> fPlaneList;
   const bool fForceConcurrence;
   const bool fUse3DMetrics;
   const bool fUseOpCoords;
