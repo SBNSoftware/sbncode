@@ -419,6 +419,54 @@ namespace caf
     }
   }
 
+  void FillSliceOpT0Finder(const std::vector<art::Ptr<sbn::OpT0Finder>> &opt0_v,
+                           caf::SRSlice &slice)
+  {
+    if (opt0_v.empty()==false){
+      unsigned int nopt0 = opt0_v.size();
+      double max_score=-1.; // score of the opt0 object with the highest score 
+      double sec_score=-1.; // score of the opt0 object with the 2nd highest score 
+
+      unsigned int max_idx = 0;
+      unsigned int sec_idx = 0;
+
+      // fill the default, which is the maximum 
+      for (unsigned int i = 0; i < nopt0; i++ ) {
+        const sbn::OpT0Finder &thisOpT0 = *opt0_v[i];
+        if (thisOpT0.score > max_score){
+          max_score = thisOpT0.score;
+          max_idx = i;
+        }
+      }
+
+      const sbn::OpT0Finder &maxOpT0 = *opt0_v[max_idx];
+      slice.opt0.tpc    = maxOpT0.tpc;
+      slice.opt0.time   = maxOpT0.time;
+      slice.opt0.score  = maxOpT0.score;
+      slice.opt0.measPE = maxOpT0.measPE;
+      slice.opt0.hypoPE = maxOpT0.hypoPE;
+      
+      // in case there are more matches, find the opt0 object with the second highest score
+      // usually this is filled for a slice that is split across two tpcs
+      if (nopt0>1){    
+        for (unsigned int i = 0; i < nopt0; i++ ) {
+          if (i == max_idx) continue;
+          const sbn::OpT0Finder &thisOpT0 = *opt0_v[i];
+          if (thisOpT0.score > sec_score){
+            sec_score = thisOpT0.score;
+            sec_idx = i;
+          }
+        }
+        const sbn::OpT0Finder &secOpT0 = *opt0_v[sec_idx];
+        slice.opt0_sec.tpc    = secOpT0.tpc;
+        slice.opt0_sec.time   = secOpT0.time;
+        slice.opt0_sec.score  = secOpT0.score;
+        slice.opt0_sec.measPE = secOpT0.measPE;
+        slice.opt0_sec.hypoPE = secOpT0.hypoPE;
+      }
+    }
+  }
+
   void FillSliceBarycenter(const std::vector<art::Ptr<recob::Hit>> &inputHits,
                            const std::vector<art::Ptr<recob::SpacePoint>> &inputPoints,
                            caf::SRSlice &slice)

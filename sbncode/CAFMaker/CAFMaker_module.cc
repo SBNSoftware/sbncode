@@ -109,7 +109,7 @@
 #include "sbnobj/Common/POTAccounting/NuMISpillInfo.h"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
-
+#include "sbnobj/Common/Reco/OpT0FinderResult.h"
 
 #include "canvas/Persistency/Provenance/ProcessConfiguration.h"
 #include "larcoreobj/SummaryData/POTSummary.h"
@@ -1415,6 +1415,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       slcCRUMBS = foSlcCRUMBS.at(0).get();
     }
 
+    art::FindManyP<sbn::OpT0Finder> fmOpT0 = 
+      FindManyPStrict<sbn::OpT0Finder>(sliceList, evt, fParams.OpT0Label() + slice_tag_suff);
+    std::vector<art::Ptr<sbn::OpT0Finder>> slcOpT0;
+    if (fmOpT0.isValid())  
+      slcOpT0 = fmOpT0.at(0);
+
     art::FindManyP<sbn::SimpleFlashMatch> fm_sFM =
       FindManyPStrict<sbn::SimpleFlashMatch>(fmPFPart, evt,
                                              fParams.FlashMatchLabel() + slice_tag_suff);
@@ -1609,6 +1615,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceFlashMatchA(fmatch, recslc);
     FillSliceVertex(vertex, recslc);
     FillSliceCRUMBS(slcCRUMBS, recslc);
+    FillSliceOpT0Finder(slcOpT0, recslc);
     FillSliceBarycenter(slcHits, slcSpacePoints, recslc);
 
     // select slice

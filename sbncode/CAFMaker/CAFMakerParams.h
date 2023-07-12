@@ -143,6 +143,12 @@ namespace caf
       "crumbs"
     };
 
+    Atom<string> OpT0Label { 
+      Name("OpT0Label"),
+      Comment("Base label of OpT0Finder producer"),
+      "opt0finder"
+    };
+
     Atom<bool> FillHits {
       Name("FillHits"),
       Comment("Label deciding if you want to fill SRHits"),
