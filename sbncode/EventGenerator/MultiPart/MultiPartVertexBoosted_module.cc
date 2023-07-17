@@ -217,7 +217,7 @@ MultiPartVertexBoosted::MultiPartVertexBoosted(fhicl::ParameterSet const & p)
     // Implementation of required member function here.
     auto geop = lar::providerFrom<geo::Geometry>();
     for(auto const& tpc_id : _tpc_v) {
-      //        assert(tpc_id.size() == 2);
+        assert(tpc_id.size() == 2);
         size_t cid = tpc_id[0];
         size_t tid = tpc_id[1];
         auto const& cryostat = geop->Cryostat(geo::CryostatID(cid));
