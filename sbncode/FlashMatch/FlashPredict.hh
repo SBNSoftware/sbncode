@@ -395,7 +395,6 @@ private:
   const bool fUseOpCoords;
   const bool fCorrectDriftDistance;
   // const bool fUseCalo; TODO: Use calorimetry
-  const bool fUseARAPUCAS;
   const bool fStoreMCInfo;
   const ReferenceMetrics fRM;
   const bool fNoAvailableMetrics, fMakeTree;

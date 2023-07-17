@@ -34,7 +34,6 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fUse3DMetrics(p.get<bool>("Use3DMetrics", false)) // use metrics that depend on (X,Y,Z)
   , fUseOpCoords(p.get<bool>("UseOpCoords", true)) // Use precalculated OpFlash coordinates
   , fCorrectDriftDistance(p.get<bool>("CorrectDriftDistance", false)) // require light and charge to coincide, different requirements for SBND and ICARUS
-  , fUseARAPUCAS(p.get<bool>("UseARAPUCAS", false))
   , fStoreMCInfo(p.get<bool>("StoreMCInfo", false))
     // , fUseCalo(p.get<bool>("UseCalo", false))
   , fRM(loadMetrics(p.get<std::string>("InputFileName")))
@@ -113,12 +112,6 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
     }
   }
   else if(fICARUS && !fSBND) {
-    if(fUseARAPUCAS || !fIsSimple) {
-      throw cet::exception("FlashPredict")
-        << "UseARAPUCAS:      " << std::boolalpha << fUseARAPUCAS << "\n"
-        << "IsSimple:         " << std::boolalpha << fIsSimple << "\n"
-        << "Not supported on ICARUS. Stopping.\n";
-    }
     if(fCryostat > 1) {
       throw cet::exception("FlashPredict")
         << "ICARUS has only two cryostats. \n"
@@ -159,8 +152,6 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   consumes<std::vector<recob::SpacePoint>>(fSpacePointProducer);
   consumes<art::Assns<recob::Hit, recob::SpacePoint>>(fSpacePointProducer);
   consumes<std::vector<recob::OpHit>>(fOpHitProducer);
-  if(fUseARAPUCAS && !fOpHitARAProducer.empty())
-    consumes<std::vector<recob::OpHit>>(fOpHitARAProducer);
 } // FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
 
 
@@ -287,23 +278,6 @@ void FlashPredict::produce(art::Event& evt)
   
     mf::LogInfo("FlashPredict")
       << "OpHits found: " << opHits.size() << std::endl;
-
-    if(fUseARAPUCAS && !fOpHitARAProducer.empty() && fIsSimple){
-      art::Handle<std::vector<recob::OpHit>> ophits_ara_h;
-      evt.getByLabel(fOpHitARAProducer, ophits_ara_h);
-      if(!ophits_ara_h.isValid()) {
-        mf::LogError("FlashPredict")
-          << "Non valid ophits from ARAPUCAS"
-          << "\nfUseARAPUCAS: " << std::boolalpha << fUseARAPUCAS
-          << "\nfOpHitARAProducer: " << fOpHitARAProducer;
-      }
-      else{
-        std::vector<recob::OpHit> opHitsARA(ophits_ara_h->size());
-        copyOpHitsInFlashFindingWindow(opHitsARA, ophits_ara_h);
-        opHits.insert(opHits.end(),
-                      opHitsARA.begin(), opHitsARA.end());
-      }
-    }
 
     const std::vector<SimpleFlash> simpleFlashes_tmp = (fSBND) ?
       makeSimpleFlashes(opHits, opHitsRght, opHitsLeft) : makeSimpleFlashes(opHits);
@@ -843,7 +817,6 @@ FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
   double sum_PE = 0.;
   double sum_PE2 = 0.;
   double sum_unPE = 0.;
-  double sum_visARA_PE = 0.;
   double sum_PE2Y  = 0.; double sum_PE2Z  = 0.;
   double sum_PE2Y2 = 0.; double sum_PE2Z2 = 0.;
 
@@ -860,7 +833,6 @@ FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
       }
       else if(op_type == "xarapuca_vis" || op_type == "arapuca_vis") {
         is_pmt_vis = false, is_ara_vis = true;
-        // if !fUseArapucas, they weren't loaded at all
       }
     }
 
@@ -913,12 +885,8 @@ FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
     flash.ratio = fOpDetNormalizer * flash.unpe / flash.pe;
     if(fSBND){
       flash.ratio = (fOpDetNormalizer * flash.unpe) / (flash.pe - flash.unpe);
-      if(fUseARAPUCAS) {
-        // TODO: come up with a sensible way to mix PMT and ARAPUCA
-        // flash ratios a potential better approach is to take the
-        // average of the two separate ratios
-        flash.unpe += sum_visARA_PE;
-        flash.ratio = (fOpDetNormalizer * sum_unPE  + sum_visARA_PE ) / flash.pe;
+      if(fFlashType == "simpleflash_ara" || fFlashType == "opflash_ara") {
+        flash.ratio = flash.unpe / (flash.pe + flash.unpe);
       }
     }
     flash.yb  = sum_PE2Y / sum_PE2;
