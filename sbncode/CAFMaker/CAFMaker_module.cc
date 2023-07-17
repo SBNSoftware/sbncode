@@ -1603,19 +1603,19 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     //#######################################################
     FillSliceVars(*slice, primary, producer, recslc);
     FillSliceMetadata(primary_meta, recslc);
-    FillSliceFlashMatch(fmatch_map["fmatch"], recslc);
-    FillSliceFlashMatchA(fmatch_map["fmatch"], recslc);
-    FillSliceFlashMatchOp(fmatch_map["fmatchop"], recslc);
-    FillSliceFlashMatchOpA(fmatch_map["fmatchop"], recslc);
+    FillSliceFlashMatch(fmatch_map["fmatch"], recslc.fmatch);
+    FillSliceFlashMatch(fmatch_map["fmatch"], recslc.fmatch_a);
+    FillSliceFlashMatch(fmatch_map["fmatchop"], recslc.fmatchop);
+    FillSliceFlashMatch(fmatch_map["fmatchop"], recslc.fmatchop_a);
     auto sr_flash = fmatch_map.find("fmatchara");
     if(sr_flash!=fmatch_map.end()) {
-      FillSliceFlashMatchARA(fmatch_map["fmatchara"], recslc);
-      FillSliceFlashMatchARAA(fmatch_map["fmatchara"], recslc);
+      FillSliceFlashMatch(fmatch_map["fmatchara"], recslc.fmatchara);
+      FillSliceFlashMatch(fmatch_map["fmatchara"], recslc.fmatchara_a);
     }
     sr_flash = fmatch_map.find("fmatchopara");
     if(sr_flash != fmatch_map.end()) {
-      FillSliceFlashMatchOpARA(fmatch_map["fmatchopara"], recslc);
-      FillSliceFlashMatchOpARAA(fmatch_map["fmatchopara"], recslc);
+      FillSliceFlashMatch(fmatch_map["fmatchopara"], recslc.fmatchopara);
+      FillSliceFlashMatch(fmatch_map["fmatchopara"], recslc.fmatchopara_a);
     }
     FillSliceVertex(vertex, recslc);
     FillSliceCRUMBS(slcCRUMBS, recslc);
