@@ -347,7 +347,7 @@ namespace caf
     // collect the properties
     if (primary_meta != NULL) {
       auto const &properties = primary_meta->GetPropertiesMap();
-      if (properties.count("IsClearCosmic")) {
+      if (properties.count("IsClearCosmic") || (properties.count("NuScore") && properties.at("NuScore") < 0)) {
         assert(!properties.count("IsNeutrino"));
         srslice.is_clear_cosmic = true;
       }
