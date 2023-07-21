@@ -215,7 +215,7 @@ void FluxReaderAna::analyze(art::Event const& e)
                         parent_mass * parent_mass);
     _nu_p_angle = TVector3(_nu_px, _nu_py, _nu_pz).Angle(TVector3(_nu_p_dpx, _nu_p_dpy, _nu_p_dpz));
     _nu_r = std::sqrt((_nu_x - _x_shift) * (_nu_x - _x_shift) + _nu_y * _nu_y);
-    _nu_oaa = std::atan(_nu_r / _baseline);
+    _nu_oaa = std::atan(_nu_r * _nu_r / _baseline);
 
     _nu_other_x = intersection_other.X();
     _nu_other_y = intersection_other.Y();

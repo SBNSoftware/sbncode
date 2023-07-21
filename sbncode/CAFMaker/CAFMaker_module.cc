@@ -1288,11 +1288,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   art::Handle<std::vector<sbn::crt::CRTHit>> crthits_handle;
   GetByLabelStrict(evt, fParams.CRTHitLabel(), crthits_handle);
   // fill into event
-  //int64_t CRT_T0_reference_time = fParams.ReferenceCRTT0ToBeam() ? -srtrigger.beam_gate_time_abs : 0; // ns, signed
-  //double CRT_T1_reference_time = fParams.ReferenceCRTT1FromTriggerToBeam() ? srtrigger.trigger_within_gate : 0.;
-  int64_t CRT_T0_reference_time = isRealData ?  -srtrigger.beam_gate_time_abs : -fParams.CRTSimT0Offset();
-  double CRT_T1_reference_time = isRealData ? srtrigger.trigger_within_gate : -fParams.CRTSimT0Offset();
-
+  int64_t CRT_T0_reference_time = fParams.ReferenceCRTT0ToBeam() ? -srtrigger.beam_gate_time_abs : 0; // ns, signed
+  double CRT_T1_reference_time = fParams.ReferenceCRTT1FromTriggerToBeam() ? srtrigger.trigger_within_gate : 0.;
   if (crthits_handle.isValid()) {
     const std::vector<sbn::crt::CRTHit> &crthits = *crthits_handle;
     for (unsigned i = 0; i < crthits.size(); i++) {
@@ -1313,23 +1310,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       srcrttracks.emplace_back();
       FillCRTTrack(crttracks[i], fParams.CRTUseTS0(), srcrttracks.back());
     }
-  }
-
-  // Get all of the CRTPMT Matches .. 
-  std::vector<caf::SRCRTPMTMatch> srcrtpmtmatches;
-  std::cout << "srcrtpmtmatches.size = " << srcrtpmtmatches.size() << "\n";
-  art::Handle<std::vector<sbn::crt::CRTPMTMatching>> crtpmtmatch_handle;
-  GetByLabelStrict(evt, fParams.CRTPMTLabel(), crtpmtmatch_handle);
-  if(crtpmtmatch_handle.isValid()){
-    std::cout << "valid handle! label: " << fParams.CRTPMTLabel() << "\n";
-    const std::vector<sbn::crt::CRTPMTMatching> &crtpmtmatches = *crtpmtmatch_handle;
-    for (unsigned i = 0; i < crtpmtmatches.size(); i++) {
-      srcrtpmtmatches.emplace_back();
-      FillCRTPMTMatch(crtpmtmatches[i],srcrtpmtmatches.back());
-    }
-  }
-  else{
-    std::cout << "crtpmtmatch_handle.isNOTValid!\n";
   }
 
   // Get all of the OpFlashes
@@ -1852,8 +1832,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     rec.true_particles  = true_particles;
   }
   rec.ntrue_particles = true_particles.size();
-  rec.crtpmt_matches = srcrtpmtmatches;
-  rec.ncrtpmt_matches = srcrtpmtmatches.size();
 
   // Fix the Reference time
   //
