@@ -5,11 +5,10 @@ MultiPartVertex : {
     DebugMode    : 0
     G4Time       : 3925.0
     G4TimeJitter : 800
-    TPCRange     : [[0,0],[0,1],[0,2],[0,3],[1,0],[1,1],[1,2],[1,3]]
+    TPCRange     : [0,1,2,3]
     XRange       : [10]
     YRange       : [10]
     ZRange       : [10]
-    GammaBetaRange : [0.0,0.0]
     MultiMax     : 6
     MultiMin     : 1
     ParticleParameter: {
@@ -26,7 +25,7 @@ MultiPartRain : {
     DebugMode    : 0
     G4Time       : 3925.0
     G4TimeJitter : 800
-    TPCRange     : [[0,0],[0,1],[0,2],[0,3],[1,0],[1,1],[1,2],[1,3]]
+    TPCRange     : [0,1,2,3]
     XRange       : [10]
     YRange       : [10]
     ZRange       : [10]
