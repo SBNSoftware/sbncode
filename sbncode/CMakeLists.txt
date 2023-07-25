@@ -21,6 +21,8 @@ add_subdirectory(CosmicID)
 add_subdirectory(DetSim)
 add_subdirectory(Cluster3D)
 
+add_subdirectory(WireMod)
+
 # Supera
 #
 # Why are we checking explicitly for git submodule initialization?
