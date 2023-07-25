@@ -23,6 +23,8 @@ add_subdirectory(PID)
 add_subdirectory(GeometryTools)
 add_subdirectory(CosmicID)
 
+add_subdirectory(WireMod)
+
 # Supera
 #
 # Why are we checking explicitly for git submodule initialization?
