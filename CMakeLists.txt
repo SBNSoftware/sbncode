@@ -78,6 +78,7 @@ find_package( CLHEP REQUIRED )
 find_package( ROOT REQUIRED )
 find_package( Geant4 REQUIRED )
 find_package( Boost COMPONENTS system filesystem REQUIRED )
+find_package( geant4reweight REQUIRED )
 
 # macros for dictionary and simple_plugin
 include(ArtDictionary)
