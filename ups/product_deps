@@ -248,7 +248,7 @@ libdir	fq_dir		lib
 #   cetmodules), an entry for cetmodules is required.
 #
 # * It is an error for more than one non-(<qual-trigger> == "-default-")
-#   entry to match for a given product.
+   entry to match for a given product.
 #
 ####################################
 product			version		qual	flags		<table_format=2>
