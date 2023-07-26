@@ -5,4 +5,5 @@ install_source()
 add_subdirectory(SystTools)
 add_subdirectory(genie)
 add_subdirectory(flux)
+add_subdirectory(geant4)
 
