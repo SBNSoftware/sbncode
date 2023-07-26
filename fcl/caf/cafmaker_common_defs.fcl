@@ -14,6 +14,7 @@ cafmaker_common_producers: {
   pandoraTrackRange:   @local::range_sbn
   rns: { module_type: "RandomNumberSaver" }
   genieweight: @local::sbn_eventweight_genie
+  systtools: @local::sbn_systtools
   fluxweight: @local::sbn_eventweight_flux  
 }
 
