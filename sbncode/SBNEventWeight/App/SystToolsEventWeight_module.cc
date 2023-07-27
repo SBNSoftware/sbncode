@@ -157,7 +157,14 @@ void SystToolsEventWeight::produce(art::Event& e) {
                       << "[SystToolsEventWeight::produce]       paramVariations.size() of this resp (expected) = " << sph.paramVariations.size() << "\n"
                       << "[SystToolsEventWeight::produce]       responses.size() of this resp (produced) = " << r.responses.size() << std::endl;
           }
-          if(sph.paramVariations.size()!=r.responses.size()){
+
+          if(sph.isCorrection && (r.responses.size()!=1)){
+            throw cet::exception{ "SystToolsEventWeight" }
+              << "prettyName of this resp = " << prettyName << "\n"
+              << "We expect to have 1 universes as it is a correction, but "
+                      << r.responses.size() << " are produced\n";
+          }
+          if(!sph.isCorrection && sph.paramVariations.size()!=r.responses.size()){
             throw cet::exception{ "SystToolsEventWeight" }
               << "prettyName of this resp = " << prettyName << "\n"
               << "We expect to have " << sph.paramVariations.size() << " universes, but "
@@ -238,11 +245,14 @@ void SystToolsEventWeight::beginRun(art::Run& run) {
       sbn::evwgh::EventWeightParameterSet fParameterSet;
       std::string rwmode = "";
 
+      std::vector<double> paramVars = sph.isCorrection ? std::vector<double>(1, sph.centralParamValue) : sph.paramVariations;
+
       auto it = map_resp_to_respless.find( sph.systParamId );
       if(it!=map_resp_to_respless.end()){
 
         for(const auto depdialid: it->second){
           const auto& sph_dep = systtools::GetParam(smd, depdialid);
+          std::vector<double> paramVars_dep = sph_dep.isCorrection ? std::vector<double>(1, sph_dep.centralParamValue) : sph_dep.paramVariations;
 
           if(rwmode=="") rwmode = sph_dep.isRandomlyThrown ? "multisim" : "multisigma";
           else{
@@ -252,7 +262,7 @@ void SystToolsEventWeight::beginRun(art::Run& run) {
             }
           }
 
-          std::vector<float> widths_dep { sph_dep.paramVariations.begin(), sph_dep.paramVariations.end() };
+          std::vector<float> widths_dep { paramVars_dep.begin(), paramVars_dep.end() };
           fParameterSet.AddParameter(sph_dep.prettyName, std::move(widths_dep));
 
         }
@@ -264,7 +274,7 @@ void SystToolsEventWeight::beginRun(art::Run& run) {
 
         rwmode = sph.isRandomlyThrown ? "multisim" : "multisigma";
 
-        std::vector<float> widths { sph.paramVariations.begin(), sph.paramVariations.end() };
+        std::vector<float> widths { paramVars.begin(), paramVars.end() };
 
         fParameterSet.AddParameter(sph.prettyName, std::move(widths));
 
@@ -279,7 +289,7 @@ void SystToolsEventWeight::beginRun(art::Run& run) {
         std::cout << "  sph.prettyName = " << sph.prettyName << ", rwmode = " << rwmode << " is added to the header" << std::endl;
       }
 
-      fParameterSet.Configure(sp->GetFullyQualifiedName()+"_"+sph.prettyName, rwmode, sph.paramVariations.size());
+      fParameterSet.Configure(sp->GetFullyQualifiedName()+"_"+sph.prettyName, rwmode, paramVars.size());
       fParameterSet.FillKnobValues();
 
       p->push_back( std::move(fParameterSet) );
