@@ -8,8 +8,9 @@
 #include "TNtuple.h"
 
 //Framework includes
-#include "lardataalg/DetectorInfo/DetectorClocksData.h"
 #include "larcorealg/Geometry/GeometryCore.h"
+#include "lardataalg/DetectorInfo/DetectorClocksData.h"
+#include "lardataalg/DetectorInfo/DetectorPropertiesData.h"
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/TrackHitMeta.h"
 #include "lardataobj/RecoBase/Hit.h"
@@ -60,25 +61,25 @@ namespace sys {
       std::vector<TGraph2DErrors*> graph2Ds_Sigma_YZ;  // the graphs for the width correction in YZ (fTGraph2Ds_Sigma_YZ)
 
       // lets try making a constructor here
-      // assume we can get a geometry service, a detector clcok, and a drift speed
+      // assume we can get a geometry service, a detector clcok, and a detector properties
       // pass the CryoStat and TPC IDs because it's IDs all the way down
       // set some optional args fpr the booleans, the readout window, and the offset
-      WireMod_Utility(const geo::GeometryCore* geom, const detinfo::DetectorClocksData detClock, const double& driftSpeed,
+      WireMod_Utility(const geo::GeometryCore* geom, const detinfo::DetectorClocksData& detClock, const detinfo::DetectorPropertiesData& detProp,
                       const geo::CryostatID& CryoID, const geo::TPCID& TPCID,
                       const bool& arg_ApplyXScale = true, const bool& arg_ApplyYZScale = true, const bool& arg_ApplyXZAngleScale = true, const bool& arg_ApplyYZAngleScale = true, const bool& arg_ApplydEdXScale = true,
-                      const double& arg_ReadoutWindowTicks = 4096, const double& arg_TickOffset = 0)
+                      const double& arg_TickOffset = 0)
       : applyXScale(arg_ApplyXScale),
         applyYZScale(arg_ApplyYZScale),
         applyXZAngleScale(arg_ApplyXZAngleScale),
         applyYZAngleScale(arg_ApplyYZAngleScale),
         applydEdXScale(arg_ApplydEdXScale),
-        readoutWindowTicks(arg_ReadoutWindowTicks),                                                    // the default A2795 (ICARUS TPC readout board) readout window is 4096 samples
+        readoutWindowTicks(detProp.ReadOutWindowSize()),                                               // the default A2795 (ICARUS TPC readout board) readout window is 4096 samples
         tickOffset(arg_TickOffset),                                                                    // tick offset is for MC truth, default to zero and set only as necessary
         wiresPercm(1.0 / geom->Cryostat(CryoID).TPC(TPCID).WirePitch()),                               // this assumes the dist between wires is the same for all planes, possibly a place for improvement
         originWire_plane0(geom->Cryostat(CryoID).TPC(TPCID).Plane(0).WireCoordinate({0.0, 0.0, 0.0})), // pretty sure we can just pass it {0, 0, 0} for the Point_t 
         originWire_plane1(geom->Cryostat(CryoID).TPC(TPCID).Plane(1).WireCoordinate({0.0, 0.0, 0.0})),
         originWire_plane2(geom->Cryostat(CryoID).TPC(TPCID).Plane(2).WireCoordinate({0.0, 0.0, 0.0})),
-        ticksPercm(10 * driftSpeed * detClock.TPCClock().TickPeriod()),                                // let's assume we can pass a drift speed in mm/us
+        ticksPercm(detProp.DriftVelocity() * detClock.TPCClock().TickPeriod()),                   
         zeroTick(detClock.TPCTDC2Tick(0)),                                                             // the tdc for tick zero
         angle_plane0(geom->Cryostat(CryoID).TPC(TPCID).Plane(0).ThetaZ()),                             // plane angles are easy to get
         angle_plane1(geom->Cryostat(CryoID).TPC(TPCID).Plane(1).ThetaZ()),
