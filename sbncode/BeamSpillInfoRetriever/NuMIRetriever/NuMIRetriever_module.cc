@@ -24,6 +24,7 @@
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "sbnobj/Common/POTAccounting/NuMISpillInfo.h"
+#include "sbnobj/Common/Trigger/BeamBits.h"
 
 #include "ifdh_art/IFBeamService/IFBeam_service.h"
 #include "ifbeam_c.h"
@@ -54,6 +55,7 @@ private:
   // input labels
   std::vector< sbn::NuMISpillInfo > fOutbeamInfos;
   double fTimePad;
+  double fTimeShift;
   double fBFPEpsilion;
   //MWRData mwrdata;
   std::string raw_data_label_;
@@ -79,7 +81,8 @@ void sbn::NuMIRetriever::MakeBFP() {
 
 sbn::NuMIRetriever::NuMIRetriever(fhicl::ParameterSet const& p)
   : EDProducer{p},
-  fTimePad(p.get<double>("TimePadding", 0.5)), //epsilon in seconds, buffer time to look for spills
+  fTimePad(p.get<double>("TimePadding", 1.)), //epsilon in seconds, buffer time to look for spills
+  fTimeShift(p.get<double>("TimeShift", 0.5)), // offset, in seconds, between DAQ and IFBeam times
   fBFPEpsilion(p.get<double>("BFPEpsilon", 0.02)), // 20 ms, tuned for BNB, check for NuMI here might need to be larger
   raw_data_label_(p.get<std::string>("raw_data_label")),
   fDeviceUsedForTiming(p.get<std::string>("DeviceUsedForTiming")),
@@ -95,14 +98,6 @@ sbn::NuMIRetriever::NuMIRetriever(fhicl::ParameterSet const& p)
 
 void sbn::NuMIRetriever::produce(art::Event &e)
 {
-
-  // If this is the first event in the run, then ignore it
-  // We do not currently have the ability to figure out the first
-  // spill that the DAQ was sensitive to, so don't try to save any
-  // spill information
-  //
-  // TODO: long-term goal -- can we fix this?
-  if (e.event() == 1) return;
 
   //  int gate_type = 0;
   art::Handle< std::vector<artdaq::Fragment> > raw_data_ptr;
@@ -126,7 +121,15 @@ void sbn::NuMIRetriever::produce(art::Event &e)
     t_current_event = static_cast<double>(artdaq_ts)/(1000000000.); //check this offset... 
     
     t_previous_event = (static_cast<double>(frag.getLastTimestampNuMIMaj()))/(1000000000.);
-    
+
+    // Ignore non-NuMi events
+    if (datastream_info.gate_type != (int)sbn::triggerSource::NuMI) return;
+
+    // If this is the first trigger in this stream in the run, 
+    // ignore it because we don't know how many spills
+    // we are sensitive to prior
+    unsigned trigger_count = (datastream_info.trigger_type == 0 /* Majority*/) ? frag.getTotalTriggerNuMIMaj() : frag.getTotalTriggerNuMIMinbias();
+    if (trigger_count == 1) return;
 
   }
 
@@ -162,10 +165,8 @@ void sbn::NuMIRetriever::produce(art::Event &e)
     // Only continue if these times are matched to our DAQ time
     // plus or minus some time padding, currently using 3.3 ms
     // which is half the Booster Rep Rate
-    if(e.event() != 1){//We already addressed the "first event" above 
-      if(times_temps[i] > t_current_event){continue;}
-      if(times_temps[i] <= t_previous_event){continue;}
-    }
+    if(times_temps[i] > t_current_event + fTimeShift){continue;}
+    if(times_temps[i] <= t_previous_event + fTimeShift){continue;}
     
     //count found spills
     spill_count++;

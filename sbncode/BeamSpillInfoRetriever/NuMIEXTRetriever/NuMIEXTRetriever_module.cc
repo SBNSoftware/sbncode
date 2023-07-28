@@ -27,6 +27,7 @@
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "sbnobj/Common/POTAccounting/EXTCountInfo.h"
+#include "sbnobj/Common/Trigger/BeamBits.h"
 
 #include <memory>
 #include <optional>
@@ -110,9 +111,12 @@ void sbn::NuMIEXTRetriever::produce(art::Event& e)
     std::string data = frag.GetDataString();
     char *buffer = const_cast<char*>(data.c_str());
     icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerV3String(buffer);
-    //gate_type = datastream_info.gate_type;
-    number_of_gates_since_previous_event = frag.getDeltaGatesNuMIOffMaj();
-  
+
+    // Ignore non-NuMi events
+    if (datastream_info.gate_type != (int)sbn::triggerSource::NuMI) return;
+
+    // Get the delta gate count
+    number_of_gates_since_previous_event = (datastream_info.trigger_type == 0 /* Majority*/) ? frag.getDeltaGatesNuMIOffMaj() : frag.getDeltaGatesNuMIOffMinbias();
 
   }
   
