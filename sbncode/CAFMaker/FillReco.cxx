@@ -419,6 +419,48 @@ namespace caf
     }
   }
 
+  void FillSliceBarycenter(const std::vector<art::Ptr<recob::Hit>> &inputHits,
+                           const std::vector<art::Ptr<recob::SpacePoint>> &inputPoints,
+                           caf::SRSlice &slice)
+  {
+    unsigned int nHits = inputHits.size();
+    double sumCharge = 0.;
+    double sumX = 0.; double sumY = 0.; double sumZ = 0.;
+    double sumXX = 0.; double sumYY = 0.; double sumZZ = 0.;
+    double thisHitCharge, thisPointXYZ[3], chargeCenter[3], chargeWidth[3];
+
+    for ( unsigned int i = 0; i < nHits; i++ ) {
+      const recob::Hit &thisHit = *inputHits[i];
+      if ( thisHit.SignalType() != geo::kCollection ) continue;
+      art::Ptr<recob::SpacePoint> const& thisPoint = inputPoints.at(i);
+      if ( !thisPoint ) continue;
+
+      thisHitCharge = thisHit.Integral();
+      thisPointXYZ[0] = thisPoint->XYZ()[0];
+      thisPointXYZ[1] = thisPoint->XYZ()[1];
+      thisPointXYZ[2] = thisPoint->XYZ()[2];
+
+      sumCharge += thisHitCharge;
+      sumX += thisPointXYZ[0] * thisHitCharge;
+      sumY += thisPointXYZ[1] * thisHitCharge;
+      sumZ += thisPointXYZ[2] * thisHitCharge;
+      sumXX += thisPointXYZ[0] * thisPointXYZ[0] * thisHitCharge;
+      sumYY += thisPointXYZ[1] * thisPointXYZ[1] * thisHitCharge;
+      sumZZ += thisPointXYZ[2] * thisPointXYZ[2] * thisHitCharge;
+    }
+
+    if( sumCharge != 0 ) {
+      chargeCenter[0] = sumX / sumCharge;
+      chargeCenter[1] = sumY / sumCharge;
+      chargeCenter[2] = sumZ / sumCharge;
+      chargeWidth[0] = pow( (sumXX/sumCharge - pow(sumX/sumCharge, 2)), .5);
+      chargeWidth[1] = pow( (sumYY/sumCharge - pow(sumY/sumCharge, 2)), .5);
+      chargeWidth[2] = pow( (sumZZ/sumCharge - pow(sumZ/sumCharge, 2)), .5);
+
+      slice.charge_center.SetXYZ( chargeCenter[0], chargeCenter[1], chargeCenter[2] ); 
+      slice.charge_width.SetXYZ( chargeWidth[0], chargeWidth[1], chargeWidth[2] );
+    }
+  }
 
   //......................................................................
 
