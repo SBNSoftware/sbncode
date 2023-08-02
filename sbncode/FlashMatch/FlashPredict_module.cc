@@ -1029,7 +1029,7 @@ FlashPredict::Score FlashPredict::computeScore(
   }
   if(score.ratio > fTermThreshold) printMetrics("RATIO", charge, flash, score.ratio,
                                                 mf::LogDebug("FlashPredict"));
-  if(fFlashType == "simpleflash_pmt" || fFlashType == "opflash_pmt") score.total += score.ratio;
+  score.total += score.ratio;
   tcount++;
   // score.slope = scoreTerm(flash.slope, charge.slope, fRM.SlopeMeans[xbin], fRM.SlopeSpreads[xbin]);
   score.slope = scoreTerm(flash.xw, fRM.SlopeMeans[xbin], fRM.SlopeSpreads[xbin]); // TODO: are you a better metric?
