@@ -180,7 +180,7 @@ class CAFMaker : public art::EDProducer {
   std::string fSourceFile;
 
   bool fFirstInSubRun;
-  unsigned int fIndexInFile = SRHeader::NoSourceIndex;
+  unsigned int fIndexInFile = SRHeader::NoSourceIndex();
   bool fFirstBlindInFile;
   bool fFirstPrescaleInFile;
   int fFileNumber;
@@ -929,7 +929,7 @@ void CAFMaker::InitializeOutfiles()
   fTotalEvents = 0;
   fBlindEvents = 0;
   fPrescaleEvents = 0;
-  fIndexInFile = SRHeader::NoSourceIndex;
+  fIndexInFile = SRHeader::NoSourceIndex();
   fFirstInSubRun = false;
   // fCycle = -5;
   // fBatch = -5;
