@@ -118,10 +118,9 @@ namespace caf
     // allowEmpty does not (yet) matter here                                                           
     (void) allowEmpty;
     //srmatch.setDefault();
-    std::cout << "filling CRTPMT Match : flash time = " << match.flashTime << "\n";
     srmatch.flashID = match.flashID;
     srmatch.flashTime = match.flashTime;
-    srmatch.flashGateTime = match.flashGateTime/1e3; //  ns -> us 
+    srmatch.flashGateTime = match.flashGateTime; 
     srmatch.firstOpHitPeakTime = match.firstOpHitPeakTime;
     srmatch.firstOpHitStartTime = match.firstOpHitStartTime;
     srmatch.flashInGate = match.flashInGate;
@@ -131,19 +130,15 @@ namespace caf
     srmatch.flashYWidth = match.flashYWidth;
     srmatch.flashZWidth = match.flashZWidth;
     srmatch.flashClassification = static_cast<int>(match.flashClassification);
-    //srmatch.flashClassification = match.flashClassification;
-    std::cout << "match type : " << std::to_string(static_cast<int>(match.flashClassification)) << "\n";
-    std::cout << "matchedCRThits.size : "<< match.matchedCRTHits.size() << "\n";
     for(const auto& matchedCRTHit : match.matchedCRTHits){
-      std::cout << "CRTPMTTimeDiff = "<< matchedCRTHit.PMTTimeDiff << "\n";
       caf::SRMatchedCRT matchedCRT;
       matchedCRT.PMTTimeDiff = matchedCRTHit.PMTTimeDiff; 
       matchedCRT.time = matchedCRTHit.time;
       matchedCRT.sys = matchedCRTHit.sys;
       matchedCRT.region = matchedCRTHit.region;
+      matchedCRT.position = SRVector3D(matchedCRTHit.position.X(), matchedCRTHit.position.Y(), matchedCRTHit.position.Z());
       srmatch.matchedCRTHits.push_back(matchedCRT);
     }
-    std::cout << "srmatch.matchedCRTHits.size = " << srmatch.matchedCRTHits.size() << "\n";
   }
 
 
