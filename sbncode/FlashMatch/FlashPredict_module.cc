@@ -321,8 +321,12 @@ void FlashPredict::produce(art::Event& evt)
         auto& opflash = (*opflashes_h)[opf];
         mf:: LogInfo("FlashPredict")
           << "TPC: " << i_tpc << "\n"
-          << "OpT: " << opflash.Time() << std::endl;
-        if(opflash.AbsTime()<fFlashFindingTimeStart || opflash.AbsTime()>fFlashFindingTimeEnd) continue;
+          << "OpT: " << opflash.Time() << "\n"
+          << "AbsT: " << opflash.AbsTime() << std::endl;
+        double optime = -9999.;
+        if(fSBND) optime = opflash.AbsTime();
+        else if(fICARUS) optime = opflash.Time();
+        if(optime<fFlashFindingTimeStart || optime>fFlashFindingTimeEnd) continue;
         std::vector<art::Ptr<recob::OpHit>> ophit_v = OpFlashToOpHitAssns.at(opf);      
         flashMetrics_tmp.push_back(getFlashMetrics(opflash, ophit_v, opf));
       }
@@ -542,14 +546,14 @@ FlashPredict::ReferenceMetrics FlashPredict::loadMetrics(
       << inputFilename << "' on FW_SEARCH_PATH\n";
   }
 
-  TFile *topfile = new TFile(fname.c_str(), "READ");
-  auto dirsinfile = topfile->GetListOfKeys();
-  if(!dirsinfile->Contains(fFlashType.c_str())) {
-    throw cet::exception("FlashPredict")
-      << "Metrics file " << inputFilename
-      << " doesn't contain TDirectoryFile " << fFlashType << "\n";
-  }
-  TDirectoryFile *infile = (TDirectoryFile*)topfile->Get(fFlashType.c_str());
+  TFile *infile = new TFile(fname.c_str(), "READ");
+//  auto dirsinfile = topfile->GetListOfKeys();
+//  if(!dirsinfile->Contains(fFlashType.c_str())) {
+//    throw cet::exception("FlashPredict")
+//      << "Metrics file " << inputFilename
+//      << " doesn't contain TDirectoryFile " << fFlashType << "\n";
+//  }
+//  TDirectoryFile *infile = (TDirectoryFile*)topfile->Get(fFlashType.c_str());
   auto metricsInFile = infile->GetListOfKeys();
   if(!metricsInFile->Contains("dy_h1") ||
      !metricsInFile->Contains("dz_h1") ||
@@ -965,7 +969,8 @@ FlashPredict::FlashMetrics FlashPredict::getFlashMetrics(
 
   auto fm = computeFlashMetrics(ophits);
   fm.id = id;
-  fm.time = opflash.AbsTime();
+  if(fSBND) fm.time = opflash.AbsTime();
+  else if(fICARUS) fm.time = opflash.Time();
   fm.activity = (opflash.XCenter() < 0) ? 100 : 200;
   if(fUseOpCoords) {
     if(opflash.hasXCenter()) {
