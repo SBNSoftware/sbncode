@@ -168,17 +168,17 @@ namespace flashmatch {
     //   measured flash PE was set to 0 due to saturation
     if (_saturated_thresh > 0){
       for (size_t ich = 0; ich < DetectorSpecs::GetME().NOpDets(); ++ich ) {
+        // if above the saturated threshold, measured is zero, is a PMT, and is not masked 
+        if ((one_hypothesis.pe_v[ich] >= _saturated_thresh) && (one_measurement.pe_v[ich] == 0) && (_channel_type[ich] == 0) && (_match_mask.at(ich) == 0)){
+          std::cout << "Guessing " << ich << " is saturated, setting hypothesis to 0" << std::endl;
+          one_hypothesis.pe_v[ich] = 0;
+          continue;
+        }
         // if above the nonlinear threshold AND a pmt AND not masked, correct for the nonlinear effect 
-        if ((one_hypothesis.pe_v[ich] > _nonlinear_thresh) && (_channel_type[ich] == 0) && (_match_mask.at(ich) == 0)){
+        if ((one_hypothesis.pe_v[ich] > _nonlinear_thresh) && (one_measurement.pe_v[ich] != 0) && (_channel_type[ich] == 0) && (_match_mask.at(ich) == 0)){
           double corr_pe = one_hypothesis.pe_v[ich]*_nonlinear_slope + _nonlinear_offset; 
           one_hypothesis.pe_v[ich] = corr_pe;
         }
-        // if above the saturated threshold 
-        if ((one_measurement.pe_v[ich] == 0) &&( one_hypothesis.pe_v[ich] >= _saturated_thresh) && (_channel_type[ich] == 0)){
-          std::cout << "Guessing " << ich << " is saturated, setting hypothesis to 0" << std::endl;
-          one_hypothesis.pe_v[ich] = 0;
-        }
-
       }
     }
     // ** end saturated + nonlinear fix ** 
