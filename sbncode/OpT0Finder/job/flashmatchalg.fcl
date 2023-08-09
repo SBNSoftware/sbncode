@@ -23,15 +23,21 @@ FlashMatchManager: {
 QLLMatch: {
   Verbosity: 3
   RecordHistory: false
-  NormalizeHypothesis: false
+  NormalizeFlash: false
   QLLMode: 1 # 0 for Chi2, 1 for LLHD
+  ChiErrorWidth: 0 # applies an additional uncertainty in the denominator of the chisq calculation proportional to H
+  UseMinuit: false
+  SaturatedThreshold: -1. # -1. if not correcting for saturated PMTs, otherwise a value > 0 will be the threshold value  
+  NonLinearThreshold: 5.0e3 # tuned for SBND, corrects for nonlinearity at high light, **only used if SaturatedThreshold>0** docdb31598
+  NonLinearSlope: 0.75  # tuned for SBND, corrects for nonlinearity at high light, **only used if SaturatedThreshold>0** docdb31598
+  NonLinearOffset: 0.75e3  # tuned for SBND, corrects for nonlinearity at high light, **only used if SaturatedThreshold>0** docdb31598
   PEPenaltyThreshold: []
   PEPenaltyValue: []
   XPenaltyThreshold: 30
   ZPenaltyThreshold: 30
   OnePMTScoreThreshold:  0.00001
   OnePMTXDiffThreshold:  35.
-  OnePMTPESumThreshold:  500
+  OnePMTPESumThreshold:  500    
   OnePMTPEFracThreshold: 0.3
 }
 
@@ -68,7 +74,10 @@ PhotonLibHypothesis:
   GlobalQERefl: 0.03
   UseSemiAnalytical: true
   ChannelMask: []
-  CCVCorrection: []
+  VUVEfficiency: []
+  VISEfficiency: []
+#   CCVCorrection: []
+#   CCVCorrectionRefl: []
 }
 
 ChargeAnalytical:
