@@ -146,6 +146,9 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
 
   if (fMakeTree) initTree();
 
+  fAllPlanes = ((fSBND && fPlaneList==kSBNDPlanes) ||
+                (fICARUS && fPlaneList==kICARUSPlanes)) ? true : false;
+
   consumes<std::vector<recob::PFParticle>>(fPandoraProducer);
   consumes<std::vector<recob::Slice>>(fPandoraProducer);
   consumes<art::Assns<recob::SpacePoint, recob::PFParticle>>(fPandoraProducer);
@@ -546,14 +549,14 @@ FlashPredict::ReferenceMetrics FlashPredict::loadMetrics(
       << inputFilename << "' on FW_SEARCH_PATH\n";
   }
 
-  TFile *infile = new TFile(fname.c_str(), "READ");
-//  auto dirsinfile = topfile->GetListOfKeys();
-//  if(!dirsinfile->Contains(fFlashType.c_str())) {
-//    throw cet::exception("FlashPredict")
-//      << "Metrics file " << inputFilename
-//      << " doesn't contain TDirectoryFile " << fFlashType << "\n";
-//  }
-//  TDirectoryFile *infile = (TDirectoryFile*)topfile->Get(fFlashType.c_str());
+  TFile *topfile = new TFile(fname.c_str(), "READ");
+  auto dirsinfile = topfile->GetListOfKeys();
+  if(!dirsinfile->Contains(fFlashType.c_str())) {
+    throw cet::exception("FlashPredict")
+      << "Metrics file " << inputFilename
+      << " doesn't contain TDirectoryFile " << fFlashType << "\n";
+  }
+  TDirectoryFile *infile = (TDirectoryFile*)topfile->Get(fFlashType.c_str());
   auto metricsInFile = infile->GetListOfKeys();
   if(!metricsInFile->Contains("dy_h1") ||
      !metricsInFile->Contains("dz_h1") ||
@@ -1395,8 +1398,9 @@ FlashPredict::ChargeDigestMap FlashPredict::makeChargeDigest(
           geo::WireID wId = hit->WireID();
           if(std::find(fPlaneList.begin(), fPlaneList.end(), hit_plane) == fPlaneList.end()) continue;
           const double hitQ = hit->Integral();
-          if(hitQ < fMinHitQ) continue;
-          spacepointQ += hitQ;
+          if(!fAllPlanes) {
+            if(hitQ < fMinHitQ) continue;
+          }          spacepointQ += hitQ;
           hitsClusters.emplace_back(pos[0], pos[1], pos[2], hitQ);
           const auto itpc = wId.TPC;
           if(itpc<=fNTPC) hitsTPCs.insert(itpc);

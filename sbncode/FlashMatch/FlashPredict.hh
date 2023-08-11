@@ -424,12 +424,17 @@ private:
   const unsigned fOpDetNormalizer;
   const double fTermThreshold;
 
+  bool fAllPlanes = true;
+
   static constexpr unsigned kRght = 0;
   static constexpr unsigned kLeft = 1;
 
   static constexpr unsigned kActivityInRght = 100;
   static constexpr unsigned kActivityInLeft = 200;
   static constexpr unsigned kActivityInBoth = 300;
+
+  const std::vector<int> kSBNDPlanes{0,1,2};
+  const std::vector<int> kICARUSPlanes{0,1,3};
 
   // Tree variables
   TTree* _flashmatch_nuslice_tree;
