@@ -20,4 +20,7 @@ transfer_flashmatch_sce_icarus_cryoW: {
   PFParticleLabelOut: pandoraGausSCECryoW
 }
 
+transfer_flashmatch_sce_icarus_cryoE_op: @local::transfer_flashmatch_sce_icarus_cryoE
+transfer_flashmatch_sce_icarus_cryoW_op: @local::transfer_flashmatch_sce_icarus_cryoW
+
 END_PROLOG

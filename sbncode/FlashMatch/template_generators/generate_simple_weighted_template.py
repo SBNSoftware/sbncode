@@ -682,20 +682,35 @@ def main():
             generator(nuslice_tree, rootfile, pset, dir_, l_name)
     elif args.icarus:
         fcl_params = fhicl.make_pset('flashmatch_simple_icarus.fcl')
-        pset = dotDict(fcl_params['icarus_simple_flashmatch_E'])
-        detector = "icarus"
         time_delay = 0.
         # by default merge the trees from both Cryos
-        dir0 = rootfile.Get(file_updated+":/fmatchCryoE")
-        nuslice_tree0 = dir0.Get("nuslicetree")
-        dir1 = rootfile.Get(file_updated+":/fmatchCryoW")
-        nuslice_tree1 = dir1.Get("nuslicetree")
-        treelist = TList()
-        treelist.Add(nuslice_tree0)
-        treelist.Add(nuslice_tree1)
-        nuslice_tree = TTree.MergeTrees(treelist);
-        nuslice_tree.SetName("nuslice_tree");
-        # nuslice_tree.Write();
+        metrics_filename = 'fm_metrics_' + detector + '.root'
+        hfile_top = TFile(metrics_filename, 'RECREATE',
+                      'Simple flash matching metrics for ' + detector.upper())
+        hfile_top.Close()
+        suffix_list = ["", "_op"]
+        long_names = ["SimpleFlash_PMT", "OpFlash_PMT"]
+        for (dir_, l_name) in zip(suffix_list, long_names):
+            detector = "icarus"
+            pset = dotDict(fcl_params['icarus_simple_flashmatch_E' + dir_])
+            fhicl_table_E = "icarus_simple_flashmatch_E" + dir_
+            fhicl_table_W = "icarus_simple_flashmatch_W" + dir_
+            dir0 = rootfile.Get(file_updated+":/fmatch"+dir_.replace("_", "")+"CryoE")
+            nuslice_tree0 = dir0.Get("nuslicetree")
+            dir1 = rootfile.Get(file_updated+":/fmatch"+dir_.replace("_", "")+"CryoW")
+            nuslice_tree1 = dir1.Get("nuslicetree")
+            treelist = TList()
+            treelist.Add(nuslice_tree0)
+            treelist.Add(nuslice_tree1)
+            nuslice_tree = TTree.MergeTrees(treelist);
+            nuslice_tree.SetName("nuslice_tree");
+            # nuslice_tree.Write();
+            ftype_long = pset.FlashType
+            drift_distance = pset.DriftDistance
+            x_bins = pset.XBins
+            xbin_width = drift_distance/x_bins
+            pretty_print(l_name)
+            generator(nuslice_tree, rootfile, pset, dir_, l_name)
 
 
 #    generator(nuslice_tree, rootfile, pset)
