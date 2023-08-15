@@ -51,6 +51,7 @@ private:
   art::InputTag fSedLabel; ///< module making the SimEnergyDeposit
   double fMinX, fMinY, fMinZ; ///< bottom left coordinate of union of all TPC active volumes
   double fVoxelSizeX, fVoxelSizeY, fVoxelSizeZ; ///< size of a voxel (cm)
+  bool fUseOrigTrackID; //Use orig track ID boolean
   //services
   const geo::GeometryCore& fGeometry;
 };
@@ -66,6 +67,10 @@ G4InfoReducer::G4InfoReducer(fhicl::ParameterSet const& p)
   fVoxelSizeX = p.get<double>("VoxelSizeX", 0.3);
   fVoxelSizeY = p.get<double>("VoxelSizeY", 0.3);
   fVoxelSizeZ = p.get<double>("VoxelSizeZ", 0.3);
+
+  //Use orig track id
+  fUseOrigTrackID = p.get<bool>("useOrigTrackID",true);
+
   if (fVoxelSizeX <= 0. || fVoxelSizeY <= 0. || fVoxelSizeZ <= 0.) {
     std::cerr << "Voxel size must be strictly greater than zero." << std::endl;
     throw std::exception();
@@ -120,6 +125,9 @@ void G4InfoReducer::produce(art::Event& e)
     }
   };
   std::set<sim::SimEnergyDepositLite, comp> sedlite_v2;
+  sim::SimEnergyDepositLite sed_lite;
+  sim::SimEnergyDepositLite new_sed_lite;
+
 
   auto const& sed_v = *handle;
 
@@ -131,20 +139,37 @@ void G4InfoReducer::produce(art::Event& e)
 
   for (size_t idx = 0; idx < sed_v.size(); ++idx) {
     auto const& sed = sed_v[idx];
+    // std::cout << "G4info - orig track ID : " << sed.OrigTrackID() 
+    // << " trackID : " << sed.TrackID()
+    // << " useOrigID : " << fUseOrigTrackID
+    // << std::endl;
     // Voxelize coordinates to closest coordinate using fVoxelSize
     double x = sed.X() - std::fmod(sed.X() - fMinX, fVoxelSizeX);
     double y = sed.Y() - std::fmod(sed.Y() - fMinY, fVoxelSizeY);
     double z = sed.Z() - std::fmod(sed.Z() - fMinZ, fVoxelSizeZ);
+
     // Copy info to SimEnergyDepositLite
-    sim::SimEnergyDepositLite sed_lite(sed.E(), geo::Point_t(x, y, z), sed.T(), sed.OrigTrackID());
-    // Attempt to insert, if already exist we sum up energy deposit
+    if (fUseOrigTrackID){
+      sed_lite = sim::SimEnergyDepositLite(sed.E(), geo::Point_t(x, y, z), sed.T(), sed.OrigTrackID());
+    }
+    else{
+      sed_lite = sim::SimEnergyDepositLite(sed.E(), geo::Point_t(x, y, z), sed.T(), sed.TrackID());
+    }
     auto it = sedlite_v2.find(sed_lite);
+    // Attempt to insert, if already exist we sum up energy deposit
+    
     if (it!=sedlite_v2.end()) {
       double new_energy = sed_lite.E() + it->E();
       double new_time = std::min(sed_lite.T(), it->T());
       sedlite_v2.erase(it);
-      sim::SimEnergyDepositLite new_sed_lite(new_energy, geo::Point_t(x, y, z), new_time, sed.OrigTrackID());
+      if (fUseOrigTrackID){
+        new_sed_lite = sim::SimEnergyDepositLite(new_energy, geo::Point_t(x, y, z), new_time, sed.OrigTrackID());
+      }
+      else{
+        new_sed_lite = sim::SimEnergyDepositLite(new_energy, geo::Point_t(x, y, z), new_time, sed.TrackID());
+      }
       sedlite_v2.insert(new_sed_lite);
+      
     }
     else {
       sedlite_v2.insert(std::move(sed_lite));

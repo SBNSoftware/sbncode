@@ -21,10 +21,16 @@ namespace flashmatch {
 
   void QLLMatch::_Configure_(const Config_t &pset) {
     _record = pset.get<bool>("RecordHistory");
-    _normalize = pset.get<bool>("NormalizeHypothesis");
+    _normalize = pset.get<bool>("NormalizeFlash");
     _mode   = (QLLMode_t)(pset.get<unsigned short>("QLLMode"));
-    _pe_observation_threshold = pset.get<double>("PEObservationThreshold", 0.0);
-    _pe_hypothesis_threshold  = pset.get<double>("PEHypothesisThreshold", 0.0);
+    _chi_error = pset.get<double>("ChiErrorWidth");
+    _use_minuit = pset.get<bool>("UseMinuit");
+    _saturated_thresh = pset.get<double>("SaturatedThreshold");
+    _nonlinear_thresh = pset.get<double>("NonLinearThreshold");
+    _nonlinear_slope  = pset.get<double>("NonLinearSlope");
+    _nonlinear_offset = pset.get<double>("NonLinearOffset");
+    _pe_observation_threshold = pset.get<double>("PEObservationThreshold", 1.e-6);
+    _pe_hypothesis_threshold  = pset.get<double>("PEHypothesisThreshold", 1.e-6);
     _migrad_tolerance         = pset.get<double>("MIGRADTolerance", 0.1);
 
     this->set_verbosity((msg::Level_t)(pset.get<unsigned int>("Verbosity", 3)));
@@ -59,6 +65,14 @@ namespace flashmatch {
       _vol_xmin = bbox.Min()[0];
     }
 
+    // By default, add all opdets to the channel mask
+    // Note that this may be overridden by the manager
+    // via the SetChannelMask() method.
+    _channel_mask.clear();
+    _channel_mask.reserve(DetectorSpecs::GetME().NOpDets());
+    for (size_t i = 0; i < DetectorSpecs::GetME().NOpDets(); i++) {
+      _channel_mask[i] = i;
+    }
   }
 
   void QLLMatch::SetTPCCryo(int tpc, int cryo) {
@@ -75,41 +89,125 @@ namespace flashmatch {
 
     _construct_hypo_time = 0;
 
+    // combine cluster + flash mask for this match pair 
+    _match_mask.clear();
+    _match_mask.resize(DetectorSpecs::GetME().NOpDets(), 0);
+
+    for (size_t opch=0; opch < flash.pe_v.size(); opch++){
+      if (flash.pds_mask_v.at(opch)!=0 || pt_v.tpc_mask_v.at(opch)!=0){
+        _match_mask.at(opch) = 1;
+      }
+    }
     //
     // Prepare TPC
     //
     _raw_trk.resize(pt_v.size());
     double min_x =  1e20;
     double max_x = -1e20;
+    _raw_trk.tpc_mask_v = _match_mask;
     for (size_t i = 0; i < pt_v.size(); ++i) {
       auto const &pt = pt_v[i];
       _raw_trk[i] = pt;
       if (pt.x < min_x) { min_x = pt.x; _raw_xmin_pt = pt; }
       if (pt.x > max_x) { max_x = pt.x; _raw_xmax_pt = pt; }
     }
-    for (auto &pt : _raw_trk) pt.x -= min_x;
 
-    auto res1 = PESpectrumMatch(pt_v,flash,true);
-    auto res2 = PESpectrumMatch(pt_v,flash,false);
-    FLASH_INFO() << "Using   mid-x-init ... maximized 1/param Score=" << res1.score << " @ X=" << res1.tpc_point.x << " [cm]" << std::endl;
-    FLASH_INFO() << "Without mid-x-init ... maximized 1/param Score=" << res2.score << " @ X=" << res2.tpc_point.x << " [cm]" << std::endl;
+    FlashMatch_t res; 
+    if (_use_minuit){
+      for (auto &pt : _raw_trk) pt.x -= min_x;
+      auto res1 = PESpectrumMatch(pt_v,flash,true);
+      auto res2 = PESpectrumMatch(pt_v,flash,false);
+      FLASH_INFO() << "Using   mid-x-init ... maximized 1/param Score=" << res1.score << " @ X=" << res1.tpc_point.x << " [cm]" << std::endl;
+      FLASH_INFO() << "Without mid-x-init ... maximized 1/param Score=" << res2.score << " @ X=" << res2.tpc_point.x << " [cm]" << std::endl;
+      res = (res1.score > res2.score ? res1 : res2);
 
-    auto res = (res1.score > res2.score ? res1 : res2);
-    /*
-    if(res.score < _onepmt_score_threshold) {
+      /*
+      if(res.score < _onepmt_score_threshold) {
 
       FLASH_INFO() << "Resulting score below OnePMTScoreThreshold... calling OnePMTMatch" << std::endl;
       auto res_onepmt = OnePMTMatch(flash);
 
       if(res_onepmt.score >= 0.)
-	return res_onepmt;
+	      return res_onepmt;
     }
     */
+    }
+    else{
+      res = OnePMTSpectrumMatch(flash);
+    }
     FLASH_INFO() << "Time spent constructing hypotheses: " << _construct_hypo_time << " ns." << std::endl;
     return res;
   }
+  
 
-  FlashMatch_t QLLMatch::OnePMTMatch(const Flash_t& flash) {
+  FlashMatch_t QLLMatch::OnePMTSpectrumMatch(const Flash_t& flash){
+    
+    FlashMatch_t res;
+    res.score=-1;
+    res.num_steps = 1;
+
+    // initialize the hypothesis flash
+    Flash_t one_hypothesis;
+    one_hypothesis.pe_v.resize(DetectorSpecs::GetME().NOpDets(), 0.);
+    for (auto &v : one_hypothesis.pe_v) v = 0;
+    
+    FillEstimate(_raw_trk,one_hypothesis);
+
+    // initialize the measurement flash 
+    auto    one_measurement = flash;
+
+    for (size_t ich = 0; ich < DetectorSpecs::GetME().NOpDets(); ++ich ) {
+      if (_match_mask.at(ich) != 0){
+          one_hypothesis.pe_v[ich] = 0.;
+          one_measurement.pe_v[ich] = 0.;
+      }
+    }
+
+    // ** temp saturated opdets+nonlinear fix ** 
+    // - when the measured flash PE is equal to 0 and the hypothesis is large, assume that the 
+    //   measured flash PE was set to 0 due to saturation
+    if (_saturated_thresh > 0){
+      for (size_t ich = 0; ich < DetectorSpecs::GetME().NOpDets(); ++ich ) {
+        // if above the saturated threshold, measured is zero, is a PMT, and is not masked 
+        if ((one_hypothesis.pe_v[ich] >= _saturated_thresh) && (one_measurement.pe_v[ich] == 0) && (_channel_type[ich] == 0) && (_match_mask.at(ich) == 0)){
+          std::cout << "Guessing " << ich << " is saturated, setting hypothesis to 0" << std::endl;
+          one_hypothesis.pe_v[ich] = 0;
+          continue;
+        }
+        // if above the nonlinear threshold AND a pmt AND not masked, correct for the nonlinear effect 
+        if ((one_hypothesis.pe_v[ich] > _nonlinear_thresh) && (one_measurement.pe_v[ich] != 0) && (_channel_type[ich] == 0) && (_match_mask.at(ich) == 0)){
+          double corr_pe = one_hypothesis.pe_v[ich]*_nonlinear_slope + _nonlinear_offset; 
+          one_hypothesis.pe_v[ich] = corr_pe;
+        }
+      }
+    }
+    // ** end saturated + nonlinear fix ** 
+
+    res.hypothesis = one_hypothesis.pe_v;
+    
+    if (_normalize){
+      double hsum = std::accumulate(one_hypothesis.pe_v.begin(),  one_hypothesis.pe_v.end(), 0.0);
+      double msum = std::accumulate(one_measurement.pe_v.begin(), one_measurement.pe_v.end(), 0.0);
+      if (hsum!=0) for (auto &v : one_hypothesis.pe_v) v /= hsum;
+      if (msum!=0) for (auto &v : one_measurement.pe_v) v /= msum;
+    }
+
+    // perform likelihood calculation
+    _qll = QLLMatch::GetME()->QLL(one_hypothesis, one_measurement);
+    if (std::isnan(_qll) || std::isinf(_qll)) {
+      return res;
+    }
+
+    // use the qll score 
+    if(_mode == kSimpleLLHD)
+      res.score = _qll * -1.;
+    else
+      res.score = 1. / _qll;
+
+    return res;
+  }
+
+FlashMatch_t QLLMatch::OnePMTMatch(const Flash_t& flash) {
 
     FlashMatch_t res;
     res.score=-1;
@@ -176,7 +274,7 @@ namespace flashmatch {
     return res;
 
   }
-
+  
   FlashMatch_t QLLMatch::PESpectrumMatch(const QCluster_t &pt_v, const Flash_t &flash, const bool init_x0) {
 
     this->CallMinuit(pt_v, flash, init_x0);
@@ -274,12 +372,12 @@ namespace flashmatch {
     //std::cout << "Duration ChargeHypothesis 2 = " << duration.count() << "us" << std::endl;
 
     //start = high_resolution_clock::now();
-    if (_normalize) {
-      double qsum = std::accumulate(std::begin(_hypothesis.pe_v),
-				    std::end(_hypothesis.pe_v),
-				    0.0);
-      for (auto &v : _hypothesis.pe_v) v /= qsum;
-    }
+    // if (_normalize) {
+    //   double qsum = std::accumulate(std::begin(_hypothesis.pe_v),
+		// 		    std::end(_hypothesis.pe_v),
+		// 		    0.0);
+    //   for (auto &v : _hypothesis.pe_v) v /= qsum;
+    // }
     auto end = high_resolution_clock::now();
     auto duration = duration_cast<nanoseconds>(end - start);
     _construct_hypo_time += duration.count();
@@ -293,9 +391,7 @@ namespace flashmatch {
   double QLLMatch::QLL(const Flash_t &hypothesis,
 		       const Flash_t &measurement) {
 
-    // std::cout << "[QLLMatch] _mode " << _mode << std::endl;
-
-    double nvalid_pmt = 0;
+    double nvalid_ch = 0;
 
     double PEtot_Hyp = 0;
     for (auto const &pe : hypothesis.pe_v)
@@ -311,16 +407,23 @@ namespace flashmatch {
 
     double O, H, Error;
 
-    for (size_t pmt_index = 0; pmt_index < hypothesis.pe_v.size(); ++pmt_index) {
+    for (size_t ich = 0; ich < hypothesis.pe_v.size(); ++ich) {
 
-      O = measurement.pe_v[pmt_index]; // observation
-      H = hypothesis.pe_v[pmt_index];  // hypothesis
+      // ignore OpDets that are in the opposite TPC that we're considering
+      if ( int(ich)%2 != _tpc%2)
+        continue;
+
+      if (_match_mask.at(ich)!=0)
+        continue;
+
+      O = measurement.pe_v[ich]; // observation
+      H = hypothesis.pe_v[ich];  // hypothesis
 
       if( H < 0 ) throw OpT0FinderException("Cannot have hypothesis value < 0!");
 
-      if(O < 0) {
+      if(O < _pe_observation_threshold) {
         if (!_penalty_value_v.empty()) {
-          O = _penalty_value_v[pmt_index];
+          O = _penalty_value_v[ich];
         }
         else {
           O = _pe_observation_threshold;
@@ -328,7 +431,7 @@ namespace flashmatch {
       }
       if (H <= _pe_hypothesis_threshold) {
         if(!_penalty_threshold_v.empty()) {
-          H = _penalty_threshold_v[pmt_index];
+          H = _penalty_threshold_v[ich];
         }
         else {
           H = _pe_hypothesis_threshold;
@@ -336,27 +439,37 @@ namespace flashmatch {
       }
 
       if(_mode == kLLHD) {
-
         double arg = TMath::Poisson(O,H);
-        // std::cout << "[QLLMatch] pmt_index " << pmt_index << " - O: " << O << ", H: " << H << ", arg: " << arg << std::endl;
+        double val = O*std::log10(H) - H*std::log10(std::exp(1)) - std::log10(TMath::Gamma(O+1));
+        // stirling's approximation 
+        double val_2 = O*std::log10(H) - H*std::log10(std::exp(1)) - 0.5*std::log10(2*TMath::Pi()*O) - O*std::log10(O) + O*std::log10(std::exp(1)); 
+
         if(arg > 0. && !std::isnan(arg) && !std::isinf(arg)) {
           _current_llhd -= std::log10(arg);
-          nvalid_pmt += 1;
-          if(_converged) FLASH_INFO() <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " LHD "<<arg << " -LLHD " << -1 * std::log10(arg) << std::endl;
+          nvalid_ch += 1;
+          if(_converged) FLASH_INFO() <<"CH "<< ich <<" O/H " << O << " / " << H << " LHD "<<arg << " -LLHD " << -1 * std::log10(arg) << std::endl;
+        }
+        else if(!std::isnan(val) && !std::isinf(val)){
+          _current_llhd -= val;
+          nvalid_ch += 1;
+          if(_converged) FLASH_INFO() <<"CH "<< ich <<" O/H " << O << " / " << H << " -LLHD " << -1 * val << std::endl;
+        }
+        else if (!std::isnan(val_2) && !std::isinf(val_2)){
+          _current_llhd -= val_2;
+          nvalid_ch += 1;
+          if(_converged) FLASH_INFO() <<"CH "<< ich <<" O/H " << O << " / " << H << " -LLHD " << -1 * val_2 << std::endl;
         }
       } else if (_mode == kSimpleLLHD) {
 
         double arg = (H - O * std::log(H));
         _current_llhd += arg;
-        if(_converged) FLASH_INFO() <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " ... -LLHD " << arg << std::endl;
-        //nvalid_pmt += 1;
+        if(_converged) FLASH_INFO() <<"CH "<< ich <<" O/H " << O << " / " << H << " ... -LLHD " << arg << std::endl;
 
       } else if (_mode == kChi2) {
 
-      Error = O;
-      if( Error < 1.0 ) Error = 1.0;
-      _current_chi2 += std::pow((O - H), 2) / (Error);
-      nvalid_pmt += 1;
+        Error = H;
+        _current_chi2 += std::pow((O - H), 2) / (Error + std::pow(_chi_error*Error,2));
+        nvalid_ch += 1;
 
       } else {
         FLASH_ERROR() << "Unexpected mode" << std::endl;
@@ -364,12 +477,12 @@ namespace flashmatch {
       }
 
     }
-    //FLASH_DEBUG() <<"Mode " << (int)(_mode) << " Chi2 " << _current_chi2 << " LLHD " << _current_llhd << " nvalid " << nvalid_pmt << std::endl;
-
-    _current_chi2 /= nvalid_pmt;
-    _current_llhd /= (nvalid_pmt +1);
+    //FLASH_DEBUG() <<"Mode " << (int)(_mode) << " Chi2 " << _current_chi2 << " LLHD " << _current_llhd << " nvalid " << nvalid_ch << std::endl;
+    // std::cout << "Using " << nvalid_ch <<  " optical detectors for the scoring in TPC " << _tpc << std::endl;
+    _current_chi2 /= nvalid_ch;
+    _current_llhd /= (nvalid_ch +1);
     if(_converged)
-      FLASH_INFO() << "Combined LLHD: " << _current_llhd << " (divided by nvalid_pmt+1 = " << nvalid_pmt+1<<")"<<std::endl;
+      FLASH_INFO() << "Combined LLHD: " << _current_llhd << " (divided by nvalid_ch+1 = " << nvalid_ch+1<<")"<<std::endl;
 
     return (_mode == kChi2 ? _current_chi2 : _current_llhd);
   }
@@ -439,9 +552,11 @@ namespace flashmatch {
     if (_normalize) {
       max_pe = 0;
       for (auto const &v : pmt.pe_v) if (v > max_pe) max_pe = v;
+      for (size_t i = 0; i < pmt.pe_v.size(); ++i)  _measurement.pe_v[i] = pmt.pe_v[i] / max_pe;
     }
-
-    for (size_t i = 0; i < pmt.pe_v.size(); ++i)  _measurement.pe_v[i] = pmt.pe_v[i] / max_pe;
+    else{
+      for (size_t i = 0; i < pmt.pe_v.size(); ++i)  _measurement.pe_v[i] = pmt.pe_v[i];
+    }
 
     _minimizer_record_chi2_v.clear();
     _minimizer_record_llhd_v.clear();
@@ -449,18 +564,19 @@ namespace flashmatch {
     _num_steps = 0;
 
     if (!_minuit_ptr) _minuit_ptr = new TMinuit(4);
+     
+    double reco_x = (_vol_xmax - _vol_xmin)/2;
 
-    double reco_x = _vol_xmin + 10;
     if (!init_x0) {
-      //reco_x = ((_vol_xmax - _vol_xmin) - (_raw_xmax_pt.x - _raw_xmin_pt.x)) / 2. + _vol_xmin;
-      // Assume this is the right flash... then
-      reco_x = _raw_xmin_pt.x - pmt.time * DetectorSpecs::GetME().DriftVelocity();
-      if(reco_x < _vol_xmin || (reco_x + _raw_xmax_pt.x - _raw_xmin_pt.x) > _vol_xmax)
+      reco_x = (_raw_xmax_pt.x - _raw_xmin_pt.x) / 2. - pmt.time * DetectorSpecs::GetME().DriftVelocity() + _raw_xmin_pt.x;
+
+      if(reco_x < _vol_xmin || reco_x > _vol_xmax)
       return kINVALID_DOUBLE;
     }
     double reco_x_err = ((_vol_xmax - _vol_xmin) - (_raw_xmax_pt.x - _raw_xmin_pt.x)) / 2.;
+
     double xmin = _vol_xmin;
-    double xmax = (_vol_xmax - _vol_xmin) - (_raw_xmax_pt.x - _raw_xmin_pt.x) + _vol_xmin;
+    double xmax = _vol_xmax;
 
     FLASH_INFO() << "Running Minuit x: " << xmin << " => " << xmax
 		 << " ... initial state x=" <<reco_x <<" x_err=" << reco_x_err << std::endl;
