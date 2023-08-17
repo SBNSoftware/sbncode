@@ -328,12 +328,16 @@ class CAFMaker : public art::EDProducer {
   CAFMaker::CAFMaker(const Parameters& params)
   : art::EDProducer{params},
     fParams(params()), fFile(0),
-    fFakeRecoRandomEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine
-      (*this, "HepJamesRandom", "FakeReco", fParams.FakeRecoRandomSeed)
-      ),
-    fBlindRandomEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine
-      (*this, "HepJamesRandom", "Blinding", fParams.BlindingRandomSeed)
-      )
+    fFakeRecoRandomEngine(
+      art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(
+        createEngine(0, "HepJamesRandom", "FakeReco"),
+        "HepJamesRandom", "FakeReco", fParams.FakeRecoRandomSeed
+      )),
+    fBlindRandomEngine(
+      art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(
+        createEngine(0, "HepJamesRandom", "Blinding"),
+        "HepJamesRandom", "Blinding", fParams.BlindingRandomSeed
+      ))
   {
   // Note: we will define isRealData on a per event basis in produce function [using event.isRealData()], at least for now.
 
