@@ -196,9 +196,6 @@ public:
     double rr, ratio, slope, pe, unpe, time;
     double h_x, h_xerr, h_xrr, h_xratio;
     double y_skew, z_skew, y_kurt, z_kurt;
-    double opxw = 0.; double opx = 0.;
-    double opyw = 0.; double opy = 0.;
-    double opzw = 0.; double opz = 0.;
     bool metric_ok;
     FlashMetrics(unsigned id_, unsigned activity_,
                  double x_, double yb_, double zb_,
@@ -354,7 +351,7 @@ private:
   double opHitTime(const recob::OpHit& oph) const;
   double wallXWithMaxPE(const std::vector<recob::OpHit>& ophits) const;
   double fractTimeWithFractionOfLight(
-    const SimpleFlash& simpleFlash,
+    const std::vector<recob::OpHit>& ophits,
     const double sum_pe, const double fraction_pe,
     const bool use_square_pe = false, const bool only_unpe = false) const;
   inline double polynomialCorrection(const double skew, const double hypo_x,
@@ -389,7 +386,6 @@ private:
   const double fFlashStart, fFlashEnd;
   const unsigned fTimeBins;
   const bool fSelectNeutrino;
-  const std::vector<int> fPlaneList;
   const bool fForceConcurrence;
   const bool fUse3DMetrics;
   const bool fUseOpCoords;
@@ -407,6 +403,8 @@ private:
   const art::ServiceHandle<geo::Geometry> fGeometry;
   const std::string fDetector; // SBND or ICARUS
   const bool fSBND, fICARUS;
+  const std::vector<int> fPlaneList;
+  const bool fAllPlanes;
   const std::unique_ptr<opdet::PDMapAlg> fPDMapAlgPtr;
   const size_t fNTPC;
   const unsigned fTPCPerDriftVolume;
@@ -430,6 +428,9 @@ private:
   static constexpr unsigned kActivityInRght = 100;
   static constexpr unsigned kActivityInLeft = 200;
   static constexpr unsigned kActivityInBoth = 300;
+
+  const std::vector<int> kSBNDPlanes = {0,1,2};
+  const std::vector<int> kICARUSPlanes = {0,1,3};
 
   // Tree variables
   TTree* _flashmatch_nuslice_tree;

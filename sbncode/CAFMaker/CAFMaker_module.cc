@@ -432,8 +432,6 @@ void CAFMaker::FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_ti
   // Fix the flash matches
   for (SRSlice &s: rec.slc) {
     s.fmatch.time += PMT_reference_time;
-    s.fmatch_a.time += PMT_reference_time;
-    s.fmatch_b.time += PMT_reference_time;
   }
 
   // TODO: fix more?
@@ -1604,18 +1602,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceVars(*slice, primary, producer, recslc);
     FillSliceMetadata(primary_meta, recslc);
     FillSliceFlashMatch(fmatch_map["fmatch"], recslc.fmatch);
-    FillSliceFlashMatch(fmatch_map["fmatch"], recslc.fmatch_a);
     FillSliceFlashMatch(fmatch_map["fmatchop"], recslc.fmatchop);
-    FillSliceFlashMatch(fmatch_map["fmatchop"], recslc.fmatchop_a);
     auto sr_flash = fmatch_map.find("fmatchara");
     if(sr_flash!=fmatch_map.end()) {
       FillSliceFlashMatch(fmatch_map["fmatchara"], recslc.fmatchara);
-      FillSliceFlashMatch(fmatch_map["fmatchara"], recslc.fmatchara_a);
     }
     sr_flash = fmatch_map.find("fmatchopara");
     if(sr_flash != fmatch_map.end()) {
       FillSliceFlashMatch(fmatch_map["fmatchopara"], recslc.fmatchopara);
-      FillSliceFlashMatch(fmatch_map["fmatchopara"], recslc.fmatchopara_a);
     }
     FillSliceVertex(vertex, recslc);
     FillSliceCRUMBS(slcCRUMBS, recslc);
