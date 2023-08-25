@@ -182,7 +182,7 @@ evgen::ldm::MeVPrtlGen::MeVPrtlGen(fhicl::ParameterSet const& p)
 
 void evgen::ldm::MeVPrtlGen::beginRun(art::Run& run) {
   art::ServiceHandle<geo::Geometry const> geo;
-  if (fProduce) run.put(std::make_unique<sumdata::RunData>(geo->DetectorName()));
+  if (fProduce) run.put(std::make_unique<sumdata::RunData>(geo->DetectorName()), art::fullRun());
 }
 
 void evgen::ldm::MeVPrtlGen::endSubRun(art::SubRun& sr) {
@@ -190,7 +190,7 @@ void evgen::ldm::MeVPrtlGen::endSubRun(art::SubRun& sr) {
   p->totpot = fSubRunPOT;
   p->totgoodpot = fSubRunPOT;
 
-  if (fProduce) sr.put(std::move(p));
+  if (fProduce) sr.put(std::move(p), art::subRunFragment());
 
   fSubRunPOT = 0.;
 }
@@ -317,7 +317,6 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
     if (fVerbose) std::cout << "RayDecay weight: " << ray_decay_weight << std::endl;
     if (fVerbose) std::cout << "PASSED!\n";
 
-
     // get the POT
     double thisPOT = fGenTool->GetPOT();
 
@@ -336,8 +335,8 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
     evgen::ldm::MeVPrtlTruth mevprtl_truth(flux, decay,
       intersection,
       flux_weight,
-      1.,
-      ray_decay_weight,
+      ray_weight,
+      decay_weight,
       thisPOT
     );
 
