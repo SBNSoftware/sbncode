@@ -654,7 +654,7 @@ def main():
     global drift_distance
     global x_bins
     global xbin_width
-    global time_delay
+    global time_delay # TODO: Improve timing res to make this obsolete
     global tolerable_time_diff
     global suffix_list
     global ftype_long

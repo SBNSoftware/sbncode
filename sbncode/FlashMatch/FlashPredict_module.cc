@@ -29,7 +29,6 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fFlashEnd(p.get<double>("FlashEnd"))  // in us w.r.t flash time
   , fTimeBins(timeBins())
   , fSelectNeutrino(p.get<bool>("SelectNeutrino", true)) // only attempt to match potential neutrino slices
-  , fPlaneList(p.get<std::vector<int>>("PlaneList")) // Use 0, 1, 2 for SBND and 0, 1, 3 for ICARUS
   , fForceConcurrence(p.get<bool>("ForceConcurrence", false)) // require light and charge to coincide, different requirements for SBND and ICARUS
   , fUse3DMetrics(p.get<bool>("Use3DMetrics", false)) // use metrics that depend on (X,Y,Z)
   , fUseOpCoords(p.get<bool>("UseOpCoords", true)) // Use precalculated OpFlash coordinates
@@ -57,6 +56,8 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fDetector(detectorName(fGeometry->DetectorName()))
   , fSBND((fDetector == "SBND") ? true : false )
   , fICARUS((fDetector == "ICARUS") ? true : false )
+  , fPlaneList(p.get<std::vector<int>>("PlaneList", (fSBND) ? kSBNDPlanes : kICARUSPlanes)) // Use 0, 1, 2 for SBND and 0, 1, 3 for ICARUS
+  , fAllPlanes((fSBND && fPlaneList==kSBNDPlanes) || (fICARUS && fPlaneList==kICARUSPlanes))
   , fPDMapAlgPtr(art::make_tool<opdet::PDMapAlg>(p.get<fhicl::ParameterSet>("PDMapAlg")))
   , fNTPC(fGeometry->NTPC())
   , fTPCPerDriftVolume(fNTPC/2) // 2 drift volumes: kRght and kLeft
@@ -255,7 +256,7 @@ void FlashPredict::produce(art::Event& evt)
   std::vector<SimpleFlash> simpleFlashes;
   std::vector<recob::OpHit> opHitsRght, opHitsLeft, opHits;
   std::vector<FlashMetrics> flashMetrics;
-  if(fIsSimple) {
+  if(fIsSimple) {  // Metrics for SimpleFlashes
     art::Handle<std::vector<recob::OpHit>> ophits_h;
     evt.getByLabel(fOpHitProducer, ophits_h);
     if(!ophits_h.isValid()) {
@@ -282,16 +283,16 @@ void FlashPredict::produce(art::Event& evt)
     mf::LogInfo("FlashPredict")
       << "OpHits found: " << opHits.size() << std::endl;
 
-    const std::vector<SimpleFlash> simpleFlashes_tmp = (fSBND) ?
+    const std::vector<SimpleFlash> simpleFlashes = (fSBND) ?
       makeSimpleFlashes(opHits, opHitsRght, opHitsLeft) : makeSimpleFlashes(opHits);
     auto is_flash_in_time = [this](const SimpleFlash& f) -> bool
     { return (fBeamSpillTimeStart<=f.maxpeak_time &&
               f.maxpeak_time<=fBeamSpillTimeEnd); };
-    auto flash_in_time = std::find_if(simpleFlashes_tmp.begin(), simpleFlashes_tmp.end(),
+    auto flash_in_time = std::find_if(simpleFlashes.begin(), simpleFlashes.end(),
                                       is_flash_in_time);
 
-    if(simpleFlashes_tmp.empty() ||
-       flash_in_time == simpleFlashes_tmp.end()){
+    if(simpleFlashes.empty() ||
+       flash_in_time == simpleFlashes.end()){
       mf::LogWarning("FlashPredict")
         << "No SimpleFlashes in beam window [" << fBeamSpillTimeStart << ", " << fBeamSpillTimeEnd << "], "
         << "\nor the sum of PE is less or equal to " << fMinFlashPE << " or 0."
@@ -309,11 +310,11 @@ void FlashPredict::produce(art::Event& evt)
       evt.put(std::move(pfp_sFM_assn_v));
       return;
     } else {
-    std::copy(simpleFlashes_tmp.begin(), simpleFlashes_tmp.end(), std::back_inserter(simpleFlashes));
     for(auto& sf : simpleFlashes) flashMetrics.push_back(getFlashMetrics(sf));
     }
-  } else {
-    std::vector<FlashMetrics> flashMetrics_tmp;
+  }
+    else
+  {  // Get Metrics from OpFlashes
     for(unsigned i_tpc=0;i_tpc < fOpFlashProducer.size(); i_tpc++) {
       art::Handle<std::vector<recob::OpFlash>> opflashes_h;
       evt.getByLabel(fOpFlashProducer[i_tpc], opflashes_h);    
@@ -331,10 +332,9 @@ void FlashPredict::produce(art::Event& evt)
         else if(fICARUS) optime = opflash.Time();
         if(optime<fFlashFindingTimeStart || optime>fFlashFindingTimeEnd) continue;
         std::vector<art::Ptr<recob::OpHit>> ophit_v = OpFlashToOpHitAssns.at(opf);      
-        flashMetrics_tmp.push_back(getFlashMetrics(opflash, ophit_v, opf));
+        flashMetrics.push_back(getFlashMetrics(opflash, ophit_v, opf));
       }
     }
-    std::copy(flashMetrics_tmp.begin(), flashMetrics_tmp.end(), std::back_inserter(flashMetrics));
   }
 
   mf::LogInfo("FlashPredict")
@@ -879,7 +879,7 @@ FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
     flash.z_kurt = ophZ->GetKurtosis();
     // Flash widths
     // flash.xw = fractTimeWithFractionOfLight(orig_flash, flash.pe, fFlashPEFraction);
-//    flash.xw = fractTimeWithFractionOfLight(orig_flash, sum_PE2, fFlashPEFraction, true);
+    flash.xw = fractTimeWithFractionOfLight(ophits, sum_PE2, fFlashPEFraction, true);
     // flash.xw = fractTimeWithFractionOfLight(orig_flash, flash.unpe, fFlashPEFraction, false, true); // TODO:
     // TODO: low values of flash.xw <0.5 are indicative of good
     // mcT0-flash_time matching, so akin to matching to prompt light
@@ -948,15 +948,16 @@ FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
 FlashPredict::FlashMetrics FlashPredict::getFlashMetrics(
   const FlashPredict::SimpleFlash& sf) const
 {
-  std::vector<recob::OpHit> ophits;
-  const OpHitIt oph_beg = sf.opH_beg;
-  const OpHitIt oph_end = sf.opH_end;
-  std::copy(oph_beg, oph_end, std::back_inserter(ophits));
+  std::vector<recob::OpHit> ophits(sf.opH_beg, sf.opH_end);
 
   auto fm = computeFlashMetrics(ophits);
   fm.id = sf.flashId;
-  fm.time = sf.maxpeak_time;
   fm.activity = sf.ophsInVolume;
+
+  std::sort(ophits.begin(), ophits.end(),
+            [this] (const recob::OpHit& oph1, const recob::OpHit& oph2)
+              { return (opHitTime(oph1) < opHitTime(oph2)); });
+  fm.time = opHitTime(ophits[0]);
   return fm;
 }
 
@@ -970,20 +971,31 @@ FlashPredict::FlashMetrics FlashPredict::getFlashMetrics(
     ophits.emplace_back(*(ophit_v)[i]);
   }
 
+  bool oph_l = false; bool oph_r = false;
+  for(auto& oph : ophits) {
+    auto& opDet = fGeometry->OpDetGeoFromOpChannel(oph.OpChannel());
+    auto opDetXYZ = opDet.GetCenter();
+    if(opDetXYZ.X() < 0.) oph_l = true;
+    else oph_r = true;
+  }
   auto fm = computeFlashMetrics(ophits);
   fm.id = id;
-  if(fSBND) fm.time = opflash.AbsTime();
+  if(fISBND) fm.time = opflash.AbsTime();
   else if(fICARUS) fm.time = opflash.Time();
   fm.activity = (opflash.XCenter() < 0) ? 100 : 200;
+  if(oph_l) {
+    fm.activity = (oph_r) ? kActivityInBoth : kActivityInLeft;
+  }
+  else fm.activity = kActivityInRght;
   if(fUseOpCoords) {
     if(opflash.hasXCenter()) {
-      fm.opx = opflash.XCenter();
-      fm.opxw = opflash.XWidth();
+      fm.x = opflash.XCenter();
+      fm.xw = opflash.XWidth();
     }
-    fm.opy = opflash.YCenter();
-    fm.opyw = opflash.YWidth();
-    fm.opz = opflash.ZCenter();
-    fm.opzw = opflash.ZWidth();
+    fm.y = opflash.YCenter();
+    fm.yw = opflash.YWidth();
+    fm.z = opflash.ZCenter();
+    fm.zw = opflash.ZWidth();
   }
   return fm;
 }
@@ -1396,7 +1408,7 @@ FlashPredict::ChargeDigestMap FlashPredict::makeChargeDigest(
         for(const auto& hit : hits) {
           int hit_plane = (int)hit->View();
           geo::WireID wId = hit->WireID();
-          if(std::find(fPlaneList.begin(), fPlaneList.end(), hit_plane) == fPlaneList.end()) continue;
+          if(!fAllPlanes && std::find(fPlaneList.begin(), fPlaneList.end(), hit_plane) == fPlaneList.end()) continue;
           const double hitQ = hit->Integral();
           if(!fAllPlanes) {
             if(hitQ < fMinHitQ) continue;
@@ -1869,10 +1881,10 @@ double FlashPredict::wallXWithMaxPE(
 
 
 double FlashPredict::fractTimeWithFractionOfLight(
-  const SimpleFlash& simpleFlash, const double sum_pe, const double fraction_pe,
+  const std::vector<recob::OpHit>& ophits, const double sum_pe, const double fraction_pe,
   const bool use_square_pe, const bool only_unpe) const
 {
-  std::vector<recob::OpHit> timeSortedOpH(simpleFlash.opH_beg, simpleFlash.opH_end);
+  std::vector<recob::OpHit> timeSortedOpH(ophits.begin(), ophits.end());
   std::sort(timeSortedOpH.begin(), timeSortedOpH.end(),
             [this] (const recob::OpHit& oph1, const recob::OpHit& oph2)
               { return (opHitTime(oph1) < opHitTime(oph2)); });

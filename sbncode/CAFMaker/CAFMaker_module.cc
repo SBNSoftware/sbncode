@@ -109,7 +109,7 @@
 #include "sbnobj/Common/POTAccounting/NuMISpillInfo.h"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
-
+#include "sbnobj/Common/Reco/OpT0FinderResult.h"
 
 #include "canvas/Persistency/Provenance/ProcessConfiguration.h"
 #include "larcoreobj/SummaryData/POTSummary.h"
@@ -176,9 +176,11 @@ class CAFMaker : public art::EDProducer {
   std::string fFlatCafFilename;
   std::string fFlatCafBlindFilename;
   std::string fFlatCafPrescaleFilename;
+  
+  std::string fSourceFile;
 
   bool fFirstInSubRun;
-  bool fFirstInFile;
+  unsigned int fIndexInFile = SRHeader::NoSourceIndex;
   bool fFirstBlindInFile;
   bool fFirstPrescaleInFile;
   int fFileNumber;
@@ -233,6 +235,8 @@ class CAFMaker : public art::EDProducer {
 
   std::string DeriveFilename(const std::string& inname,
                              const std::string& ext) const;
+
+  static std::string Basename(const std::string& path);
 
   void AddEnvToFile(TFile* f);
   void AddMetadataToFile(TFile* f,
@@ -432,8 +436,6 @@ void CAFMaker::FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_ti
   // Fix the flash matches
   for (SRSlice &s: rec.slc) {
     s.fmatch.time += PMT_reference_time;
-    s.fmatch_a.time += PMT_reference_time;
-    s.fmatch_b.time += PMT_reference_time;
   }
 
   // TODO: fix more?
@@ -528,6 +530,15 @@ CAFMaker::~CAFMaker()
 }
 
 //......................................................................
+std::string CAFMaker::Basename(const std::string& path)
+{
+  // C++17: use filesystem library (Clang 7 still not compliant)
+  constexpr char sep = '/';
+  std::size_t const iSep = path.rfind(sep);
+  return (iSep == std::string::npos)? path: path.substr(iSep + 1);
+}
+
+//......................................................................
 std::string CAFMaker::DeriveFilename(const std::string& inname,
                                      const std::string& ext) const
 {
@@ -544,6 +555,9 @@ std::string CAFMaker::DeriveFilename(const std::string& inname,
 
 //......................................................................
 void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
+  
+  std::string const inputBasename = Basename(fb.fileName()); // includes suffix
+  
   if ((fParams.CreateCAF() && !fFile) ||
       (fParams.CreateFlatCAF() && !fFlatFile) ||
       (fParams.CreateBlindedCAF() && (!fFileb || !fFilep))) {
@@ -593,9 +607,10 @@ void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
   }
 
   fFileNumber ++;
-  fFirstInFile = true;
+  fIndexInFile = 0;
   fFirstBlindInFile = true;
   fFirstPrescaleInFile = true;
+  fSourceFile = inputBasename;
 
 }
 
@@ -912,7 +927,7 @@ void CAFMaker::InitializeOutfiles()
   fTotalEvents = 0;
   fBlindEvents = 0;
   fPrescaleEvents = 0;
-  fFirstInFile = false;
+  fIndexInFile = SRHeader::NoSourceIndex;
   fFirstInSubRun = false;
   // fCycle = -5;
   // fBatch = -5;
@@ -1037,6 +1052,8 @@ bool CAFMaker::GetPsetParameter(const fhicl::ParameterSet& pset,
 //......................................................................
 void CAFMaker::produce(art::Event& evt) noexcept {
 
+  bool const firstInFile = (fIndexInFile++ == 0);
+  
   // is this event real data?
   bool isRealData = evt.isRealData();
 
@@ -1230,11 +1247,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // get the number of events generated in the gen stage
   unsigned n_gen_evt = 0;
   for (const art::ProcessConfiguration &process: evt.processHistory()) {
-    fhicl::ParameterSet gen_config;
-    bool success = evt.getProcessParameterSet(process.processName(), gen_config);
-    if (success && gen_config.has_key("source") && gen_config.has_key("source.maxEvents") && gen_config.has_key("source.module_type") ) {
-      int max_events = gen_config.get<int>("source.maxEvents");
-      std::string module_type = gen_config.get<std::string>("source.module_type");
+    std::optional<fhicl::ParameterSet> gen_config = evt.getProcessParameterSet(process.processName());
+    if (gen_config && gen_config->has_key("source") && gen_config->has_key("source.maxEvents") && gen_config->has_key("source.module_type") ) {
+      int max_events = gen_config->get<int>("source.maxEvents");
+      std::string module_type = gen_config->get<std::string>("source.module_type");
       if (module_type == "EmptyEvent") {
         n_gen_evt += max_events;
       }
@@ -1289,8 +1305,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   art::Handle<std::vector<sbn::crt::CRTHit>> crthits_handle;
   GetByLabelStrict(evt, fParams.CRTHitLabel(), crthits_handle);
   // fill into event
-  int64_t CRT_T0_reference_time = fParams.ReferenceCRTT0ToBeam() ? -srtrigger.beam_gate_time_abs : 0; // ns, signed
-  double CRT_T1_reference_time = fParams.ReferenceCRTT1FromTriggerToBeam() ? srtrigger.trigger_within_gate : 0.;
+  //int64_t CRT_T0_reference_time = fParams.ReferenceCRTT0ToBeam() ? -srtrigger.beam_gate_time_abs : 0; // ns, signed
+  //double CRT_T1_reference_time = fParams.ReferenceCRTT1FromTriggerToBeam() ? srtrigger.trigger_within_gate : 0.;
+  int64_t CRT_T0_reference_time = isRealData ?  -srtrigger.beam_gate_time_abs : -fParams.CRTSimT0Offset();
+  double CRT_T1_reference_time = isRealData ? srtrigger.trigger_within_gate : -fParams.CRTSimT0Offset();
+
   if (crthits_handle.isValid()) {
     const std::vector<sbn::crt::CRTHit> &crthits = *crthits_handle;
     for (unsigned i = 0; i < crthits.size(); i++) {
@@ -1311,6 +1330,23 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       srcrttracks.emplace_back();
       FillCRTTrack(crttracks[i], fParams.CRTUseTS0(), srcrttracks.back());
     }
+  }
+
+  // Get all of the CRTPMT Matches .. 
+  std::vector<caf::SRCRTPMTMatch> srcrtpmtmatches;
+  std::cout << "srcrtpmtmatches.size = " << srcrtpmtmatches.size() << "\n";
+  art::Handle<std::vector<sbn::crt::CRTPMTMatching>> crtpmtmatch_handle;
+  GetByLabelStrict(evt, fParams.CRTPMTLabel(), crtpmtmatch_handle);
+  if(crtpmtmatch_handle.isValid()){
+    std::cout << "valid handle! label: " << fParams.CRTPMTLabel() << "\n";
+    const std::vector<sbn::crt::CRTPMTMatching> &crtpmtmatches = *crtpmtmatch_handle;
+    for (unsigned i = 0; i < crtpmtmatches.size(); i++) {
+      srcrtpmtmatches.emplace_back();
+      FillCRTPMTMatch(crtpmtmatches[i],srcrtpmtmatches.back());
+    }
+  }
+  else{
+    std::cout << "crtpmtmatch_handle.isNOTValid!\n";
   }
 
   // Get all of the OpFlashes
@@ -1408,6 +1444,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
                                                fParams.FlashMatchLabel() + flash_suff + slice_tag_suff);
       fmatch_assn_map.emplace(std::make_pair(fname, sfm_assn));
     }
+
+    art::FindManyP<sbn::OpT0Finder> fmOpT0 = 
+      FindManyPStrict<sbn::OpT0Finder>(sliceList, evt, fParams.OpT0Label() + slice_tag_suff);
+    std::vector<art::Ptr<sbn::OpT0Finder>> slcOpT0;
+    if (fmOpT0.isValid())  
+      slcOpT0 = fmOpT0.at(0);
 
     art::FindManyP<larpandoraobj::PFParticleMetadata> fmPFPMeta =
       FindManyPStrict<larpandoraobj::PFParticleMetadata>(fmPFPart, evt,
@@ -1604,21 +1646,19 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceVars(*slice, primary, producer, recslc);
     FillSliceMetadata(primary_meta, recslc);
     FillSliceFlashMatch(fmatch_map["fmatch"], recslc.fmatch);
-    FillSliceFlashMatch(fmatch_map["fmatch"], recslc.fmatch_a);
     FillSliceFlashMatch(fmatch_map["fmatchop"], recslc.fmatchop);
-    FillSliceFlashMatch(fmatch_map["fmatchop"], recslc.fmatchop_a);
     auto sr_flash = fmatch_map.find("fmatchara");
     if(sr_flash!=fmatch_map.end()) {
       FillSliceFlashMatch(fmatch_map["fmatchara"], recslc.fmatchara);
-      FillSliceFlashMatch(fmatch_map["fmatchara"], recslc.fmatchara_a);
     }
     sr_flash = fmatch_map.find("fmatchopara");
     if(sr_flash != fmatch_map.end()) {
       FillSliceFlashMatch(fmatch_map["fmatchopara"], recslc.fmatchopara);
-      FillSliceFlashMatch(fmatch_map["fmatchopara"], recslc.fmatchopara_a);
     }
     FillSliceVertex(vertex, recslc);
     FillSliceCRUMBS(slcCRUMBS, recslc);
+    FillSliceOpT0Finder(slcOpT0, recslc);
+    FillSliceBarycenter(slcHits, slcSpacePoints, recslc);
 
     // select slice
     if (!SelectSlice(recslc, fParams.CutClearCosmic())) continue;
@@ -1858,6 +1898,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     rec.true_particles  = true_particles;
   }
   rec.ntrue_particles = true_particles.size();
+  rec.crtpmt_matches = srcrtpmtmatches;
+  rec.ncrtpmt_matches = srcrtpmtmatches.size();
 
   // Fix the Reference time
   //
@@ -1908,7 +1950,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.hdr.ismc    = !isRealData;
   rec.hdr.det     = fDet;
   rec.hdr.fno     = fFileNumber;
-  if(fFirstInFile)
+  if(firstInFile)
   {
     rec.hdr.nbnbinfo = fBNBInfo.size();
     rec.hdr.bnbinfo = fBNBInfo;
@@ -1919,7 +1961,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   
   rec.hdr.ngenevt = n_gen_evt;
   rec.hdr.mctype  = mctype;
-  rec.hdr.first_in_file = fFirstInFile;
+  rec.hdr.sourceName = fSourceFile;
+  rec.hdr.sourceIndex = fIndexInFile;
+  rec.hdr.first_in_file = firstInFile;
   rec.hdr.first_in_subrun = fFirstInSubRun;
   rec.hdr.triggerinfo = srtrigger;
   // rec.hdr.cycle = fCycle;
@@ -1992,7 +2036,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   }
 
 // reset
-  fFirstInFile = false;
   fFirstInSubRun = false;
   srcol->push_back(rec);
   evt.put(std::move(srcol));
