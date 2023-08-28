@@ -22,6 +22,9 @@ add_subdirectory(EventGenerator)
 add_subdirectory(PID)
 add_subdirectory(GeometryTools)
 add_subdirectory(CosmicID)
+add_subdirectory(cluster3D)
+
+add_subdirectory(LArSoftConfigurations)
 
 # Supera
 #

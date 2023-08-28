@@ -1,0 +1,25 @@
+##include "cluster3dpathfindingtools.fcl"
+
+BEGIN_PROLOG
+
+icarus_snippethit3dbuilder:
+{
+  tool_type:             SnippetHit3DBuilderSBN
+  HitFinderTagVec:       ["gaushit"]
+  EnableMonitoring:      true  # enable monitoring of functions
+  HitWidthScaleFactor:   3.0   #
+  RangeNumSigma:         3.0   #
+  LongHitsStretchFactor: 1.5   # Allows to stretch long hits widths if desired
+  PulseHeightFraction:   0.4   # If multiple hits are under this fraction of the peak hit amplitude consider rejecting
+  PHLowSelection:        8.    # If matching the above then require hits larger than this
+  MinPHFor2HitPoints:    4.    # Don't consider hits less than this for 2 hit space points
+  DeltaPeakTimeSig:      1.75  # "Significance" of agreement between 2 hit peak times
+  WirePitchScaleFactor:  1.9
+  SaveMythicalPoints:    true
+  MaxMythicalChiSquare:  25.
+  UseT0Offsets:          false
+  MaxHitChiSquare:       6.0
+  OutputHistograms:      false
+}
+
+END_PROLOG

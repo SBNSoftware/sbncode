@@ -1,0 +1,86 @@
+#include "clustermodules.fcl"
+
+BEGIN_PROLOG
+
+sbn_dbscanalg:                                 @local::standard_dbscanalg        
+                                                                                    
+sbn_clustercrawleralg:                         @local::standard_clustercrawleralg
+sbn_clustercrawleralg.AllowNoHitWire:          3                                 
+sbn_clustercrawleralg.MaxWirSkip:              [12, 8, 2]                        
+sbn_clustercrawleralg.MinWirAfterSkip:         [1, 1, 1]                         
+sbn_clustercrawleralg.ChiCut:                  [2., 2., 2.]                      
+sbn_clustercrawleralg.ChgCut:                  [2., 2., 2.]                      
+sbn_clustercrawleralg.HitErrFac:               0.6                               
+                                                                                    
+sbn_cchitfinderalg:                            @local::standard_cchitfinderalg   
+sbn_cchitfinderalg.MinPeak:                    [8, 5, 5]
+sbn_cchitfinderalg.MinRMSInd:                  5.                                
+sbn_cchitfinderalg.MinRMSCol:                  10.                               
+sbn_cchitfinderalg.ChiNorms:                   [0.5, 2.7]                        
+sbn_cchitfinderalg.ChgNorms:                   [1.0, 1.0]                        
+                                                                                    
+sbn_fuzzyclusteralg:                           @local::standard_fuzzyclusteralg  
+                                                                                    
+sbn_houghbasealg:                              @local::standard_houghbasealg     
+sbn_houghbasealg.MaxLines:                     15                                
+sbn_houghbasealg.MinHits:                      3                                 
+sbn_houghbasealg.NumAngleCells:                5000                              
+sbn_houghbasealg.MaxDistance:                  5.0                               
+                                                                                    
+sbn_endpointalg:                               @local::standard_endpointalg      
+                                                                                    
+sbn_clustercrawler:                            @local::standard_clustercrawler   
+sbn_clustercrawler.ClusterCrawlerAlg:          @local::sbn_clustercrawleralg  
+sbn_clustercrawler.CCHitFinderAlg:             @local::sbn_cchitfinderalg     
+
+sbn_clustercrawlermc:                          @local::sbn_clustercrawler      
+sbn_clustercrawlermc.CCHitFinderAlg.MinRMSInd: 6.7
+sbn_clustercrawlermc.CCHitFinderAlg.MinRMSCol: 7.6
+sbn_clustercrawlermc.CCHitFinderAlg.ChiNorms:  [ 1.6, 7.5 ]
+
+
+#Initial tuning has been applied to blurred cluster but it is no longer supported. 
+sbn_blurredclusteralg:                     @local::standard_blurredclusteralg
+physics.producers.blurredcluster.CreateDebugPDF:      false
+sbn_blurredclusteralg.BlurWire:            20
+sbn_blurredclusteralg.BlurTick:            12
+sbn_blurredclusteralg.SigmaWire:           14
+sbn_blurredclusteralg.SigmaTick:           6
+sbn_blurredclusteralg.ClusterWireDistance: 8
+sbn_blurredclusteralg.ClusterTickDistance: 2
+sbn_blurredclusteralg.MaxTickWidthBlur:    10
+sbn_blurredclusteralg.NeighboursThreshold: 8
+sbn_blurredclusteralg.MinNeighbours:       0
+sbn_blurredclusteralg.MinSize:             8
+sbn_blurredclusteralg.MinSeed:             0.5
+sbn_blurredclusteralg.TimeThreshold:       500
+sbn_blurredclusteralg.ChargeThreshold:     20
+
+sbn_blurredcluster:                            @local::standard_blurredcluster
+sbn_blurredcluster.BlurredClusterAlg:          @local::sbn_blurredclusteralg
+
+
+sbn_dbcluster:                                 @local::standard_dbcluster          
+sbn_dbcluster.DBScanAlg:                       @local::sbn_dbscanalg            
+                                                                                      
+sbn_dbclusterana:                              @local::standard_dbclusterana       
+                                                                                      
+sbn_fuzzycluster:                              @local::standard_fuzzycluster       
+sbn_fuzzycluster.fuzzyClusterAlg:              @local::sbn_fuzzyclusteralg      
+
+sbn_linecluster:                               @local::standard_linecluster
+sbn_linecluster.ClusterCrawlerAlg:             @local::sbn_clustercrawleralg
+                                                                                      
+sbn_houghlinefinder:                           @local::standard_houghlinefinder    
+sbn_houghlinefinder.HoughBaseAlg:              @local::sbn_houghbasealg         
+                                                                                      
+sbn_houghlinefinderana:                        @local::standard_houghlinefinderana 
+                                                                                      
+sbn_linemerger:                                @local::standard_linemerger         
+                                                                                      
+sbn_endpointmod:                               @local::standard_endpointmod        
+sbn_endpointmod.EndPointAlg:                   @local::sbn_endpointalg          
+                                                                                      
+sbn_showeranglecluster:                        @local::standard_showeranglecluster 
+
+END_PROLOG
