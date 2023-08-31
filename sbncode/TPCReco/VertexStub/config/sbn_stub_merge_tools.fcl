@@ -13,6 +13,8 @@ twoplane_stub_merge: {
   SaveOldStubs: false
 }
 
-stub_merge: [@local::plane_stub_merge, @local::twoplane_stub_merge]
+# stub_merge: [@local::plane_stub_merge, @local::twoplane_stub_merge]
+# NOTE: disable multi-plane matching while other planes are not calibrated
+stub_merge: [@local::plane_stub_merge]
 
 END_PROLOG

@@ -4,8 +4,8 @@
 
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 
-#include "TRandom.h"
 #include "TDatabasePDG.h"
+#include "CLHEP/Random/RandEngine.h" // CLHEP::HepRandomEngine
 
 // LArSoft includes
 #include "larcore/Geometry/Geometry.h"
@@ -14,6 +14,7 @@
 #include "larsim/MCCheater/BackTrackerService.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
 #include "larsim/Utils/TruthMatchUtils.h"
+#include "larevt/SpaceCharge/SpaceCharge.h"
 
 #include "nusimdata/SimulationBase/GTruth.h"
 #include "nusimdata/SimulationBase/MCFlux.h"
@@ -69,7 +70,8 @@ namespace caf
                          caf::SRSlice &srslice, 
                          const std::vector<caf::SRTrueParticle> &srparticles,
                          const std::vector<art::Ptr<sim::MCTrack>> &mctracks,
-                         const std::vector<geo::BoxBoundedGeo> &volumes, TRandom &rand);
+                         const std::vector<geo::BoxBoundedGeo> &volumes,
+                         CLHEP::HepRandomEngine &rand);
 
   void FillTrueG4Particle(const simb::MCParticle &particle,
         const std::vector<geo::BoxBoundedGeo> &active_volumes,
@@ -104,6 +106,14 @@ namespace caf
                       caf::SRTrack& srtrack,
                       bool allowEmpty = false);
 
+  void FillTrackCaloTruth(const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> &id_to_ide_map,
+                          const std::vector<simb::MCParticle> &mc_particles,
+                          const geo::GeometryCore *geo,
+                          const detinfo::DetectorClocksData &clockData,
+                          const spacecharge::SpaceCharge *sce,
+                          caf::SRTrack& srtrack);
+
+
   void FillStubTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
                      const std::map<int, caf::HitsEnergy> &id_hits_map,
                      const std::vector<caf::SRTrueParticle> &particles,
@@ -122,7 +132,7 @@ namespace caf
                     const std::vector<caf::SRTrueParticle> &srparticles, 
                     const std::vector<art::Ptr<sim::MCTrack>> &mctracks, 
                     const std::vector<geo::BoxBoundedGeo> &volumes,
-                    TRandom &rand,
+                    CLHEP::HepRandomEngine &rand,
                     std::vector<caf::SRFakeReco> &srfakereco);
 
   std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels, const geo::GeometryCore &geo);

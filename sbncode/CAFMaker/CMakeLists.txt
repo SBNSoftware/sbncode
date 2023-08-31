@@ -21,6 +21,7 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   cetlib::cetlib cetlib_except::cetlib_except
                   ROOT::X3d
                   ROOT::EG
+                  CLHEP::Random
                   caf_RecoUtils
                   lardataobj::AnalysisBase
                   lardataobj::RecoBase
@@ -37,6 +38,7 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   art::Framework_Services_System_TriggerNamesService_service
                   sbncode_Metadata_MetadataSBN_service
                   larsim::Utils
+		  larevt::SpaceCharge
                   systematicstools::interface
                   systematicstools::interpreters
                   systematicstools::utility
@@ -56,6 +58,7 @@ cet_build_plugin ( CAFMaker art::module
                art::Framework_Services_Registry
                art::Utilities canvas::canvas
                cetlib::cetlib cetlib_except::cetlib_except
+               CLHEP::Random
                ROOT::Core ROOT::Tree
                art_root_io::RootDB
                hep_concurrency::hep_concurrency

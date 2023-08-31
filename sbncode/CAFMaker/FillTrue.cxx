@@ -1,7 +1,11 @@
 #include "FillTrue.h"
 
 #include "larcorealg/GeoAlgo/GeoAlgo.h"
+#include "larevt/SpaceCharge/SpaceCharge.h"
+#include "larcore/CoreUtils/ServiceUtil.h"
 #include "RecoUtils/RecoUtils.h"
+
+#include "CLHEP/Random/RandGauss.h"
 
 #include <functional>
 #include <algorithm>
@@ -23,12 +27,12 @@ float ContainedLength(const TVector3 &v0, const TVector3 &v1,
 bool FRFillNumuCC(const simb::MCTruth &mctruth,
                   const std::vector<art::Ptr<sim::MCTrack>> &mctracks,
                   const std::vector<geo::BoxBoundedGeo> &volumes,
-                  TRandom &rand,
+                  CLHEP::HepRandomEngine &rand,
                   caf::SRFakeReco &fakereco);
 bool FRFillNueCC(const simb::MCTruth &mctruth,
                   const std::vector<caf::SRTrueParticle> &srparticle,
                   const std::vector<geo::BoxBoundedGeo> &volumes,
-                  TRandom &rand,
+                  CLHEP::HepRandomEngine &rand,
                   caf::SRFakeReco &fakereco);
 
 // helper function definitions
@@ -58,19 +62,21 @@ double PDGMass(int pdg) {
   }
 }
 
-double SmearLepton(const caf::SRTrueParticle &lepton, TRandom& rand) {
+double SmearLepton(const caf::SRTrueParticle &lepton, CLHEP::HepRandomEngine& rand) {
   const double smearing = 0.15;
   // Oscillation tech note says smear ionization deposition, but
   // code in old samples seems to use true energy.
   const double true_E = lepton.plane[0][2].visE + lepton.plane[1][2].visE;
-  const double smeared_E = rand.Gaus(true_E, smearing * true_E / std::sqrt(true_E));
+  CLHEP::RandGauss gaussE { rand, true_E, smearing * true_E / std::sqrt(true_E) };
+  const double smeared_E = gaussE();
   return std::max(smeared_E, 0.0);
 }
 
-double SmearHadron(const caf::SRTrueParticle &hadron, TRandom& rand) {
+double SmearHadron(const caf::SRTrueParticle &hadron, CLHEP::HepRandomEngine& rand) {
   const double smearing = 0.05;
   const double true_E = hadron.startE - PDGMass(hadron.pdg) / 1000;
-  const double smeared_E = rand.Gaus(true_E, smearing * true_E);
+  CLHEP::RandGauss gaussE { rand, true_E, smearing * true_E };
+  const double smeared_E = gaussE();
   return std::max(smeared_E, 0.0);
 }
 
@@ -126,6 +132,194 @@ namespace caf {
     srtrack.truth = MatchTrack2Truth(clockData, particles, hits, id_hits_map);
 
   }//FillTrackTruth
+
+  // Assumes truth matching and calo-points are filled
+  void FillTrackCaloTruth(const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> &id_to_ide_map,
+                          const std::vector<simb::MCParticle> &mc_particles,
+                          const geo::GeometryCore *geo,
+                          const detinfo::DetectorClocksData &clockData,
+                          const spacecharge::SpaceCharge *sce,
+                          caf::SRTrack& srtrack) {
+
+    art::ServiceHandle<cheat::BackTrackerService> bt_serv;
+
+    // require track to be truth matched
+    if (srtrack.truth.p.G4ID < 0) return;
+    if (!id_to_ide_map.count(srtrack.truth.p.G4ID)) return;
+
+    // Look up the true particle trajectory
+    const simb::MCParticle *match = NULL;
+    for (const simb::MCParticle &p: mc_particles) {
+      if (p.TrackId() == srtrack.truth.p.G4ID) {
+        match = &p;
+        break;
+      }
+    }
+    if (!match) return;
+    const simb::MCParticle &particle = *match;
+
+    // Load the hits
+    // match on the channel, which is unique
+    const std::vector<std::pair<geo::WireID, const sim::IDE*>> &match_ides = id_to_ide_map.at(srtrack.truth.p.G4ID);
+    std::map<unsigned, std::vector<const sim::IDE *>> chan_2_ides;
+    for (auto const &ide_pair: match_ides) {
+      chan_2_ides[geo->PlaneWireToChannel(ide_pair.first)].push_back(ide_pair.second);
+    }
+
+    // pre-compute partial ranges
+    std::vector<double> partial_ranges(particle.NumberTrajectoryPoints(), 0);
+    for (int i = particle.NumberTrajectoryPoints() - 2; i >=0; i--) {
+      partial_ranges[i] = partial_ranges[i+1] + (particle.Position(i+1).Vect() - particle.Position(i).Vect()).Mag();
+    }
+
+    // Loop through the reco calo points
+    for (unsigned iplane = 0; iplane < 3; iplane++) {
+      for (caf::SRCaloPoint &p: srtrack.calo[iplane].points) {
+        SRTrueCaloPoint truep;
+
+        // Hit based truth matching
+
+        // The default BackTracking function goes from (peak - width, peak + width).
+        //
+        // This time range does not match well hits with a non-Gaussian shape where
+        // the Gaussian-fit-width does not replicate the width of the pulse. 
+        //
+        // Instead, we use the Hit (start, end) time range. This is also more relevant
+        // for (e.g.) the SummedADC charge extraction method.
+        //
+        // Don't use this:
+        // std::vector<sim::TrackIDE> ides = bt_serv->HitToTrackIDEs(clockData, hit);
+        //
+        // Use this:
+        std::vector<sim::TrackIDE> h_ides = bt_serv->ChannelToTrackIDEs(clockData, p.channel, p.start, p.end);
+        truep.h_nelec = 0.;
+        truep.h_e = 0.;
+        for (const sim::TrackIDE &ide: h_ides) {
+          truep.h_e += ide.energy;
+          truep.h_nelec += ide.numElectrons;
+        }
+
+        // Particle based truth matching
+
+        if (!chan_2_ides.count(p.channel)) { 
+          p.truth = truep;
+          continue; 
+        }
+
+        const std::vector<const sim::IDE *> &ides = chan_2_ides.at(p.channel);
+
+        // Sum energy, nelec
+        // Charge-weighted position
+        truep.p_nelec = 0.;
+        truep.p_e = 0.;
+        truep.x = 0.;
+        truep.y = 0.;
+        truep.z = 0.;
+
+        for (const sim::IDE *ide: ides) {
+          truep.x = (truep.x*truep.p_nelec + ide->x*ide->numElectrons) / (truep.p_nelec + ide->numElectrons);
+          truep.y = (truep.y*truep.p_nelec + ide->y*ide->numElectrons) / (truep.p_nelec + ide->numElectrons);
+          truep.z = (truep.z*truep.p_nelec + ide->z*ide->numElectrons) / (truep.p_nelec + ide->numElectrons);
+
+          truep.p_e += ide->energy;
+          truep.p_nelec += ide->numElectrons;
+        }
+
+        // sim::IDE's are saved after shift from SpaceCharge
+        //
+        // Correct the mean position for space charge to find the MCParticle trajectory match
+        geo::Point_t loc_sce {truep.x, truep.y, truep.z}; // perturbed by space charge
+        geo::Point_t loc_nosce; // corrected for space charge
+        if (sce && sce->EnableSimSpatialSCE()) {
+          loc_nosce = loc_sce + sce->GetCalPosOffsets(loc_sce, p.tpc);
+        }
+        else loc_nosce = loc_sce;
+
+        TVector3 loc_nosce_v(loc_nosce.x(), loc_nosce.y(), loc_nosce.z());
+        
+        // Match to MC-trajectory
+        TVector3 direction;
+        float closest_dist = -1.;
+        int traj_index = -1;
+        for (unsigned i_traj = 0; i_traj < particle.NumberTrajectoryPoints(); i_traj++) {
+          double this_dist = (particle.Position(i_traj).Vect() - loc_nosce_v).Mag2(); 
+          if (closest_dist < 0. || this_dist < closest_dist) {
+            direction = particle.Momentum(i_traj).Vect().Unit();
+            closest_dist = this_dist;
+            traj_index = i_traj;
+          }
+        }
+
+        // residual range
+        truep.rr = 0;
+        if (traj_index >= 0) {
+          truep.rr = partial_ranges[traj_index];
+
+          // Also account for the distance from the Hit point to the matched trajectory point
+          double hit_distance_along_particle = (loc_nosce_v - particle.Position(traj_index).Vect()).Dot(particle.Momentum(traj_index).Vect().Unit());
+          truep.rr += -hit_distance_along_particle;
+        }
+        else truep.rr = -1;
+
+        // pitch
+        //
+        // The true pitch is affected by the presence of space charge, so we cannot
+        // directly apply the true direction. We include the effect of space charge
+        // on the true pitch here
+        if (closest_dist >= 0. && direction.Mag() > 1e-4) {
+          geo::PlaneID plane(srtrack.producer, p.tpc, iplane);
+          float angletovert = geo->WireAngleToVertical(geo->View(plane), plane) - 0.5*::util::pi<>();
+          TVector3 loc_mdx_v = loc_nosce_v - direction * (geo->WirePitch(geo->View(plane)) / 2.);
+          TVector3 loc_pdx_v = loc_nosce_v + direction * (geo->WirePitch(geo->View(plane)) / 2.);
+
+          // Convert types for helper functions
+          geo::Point_t loc_mdx(loc_mdx_v.X(), loc_mdx_v.Y(), loc_mdx_v.Z());
+          geo::Point_t loc_pdx(loc_pdx_v.X(), loc_pdx_v.Y(), loc_pdx_v.Z());
+
+          // Map to wires
+          if (sce && sce->EnableSimSpatialSCE()) { 
+            int corr = geo->TPC(plane).DriftDir().X();
+
+            geo::Vector_t offset_m = sce->GetPosOffsets(loc_mdx);
+            offset_m.SetX(offset_m.X()*corr); // convert from drift direction to detector direction
+            loc_mdx = loc_mdx + offset_m;
+
+            geo::Vector_t offset_p = sce->GetPosOffsets(loc_pdx);
+            offset_p.SetX(offset_p.X()*corr); // convert from drift direction to detector direction
+            loc_pdx = loc_pdx + offset_p;
+          }
+
+          // Direction at wires
+          geo::Vector_t dir = (loc_pdx - loc_mdx) /  (loc_mdx - loc_pdx).r();
+
+          // Pitch at wires
+          double cosgamma = std::abs(std::sin(angletovert)*dir.Y() + std::cos(angletovert)*dir.Z());
+          double pitch;
+          if (cosgamma) {
+            pitch = geo->WirePitch(geo->View(plane))/cosgamma;
+          }
+          else {
+            pitch = 0.;
+          }
+
+          // Bring it back to particle trajectory
+          geo::Point_t loc_atwires_alongpitch = loc_sce + dir*pitch; 
+          geo::Point_t loc_alongpitch;
+          if (sce && sce->EnableSimSpatialSCE()) { 
+            geo::Vector_t offset = sce->GetCalPosOffsets(loc_atwires_alongpitch, plane.TPC);
+            loc_alongpitch = loc_atwires_alongpitch + offset;
+          }
+          else loc_alongpitch = loc_atwires_alongpitch;
+
+          truep.pitch = (loc_alongpitch - loc_nosce).R();
+        }
+        else truep.pitch = -1;
+
+        p.truth = truep;
+
+      }
+    }
+  }
 
   //------------------------------------------------
 
@@ -244,7 +438,8 @@ namespace caf {
                          caf::SRSlice &srslice,
                          const std::vector<caf::SRTrueParticle> &srparticles,
                          const std::vector<art::Ptr<sim::MCTrack>> &mctracks,
-                         const std::vector<geo::BoxBoundedGeo> &volumes, TRandom &rand)
+                         const std::vector<geo::BoxBoundedGeo> &volumes,
+                         CLHEP::HepRandomEngine &rand)
   {
     caf::SRTruthMatch tmatch = MatchSlice2Truth(hits, neutrinos, srmc, inventory_service, clockData);
     if(tmatch.index >= 0) {
@@ -638,7 +833,7 @@ namespace caf {
                     const std::vector<caf::SRTrueParticle> &srparticles,
                     const std::vector<art::Ptr<sim::MCTrack>> &mctracks,
                     const std::vector<geo::BoxBoundedGeo> &volumes,
-                    TRandom &rand,
+                    CLHEP::HepRandomEngine &rand,
                     std::vector<caf::SRFakeReco> &srfakereco) {
     // iterate and fill
     for (const art::Ptr<simb::MCTruth> mctruth: mctruths) {
@@ -711,7 +906,7 @@ namespace caf {
 bool FRFillNumuCC(const simb::MCTruth &mctruth,
                   const std::vector<art::Ptr<sim::MCTrack>> &mctracks,
                   const std::vector<geo::BoxBoundedGeo> &volumes,
-                  TRandom &rand,
+                  CLHEP::HepRandomEngine &rand,
                   caf::SRFakeReco &fakereco) {
   // Configuration -- TODO: make configurable?
 
@@ -809,7 +1004,8 @@ bool FRFillNumuCC(const simb::MCTruth &mctruth,
   // smear the lepton energy
   float smearing = fake_lepton.contained ? lepton_contained_smearing : lepton_exiting_smearing(fake_lepton.len);
   float ke = (mctracks[lepton_ind]->Start().E() - PDGMass(mctracks[lepton_ind]->PdgCode())) / 1000. /* MeV -> GeV*/;
-  fake_lepton.ke = rand.Gaus(ke, smearing * ke);
+  CLHEP::RandGauss gausLeptonKE { rand, ke, smearing * ke };
+  fake_lepton.ke = gausLeptonKE();
   fake_lepton.ke = std::max(fake_lepton.ke, 0.f);
 
   // get the hadronic state
@@ -835,7 +1031,8 @@ bool FRFillNumuCC(const simb::MCTruth &mctruth,
       float ke = (mctracks[i]->Start().E() - PDGMass(mctracks[i]->PdgCode())) / 1000. /* MeV -> GeV*/;
       if (ke < hadronic_energy_threshold) continue;
 
-      hadron.ke = rand.Gaus(ke, hadron_smearing * ke);
+      CLHEP::RandGauss gausHadronKE { rand, ke, hadron_smearing * ke };
+      hadron.ke = gausHadronKE();
       hadron.ke = std::max(hadron.ke, 0.f);
 
       hadrons.push_back(hadron);
@@ -874,7 +1071,7 @@ bool FRFillNumuCC(const simb::MCTruth &mctruth,
 bool FRFillNueCC(const simb::MCTruth &mctruth,
                   const std::vector<caf::SRTrueParticle> &srparticles,
                   const std::vector<geo::BoxBoundedGeo> &volumes,
-                  TRandom &rand,
+                  CLHEP::HepRandomEngine &rand,
                   caf::SRFakeReco &fakereco) {
   // Configuration -- TODO: make configurable?
 
@@ -892,13 +1089,15 @@ bool FRFillNueCC(const simb::MCTruth &mctruth,
     // Oscillation tech note says smear ionization deposition, but
     // code in old samples seems to use true energy.
     const double true_E = lepton.plane[0][2].visE + lepton.plane[1][2].visE;
-    const double smeared_E = rand.Gaus(true_E, smearing * true_E / std::sqrt(true_E));
+    CLHEP::RandGauss gaussE { rand, true_E, smearing * true_E / std::sqrt(true_E) };
+    const double smeared_E = gaussE();
     return std::max(smeared_E, 0.0);
   };
   auto smear_hadron = [&rand](const caf::SRTrueParticle &hadron) -> float {
     const double smearing = 0.05;
     const double true_E = hadron.startE - PDGMass(hadron.pdg) / 1000;
-    const double smeared_E = rand.Gaus(true_E, smearing * true_E);
+    CLHEP::RandGauss gaussE { rand, true_E, smearing * true_E };
+    const double smeared_E = gaussE();
     return std::max(smeared_E, 0.0);
   };
 */

@@ -18,6 +18,7 @@
 // local includes
 #include "sbncode/EventGenerator/MeVPrtl/Tools/IMeVPrtlDecay.h"
 #include "sbncode/EventGenerator/MeVPrtl/Tools/Constants.h"
+#include "AnisotropicThreeBodyDecay.h"
 
 // LArSoft includes
 #include "larcorealg/Geometry/BoxBoundedGeo.h"
@@ -47,12 +48,13 @@
 namespace evgen {
 namespace ldm {
 /**
-*  @brief  HNLMakeDecay class definiton
-*
-*  Implementation of HNL decay ->mupi taken from:
-*      https://arxiv.org/abs/1610.08512
-*      https://arxiv.org/abs/0901.3589
-*/
+ *  @brief  HNLMakeDecay class definiton
+ *
+ *  Implementation of HNL decay ->mupi taken from:
+ *      https://arxiv.org/abs/1610.08512
+ *      https://arxiv.org/abs/0901.3589
+ *      https://link.springer.com/article/10.1140/epjc/s10052-021-08861-y
+ */
 class HNLMakeDecay : public IMeVPrtlDecay {
 public:
   /**
@@ -99,6 +101,9 @@ private:
   
   // Configure the particle
   bool fMajorana;
+
+  //Configure the decay                                                                            
+  bool fDecayIsThreeBodyAnisotropic;
   
   // Internal struct for holding decay information
   struct DecayFinalState {
@@ -141,7 +146,7 @@ private:
   double NuDiLepDecayWidth(double hnl_mass, double u4, int nu_pdg, int lep_pdg);
   double TriNuDecayWidth(double hnl_mass, double u4tot);
   double NuP0DecayWidth(double hnl_mass, double u4tot, double m0_mass, double m0_decay_const);
-  double NuV0DecayWidth(double hnl_mass, double u4tot, double m0_mass, double m0_g_const);
+  double NuV0DecayWidth(double hnl_mass, double u4tot, double m0_mass, double m0_decay_const, double m0_g_const);
   double LepPiWidth(double hnl_mass, double u4, double lep_mass);
   double Nul1l2Width(double hnl_mass, double ue4, double um4, double ut4,int lepplus_pdg,int lepminus_pdg);
   
@@ -215,7 +220,7 @@ double HNLMakeDecay::NuEtaPWidth(double hnl_mass, double ue4, double um4, double
   return NuP0DecayWidth(hnl_mass, ue4 + um4 + ut4, Constants::Instance().etap_mass, Constants::Instance().fetap); 
 }
 double HNLMakeDecay::NuRho0Width(double hnl_mass, double ue4, double um4, double ut4) {
-  return NuV0DecayWidth(hnl_mass, ue4 + um4 + ut4, Constants::Instance().rho_mass, Constants::Instance().grho); 
+  return NuV0DecayWidth(hnl_mass, ue4 + um4 + ut4, Constants::Instance().rho_mass, Constants::Instance().frho, Constants::Instance().grho); 
 }
 double HNLMakeDecay::NuMuEWidth(double hnl_mass, double ue4, double um4, double ut4) {
   return Nul1l2Width(hnl_mass, ue4,um4,ut4,11,13)+Nul1l2Width(hnl_mass, ue4,um4,ut4,13,11); 
@@ -383,7 +388,7 @@ double HNLMakeDecay::TriNuDecayWidth(double hnl_mass, double u4tot) {
 //   return (1+2*y)*(1-y)*sqrt(lambda(1,x,y));
 // }
 
-double HNLMakeDecay::NuV0DecayWidth(double hnl_mass, double u4tot, double m0_mass, double m0_g_const) {
+double HNLMakeDecay::NuV0DecayWidth(double hnl_mass, double u4tot, double m0_mass, double m0_decay_const, double m0_g_const) {
   
   if (m0_mass > hnl_mass) {
     return 0;
@@ -394,7 +399,7 @@ double HNLMakeDecay::NuV0DecayWidth(double hnl_mass, double u4tot, double m0_mas
   
   double mu_m0 = m0_mass*m0_mass / hnl_mass*hnl_mass;
   
-  double width=((u4tot*Gfermi*Gfermi*hnl_mass_pow3*m0_g_const*m0_g_const) / (16*M_PI*m0_mass*m0_mass) * (1+2*m0_mass*m0_mass/(hnl_mass*hnl_mass)) * (1-mu_m0)*(1-mu_m0));
+  double width=((u4tot*Gfermi*Gfermi*hnl_mass_pow3*m0_decay_const*m0_decay_const*m0_g_const*m0_g_const) / (16*M_PI*m0_mass*m0_mass) * (1+2*m0_mass*m0_mass/(hnl_mass*hnl_mass)) * (1-mu_m0)*(1-mu_m0));
   
   return width; 
   
@@ -427,6 +432,8 @@ HNLMakeDecay::DecayFinalState HNLMakeDecay::NuDiLep(const MeVPrtlFlux &flux, boo
   double lep_mass = is_muon ? Constants::Instance().muon_mass : Constants::Instance().elec_mass;
   int lep_pdg = is_muon ? 13 : 11;
 
+  ThreebodyMomentum momenta;
+
   // Decay not kinematically allowed
   if (2*lep_mass > flux.mass) {
     ret.width = 0.;
@@ -444,10 +451,40 @@ HNLMakeDecay::DecayFinalState HNLMakeDecay::NuDiLep(const MeVPrtlFlux &flux, boo
   ret.width = total_width;
   if (ret.width == 0.) return ret;
   
-  // Three body decay
+  // Three body decay                                                   
   //
-  // TODO: account for anisotropies in decay
-  ThreebodyMomentum momenta = isotropic_threebody_momentum(flux.mass, 0., lep_mass, lep_mass); 
+  // Choose between Anisotropic and Isotropic decay(Must be selected in configuration FHICL) @LuisPelegrina                    
+  if(fDecayIsThreeBodyAnisotropic) {
+    //Get the polarization from flux
+    double Pol = flux.polarization;
+    
+    TLorentzVector PA;
+    TLorentzVector PB;
+    TLorentzVector PC;
+    
+    //Get the PDG sing of the lepton produced in the meson decay and select if the HNL is an AntiHNl or not (Only important for dirac decays and valid for M->Nl decays)
+    double AntiHNL = false;
+    if(flux.secondary_pdg > 0) {
+      AntiHNL = false;
+    }else AntiHNL = true;
+      
+    //Calculate the Anisotropic distribution, comments about how the code works can be found in "AnisotropicThreeBodyDecay.cpp", currently the function is optimized for m_HNL<390 MeV and decays N->eenu and N->mumunu
+    evgen::ldm::AnThreeBD::AnisotropicThreeBodyDist(PA, PB, PC, flux.mass, ue4, um4, ut4, lep_pdg, fMajorana, AntiHNL, Pol);
+
+    momenta.A = PA;
+    momenta.B = PB;
+    momenta.C = PC;
+    if (fVerbose) {
+      std::cout <<"Using Anisotropic ThreeBody Momentum" << "\n";
+    }
+  }else {
+    //use the isotropic Threebody Momentum function           
+    momenta = isotropic_threebody_momentum(flux.mass, 0., lep_mass, lep_mass);
+    if (fVerbose) {
+      std::cout << "Using Isotropic ThreeBody Momentum"<< "\n";
+    }
+  }
+  
 
   // Boost it!
   momenta.A.Boost(flux.mom.BoostVector());
@@ -824,7 +861,8 @@ void HNLMakeDecay::configure(fhicl::ParameterSet const &pset)
   fMinDetectorDistance = pset.get<double>("MinDetectorDistance", 100e2); // 100m for NuMI -> SBN/ICARUS
   
   fMajorana = pset.get<bool>("Majorana");
-  
+  fDecayIsThreeBodyAnisotropic=pset.get<bool>("DecayIsThreeBodyAnisotropic");
+
   fMaxWeight = CalculateMaxWeight();
   
 }
@@ -868,6 +906,7 @@ bool HNLMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
     }
   }
 
+  std::cout << flux.C3 << std::endl;
   if (!has_allowed_decay) {
     throw cet::exception("HNLMakeDecay Tool: BAD MASS. Configured mass (" + std::to_string(flux.mass) +
          ") is smaller than any configured decay.");
@@ -910,6 +949,7 @@ bool HNLMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
   double total_width = TotalWidth(flux);
   double total_lifetime_ns = Constants::Instance().hbar / total_width;
   double total_mean_dist = total_lifetime_ns * flux.mom.Gamma() * flux.mom.Beta() * Constants::Instance().c_cm_per_ns;
+  
 
   if (fVerbose){  
     std::cout <<"Trinu Branching Ratio: " << HNLMakeDecay::TriNuWidth(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;

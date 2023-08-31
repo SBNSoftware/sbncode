@@ -76,17 +76,12 @@ void sbn::TrackHitDumper::analyze(art::Event const& e)
   for (const std::string &label: fHitLabels) {
     std::cout << "Processing hits with label: " << label << std::endl;
 
-    art::Handle<std::vector<recob::Hit>> hit_handle;
-    e.getByLabel(label, hit_handle);
-
-    std::vector<art::Ptr<recob::Hit>> hits;
-    art::fill_ptr_vector(hits, hit_handle);
-
-    for (art::Ptr<recob::Hit> hit: hits) {
-      std::cout << "Hit on wire: " << hit->WireID() << " channel: " << hit->Channel() << " view: " << hit->View() << std::endl;
-      std::cout << "Hit amp: " << hit->PeakAmplitude() << " RMS: " << hit->RMS() << " width: " << hit->SigmaPeakAmplitude();
-      std::cout << " from: " << hit->StartTick() << " to: " << hit->EndTick() <<  " center: " << hit->PeakTime() << std::endl;
-      std::cout << "area: " << hit->Integral() << " sim ADC: " << hit->SummedADC() << std::endl;
+    auto const& hits = e.getProduct<std::vector<recob::Hit>>(label);
+    for (recob::Hit const& hit: hits) {
+      std::cout << "Hit on wire: " << hit.WireID() << " channel: " << hit.Channel() << " view: " << hit.View() << std::endl;
+      std::cout << "Hit amp: " << hit.PeakAmplitude() << " RMS: " << hit.RMS() << " width: " << hit.SigmaPeakAmplitude();
+      std::cout << " from: " << hit.StartTick() << " to: " << hit.EndTick() <<  " center: " << hit.PeakTime() << std::endl;
+      std::cout << "area: " << hit.Integral() << " sim ADC: " << hit.SummedADC() << std::endl;
     }
   }
 
