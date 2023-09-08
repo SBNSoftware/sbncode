@@ -195,6 +195,10 @@ class CAFMaker : public art::EDProducer {
   double fPrescaleEvents;
   std::vector<caf::SRBNBInfo> fBNBInfo; ///< Store detailed BNB info to save into the first StandardRecord of the output file
   std::vector<caf::SRNuMIInfo> fNuMIInfo; ///< Store detailed NuMI info to save into the first StandardRecord of the output file
+  std::map<unsigned int,sbn::BNBSpillInfo> fBNBInfoEventMap; ///< Store detailed BNB info to save for the particular spills of events
+  std::map<unsigned int,sbn::NuMISpillInfo> fNuMIInfoEventMap; ///< Store detailed NuMI info to save for the particular spills of events
+  bool fHasBNBInfo;
+  bool fHasNuMIInfo;
 
   // int fCycle;
   // int fBatch;
@@ -747,15 +751,49 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
   // get POT information
   fBNBInfo.clear();
   fNuMIInfo.clear();
+
+  fBNBInfoEventMap.clear();
+  fNuMIInfoEventMap.clear();
+  fHasBNBInfo = false;
+  fHasNuMIInfo = false;
+
   fSubRunPOT = 0;
 
   if(auto bnb_spill = sr.getHandle<std::vector<sbn::BNBSpillInfo>>(fParams.BNBPOTDataLabel())){
     FillExposure(*bnb_spill, fBNBInfo, fSubRunPOT);
     fTotalPOT += fSubRunPOT;
+
+    // Find the spill for each event and fill the event map:
+    // We take the latest spill for a given event number to be the one to keep
+    fHasBNBInfo = true;
+    for(const sbn::BNBSpillInfo& info: *bnb_spill)
+    {
+      if ( fBNBInfoEventMap.find(info.event)==fBNBInfoEventMap.end() ) {
+        fBNBInfoEventMap[info.event] = info;
+      }
+      else if ( (info.spill_time_s+(info.spill_time_ns/1.0e9)) >
+                (fBNBInfoEventMap[info.event].spill_time_s+(fBNBInfoEventMap[info.event].spill_time_ns/1.0e9)) ) {
+        fBNBInfoEventMap[info.event] = info;
+      }
+    }
   }
   else if (auto numi_spill = sr.getHandle<std::vector<sbn::NuMISpillInfo>>(fParams.NuMIPOTDataLabel())) {
     FillExposureNuMI(*numi_spill, fNuMIInfo, fSubRunPOT);
     fTotalPOT += fSubRunPOT;
+
+    // Find the spill for each event and fill the event map:
+    // We take the latest spill for a given event number to be the one to keep
+    fHasNuMIInfo = true;
+    for(const sbn::NuMISpillInfo& info: *numi_spill)
+    {
+      if ( fNuMIInfoEventMap.find(info.event)==fNuMIInfoEventMap.end() ) {
+        fNuMIInfoEventMap[info.event] = info;
+      }
+      else if ( (info.spill_time_s+(info.spill_time_ns/1.0e9)) >
+                (fNuMIInfoEventMap[info.event].spill_time_s+(fNuMIInfoEventMap[info.event].spill_time_ns/1.0e9)) ) {
+        fNuMIInfoEventMap[info.event] = info;
+      }
+    }
   }
   else if(auto pot_handle = sr.getHandle<sumdata::POTSummary>(fParams.GenLabel())){
     fSubRunPOT = pot_handle->totgoodpot;
@@ -1956,6 +1994,20 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // rec.hdr.blind = 0;
   // rec.hdr.filt = rb::IsFiltered(evt, slices, sliceID);
 
+  // Fill the header info for the given event's spill quality info
+  if ( fHasBNBInfo && fHasNuMIInfo ) {
+    std::cout << "Found > 0 BNBInfo size and NuMIInfo size, which seems strange. Will not fill event-specific spill quality info for this event..." << std::endl;
+  }
+  else if ( fHasBNBInfo ) {
+    if ( fBNBInfoEventMap.find(evt.id().event()) == fBNBInfoEventMap.end() )
+      std::cout << "We think (since fHasBNBInfo) that this event should be BNB, but did not find this event in the spill info map." << std::endl;
+    else rec.hdr.spillbnbinfo = makeSRBNBInfo(fBNBInfoEventMap.at(evt.id().event()));
+  }
+  else if ( fHasNuMIInfo ) {
+    if ( fNuMIInfoEventMap.find(evt.id().event()) == fNuMIInfoEventMap.end() )
+      std::cout << "We think (since fHasNuMIInfo) that this event should be NuMI, but did not find this event in the spill info map." << std::endl;
+    else rec.hdr.spillnumiinfo = makeSRNuMIInfo(fNuMIInfoEventMap.at(evt.id().event()));
+  }
 
   if(fRecTree){
     // Save the standard-record
