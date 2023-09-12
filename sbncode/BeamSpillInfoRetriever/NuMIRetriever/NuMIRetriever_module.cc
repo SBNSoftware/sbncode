@@ -109,6 +109,13 @@ void sbn::NuMIRetriever::produce(art::Event &e)
   e.getByLabel(raw_data_label_, "ICARUSTriggerV3", raw_data_ptr);
   auto const & raw_data = (*raw_data_ptr);
 
+  // NOTE: Really we should skip the first event of each trigger type, so let's make this look at that too...
+  if ( raw_data.size()==0 ) return;
+  else {
+    icarus::ICARUSTriggerV3Fragment frag(raw_data.at(0));
+    if ( frag.getTotalTriggerNuMIMaj() <= 1 ) return;
+  }
+
   double t_current_event  = 0;
   double t_previous_event = 0;
   double number_of_gates_since_previous_event = 0;
@@ -163,8 +170,8 @@ void sbn::NuMIRetriever::produce(art::Event &e)
     // plus or minus some time padding, currently using 3.3 ms
     // which is half the Booster Rep Rate
     if(e.event() != 1){//We already addressed the "first event" above 
-      if(times_temps[i] > t_current_event){continue;}
-      if(times_temps[i] <= t_previous_event){continue;}
+      if(times_temps[i] > t_current_event+fTimePad){continue;}
+      if(times_temps[i] <= t_previous_event+fTimePad){continue;}
     }
     
     //count found spills
