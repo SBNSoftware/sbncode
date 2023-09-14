@@ -35,6 +35,10 @@
 #include "nusimdata/SimulationBase/MCFlux.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 
+#include "sbnobj/Common/SBNEventWeight/EventWeightMap.h"
+#include "sbnobj/Common/SBNEventWeight/EventWeightParameterSet.h"
+#include "sbncode/SBNEventWeight/Base/WeightManager.h"
+
 class FluxReaderAna;
 
 
@@ -101,6 +105,20 @@ private:
   float _nu_other_y; /// Y poisition of neutrino at the front face of the TPC (other)
   float _nu_other_z; /// Z poisition of neutrino at the front face of the TPC (other)
   float _nu_other_t; /// Time of the neutrino (other)
+
+  std::vector<float> expskin;
+  std::vector<float> horncurrent;
+  std::vector<float> kminus;
+  std::vector<float> kplus;
+  std::vector<float> kzero;
+  std::vector<float> nucleoninexsec;
+  std::vector<float> nucleonqexsec;
+  std::vector<float> nucleontotxsec;
+  std::vector<float> piminus;
+  std::vector<float> pioninexsec;
+  std::vector<float> pionqexsec;
+  std::vector<float> piontotxsec;
+  std::vector<float> piplus;
 };
 
 
@@ -154,6 +172,20 @@ FluxReaderAna::FluxReaderAna(fhicl::ParameterSet const& p)
   _tree->Branch("nu_other_y", &_nu_other_y, "nu_other_y/F");
   _tree->Branch("nu_other_z", &_nu_other_z, "nu_other_z/F");
   _tree->Branch("nu_other_t", &_nu_other_t, "nu_other_t/F");
+
+  _tree->Branch("expskin", &expskin);
+  _tree->Branch("horncurrent", &horncurrent);
+  _tree->Branch("kminus", &kminus);
+  _tree->Branch("kplus", &kplus);
+  _tree->Branch("kzero", &kzero);
+  _tree->Branch("nucleoninexsec", &nucleoninexsec);
+  _tree->Branch("nucleonqexsec", &nucleonqexsec);
+  _tree->Branch("nucleontotxsec", &nucleontotxsec);
+  _tree->Branch("piminus", &piminus);
+  _tree->Branch("pioninexsec", &pioninexsec);
+  _tree->Branch("pionqexsec", &pionqexsec);
+  _tree->Branch("piontotxsec", &piontotxsec);
+  _tree->Branch("piplus", &piplus);
 }
 
 void FluxReaderAna::analyze(art::Event const& e)
@@ -167,9 +199,28 @@ void FluxReaderAna::analyze(art::Event const& e)
   e.getByLabel(_flux_label, mctruthHandle);
   std::vector<simb::MCTruth> const& mclist = *mctruthHandle;
 
+  art::Handle<std::vector<sbn::evwgh::EventWeightMap>> weightHandle;
+  e.getByLabel("fluxweight", weightHandle);
+  std::vector<sbn::evwgh::EventWeightMap> const& weightlist = *weightHandle;
+
   for(unsigned int inu = 0; inu < mclist.size(); inu++) {
     simb::MCParticle nu = mclist[inu].GetNeutrino().Nu();
     simb::MCFlux flux = fluxlist[inu];
+    sbn::evwgh::EventWeightMap weightmap = weightlist[inu];
+
+    expskin = weightmap["expskin_Flux"];
+    horncurrent = weightmap["horncurrent_Flux"];
+    kminus = weightmap["kminus_Flux"];
+    kplus = weightmap["kplus_Flux"];
+    kzero = weightmap["kzero_Flux"];
+    nucleoninexsec = weightmap["nucleoninexsec_Flux"];
+    nucleonqexsec = weightmap["nucleonqexsec_Flux"];
+    nucleontotxsec = weightmap["nucleontotxsec_Flux"];
+    piminus = weightmap["piminus_Flux"];
+    pioninexsec = weightmap["pioninexsec_Flux"];
+    pionqexsec = weightmap["pionqexsec_Flux"];
+    piontotxsec = weightmap["piontotxsec_Flux"];
+    piplus = weightmap["piplus_Flux"];
 
     // std::cout << "This neutrino has vtx " << nu.Vx() << ", " << nu.Vy() << ", " << nu.Vz() << std::endl;
     // std::cout << "This neutrino has dir " << nu.Px() << ", " << nu.Py() << ", " << nu.Pz() << std::endl;

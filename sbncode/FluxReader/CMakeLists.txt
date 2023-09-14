@@ -75,6 +75,7 @@ cet_build_plugin(FluxReaderAna art::module LIBRARIES
                         sbncode_FluxReader
                         sbncode_FluxReader_FluxInterface
                         nusimdata::SimulationBase
+                        nurandom::RandomUtils_NuRandomService_service
                         larcoreobj::SummaryData
                         larcore::Geometry_Geometry_service
                         lardata::Utilities

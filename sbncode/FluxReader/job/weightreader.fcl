@@ -1,0 +1,57 @@
+##include "services_sbnd.fcl"
+#include "simulationservices_sbnd.fcl"
+
+process_name: WeightReader
+
+services:
+{
+  TFileService: { fileName: "fluxana.root" }
+  MemoryTracker:     {}
+  TimeTracker:       {}
+  RandomNumberGenerator: {} #ART native random number generator
+  message:              @local::sbnd_message_services_prod_debug
+  FileCatalogMetadata:  @local::art_file_catalog_mc
+			@table::sbnd_simulation_services
+}
+
+source:
+{
+  module_type: RootInput
+  maxEvents:  -1        # Number of events to create
+}
+
+outputs:
+{
+ out1:
+  {
+    module_type: RootOutput
+    fileName:    "flux_weights.root"
+    compressionLevel: 1
+    dataTier:    "simulated"
+  }
+}
+
+physics:
+{
+  analyzers:
+  {
+    fluxana: {
+      module_type: "FluxReaderAna"
+      Baseline: 11000 # cm, distance from detector to target position
+      XShift: -73.78 # cm, detector shift along X w.r.t. beamline coordinate system
+      NuOtherIntersectionZ: 49000 # cm
+      # 49000 cm is ICARUS location in SBND coordinate system (600 - 110) m
+      # 36000 cm is MicroBooNE location in SBND coordinate system (470 - 110) m
+      ApplyPositionCuts: true
+      XCut: 200 # cm
+      YCut: 200 # cm
+    }
+  }
+
+ ana: [ fluxana ]
+ stream1: [out1]
+
+ trigger_paths: [ ]
+ end_paths:     [ ana, stream1]
+
+}
