@@ -15,7 +15,8 @@ recob::MCSFitResult TrajectoryMCSFitter::fitMcs(const recob::TrackTrajectory& tr
   vector<size_t> breakpoints;
   vector<float> segradlengths;
   vector<float> cumseglens;
-  breakTrajInSegments(traj, breakpoints, segradlengths, cumseglens);
+  vector<bool> breakpointsgood;
+  breakTrajInSegments(traj, breakpoints, segradlengths, cumseglens, breakpointsgood);
   //
   // Fit segment directions, and get 3D angles between them
   //
@@ -28,7 +29,11 @@ recob::MCSFitResult TrajectoryMCSFitter::fitMcs(const recob::TrackTrajectory& tr
     if (p>0) {
       if (segradlengths[p]<-100. || segradlengths[p-1]<-100.) {
         dtheta.push_back(-999.);
-            } else { 
+      } 
+      if (!breakpointsgood[p] || !breakpointsgood[p-1]) {
+        dtheta.push_back(-999.);
+      }
+      else { 
         const double cosval = pcdir0.X()*pcdir1.X()+pcdir0.Y()*pcdir1.Y()+pcdir0.Z()*pcdir1.Z();
         //assert(std::abs(cosval)<=1);
         //units are mrad
@@ -49,15 +54,19 @@ recob::MCSFitResult TrajectoryMCSFitter::fitMcs(const recob::TrackTrajectory& tr
   }
   const ScanResult fwdResult = doLikelihoodScan(dtheta, segradlengths, cumLenFwd, true,  momDepConst, pid);
   const ScanResult bwdResult = doLikelihoodScan(dtheta, segradlengths, cumLenBwd, false, momDepConst, pid);
-  //
+  // std::cout << "fwdResult.p=" << fwdResult.p << " fwdResult.pUnc=" << fwdResult.pUnc << " fwdResult.logL=" << fwdResult.logL << std::endl;
   return recob::MCSFitResult(pid,
                             fwdResult.p,fwdResult.pUnc,fwdResult.logL,
                             bwdResult.p,bwdResult.pUnc,bwdResult.logL,
                             segradlengths,dtheta);
 }
 
-void TrajectoryMCSFitter::breakTrajInSegments(const recob::TrackTrajectory& traj, vector<size_t>& breakpoints, vector<float>& segradlengths, vector<float>& cumseglens) const {
-  //
+void TrajectoryMCSFitter::breakTrajInSegments(const recob::TrackTrajectory& traj, vector<size_t>& breakpoints, vector<float>& segradlengths, vector<float>& cumseglens, vector<bool>& breakpointsgood) const {
+  // check that length of excludeRegions vector is in the correct format (a multiple of 6)
+  bool excludeRegionsSizeGood = (excludeRegions_.size()%6==0);
+  if (!excludeRegionsSizeGood) {
+    std::cout << "Error: excludeRegions vector must have length multiple of 6, not excluding any regions" << std::endl;
+  }
   const double trajlen = traj.Length();
   const int nseg = std::max(minNSegs_,int(trajlen/segLen_));
   const double thisSegLen = trajlen/double(nseg);
@@ -69,6 +78,8 @@ void TrajectoryMCSFitter::breakTrajInSegments(const recob::TrackTrajectory& traj
   auto nextValid=traj.FirstValidPoint();
   breakpoints.push_back(nextValid);
   auto pos0 = traj.LocationAtPoint(nextValid);
+  bool pos0good = isInGoodRegion(excludeRegionsSizeGood, pos0.X(), pos0.Y(), pos0.Z());
+  breakpointsgood.push_back(pos0good);
   nextValid = traj.NextValidPoint(nextValid+1);
   int npoints = 0;
   while (nextValid!=recob::TrackTrajectory::InvalidIndex) {
@@ -77,7 +88,9 @@ void TrajectoryMCSFitter::breakTrajInSegments(const recob::TrackTrajectory& traj
     pos0=pos1;
     npoints++;
     if (thislen>=thisSegLen) {
+      bool pos1good = isInGoodRegion(excludeRegionsSizeGood, pos1.X(), pos1.Y(), pos1.Z());
       breakpoints.push_back(nextValid);
+      breakpointsgood.push_back(pos1good);
       if (npoints>=minHitsPerSegment_) segradlengths.push_back(thislen*lar_radl_inv);
       else segradlengths.push_back(-999.);
       cumseglens.push_back(cumseglens.back()+thislen);
@@ -88,7 +101,10 @@ void TrajectoryMCSFitter::breakTrajInSegments(const recob::TrackTrajectory& traj
   }
   //then add last segment
   if (thislen>0.) {
+    auto endpointpos = traj.LocationAtPoint(nextValid);
+    bool endpointposgood = isInGoodRegion(excludeRegionsSizeGood, endpointpos.X(), endpointpos.Y(), endpointpos.Z());
     breakpoints.push_back(traj.LastValidPoint()+1);
+    breakpointsgood.push_back(endpointposgood);
     segradlengths.push_back(thislen*lar_radl_inv);
     cumseglens.push_back(cumseglens.back()+thislen);
   }
@@ -202,7 +218,6 @@ double TrajectoryMCSFitter::mcsLikelihood(double p, double theta0x, std::vector<
   double result = 0;
   for (int i = beg; i != end; i+=incr ) {
     if (dthetaij[i]<0) {
-      //cout << "skip segment with too few points" << endl;
       continue;
     }
     //
@@ -301,4 +316,16 @@ double TrajectoryMCSFitter::GetE(const double initial_E, const double length_tra
     }
   }
   return current_E;
+}
+
+bool TrajectoryMCSFitter::isInGoodRegion(const bool sizeGood, const double x, const double y, const double z) const {
+  if (!sizeGood) return true; // if in wrong foramt, do not exclude any regions
+  for (unsigned int i=0; i<excludeRegions_.size()/6; i++) {
+    if (x>=excludeRegions_[6*i+0] && x<=excludeRegions_[6*i+1] &&
+        y>=excludeRegions_[6*i+2] && y<=excludeRegions_[6*i+3] &&
+        z>=excludeRegions_[6*i+4] && z<=excludeRegions_[6*i+5]) {
+      return false;
+    }
+  }
+  return true;
 }
