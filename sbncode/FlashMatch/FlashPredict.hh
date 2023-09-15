@@ -284,6 +284,8 @@ private:
     const recob::OpFlash& opflash,
     std::vector<art::Ptr<recob::OpHit>> ophit_v,
     unsigned id) const;
+  bool getConcurrence(unsigned ophsInVolume,
+                      unsigned hitsInVolume) const;
   Score computeScore(const ChargeMetrics& charge,
                      const FlashMetrics& flash) const;
   Score computeScore3D(const ChargeMetrics& charge,
@@ -378,6 +380,7 @@ private:
 
   const bool fIsSimple;
   const std::string fFlashType;
+  const bool fUseOldMetrics;
   const art::InputTag fPandoraProducer, fSpacePointProducer,
     fOpHitProducer, fOpHitARAProducer;//, fCaloProducer, fTrackProducer;
   const std::vector<std::string> fOpFlashProducer, fOpFlashHitProducer;
@@ -422,8 +425,6 @@ private:
   const unsigned fOpDetNormalizer;
   const double fTermThreshold;
 
-  bool fAllPlanes = true;
-
   static constexpr unsigned kRght = 0;
   static constexpr unsigned kLeft = 1;
 
@@ -431,13 +432,8 @@ private:
   static constexpr unsigned kActivityInLeft = 200;
   static constexpr unsigned kActivityInBoth = 300;
 
-<<<<<<< HEAD
-  const std::vector<int> kSBNDPlanes{0,1,2};
-  const std::vector<int> kICARUSPlanes{0,1,3};
-=======
   const std::vector<int> kSBNDPlanes = {0,1,2};
   const std::vector<int> kICARUSPlanes = {0,1,3};
->>>>>>> a2b8ba9a6cb71d2795aa5dcdf77e980a86a9e4ab
 
   // Tree variables
   TTree* _flashmatch_nuslice_tree;

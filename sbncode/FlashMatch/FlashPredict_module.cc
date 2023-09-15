@@ -13,6 +13,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   : EDProducer{p}
   , fIsSimple(p.get<bool>("IsSimple", true))
   , fFlashType(p.get<std::string>("FlashType", "simpleflash_pmt"))
+  , fUseOldMetrics(p.get<bool>("UseOldMetrics", false))
   , fPandoraProducer(p.get<std::string>("PandoraProducer"))
   , fSpacePointProducer(p.get<std::string>("SpacePointProducer"))
   , fOpHitProducer(p.get<std::string>("OpHitProducer"))
@@ -147,9 +148,6 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
 
   if (fMakeTree) initTree();
 
-  fAllPlanes = ((fSBND && fPlaneList==kSBNDPlanes) ||
-                (fICARUS && fPlaneList==kICARUSPlanes)) ? true : false;
-
   consumes<std::vector<recob::PFParticle>>(fPandoraProducer);
   consumes<std::vector<recob::Slice>>(fPandoraProducer);
   consumes<art::Assns<recob::SpacePoint, recob::PFParticle>>(fPandoraProducer);
@@ -253,10 +251,9 @@ void FlashPredict::produce(art::Event& evt)
   }
 
   // load OpHits previously created
-  std::vector<SimpleFlash> simpleFlashes;
-  std::vector<recob::OpHit> opHitsRght, opHitsLeft, opHits;
   std::vector<FlashMetrics> flashMetrics;
   if(fIsSimple) {  // Metrics for SimpleFlashes
+    std::vector<recob::OpHit> opHitsRght, opHitsLeft, opHits;
     art::Handle<std::vector<recob::OpHit>> ophits_h;
     evt.getByLabel(fOpHitProducer, ophits_h);
     if(!ophits_h.isValid()) {
@@ -323,10 +320,6 @@ void FlashPredict::produce(art::Event& evt)
       art::FindManyP<recob::OpHit> OpFlashToOpHitAssns(opflashes_h, evt, fOpFlashHitProducer[i_tpc]);
       for(unsigned opf=0;opf<opflashes_h->size();opf++) {
         auto& opflash = (*opflashes_h)[opf];
-        mf:: LogInfo("FlashPredict")
-          << "TPC: " << i_tpc << "\n"
-          << "OpT: " << opflash.Time() << "\n"
-          << "AbsT: " << opflash.AbsTime() << std::endl;
         double optime = -9999.;
         if(fSBND) optime = opflash.AbsTime();
         else if(fICARUS) optime = opflash.Time();
@@ -377,25 +370,9 @@ void FlashPredict::produce(art::Event& evt)
     bool hits_ophits_concurrence = false;
     for(auto& origFlash : flashMetrics) {
       unsigned ophsInVolume = origFlash.activity;
-      if(fIsSimple) {
-        if(hitsInVolume != ophsInVolume){
-          if(fSBND){
-            if(fForceConcurrence) continue;
-            else if((hitsInVolume < kActivityInBoth) &&
-                    (ophsInVolume < kActivityInBoth)) {
-              continue;
-            }
-          }
-          else if(fICARUS){
-            if((hitsInVolume < kActivityInBoth) &&
-               (ophsInVolume < kActivityInBoth)) {
-              continue;
-            }
-            else if(fForceConcurrence && hitsInVolume == kActivityInBoth) continue;
-          }
-        }
-      }  
-    hits_ophits_concurrence = true;
+      if(getConcurrence(ophsInVolume, hitsInVolume)) continue;
+
+      hits_ophits_concurrence = true;
 
       Score score_tmp = (fUse3DMetrics) ? computeScore3D(charge, origFlash) :
         computeScore(charge, origFlash);
@@ -551,12 +528,21 @@ FlashPredict::ReferenceMetrics FlashPredict::loadMetrics(
 
   TFile *topfile = new TFile(fname.c_str(), "READ");
   auto dirsinfile = topfile->GetListOfKeys();
-  if(!dirsinfile->Contains(fFlashType.c_str())) {
+  if(!dirsinfile->Contains(fFlashType.c_str()) && !fUseOldMetrics) {
     throw cet::exception("FlashPredict")
       << "Metrics file " << inputFilename
-      << " doesn't contain TDirectoryFile " << fFlashType << "\n";
+      << " doesn't contain TDirectoryFile " << fFlashType << "\n"
+      << "Set UseOldMetrics to true or update FW_SEARCH_PATH \n";
   }
-  TDirectoryFile *infile = (TDirectoryFile*)topfile->Get(fFlashType.c_str());
+  else if(dirsinfile->Contains(fFlashType.c_str()) && fUseOldMetrics) {
+    throw cet::exception("FlashPredict")
+      << "Metrics file " << inputFilename
+      << " contains TDirectoryFile " << fFlashType << " but UseOldMetrics is set to true \n"
+      << "Set UseOldMetrics to false or update FW_SEARCH_PATH \n";
+  }
+
+  TDirectory *infile = (fUseOldMetrics) ? topfile : (TDirectory*)topfile->Get(fFlashType.c_str());
+//  TDirectoryFile *infile = (TDirectoryFile*)topfile->Get(fFlashType.c_str());
   auto metricsInFile = infile->GetListOfKeys();
   if(!metricsInFile->Contains("dy_h1") ||
      !metricsInFile->Contains("dz_h1") ||
@@ -980,7 +966,7 @@ FlashPredict::FlashMetrics FlashPredict::getFlashMetrics(
   }
   auto fm = computeFlashMetrics(ophits);
   fm.id = id;
-  if(fISBND) fm.time = opflash.AbsTime();
+  if(fSBND) fm.time = opflash.AbsTime();
   else if(fICARUS) fm.time = opflash.Time();
   fm.activity = (opflash.XCenter() < 0) ? 100 : 200;
   if(oph_l) {
@@ -1000,6 +986,31 @@ FlashPredict::FlashMetrics FlashPredict::getFlashMetrics(
   return fm;
 }
 
+bool FlashPredict::getConcurrence(
+  unsigned ophsInVolume,
+  unsigned hitsInVolume) const
+{
+  bool skip_flash = false;
+  if(fIsSimple) {
+    if(hitsInVolume != ophsInVolume){
+      if(fSBND) {
+        if(fForceConcurrence) skip_flash = true;
+        else if((hitsInVolume < kActivityInBoth) &&
+                (ophsInVolume < kActivityInBoth)) {
+          skip_flash = true;
+        }
+      }
+      else if(fICARUS) {
+        if((hitsInVolume < kActivityInBoth) &&
+           (ophsInVolume < kActivityInBoth)) {
+          skip_flash = true;
+        }
+        else if(fForceConcurrence && hitsInVolume == kActivityInBoth) skip_flash = true;
+      }
+    }
+  }
+  return skip_flash;
+}
 FlashPredict::Score FlashPredict::computeScore(
   const ChargeMetrics& charge,
   const FlashMetrics& flash) const
