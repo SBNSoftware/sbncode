@@ -17,9 +17,6 @@ recob::MCSFitResult TrajectoryMCSFitter::fitMcs(const recob::TrackTrajectory& tr
   vector<float> cumseglens;
   vector<bool> breakpointsgood;
   breakTrajInSegments(traj, breakpoints, segradlengths, cumseglens, breakpointsgood);
-  std::cout << "breakpointsgood: ";
-  for (auto b : breakpointsgood) std::cout << b << " ";
-  std::cout << std::endl;
   //
   // Fit segment directions, and get 3D angles between them
   //
