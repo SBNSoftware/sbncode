@@ -2,7 +2,9 @@ BEGIN_PROLOG
 mcs_sbn: {
   module_type: MCSFitAllPID
   MCS: {
-    excludeRegions: []
+    eLossMode: 2
+    angResol: 10.0
+    excludeRegions: [190.0, 240.0, -9999.0, 9999.0, -9999.0, 9999.0]
   }
   TrackLabel: pandoraTrack
 }
