@@ -1,0 +1,67 @@
+#include "services_sbnd.fcl"
+#include "geometry_sbnd.fcl"
+#include "larproperties.fcl"
+#include "backtrackerservice.fcl"
+#include "particleinventoryservice.fcl"
+#include "detectorproperties_sbnd.fcl"
+#include "photonbacktrackerservice.fcl"
+#include "mccheatermodules.fcl"
+#include "simulationservices_sbnd.fcl"
+
+#include "mcsproducer_icarus.fcl"
+#include "rangeproducer.fcl"
+
+
+process_name: MCSFitAllPID
+
+services:
+{
+  # @table::sbnd_detsim_services
+  RandomNumberGenerator: {} 
+  TFileService: { 
+    fileName: "mcsout.root"
+  }
+  message:      { debugModules: ["*"] destinations: { debugmsg:{type: "cout" threshold: "INFO"} } }
+  TimeTracker:  { printSummary: true }
+  AuxDetExptGeoHelperInterface: { service_provider: "sbndcode/CRT/CRTGeometryHelper" }
+  ExptGeoHelperInterface:    @local::sbnd_geometry_helper
+  Geometry:                  @local::sbnd_geo
+  AuxDetGeometry:            @local::sbnd_auxdetgeo
+  LArPropertiesService:      @local::standard_properties
+  DetectorClocksService:     @local::sbnd_services.DetectorClocksService
+  DetectorPropertiesService: @local::sbnd_detproperties
+  ParticleInventoryService:  @local::standard_particleinventoryservice
+  BackTrackerService:        @local::standard_backtrackerservice
+  FileCatalogMetadata:  @local::art_file_catalog_mc
+             			@table::sbnd_simulation_services
+
+}
+
+source:
+{
+  module_type: RootInput
+  maxEvents:   -1 
+}
+
+outputs:
+{
+  outpid:
+  {
+    module_type: RootOutput
+    fileName:    "%ifb_%tc-%p.root"
+    dataTier:    "full-reconstructed"
+    fastCloning: false
+  }
+}
+
+physics:
+{
+  producers:{
+    pandoraTrackMCS: @local::mcs_sbn
+   }
+
+  runprod: [pandoraTrackMCS] 
+  stream1:       [ outpid ]
+  trigger_paths: [ runprod ] 
+  end_paths:     [ stream1 ]
+}
