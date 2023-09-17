@@ -1,0 +1,21 @@
+#include "dataprovider.fcl"
+
+BEGIN_PROLOG
+
+pointidalg_sbnd: @local::standard_dataprovideralg 
+pointidalg_sbnd.NNetModelFile:     "CNNID_model.pb"
+pointidalg_sbnd.NNetOutputs:       ["track", "em", "none", "michel"]
+pointidalg_sbnd.CalorimetryAlg:    @local::sbnd_calorimetryalgmc
+pointidalg_sbnd.CalibrateAmpl:     false
+pointidalg_sbnd.CalibrateLifetime: false
+pointidalg_sbnd.PatchSizeW:        60
+pointidalg_sbnd.PatchSizeD:        60
+pointidalg_sbnd.DriftWindow:       4
+pointidalg_sbnd.DownscaleFn:       "mean"
+pointidalg_sbnd.DownscaleFullView: true
+pointidalg_sbnd.AdcMin: 0 
+pointidalg_sbnd.AdcMax: 200
+pointidalg_sbnd.OutMin: 0
+pointidalg_sbnd.OutMax: 1
+
+END_PROLOG
