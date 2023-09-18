@@ -77,7 +77,8 @@ private:
  
   // input labels
   std::string raw_data_label_;
-  int TotalEXTCounts;  
+  float TotalEXTCounts;  
+  float scale_factor;
 
 };
 
@@ -89,6 +90,7 @@ sbn::BNBEXTRetriever::BNBEXTRetriever(Parameters const& params)
  
   produces< std::vector< sbn::EXTCountInfo >, art::InSubRun >();
   TotalEXTCounts = 0;
+  scale_factor = 0;
 }
 
 void sbn::BNBEXTRetriever::produce(art::Event& e)
@@ -112,9 +114,9 @@ void sbn::BNBEXTRetriever::produce(art::Event& e)
     icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerV3String(buffer);
     gate_type = datastream_info.gate_type;
     number_of_gates_since_previous_event = frag.getDeltaGatesBNBOffMaj();
-  
+    scale_factor = 1. - (1./frag.getDeltaGatesBNBOffMinbias());
     std::cout << "BNB OFF MAJ : " << frag.getDeltaGatesBNBOffMaj() << std::endl; 
-    std::cout << "NuMI OFF MAJ : " << frag.getDeltaGatesNuMIOffMaj() << std::endl; 
+    std::cout << "Scale Factor : " << scale_factor << std::endl; 
 
   }
   
@@ -123,7 +125,7 @@ void sbn::BNBEXTRetriever::produce(art::Event& e)
   {
     // Keep track of the number of beam gates the DAQ thinks 
     //   are in this file
-    TotalEXTCounts += number_of_gates_since_previous_event;
+    TotalEXTCounts += number_of_gates_since_previous_event*scale_factor;
    
       //Store everything in our data-product
       sbn::EXTCountInfo extInfo;
