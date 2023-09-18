@@ -3,7 +3,7 @@
 // Module Type: producer
 // File:        CNNID_module.cc
 //
-// apply CNN to hits associated with cluster to get track/shower/noise score
+// apply CNN to hits associated with cluster to get track/shower/noise/endMichel score
 // score of a PFP is the average score of all associated hits
 // skip clear cosmic PFPs
 //
@@ -84,6 +84,18 @@ namespace sbn {
         Name("SkipClearCosmics"),
         Comment("skip clear cosmic PFPs")};
 
+      fhicl::Atom<bool> DoMichel{
+        Name("DoMichel"),
+        Comment("get Michel Scores")};
+    
+      fhicl::Sequence<int> MichelRegionSize{
+        Name("MichelRegionSize"),
+        Comment("size of region around cluster end to get Michel Scores")};
+
+      fhicl::Atom<bool> DoPFP{
+        Name("DoPFP"),
+        Comment("get PFP Scores")};
+
       fhicl::Atom<int> SparseLengthCut{
         Name("SparseLengthCut"),
         Comment("sparsely apply CNN if the number of hits is greater than this number")};
@@ -115,6 +127,9 @@ namespace sbn {
     art::InputTag fClusterModuleLabel;
     art::InputTag fPFParticleModuleLabel;
     bool fSkipClearCosmics;
+    bool fDoMichel;
+    std::vector<int> fMichelRegionSize;
+    bool fDoPFP;
     int fSparseLengthCut;
     int fSparseRate;
     std::vector<int> fViews;
@@ -132,6 +147,9 @@ namespace sbn {
     , fClusterModuleLabel(config().ClusterModuleLabel())
     , fPFParticleModuleLabel(config().PFParticleModuleLabel())
     , fSkipClearCosmics(config().SkipClearCosmics())
+    , fDoMichel(config().DoMichel())
+    , fMichelRegionSize(config().MichelRegionSize())
+    , fDoPFP(config().DoPFP())
     , fSparseLengthCut(config().SparseLengthCut())
     , fSparseRate(config().SparseRate())
     , fViews(config().Views())
@@ -146,8 +164,6 @@ namespace sbn {
   CNNID::produce(art::Event& evt)
   {
     mf::LogVerbatim("CNNID") << "next event: " << evt.run() << " / " << evt.id().event();
-
-    unsigned int cryo, tpc, view;
 
     auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
     auto const detProp =
@@ -172,11 +188,11 @@ namespace sbn {
     art::fill_ptr_vector(cluPtrList, cluListHandle);
 
     art::FindManyP<larpandoraobj::PFParticleMetadata> metaFMpfp(pfpListHandle, evt, fPFParticleModuleLabel);
-
-    art::FindManyP<recob::Cluster> cluFMpfp(pfpListHandle, evt, fClusterModuleLabel);
-
+    art::FindManyP<recob::Cluster> cluFMpfp(pfpListHandle, evt, fPFParticleModuleLabel);
+    art::FindManyP<recob::PFParticle> pfpFMclu(cluListHandle, evt, fClusterModuleLabel);
     art::FindManyP<recob::Hit> hitFMclu(cluListHandle, evt, fClusterModuleLabel);
     art::FindManyP<recob::Hit> hitFMpfp(pfpListHandle, evt, fPFParticleModuleLabel);
+    art::FindManyP<recob::Cluster> cluFMhit(hitListHandle, evt, fClusterModuleLabel);
 
     auto hitID = fMVAWriter.initOutputs<recob::Hit>(
       fHitModuleLabel, hitPtrList.size(), fPointIdAlg.outputLabels());
@@ -185,100 +201,150 @@ namespace sbn {
     auto pfpAssns = std::make_unique<art::Assns<recob::PFParticle, PFPCNNScore>>();
 
     // loop over PFPs
-    for (const art::Ptr<recob::PFParticle> &thispfp : pfpList){
-      std::vector<float> PFPTrackScore; 
-      std::vector<float> PFPShowerScore; 
-      std::vector<float> PFPNoiseScore;
-      // std::vector<float> PFPMichelScore;
+    for (const art::Ptr<recob::PFParticle> &pfp : pfpList){
+      std::vector<float> pfpTrackScore; 
+      std::vector<float> pfpShowerScore; 
+      std::vector<float> pfpNoiseScore;
+      std::vector<float> pfpEndMichelScore;
       int nClusters = 0; 
 
-      // skip clear cosmic PFPs
-      std::vector<art::Ptr<larpandoraobj::PFParticleMetadata>> metas = metaFMpfp.at(thispfp.key());
-      const art::Ptr<larpandoraobj::PFParticleMetadata> meta = metas[0];
-      auto const &properties = meta->GetPropertiesMap();
-      if (fSkipClearCosmics) {
-        bool is_clear_cosmic = (properties.count("IsClearCosmic")); 
-        if (is_clear_cosmic) continue;
+      if (fSkipClearCosmics) { // skip clear cosmic PFPs
+        std::vector<art::Ptr<larpandoraobj::PFParticleMetadata>> metas = metaFMpfp.at(pfp.key());
+        auto const &properties = metas[0]->GetPropertiesMap();
+        if (properties.count("IsClearCosmic")) continue;
       }
 
       // loop over clusters
-      auto const &clusters = cluFMpfp.at(thispfp->Self());
+      auto const &clusters = cluFMpfp.at(pfp->Self());
       for (auto const &cluster : clusters){
+        nClusters++;
+        unsigned int cluView = cluster->Plane().Plane;
+        unsigned int cluCryo = cluster->Plane().Cryostat;
+        unsigned int cluTPC = cluster->Plane().TPC;
+        fPointIdAlg.setWireDriftData(clockData, detProp, *wireHandle, cluView, cluTPC, cluCryo);
+
         float cluTrackScore = 0.;
         float cluShowerScore = 0.;
         float cluNoiseScore = 0.;
-        // float cluMichelScore = 0.;
+        float cluEndMichelScore = 0.;
 
-        auto &cluHitPtrList = hitFMclu.at(cluster.key());
-        int nHitsClu = cluHitPtrList.size();
-        // if (nHitsClu < 5) continue; // at least 5 hits in cluster
-        nClusters++;
+        if (fDoMichel) { // Michel scores for hits around end of cluster
+          int clueEndWire = cluster->EndWire();
+          auto clueEndTick = cluster->EndTick();
+          std::vector<art::Ptr<recob::Hit>> michelPtrList;
+          for (auto const& hit : hitPtrList) {
+            unsigned int hitView = hit->WireID().Plane;
+            int hitWireID = hit->WireID().Wire;
+            auto hitPeakTime = hit->PeakTime();
 
-        cryo = cluster->Plane().Cryostat;
-        view = cluster->Plane().Plane;
-        tpc = cluster->Plane().TPC;
-        fPointIdAlg.setWireDriftData(clockData, detProp, *wireHandle, view, tpc, cryo);
-
-        // hits to apply CNN to (sparsely if nHitsClu > fSparseLengthCut)
-        std::vector<art::Ptr<recob::Hit>> cluHitPtrListApply; 
-        if (nHitsClu > fSparseLengthCut) {
-          for (int i = 0; i < nHitsClu; i++){
-            if (i % fSparseRate != 0) continue;
-            cluHitPtrListApply.push_back(cluHitPtrList[i]);
+            if (hitView != cluView) continue; // same plane
+            if ((std::abs(hitWireID-clueEndWire) > fMichelRegionSize[0]) || (std::abs(hitPeakTime-clueEndTick) > fMichelRegionSize[1])) continue;
+            bool isValidMichelHit = true;
+            auto const &michelClusters = cluFMhit.at(hit.key());
+            for (auto const &michelCluster : michelClusters){
+              // exclude if hit is on the parent cluster 
+              if (michelCluster.key() == cluster.key()) {
+                isValidMichelHit = false;
+                break;
+              }
+              // exclude if hit is on a cosmic cluster
+              auto const &michelPFPs = pfpFMclu.at(michelCluster.key());
+              for (auto const &michelPFP : michelPFPs){
+                std::vector<art::Ptr<larpandoraobj::PFParticleMetadata>> michelMetas = metaFMpfp.at(michelPFP.key());
+                auto const &michelProperties = michelMetas[0]->GetPropertiesMap();
+                if (michelProperties.count("IsClearCosmic")) {
+                  isValidMichelHit = false;
+                  break;
+                }
+              }
+            }
+            // std::cout << "hit " << hit.key() << " is valid michel hit? " << isValidMichelHit << std::endl;
+            if (isValidMichelHit) michelPtrList.push_back(hit);
           }
+          std::vector<std::pair<unsigned int, float>> michelHits;
+          std::vector<size_t> keys;
+          for (auto const& hit : michelPtrList){
+            michelHits.emplace_back(hit->WireID().Wire, hit->PeakTime());
+            keys.push_back(hit.key());
+          }
+          auto batchOut = fPointIdAlg.predictIdVectors(michelHits);
+          if (michelHits.size() != batchOut.size()) {
+              throw cet::exception("CNNID") << "Size mismatch between input and output vectors";
+          }
+          size_t nMichelHits = michelHits.size();
+          for (size_t h = 0; h < nMichelHits; h++) {
+            fMVAWriter.setOutput(hitID, keys[h], batchOut[h]);
+            cluEndMichelScore += batchOut[h][3];
+          }
+          std::cout << "cluster " << cluster.key() << " has michel score: " << cluEndMichelScore << ", # of michel hits " << michelPtrList.size() << std::endl;
+          if (nMichelHits != 0) cluEndMichelScore = cluEndMichelScore/nMichelHits;
+        }
+        else cluEndMichelScore = std::numeric_limits<float>::signaling_NaN();
+        // Michel score end
+
+        // non clear cosmic pfp track/shower/noise score
+        if (fDoPFP) {
+          auto &cluHitPtrList = hitFMclu.at(cluster.key());
+          std::vector<art::Ptr<recob::Hit>> cluHitPtrListApply; 
+          int nCluHits = cluHitPtrList.size();
+          if (nCluHits > fSparseLengthCut) {
+            for (int i = 0; i < nCluHits; i++){
+              if (i % fSparseRate != 0) continue;
+              cluHitPtrListApply.push_back(cluHitPtrList[i]);
+            }
+          }
+          else cluHitPtrListApply = cluHitPtrList;
+          std::vector<std::pair<unsigned int, float>> cluApplyHits;
+          std::vector<size_t> keys;
+          for (auto const& hit : cluHitPtrListApply){
+            cluApplyHits.emplace_back(hit->WireID().Wire, hit->PeakTime());
+            keys.push_back(hit.key());
+          }
+          size_t nCluApplyHits = cluApplyHits.size();
+          auto batchOut = fPointIdAlg.predictIdVectors(cluApplyHits);
+          if (nCluApplyHits != batchOut.size()) {
+            throw cet::exception("CNNID") << "Size mismatch between input and output vectors";
+          }
+          for (size_t h = 0; h < nCluApplyHits; h++) {
+            fMVAWriter.setOutput(hitID, keys[h], batchOut[h]);
+            cluTrackScore += batchOut[h][0];
+            cluShowerScore += batchOut[h][1];
+            cluNoiseScore += batchOut[h][2];
+          }
+          if (nCluApplyHits !=0) {
+            cluTrackScore = cluTrackScore/nCluApplyHits;
+            cluShowerScore = cluShowerScore/nCluApplyHits;
+            cluNoiseScore = cluNoiseScore/nCluApplyHits;
+          }
+          // cluster scores end
         }
         else {
-          cluHitPtrListApply = cluHitPtrList;
+          cluTrackScore = std::numeric_limits<float>::signaling_NaN();
+          cluShowerScore = std::numeric_limits<float>::signaling_NaN();
+          cluNoiseScore = std::numeric_limits<float>::signaling_NaN();
         }
 
-        // apply CNN
-        std::vector<std::pair<unsigned int, float>> points;
-        std::vector<size_t> keys;
-        for (auto const& hit : cluHitPtrListApply){
-          points.emplace_back(hit->WireID().Wire, hit->PeakTime());
-          keys.push_back(hit.key());
-        }
-
-        auto batch_out = fPointIdAlg.predictIdVectors(points);
-        if (points.size() != batch_out.size()) {
-          throw cet::exception("CNNID") << "Size mismatch between input and output vectors";
-        }
-
-        size_t nhits = points.size();
-        for (size_t h = 0; h < nhits; h++) {
-          fMVAWriter.setOutput(hitID, keys[h], batch_out[h]);
-          cluTrackScore += batch_out[h][0];
-          cluShowerScore += batch_out[h][1];
-          cluNoiseScore += batch_out[h][2];
-        }
-
-        cluTrackScore = cluTrackScore/nhits;
-        cluShowerScore = cluShowerScore/nhits;
-        cluNoiseScore = cluNoiseScore/nhits;
-
-        PFPTrackScore.push_back(cluTrackScore);
-        PFPShowerScore.push_back(cluShowerScore);
-        PFPNoiseScore.push_back(cluNoiseScore);
-        // PFPMichelScore.push_back(cluMichelScore);
+        pfpTrackScore.push_back(cluTrackScore);
+        pfpShowerScore.push_back(cluShowerScore);
+        pfpNoiseScore.push_back(cluNoiseScore);
+        pfpEndMichelScore.push_back(cluEndMichelScore);
 
       }
 
-      // get average of score in PFPTrackScore
       if (nClusters == 0) continue;
-      float avgPFPTrackScore = getAvgScore(PFPTrackScore);
-      float avgPFPShowerScore = getAvgScore(PFPShowerScore);
-      float avgPFPNoiseScore = getAvgScore(PFPNoiseScore);
-      // float avgPFPMichelScore = getAvgScore(PFPMichelScore);
+      float pfpAvgTrackScore = getAvgScore(pfpTrackScore);
+      float pfpAvgShowerScore = getAvgScore(pfpShowerScore);
+      float pfpAvgNoiseScore = getAvgScore(pfpNoiseScore);
+      float pfpAvgEndMichelScore = getAvgScore(pfpEndMichelScore);
 
       std::cout << "--------------------------------------" << std::endl;
-      std::cout << "PFP " << thispfp->Self() << " has average track score: " << avgPFPTrackScore << std::endl;
-      std::cout << "PFP " << thispfp->Self() << " has average shower score: " << avgPFPShowerScore << std::endl;
-      std::cout << "PFP " << thispfp->Self() << " has average noise score: " << avgPFPNoiseScore << std::endl;
-    //   std::cout << "PFP " << thispfp->Self() << " has average michel score: " << avgPFPMichelScore << std::endl;
+      std::cout << "PFP " << pfp->Self() << " has average track score: " << pfpAvgTrackScore << std::endl;
+      std::cout << "PFP " << pfp->Self() << " has average shower score: " << pfpAvgShowerScore << std::endl;
+      std::cout << "PFP " << pfp->Self() << " has average noise score: " << pfpAvgNoiseScore << std::endl;
+      std::cout << "PFP " << pfp->Self() << " has average michel score: " << pfpAvgEndMichelScore << std::endl;
       std::cout << "--------------------------------------" << std::endl;
-    //   pfpScores->emplace_back(avgPFPTrackScore, avgPFPShowerScore, avgPFPNoiseScore, avgPFPMichelScore, nClusters); //
-      pfpScores->emplace_back(avgPFPTrackScore, avgPFPShowerScore, avgPFPNoiseScore, nClusters);
-      util::CreateAssn(*this, evt, *pfpScores, thispfp, *pfpAssns);
+      pfpScores->emplace_back(pfpAvgTrackScore, pfpAvgShowerScore, pfpAvgNoiseScore, pfpAvgEndMichelScore, nClusters); //
+      util::CreateAssn(*this, evt, *pfpScores, pfp, *pfpAssns);
     }
     
     fMVAWriter.saveOutputs(evt);
@@ -288,35 +354,30 @@ namespace sbn {
   // ------------------------------------------------------
   // get average score, drop outliers
   float CNNID::getAvgScore(std::vector<float> scores){
+    // good score means a positive score (default score is set to 0)
+    // if no good score, return NaN
+    // if only 1 good score, use that score as "average"
+    // if 2 good scores, use the average of the 2 scores
+    // if 3 or more good scores, remove outliers if any and use the average of the remaining scores
     int nScores = scores.size();
-    int nGoodScores = 0;
-    float sumScore = 0.;
-    float avgScore = 0.;
-    int erase_index = -1;
-
-    // if valid score on all 3 clusters, remove outliers
-    if (nScores > 2) {
-      std::sort(scores.begin(), scores.end());
-      float diff_low = scores[1] - scores[0];
-      float diff_high = scores[scores.size()-1] - scores[scores.size()-2];
-      if (diff_low > 0.5) {
-        erase_index = 0;
-      }
-      else if (diff_high > 0.5) {
-        erase_index = scores.size()-1;
-      }
-    }
-
+    int nGoodScore = 0;
+    std::vector<float> goodScores;
     for (int i = 0; i < nScores; i++) {
-      if (i == erase_index) {
-        continue;
-      }
-      sumScore += scores[i];
-      nGoodScores++;
+      if (scores[i] == 0.) continue;
+      goodScores.push_back(scores[i]);
+      nGoodScore++;
     }
-
-    avgScore = sumScore/nGoodScores;
-    return avgScore;
+    if (nGoodScore == 0) return std::numeric_limits<float>::signaling_NaN();
+    else if (nGoodScore == 1) return goodScores[0];
+    else if (nGoodScore == 2) return (goodScores[0]+goodScores[1])/2.;
+    else {
+      std::sort(goodScores.begin(), goodScores.end());
+      float diffLow = goodScores[1] - goodScores[0];
+      float diffHigh = goodScores[goodScores.size()-1] - goodScores[goodScores.size()-2];
+      if (diffLow > 0.5) return (goodScores[1]+goodScores[2])/2.; // remove lowest score (outlier)
+      else if (diffHigh > 0.5) return (goodScores[0]+goodScores[1])/2.; // remove highest score (outlier)
+      else return (goodScores[0]+goodScores[1]+goodScores[2])/3.;
+    }
   }
 
   // ------------------------------------------------------

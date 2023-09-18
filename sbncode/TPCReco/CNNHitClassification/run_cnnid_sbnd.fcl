@@ -34,8 +34,11 @@ physics:
       HitModuleLabel:               "gaushit"
       ClusterModuleLabel:           "pandora"
       PFParticleModuleLabel:        "pandora"
-      SkipClearCosmics:             false
+      SkipClearCosmics:             true
+      DoMichel:                     true
+      MichelRegionSize:             [30, 30]
       SparseLengthCut:              150
+      DoPFP:                        false
       SparseRate:                   5
       Views:                        []
       PointIdAlg: @local::pointidalg_sbnd
