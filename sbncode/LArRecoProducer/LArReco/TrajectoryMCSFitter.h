@@ -9,6 +9,9 @@
 #include "lardataobj/RecoBase/MCSFitResult.h"
 #include "lardataobj/RecoBase/Track.h"
 #include "lardata/RecoObjects/TrackState.h"
+#include "larcore/Geometry/Geometry.h"
+#include "larcore/CoreUtils/ServiceUtil.h"
+#include "larcorealg/Geometry/GeometryCore.h"
 
 namespace trkf::sbn {
   /**
@@ -88,14 +91,18 @@ namespace trkf::sbn {
         Comment("Angular resolution parameter used in modified Highland formula. Unit is mrad."),
         3.0
       };
-      fhicl::Sequence<double> excludeRegions {
-        Name("excludeRegions"),
+      fhicl::Sequence<double> fiducialVolumeInsets {
+        Name("fiducialVolumeInsets"),
+        Comment("insets from the TPC boundaries to exclude from the fit")
+      };
+      fhicl::Sequence<double> excludeVolumes {
+        Name("excludeVolumes"),
         Comment("regions to exclude")
       };
     };
     using Parameters = fhicl::Table<Config>;
     //
-    TrajectoryMCSFitter(int pIdHyp, int minNSegs, double segLen, int minHitsPerSegment, int nElossSteps, int eLossMode, double pMin, double pMax, double pStep, double angResol, std::vector<double> excludeRegions){
+    TrajectoryMCSFitter(int pIdHyp, int minNSegs, double segLen, int minHitsPerSegment, int nElossSteps, int eLossMode, double pMin, double pMax, double pStep, double angResol, std::vector<double>fiducialVolumeInsets, std::vector<double> excludeVolumes){
       pIdHyp_ = pIdHyp;
       minNSegs_ = minNSegs;
       segLen_ = segLen;
@@ -106,10 +113,11 @@ namespace trkf::sbn {
       pMax_ = pMax;
       pStep_ = pStep;
       angResol_ = angResol;
-      excludeRegions_ = excludeRegions;
+      fiducialVolumeInsets_ = fiducialVolumeInsets;
+      excludeVolumes_ = excludeVolumes;
     }
     explicit TrajectoryMCSFitter(const Parameters & p)
-      : TrajectoryMCSFitter(p().pIdHypothesis(),p().minNumSegments(),p().segmentLength(),p().minHitsPerSegment(),p().nElossSteps(),p().eLossMode(),p().pMin(),p().pMax(),p().pStep(),p().angResol(),p().excludeRegions()) {}
+      : TrajectoryMCSFitter(p().pIdHypothesis(),p().minNumSegments(),p().segmentLength(),p().minHitsPerSegment(),p().nElossSteps(),p().eLossMode(),p().pMin(),p().pMax(),p().pStep(),p().angResol(),p().fiducialVolumeInsets(),p().excludeVolumes()) {}
     //
     recob::MCSFitResult fitMcs(const recob::TrackTrajectory& traj, bool momDepConst = true) const { return fitMcs(traj,pIdHyp_,momDepConst); }
     recob::MCSFitResult fitMcs(const recob::Track& track,          bool momDepConst = true) const { return fitMcs(track,pIdHyp_,momDepConst); }
@@ -152,7 +160,9 @@ namespace trkf::sbn {
     double energyLossLandau(const double mass2,const double E2, const double x) const;
     //
     double GetE(const double initial_E, const double length_travelled, const double mass) const;
-    bool isInGoodRegion(const bool sizeGood, const double x, const double y, const double z) const; 
+    std::vector<geo::BoxBoundedGeo> setFiducialVolumes() const;
+    std::vector<geo::BoxBoundedGeo> setExcludeVolumes() const;
+    bool isInVolume(const std::vector<geo::BoxBoundedGeo> &volumes, const geo::Point_t &point) const;
     //
   private:
     int    pIdHyp_;
@@ -165,7 +175,8 @@ namespace trkf::sbn {
     double pMax_;
     double pStep_;
     double angResol_;
-    std::vector<double> excludeRegions_;
+    std::vector<double> fiducialVolumeInsets_;
+    std::vector<double> excludeVolumes_;
   };
 }
 
