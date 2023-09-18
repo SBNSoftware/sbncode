@@ -36,9 +36,9 @@ physics:
       PFParticleModuleLabel:        "pandora"
       SkipClearCosmics:             true
       DoMichel:                     true
-      MichelRegionSize:             [30, 30]
+      MichelRegionSize:             [30, 120]
       SparseLengthCut:              150
-      DoPFP:                        false
+      DoPFP:                        true
       SparseRate:                   5
       Views:                        []
       PointIdAlg: @local::pointidalg_sbnd

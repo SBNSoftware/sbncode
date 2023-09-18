@@ -134,6 +134,12 @@ namespace caf
       "pandora"
     };
 
+    Atom<string> CNNScoreLabel {
+      Name("CNNScoreLabel"),
+      Comment("Base label of CNN score producer."),
+      "cnnScore"
+    };
+
     Atom<string> StubLabel {
       Name("StubLabel"),
       Comment("Base label of Stub producer."),

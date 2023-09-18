@@ -258,7 +258,6 @@ namespace sbn {
                 }
               }
             }
-            // std::cout << "hit " << hit.key() << " is valid michel hit? " << isValidMichelHit << std::endl;
             if (isValidMichelHit) michelPtrList.push_back(hit);
           }
           std::vector<std::pair<unsigned int, float>> michelHits;
@@ -276,7 +275,6 @@ namespace sbn {
             fMVAWriter.setOutput(hitID, keys[h], batchOut[h]);
             cluEndMichelScore += batchOut[h][3];
           }
-          std::cout << "cluster " << cluster.key() << " has michel score: " << cluEndMichelScore << ", # of michel hits " << michelPtrList.size() << std::endl;
           if (nMichelHits != 0) cluEndMichelScore = cluEndMichelScore/nMichelHits;
         }
         else cluEndMichelScore = std::numeric_limits<float>::signaling_NaN();
@@ -316,33 +314,31 @@ namespace sbn {
             cluShowerScore = cluShowerScore/nCluApplyHits;
             cluNoiseScore = cluNoiseScore/nCluApplyHits;
           }
-          // cluster scores end
         }
         else {
           cluTrackScore = std::numeric_limits<float>::signaling_NaN();
           cluShowerScore = std::numeric_limits<float>::signaling_NaN();
           cluNoiseScore = std::numeric_limits<float>::signaling_NaN();
         }
+        // cluster scores end
 
         pfpTrackScore.push_back(cluTrackScore);
         pfpShowerScore.push_back(cluShowerScore);
         pfpNoiseScore.push_back(cluNoiseScore);
         pfpEndMichelScore.push_back(cluEndMichelScore);
-
       }
 
-      if (nClusters == 0) continue;
       float pfpAvgTrackScore = getAvgScore(pfpTrackScore);
       float pfpAvgShowerScore = getAvgScore(pfpShowerScore);
       float pfpAvgNoiseScore = getAvgScore(pfpNoiseScore);
       float pfpAvgEndMichelScore = getAvgScore(pfpEndMichelScore);
 
-      std::cout << "--------------------------------------" << std::endl;
-      std::cout << "PFP " << pfp->Self() << " has average track score: " << pfpAvgTrackScore << std::endl;
-      std::cout << "PFP " << pfp->Self() << " has average shower score: " << pfpAvgShowerScore << std::endl;
-      std::cout << "PFP " << pfp->Self() << " has average noise score: " << pfpAvgNoiseScore << std::endl;
-      std::cout << "PFP " << pfp->Self() << " has average michel score: " << pfpAvgEndMichelScore << std::endl;
-      std::cout << "--------------------------------------" << std::endl;
+    //   std::cout << "-----------" << " PFP " << pfp->Self() << "-----------" << std::endl;
+    //   std::cout << " average track score: " << pfpAvgTrackScore << std::endl;
+    //   std::cout << " average shower score: " << pfpAvgShowerScore << std::endl;
+    //   std::cout << " average noise score: " << pfpAvgNoiseScore << std::endl;
+    //   std::cout << " average michel score: " << pfpAvgEndMichelScore << std::endl;
+    //   std::cout << "------------------------------------------------------" << std::endl;
       pfpScores->emplace_back(pfpAvgTrackScore, pfpAvgShowerScore, pfpAvgNoiseScore, pfpAvgEndMichelScore, nClusters); //
       util::CreateAssn(*this, evt, *pfpScores, pfp, *pfpAssns);
     }
@@ -360,6 +356,7 @@ namespace sbn {
     // if 2 good scores, use the average of the 2 scores
     // if 3 or more good scores, remove outliers if any and use the average of the remaining scores
     int nScores = scores.size();
+    if (nScores == 0) return std::numeric_limits<float>::signaling_NaN();
     int nGoodScore = 0;
     std::vector<float> goodScores;
     for (int i = 0; i < nScores; i++) {
