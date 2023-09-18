@@ -883,6 +883,7 @@ namespace caf
     srpfp.cnnscore.track = cnnscore->pfpTrackScore;
     srpfp.cnnscore.shower = cnnscore->pfpShowerScore;
     srpfp.cnnscore.noise = cnnscore->pfpNoiseScore;
+    srpfp.cnnscore.michel = cnnscore->pfpMichelScore;
     srpfp.cnnscore.endmichel = cnnscore->pfpEndMichelScore;
     srpfp.cnnscore.nclusters = cnnscore->nClusters;
   }

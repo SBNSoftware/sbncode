@@ -205,6 +205,7 @@ namespace sbn {
       std::vector<float> pfpTrackScore; 
       std::vector<float> pfpShowerScore; 
       std::vector<float> pfpNoiseScore;
+      std::vector<float> pfpMichelScore;
       std::vector<float> pfpEndMichelScore;
       int nClusters = 0; 
 
@@ -226,6 +227,7 @@ namespace sbn {
         float cluTrackScore = 0.;
         float cluShowerScore = 0.;
         float cluNoiseScore = 0.;
+        float cluMichelScore = 0.;
         float cluEndMichelScore = 0.;
 
         if (fDoMichel) { // Michel scores for hits around end of cluster
@@ -308,38 +310,44 @@ namespace sbn {
             cluTrackScore += batchOut[h][0];
             cluShowerScore += batchOut[h][1];
             cluNoiseScore += batchOut[h][2];
+            cluMichelScore += batchOut[h][3];
           }
           if (nCluApplyHits !=0) {
             cluTrackScore = cluTrackScore/nCluApplyHits;
             cluShowerScore = cluShowerScore/nCluApplyHits;
             cluNoiseScore = cluNoiseScore/nCluApplyHits;
+            cluMichelScore = cluMichelScore/nCluApplyHits;
           }
         }
         else {
           cluTrackScore = std::numeric_limits<float>::signaling_NaN();
           cluShowerScore = std::numeric_limits<float>::signaling_NaN();
           cluNoiseScore = std::numeric_limits<float>::signaling_NaN();
+          cluMichelScore = std::numeric_limits<float>::signaling_NaN();
         }
         // cluster scores end
 
         pfpTrackScore.push_back(cluTrackScore);
         pfpShowerScore.push_back(cluShowerScore);
         pfpNoiseScore.push_back(cluNoiseScore);
+        pfpMichelScore.push_back(cluMichelScore);
         pfpEndMichelScore.push_back(cluEndMichelScore);
       }
 
       float pfpAvgTrackScore = getAvgScore(pfpTrackScore);
       float pfpAvgShowerScore = getAvgScore(pfpShowerScore);
       float pfpAvgNoiseScore = getAvgScore(pfpNoiseScore);
+      float pfpAvgMichelScore = getAvgScore(pfpMichelScore);
       float pfpAvgEndMichelScore = getAvgScore(pfpEndMichelScore);
 
-    //   std::cout << "-----------" << " PFP " << pfp->Self() << "-----------" << std::endl;
-    //   std::cout << " average track score: " << pfpAvgTrackScore << std::endl;
-    //   std::cout << " average shower score: " << pfpAvgShowerScore << std::endl;
-    //   std::cout << " average noise score: " << pfpAvgNoiseScore << std::endl;
-    //   std::cout << " average michel score: " << pfpAvgEndMichelScore << std::endl;
-    //   std::cout << "------------------------------------------------------" << std::endl;
-      pfpScores->emplace_back(pfpAvgTrackScore, pfpAvgShowerScore, pfpAvgNoiseScore, pfpAvgEndMichelScore, nClusters); //
+      // std::cout << "-----------" << " PFP " << pfp->Self() << "-----------" << std::endl;
+      // std::cout << " average track score: " << pfpAvgTrackScore << std::endl;
+      // std::cout << " average shower score: " << pfpAvgShowerScore << std::endl;
+      // std::cout << " average noise score: " << pfpAvgNoiseScore << std::endl;
+      // std::cout << " average michel score: " << pfpAvgMichelScore << std::endl;
+      // std::cout << " average end michel score: " << pfpAvgEndMichelScore << std::endl;
+      // std::cout << "------------------------------------------------------" << std::endl;
+      pfpScores->emplace_back(pfpAvgTrackScore, pfpAvgShowerScore, pfpAvgNoiseScore, pfpAvgMichelScore, pfpAvgEndMichelScore, nClusters); //
       util::CreateAssn(*this, evt, *pfpScores, pfp, *pfpAssns);
     }
     
