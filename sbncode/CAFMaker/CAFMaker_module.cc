@@ -47,8 +47,11 @@
 #include "TTree.h"
 #include "TMath.h"
 #include "TTimeStamp.h"
-#include "TRandomGen.h"
 #include "TObjString.h"
+
+// CLHEP libraries
+#include "CLHEP/Random/RandEngine.h" // CLHEP::HepRandomEngine
+#include "CLHEP/Random/RandFlat.h"
 
 // Framework includes
 #include "art/Framework/Core/EDProducer.h"
@@ -223,10 +226,10 @@ class CAFMaker : public art::EDProducer {
   std::vector<geo::BoxBoundedGeo> fActiveVolumes;
 
   // random number generator for fake reco
-  TRandom *fFakeRecoTRandom;
+  CLHEP::HepRandomEngine& fFakeRecoRandomEngine;
 
   // random number generator for prescaling
-  TRandom *fBlindTRandom;
+  CLHEP::HepRandomEngine& fBlindRandomEngine;
 
   /// What position in the vector each parameter set take
   std::map<std::string, unsigned int> fWeightPSetIndex;
@@ -324,7 +327,17 @@ class CAFMaker : public art::EDProducer {
 
   CAFMaker::CAFMaker(const Parameters& params)
   : art::EDProducer{params},
-    fParams(params()), fFile(0)
+    fParams(params()), fFile(0),
+    fFakeRecoRandomEngine(
+      art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(
+        createEngine(0, "HepJamesRandom", "FakeReco"),
+        "HepJamesRandom", "FakeReco", fParams.FakeRecoRandomSeed
+      )),
+    fBlindRandomEngine(
+      art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(
+        createEngine(0, "HepJamesRandom", "Blinding"),
+        "HepJamesRandom", "Blinding", fParams.BlindingRandomSeed
+      ))
   {
   // Note: we will define isRealData on a per event basis in produce function [using event.isRealData()], at least for now.
 
@@ -340,11 +353,6 @@ class CAFMaker : public art::EDProducer {
   // setup volume definitions
   InitVolumes();
 
-  // setup random number generators
-  fFakeRecoTRandom = new TRandomMT64(art::ServiceHandle<rndm::NuRandomService>()->getSeed());
-  if (fParams.CreateBlindedCAF()) {
-    fBlindTRandom = new TRandomMT64(art::ServiceHandle<rndm::NuRandomService>()->getSeed());
-  }
 }
 
 //......................................................................
@@ -522,10 +530,7 @@ CAFMaker::~CAFMaker()
     delete fFlatTreep;
     delete fFlatFileb;
     delete fFlatFilep;
-    delete fBlindTRandom;
   }
-
-  delete fFakeRecoTRandom;
 
 }
 
@@ -1258,7 +1263,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   }
 
   std::vector<caf::SRFakeReco> srfakereco;
-  FillFakeReco(mctruths, true_particles, mctracks, fActiveVolumes, *fFakeRecoTRandom, srfakereco);
+  FillFakeReco(mctruths, true_particles, mctracks, fActiveVolumes, fFakeRecoRandomEngine, srfakereco);
 
   // Fill the MeVPrtl stuff
   for (unsigned i_prtl = 0; i_prtl < mevprtl_truths.size(); i_prtl++) {
@@ -1678,7 +1683,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
       FillSliceFakeReco(slcHits, mctruths, srtruthbranch,
 			*pi_serv, clock_data, recslc, true_particles, mctracks, 
-                        fActiveVolumes, *fFakeRecoTRandom);
+                        fActiveVolumes, fFakeRecoRandomEngine);
     }
 
     //#######################################################
@@ -1986,11 +1991,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     //Generate random number to decide if event is saved in prescale or blinded file
     if (fParams.CreateBlindedCAF()) {
-      const bool keepprescale = fBlindTRandom->Uniform() < 1/fParams.PrescaleFactor();
+      CLHEP::RandFlat uniformGen{ fBlindRandomEngine };
+      const bool keepprescale = uniformGen.fire() < 1/fParams.PrescaleFactor();
       rec.hdr.evt = 0;
       rec.hdr.isblind = true;
       if (keepprescale) {
-      	StandardRecord* precp = new StandardRecord (*prec);
+        mf::LogVerbatim("CAFMaker") << "CAFMaker: " << evt.id() << " is not blinded.";
+        StandardRecord* precp = new StandardRecord (*prec);
 	if (fFirstPrescaleInFile) {
 	  precp->hdr.pot = fSubRunPOT*(1/fParams.PrescaleFactor());
 	  precp->hdr.first_in_file = true;

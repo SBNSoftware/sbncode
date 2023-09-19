@@ -4,8 +4,8 @@
 
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 
-#include "TRandom.h"
 #include "TDatabasePDG.h"
+#include "CLHEP/Random/RandEngine.h" // CLHEP::HepRandomEngine
 
 // LArSoft includes
 #include "larcore/Geometry/Geometry.h"
@@ -70,7 +70,8 @@ namespace caf
                          caf::SRSlice &srslice, 
                          const std::vector<caf::SRTrueParticle> &srparticles,
                          const std::vector<art::Ptr<sim::MCTrack>> &mctracks,
-                         const std::vector<geo::BoxBoundedGeo> &volumes, TRandom &rand);
+                         const std::vector<geo::BoxBoundedGeo> &volumes,
+                         CLHEP::HepRandomEngine &rand);
 
   void FillTrueG4Particle(const simb::MCParticle &particle,
         const std::vector<geo::BoxBoundedGeo> &active_volumes,
@@ -131,7 +132,7 @@ namespace caf
                     const std::vector<caf::SRTrueParticle> &srparticles, 
                     const std::vector<art::Ptr<sim::MCTrack>> &mctracks, 
                     const std::vector<geo::BoxBoundedGeo> &volumes,
-                    TRandom &rand,
+                    CLHEP::HepRandomEngine &rand,
                     std::vector<caf::SRFakeReco> &srfakereco);
 
   std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels, const geo::GeometryCore &geo);

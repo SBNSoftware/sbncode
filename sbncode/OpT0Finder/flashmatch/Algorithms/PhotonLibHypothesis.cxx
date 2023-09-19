@@ -31,10 +31,18 @@ namespace flashmatch {
     _use_semi_analytical = pset.get<bool>("UseSemiAnalytical", 0);
 
     _qe_v.clear();
-    _qe_v = pset.get<std::vector<double> >("CCVCorrection",_qe_v);
+    _qe_refl_v.clear();
+    _qe_v = pset.get<std::vector<double> >("VUVEfficiency",_qe_v);
+    _qe_refl_v = pset.get<std::vector<double> >("VISEfficiency",_qe_refl_v);
     if(_qe_v.empty()) _qe_v.resize(DetectorSpecs::GetME().NOpDets(),1.0);
+    if(_qe_refl_v.empty()) _qe_refl_v.resize(DetectorSpecs::GetME().NOpDets(),1.0);
     if(_qe_v.size() != DetectorSpecs::GetME().NOpDets()) {
-      FLASH_CRITICAL() << "CCVCorrection factor array has size " << _qe_v.size()
+      FLASH_CRITICAL() << "VUV Efficiency factor array has size " << _qe_v.size()
+                       << " != number of opdet (" << DetectorSpecs::GetME().NOpDets() << ")!" << std::endl;
+      throw OpT0FinderException();
+    }
+    if(_qe_refl_v.size() != DetectorSpecs::GetME().NOpDets()) {
+      FLASH_CRITICAL() << "VIS Efficiency factor array has size " << _qe_refl_v.size()
                        << " != number of opdet (" << DetectorSpecs::GetME().NOpDets() << ")!" << std::endl;
       throw OpT0FinderException();
     }
@@ -69,16 +77,14 @@ namespace flashmatch {
 
   void PhotonLibHypothesis::FillEstimateSemiAnalytical(const QCluster_t& trk, Flash_t &flash) const
   {
-
     for ( size_t ipt = 0; ipt < trk.size(); ++ipt) {
 
       /// Get the 3D point in space from where photons should be propagated
       auto const& pt = trk[ipt];
 
-      // Get the number of photons produced in such point
-      double n_original_photons = pt.q;
-
       geo::Point_t const xyz = {pt.x, pt.y, pt.z};
+
+      double n_original_photons = pt.q;
 
       std::vector<double> direct_visibilities;
       _semi_model->detectedDirectVisibilities(direct_visibilities, xyz);
@@ -93,20 +99,21 @@ namespace flashmatch {
 
         const double visibility = direct_visibilities[op_det];
 
-        double q = n_original_photons * visibility * _global_qe / _qe_v[op_det];
+        double q = n_original_photons * visibility * _global_qe * _qe_v[op_det];
 
-        // Coated PMTs don't see direct photons
-        if (std::find(_uncoated_pmt_list.begin(), _uncoated_pmt_list.end(), op_det) != _uncoated_pmt_list.end()) {
-          q = 0;
-        }
+        // ** if the efficiencies are specified in qe_v and qe_refl **, don't need to differentiate between visible and vuv opdets 
+        // ** need this particularly for uncoated PMTs having vuv and vis efficiencies
+        // (un)??Coated PMTs (ands vis xarapucas) don't see direct photons
+        // if (std::find(_uncoated_pmt_list.begin(), _uncoated_pmt_list.end(), op_det) != _uncoated_pmt_list.end()) {
+        //   q = 0;
+        // }
 
         // std::cout << "OpDet: " << op_det << " [x,y,z] -> [q] : [" << pt.x << ", " << pt.y << ", " << pt.z << "] -> [" << q << "]" << std::endl;
 
-        if (std::find(_channel_mask.begin(), _channel_mask.end(), op_det) != _channel_mask.end()) {
+        if (trk.tpc_mask_v.at(op_det) == 0)
           flash.pe_v[op_det] += q;
-        } else {
-          flash.pe_v[op_det] = 0;
-        }
+        else
+          flash.pe_v[op_det] = 0.;
       }
 
       //
@@ -116,16 +123,13 @@ namespace flashmatch {
 
         const double visibility = reflected_visibilities[op_det];
 
-        double q = n_original_photons * visibility * _global_qe_refl / _qe_v[op_det];
+        double q = n_original_photons * visibility * _global_qe_refl * _qe_refl_v[op_det];
 
-        if (std::find(_channel_mask.begin(), _channel_mask.end(), op_det) != _channel_mask.end()) {
+        if (trk.tpc_mask_v.at(op_det) == 0)
           flash.pe_v[op_det] += q;
-        } else {
-          flash.pe_v[op_det] = 0;
-        }
-
+        else
+          flash.pe_v[op_det] = 0.;
       }
-
     }
   }
 
@@ -164,12 +168,12 @@ namespace flashmatch {
         if (is_uncoated) {
           q_direct = 0;
         } else {
-          q_direct = q * _vis->GetVisibility(xyz, ipmt) * _global_qe / _qe_v[ipmt];
+          q_direct = q * _vis->GetVisibility(xyz, ipmt) * _global_qe * _qe_v[ipmt];
         }
         // std::cout << "PMT : " << ipmt << " [x,y,z] -> [q] : [" << pt.x << ", " << pt.y << ", " << pt.z << "] -> [" << q << "]" << std::endl;
 
         // Reflected light
-        q_refl = q * _vis->GetVisibility(xyz, ipmt, true) * _global_qe_refl / _qe_v[ipmt];
+        q_refl = q * _vis->GetVisibility(xyz, ipmt, true) * _global_qe_refl * _qe_refl_v[ipmt];
 
         flash.pe_v[ipmt] += q_direct;
         flash.pe_v[ipmt] += q_refl;
@@ -237,7 +241,7 @@ namespace flashmatch {
       }
       #pragma omp critical
       for(size_t ipmt = 0; ipmt < n_pmt; ++ipmt) {
-        flash.pe_v[ipmt] += local_pe_v[ipmt] * _global_qe / _qe_v[ipmt];
+        flash.pe_v[ipmt] += local_pe_v[ipmt] * _global_qe * _qe_v[ipmt];
       }
 
     }
