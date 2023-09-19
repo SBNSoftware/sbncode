@@ -1792,9 +1792,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         if (fmTrackDazzle.isValid() && fmTrackDazzle.at(iPart).size()==1) {
            FillTrackDazzle(fmTrackDazzle.at(iPart).front(), trk);
         }
+        std::cout<< "t0 calo:  " << pfp.t0  <<std::endl;
         if (fmCalo.isValid()) {
-          FillTrackCalo(fmCalo.at(iPart), fmTrackHit.at(iPart),
-              (fParams.FillHitsNeutrinoSlices() && NeutrinoSlice) || fParams.FillHitsAllSlices(), 
+           FillTrackCalo(fmCalo.at(iPart), fmTrackHit.at(iPart),
+              (fParams.FillHitsNeutrinoSlices() && NeutrinoSlice) || fParams.FillHitsAllSlices() || (!std::isnan(pfp.t0) && (pfp.slcID == pfp.id)), 
               fParams.TrackHitFillRRStartCut(), fParams.TrackHitFillRREndCut(),
               lar::providerFrom<geo::Geometry>(), dprop, trk);
         }
