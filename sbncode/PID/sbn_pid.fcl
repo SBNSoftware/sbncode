@@ -61,6 +61,7 @@ razzled:
   MinShowerEnergy:      0
   MakeTree:             false
   RunMVA:               false
+  SaveFullCalo:         false
   XMin:                -195
   XMax:                 195
   YMin:                -195

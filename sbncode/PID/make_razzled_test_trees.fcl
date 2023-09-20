@@ -10,8 +10,9 @@ physics.runprod: [ pandoraTrackMCS, pandoraTrackRange, pandoraTrackClosestApproa
                    pandoraSCEShowerSBN, pandoraShowerSelectionVars, pandoraShowerRazzle,
                    pandoraRazzled ]
 
-physics.producers.pandoraRazzled.MakeTree: true
-physics.producers.pandoraRazzled.RunMVA:   false
+physics.producers.pandoraRazzled.MakeTree:     true
+physics.producers.pandoraRazzled.SaveFullCalo: true
+physics.producers.pandoraRazzled.RunMVA:       false
 
 source.inputCommands: [ "keep *",
                         "drop *_crtstrips_*_*",
