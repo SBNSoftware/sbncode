@@ -20,7 +20,6 @@
 
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Core/ModuleMacros.h"
-#include "art/Framework/Principal/DataViewImpl.h"
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Principal/Run.h"
@@ -508,7 +507,7 @@ namespace sbn {
 
     trackStartX      = -999.f; trackStartY      = -999.f; trackStartZ = -999.f;
     trackEndX        = -999.f; trackEndY        = -999.f; trackEndZ   = -999.f;
-    trackChi2PIDPion = -999.f; strackChi2PIDKaon = -999.f;
+    trackChi2PIDPion = -999.f; trackChi2PIDKaon = -999.f;
     chi2PDG          = -1;
     trackContained   = false;  goodTrack        = false;
 
