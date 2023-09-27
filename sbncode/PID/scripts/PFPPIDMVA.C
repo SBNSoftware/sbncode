@@ -11,20 +11,21 @@
 #include "TMVA/TMVAGui.h"
 #include "TMVA/Tools.h"
 
-void PFPPIDMVA(TString fileName)
+void PFPPIDMVA()
 {
     gStyle->SetOptStat(0);
-    TFile f(fileName);
     
-    TString instance = "_with_other_category";
+    TString instance = "";
     
     TFile *outputFile = TFile::Open("Razzled" + instance + ".root", "RECREATE");
 
     TMVA::Factory *factory       = new TMVA::Factory("Razzled" + instance, outputFile, "!V:!Silent:Color:DrawProgressBar:AnalysisType=multiclass");
     TMVA::DataLoader *dataloader = new TMVA::DataLoader("Razzled" + instance);
 
-    TDirectory *dir  = f.GetDirectory("pandoraRazzled");
-    TTree *pfpTree = (TTree *)dir->Get("pfpTree");
+    TChain *pfpTree = new TChain("razzled/pfpTree");
+    pfpTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv2/NCPiZeroAv2_rockbox.root");
+    pfpTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv2/NCPiZeroAv2_intrnue.root");
+    pfpTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv2/NCPiZeroAv2_intime.root");
 
     TCut generic_cuts = "!unambiguousSlice && trk_length > 5 && showerEnergy > 10";
 

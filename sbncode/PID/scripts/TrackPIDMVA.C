@@ -11,18 +11,19 @@
 #include "TMVA/TMVAGui.h"
 #include "TMVA/Tools.h"
 
-void TrackPIDMVA(TString fileName)
+void TrackPIDMVA()
 {
     gStyle->SetOptStat(0);
-    TFile f(fileName);
 
     TFile *outputFile = TFile::Open("TrackPIDMVA.root", "RECREATE");
 
     TMVA::Factory *factory       = new TMVA::Factory("TrackPIDMVA", outputFile, "!V:!Silent:Color:DrawProgressBar:AnalysisType=multiclass");
     TMVA::DataLoader *dataloader = new TMVA::DataLoader("dataset");
 
-    TDirectory *dir  = f.GetDirectory("pandoraTrackMVAPID");
-    TTree *trackTree = (TTree *)dir->Get("trackTree");
+    TChain *trackTree = new TChain("dazzle/trackTree");
+    trackTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv2/NCPiZeroAv2_rockbox.root");
+    trackTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv2/NCPiZeroAv2_intrnue.root");
+    trackTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv2/NCPiZeroAv2_intime.root");
 
     TTree *muonTree   = trackTree->CopyTree("std::abs(truePdg)==13");
     TTree *pionTree   = trackTree->CopyTree("std::abs(truePdg)==211");

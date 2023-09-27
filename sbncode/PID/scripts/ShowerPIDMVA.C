@@ -11,18 +11,19 @@
 #include "TMVA/TMVAGui.h"
 #include "TMVA/Tools.h"
 
-void ShowerPIDMVA(TString fileName)
+void ShowerPIDMVA()
 {
     gStyle->SetOptStat(0);
-    TFile f(fileName);
 
     TFile *outputFile = TFile::Open("ShowerPIDMVA.root", "RECREATE");
 
     TMVA::Factory *factory = new TMVA::Factory("ShowerPIDMVA", outputFile, "!V:!Silent:Color:DrawProgressBar:AnalysisType=multiclass");
     TMVA::DataLoader *dataloader = new TMVA::DataLoader("dataset");
 
-    TDirectory *dir   = f.GetDirectory("pandoraShowerSBNMVAPID");
-    TTree *showerTree = (TTree *)dir->Get("showerTree");
+    TChain *showerTree = new TChain("razzle/showerTree");
+    showerTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv2/NCPiZeroAv2_rockbox.root");
+    showerTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv2/NCPiZeroAv2_intrnue.root");
+    showerTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv2/NCPiZeroAv2_intime.root");
 
     TTree *electronTree = showerTree->CopyTree("std::abs(truePdg)==11");
     TTree *photonTree   = showerTree->CopyTree("std::abs(truePdg)==22");
