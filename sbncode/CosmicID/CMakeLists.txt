@@ -4,6 +4,7 @@ cet_build_plugin( CRUMBS art::module
           fhiclcpp::fhiclcpp
           art::Persistency_Provenance canvas::canvas
           sbnobj::Common_Reco
+          sbnobj::SBND_CRT
           sbncode_GeoWrappers
           sbncode_LArRecoProducer
           lardataobj::RecoBase_AssnsDicts_dict
