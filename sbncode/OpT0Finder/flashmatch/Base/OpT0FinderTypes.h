@@ -35,8 +35,9 @@ namespace flashmatch {
     double x_err,y_err,z_err; ///< Flash position error
     double time;              ///< Flash timing, a candidate T0
     ID_t idx;                 ///< index from original larlite vector
+    std::vector<int> pds_mask_v;
     /// Default ctor assigns invalid values
-    Flash_t() : pe_v(), pe_true_v() {
+    Flash_t() : pe_v(), pe_true_v(), pds_mask_v() {
       x = y = z = kINVALID_DOUBLE;
       x_err = y_err = z_err = kINVALID_DOUBLE;
       time = kINVALID_DOUBLE;
@@ -93,9 +94,10 @@ namespace flashmatch {
   public:
     ID_t idx;     ///< index from original larlite vector
     double time;  ///< assumed time w.r.t. trigger for reconstruction
+    std::vector<int> tpc_mask_v;
 
     /// Default constructor
-    QCluster_t() : idx(kINVALID_ID), time(0) {}
+    QCluster_t() : idx(kINVALID_ID), time(0), tpc_mask_v() {}
     ~QCluster_t() {}
 
     /// returns the sum of "q" from QPoint_t
