@@ -284,7 +284,7 @@ private:
     const recob::OpFlash& opflash,
     std::vector<art::Ptr<recob::OpHit>> ophit_v,
     unsigned id) const;
-  bool getConcurrence(unsigned ophsInVolume,
+  bool isConcurrent(unsigned ophsInVolume,
                       unsigned hitsInVolume) const;
   Score computeScore(const ChargeMetrics& charge,
                      const FlashMetrics& flash) const;
@@ -353,7 +353,7 @@ private:
   double opHitTime(const recob::OpHit& oph) const;
   double wallXWithMaxPE(const std::vector<recob::OpHit>& ophits) const;
   double fractTimeWithFractionOfLight(
-    const std::vector<recob::OpHit>& ophits,
+    const std::vector<recob::OpHit>& timeSortedOpH,
     const double sum_pe, const double fraction_pe,
     const bool use_square_pe = false, const bool only_unpe = false) const;
   inline double polynomialCorrection(const double skew, const double hypo_x,

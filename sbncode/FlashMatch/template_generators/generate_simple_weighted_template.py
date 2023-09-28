@@ -91,9 +91,6 @@ class metrics_stuff:
                                   # self.low, self.up,
                                   profile_option)
         self.h1      = TH1D(name+"_h1", "", self.x_bins, self.x_low, self.x_up)
-        directory = "./yzmaps" + "/" + self.flash_type
-        if not os.path.exists(directory):
-            os.makedirs(directory)
 
     def update_metrics(self):
         # fill histograms for match score calculation from profile histograms
@@ -115,7 +112,7 @@ class metrics_stuff:
         self.prof3.Write()
         self.h1.Write()
 
-    def draw_metrics(self, canv):
+    def draw_metrics(self, canv, directory):
         self.h2.Draw()
         crosses = TGraphErrors(x_bins,
                              array('f', self.xvals), array('f', self.means),
@@ -123,10 +120,10 @@ class metrics_stuff:
         crosses.SetLineColor(ROOT.kAzure+9)
         crosses.SetLineWidth(3)
         crosses.Draw("Psame")
-        canv.Print(f"{self.name}.pdf")
+        canv.Print(directory.removesuffix("yzmaps") + f"{self.name}.pdf")
         canv.Update()
 
-    def draw_3D(self, canv):
+    def draw_3D(self, canv, directory):
         ROOT.gStyle.SetPalette(104)
         ROOT.gStyle.SetOptStat(0)
         m_min =  1.e8
@@ -172,10 +169,10 @@ class metrics_stuff:
                     yzmap_s.SetBinContent(zb, yb, sprd)
                 # print(y_row_means)
             yzmap_m.Draw("colz")
-            canv.Print(f"yzmaps/{self.flash_type}/{self.name}_yzmap_mean_xb_{xb}.pdf")
+            canv.Print(directory + f"/{self.name}_yzmap_mean_xb_{xb}.pdf")
             canv.Update()
             yzmap_s.Draw("colz")
-            canv.Print(f"yzmaps/{self.flash_type}/{self.name}_yzmap_sprd_xb_{xb}.pdf")
+            canv.Print(directory + f"/{self.name}_yzmap_sprd_xb_{xb}.pdf")
             canv.Update()
         print(f"Finish printing 3D maps of {self.name}")
 
@@ -354,7 +351,7 @@ def generator(nuslice_tree, rootfile, pset, suffix, flash_type):
     # Many changes needed everywhere
     half_bin_width = xbin_width/2.
 
-    directory = "plots/" + flash_type
+    directory = "plots/" + flash_type + "/yzmaps"
     if not os.path.exists(directory):
         os.makedirs(directory)
 
@@ -418,7 +415,17 @@ def generator(nuslice_tree, rootfile, pset, suffix, flash_type):
 
     # fill rr_h2 and ratio_h2 first
     for e in nuslice_tree:
-        if not quality_checks(e, beam_spill_time_end): continue
+        oldunfolded_score_scatter.SetFillColor(ROOT.kBlue)
+        unfolded_score_scatter.SetFillColor(ROOT.kBlue)
+        unfolded_score_scatter_3D.SetFillColor(ROOT.kBlue)
+        match_score_scatter.SetFillColor(ROOT.kBlue)
+
+        if not quality_checks(e, beam_spill_time_end):
+            oldunfolded_score_scatter.SetFillColor(ROOT.kRed)
+            unfolded_score_scatter.SetFillColor(ROOT.kRed)
+            unfolded_score_scatter_3D.SetFillColor(ROOT.kRed)
+            match_score_scatter.SetFillColor(ROOT.kRed)
+
         qX = e.charge_x
         md['rr'].h2.Fill(qX, e.flash_rr)
         md['rr'].prof.Fill(qX, e.flash_rr)
@@ -582,8 +589,8 @@ def generator(nuslice_tree, rootfile, pset, suffix, flash_type):
 
     canv = TCanvas("canv")
     for m in md.values():
-        m.draw_metrics(canv)
-        m.draw_3D(canv)
+        m.draw_metrics(canv, directory)
+        m.draw_3D(canv, directory)
 
     oldunfolded_score_scatter.Draw()
     canv.Print(f"plots/{flash_type}/oldunfolded_score_scatter.pdf")

@@ -316,6 +316,8 @@ void FlashPredict::produce(art::Event& evt)
       art::Handle<std::vector<recob::OpFlash>> opflashes_h;
       evt.getByLabel(fOpFlashProducer[i_tpc], opflashes_h);    
       if(opflashes_h->empty()) continue;
+      mf::LogInfo("FlashPredict")
+        << "OpFlashes: " << opflashes_h->size() << std::endl;
       // Check that there are OpFlashes
       art::FindManyP<recob::OpHit> OpFlashToOpHitAssns(opflashes_h, evt, fOpFlashHitProducer[i_tpc]);
       for(unsigned opf=0;opf<opflashes_h->size();opf++) {
@@ -370,7 +372,7 @@ void FlashPredict::produce(art::Event& evt)
     bool hits_ophits_concurrence = false;
     for(auto& origFlash : flashMetrics) {
       unsigned ophsInVolume = origFlash.activity;
-      if(getConcurrence(ophsInVolume, hitsInVolume)) continue;
+      if(!isConcurrent(ophsInVolume, hitsInVolume)) continue;
 
       hits_ophits_concurrence = true;
 
@@ -935,14 +937,14 @@ FlashPredict::FlashMetrics FlashPredict::getFlashMetrics(
   const FlashPredict::SimpleFlash& sf) const
 {
   std::vector<recob::OpHit> ophits(sf.opH_beg, sf.opH_end);
+  std::sort(ophits.begin(), ophits.end(),
+            [this] (const recob::OpHit& oph1, const recob::OpHit& oph2)
+              { return (opHitTime(oph1) < opHitTime(oph2)); });
 
   auto fm = computeFlashMetrics(ophits);
   fm.id = sf.flashId;
   fm.activity = sf.ophsInVolume;
 
-  std::sort(ophits.begin(), ophits.end(),
-            [this] (const recob::OpHit& oph1, const recob::OpHit& oph2)
-              { return (opHitTime(oph1) < opHitTime(oph2)); });
   fm.time = opHitTime(ophits[0]);
   return fm;
 }
@@ -956,19 +958,24 @@ FlashPredict::FlashMetrics FlashPredict::getFlashMetrics(
   for(unsigned i=0; i< ophit_v.size(); i++) {
     ophits.emplace_back(*(ophit_v)[i]);
   }
+  std::sort(ophits.begin(), ophits.end(),
+            [this] (const recob::OpHit& oph1, const recob::OpHit& oph2)
+              { return (opHitTime(oph1) < opHitTime(oph2)); });
+
 
   bool oph_l = false; bool oph_r = false;
+
+  // Search for ophits in either TPC. X-coordinate is flipped by convention
   for(auto& oph : ophits) {
     auto& opDet = fGeometry->OpDetGeoFromOpChannel(oph.OpChannel());
     auto opDetXYZ = opDet.GetCenter();
-    if(opDetXYZ.X() < 0.) oph_l = true;
-    else oph_r = true;
+    if(opDetXYZ.X() < 0.) oph_r = true;
+    else oph_l = true;
   }
   auto fm = computeFlashMetrics(ophits);
   fm.id = id;
   if(fSBND) fm.time = opflash.AbsTime();
   else if(fICARUS) fm.time = opflash.Time();
-  fm.activity = (opflash.XCenter() < 0) ? 100 : 200;
   if(oph_l) {
     fm.activity = (oph_r) ? kActivityInBoth : kActivityInLeft;
   }
@@ -986,31 +993,16 @@ FlashPredict::FlashMetrics FlashPredict::getFlashMetrics(
   return fm;
 }
 
-bool FlashPredict::getConcurrence(
+bool FlashPredict::isConcurrent(
   unsigned ophsInVolume,
   unsigned hitsInVolume) const
 {
-  bool skip_flash = false;
-  if(fIsSimple) {
-    if(hitsInVolume != ophsInVolume){
-      if(fSBND) {
-        if(fForceConcurrence) skip_flash = true;
-        else if((hitsInVolume < kActivityInBoth) &&
-                (ophsInVolume < kActivityInBoth)) {
-          skip_flash = true;
-        }
-      }
-      else if(fICARUS) {
-        if((hitsInVolume < kActivityInBoth) &&
-           (ophsInVolume < kActivityInBoth)) {
-          skip_flash = true;
-        }
-        else if(fForceConcurrence && hitsInVolume == kActivityInBoth) skip_flash = true;
-      }
-    }
-  }
-  return skip_flash;
+  return (hitsInVolume == kActivityInBoth ||
+          hitsInVolume == ophsInVolume    ||
+          ophsInVolume == kActivityInBoth ||
+          !fForceConcurrence);
 }
+
 FlashPredict::Score FlashPredict::computeScore(
   const ChargeMetrics& charge,
   const FlashMetrics& flash) const
@@ -1892,13 +1884,9 @@ double FlashPredict::wallXWithMaxPE(
 
 
 double FlashPredict::fractTimeWithFractionOfLight(
-  const std::vector<recob::OpHit>& ophits, const double sum_pe, const double fraction_pe,
+  const std::vector<recob::OpHit>& timeSortedOpH, const double sum_pe, const double fraction_pe,
   const bool use_square_pe, const bool only_unpe) const
 {
-  std::vector<recob::OpHit> timeSortedOpH(ophits.begin(), ophits.end());
-  std::sort(timeSortedOpH.begin(), timeSortedOpH.end(),
-            [this] (const recob::OpHit& oph1, const recob::OpHit& oph2)
-              { return (opHitTime(oph1) < opHitTime(oph2)); });
   const double threshold_fraction = fraction_pe * sum_pe;
   const double flash_start_time = opHitTime(timeSortedOpH[0]);
   const double flash_end_time = opHitTime(timeSortedOpH[timeSortedOpH.size()-1]);
