@@ -82,6 +82,8 @@ namespace caf
     srhit.pe = hit.peshit;
     srhit.plane = hit.plane;
 
+    srhit.flag = (hit.plane>34 && hit.plane<50 && hit.ts0_s_corr<7) ? hit.ts0_s_corr : 0 ;
+    
   }
 
   void FillCRTTrack(const sbn::crt::CRTTrack &track,
