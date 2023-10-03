@@ -129,7 +129,7 @@ void sbn::BNBEXTRetriever::produce(art::Event& e)
    
       //Store everything in our data-product
       sbn::EXTCountInfo extInfo;
-      extInfo.gates_since_last_trigger = number_of_gates_since_previous_event;
+      extInfo.gates_since_last_trigger = number_of_gates_since_previous_event*scale_factor;
 
       fOutExtInfos.push_back(extInfo);
       // We do not write these to the art::Events because 
