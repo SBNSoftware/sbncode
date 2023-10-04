@@ -60,8 +60,9 @@ void TrackPIDMVA()
     // dataloader->AddSpectator("chi2PIDPDG", "Chi2 PID Type", "");
     // dataloader->AddSpectator("chi2PIDPDGNoKaon", "Chi2 PID Type (No Kaon)", "");
 
-    const TCut baseCut("(abs(startX) < 175 && abs(startY) < 175 && startZ > 25 && startZ < 450 && recoPrimary == 1 && recoLen>0 && "
-                            "energyPurity > 0.5 && energyComp > 0.5 && recoContained)");
+    const TCut baseCut("(abs(startX) < 175 && abs(startY) < 175 && startZ > 25 && startZ < 450"
+		       "&& recoPrimary == 1 && recoLen>0 && trackScore > 0.5 && "
+		       "energyPurity > 0.5 && energyComp > 0.5 && recoContained)");
 
     dataloader->PrepareTrainingAndTestTree(baseCut, "");
 

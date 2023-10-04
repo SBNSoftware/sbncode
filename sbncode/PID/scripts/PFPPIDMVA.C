@@ -43,8 +43,8 @@ void PFPPIDMVA()
     dataloader->AddTree(protonTree, "Proton");
     dataloader->AddTree(otherTree, "Other");
 
-    dataloader->AddVariable("pfp_numDaughters", "PFP N Daughters", "cm", 'F', 0, 5);
-    dataloader->AddVariable("pfp_maxDaughterHits", "PFP N Daughters", "", 'F', 0, 500);
+    dataloader->AddVariable("pfp_numDaughters", "PFP N Daughters", "", 'F', 0, 5);
+    dataloader->AddVariable("pfp_maxDaughterHits", "PFP Max Daughter Hits", "", 'F', 0, 500);
     dataloader->AddVariable("pfp_trackScore", "PFP Track Score", "", 'F', 0, 1);
     dataloader->AddVariable("pfp_chargeEndFrac", "PFP Charge End Fraction", "", 'F', 0, 1);
     dataloader->AddVariable("pfp_chargeFracSpread", "PFP Charge Fraction Spread", "", 'F', 0, 3);
@@ -75,12 +75,14 @@ void PFPPIDMVA()
     dataloader->AddVariable("shw_sqrtEnergyDensity", "Shower Sqrt Energy Density", "", 'F', 0, 10);
 
 
-    const TCut baseCut("(abs(trackStartX) < 175 && abs(trackStartY) < 175 && trackStartZ > 25 && trackStartZ < 450 && abs(showerStartX) < 175 && abs(showerStartY) < 175 && showerStartZ > 25 && showerStartZ < 450 && recoPrimary == 1 && energyPurity > 0.5 && energyComp > 0.5 && trackContained && showerContained)");
+    const TCut baseCut("(abs(trackStartX) < 175 && abs(trackStartY) < 175 && trackStartZ > 25 && trackStartZ < 450"
+		       " && abs(showerStartX) < 175 && abs(showerStartY) < 175 && showerStartZ > 25 && showerStartZ < 450"
+		       " && recoPrimary == 1 && energyPurity > 0.5 && energyComp > 0.5 && trackContained && showerContained)");
 
     dataloader->PrepareTrainingAndTestTree(baseCut, "");
 
     factory->BookMethod(dataloader, TMVA::Types::kBDT, "BDTG",
-        "!H:!V:NTrees=100:BoostType=Grad:Shrinkage=0.50::BaggedSampleFraction=0.60:nCuts=100:MaxDepth=3:DoBoostMonitor");
+			"!H:!V:NTrees=100:BoostType=Grad:Shrinkage=0.50::BaggedSampleFraction=0.60:nCuts=100:MaxDepth=3:DoBoostMonitor");
     factory->TrainAllMethods();
 
     // Evaluate all MVAs using the set of test events

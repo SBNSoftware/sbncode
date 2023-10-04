@@ -43,7 +43,8 @@ void ShowerPIDMVA()
     // dataloader->AddSpectator("trueP", "True Momentum", "GeV");
     // dataloader->AddSpectator("bestEnergy", "Reco Energy", "MeV");
 
-    const TCut baseCut("(abs(startX) < 175 && abs(startY) < 175 && startZ > 25 && startZ < 450 && recoPrimary == 1 && bestEnergy>100 && "
+    const TCut baseCut("(abs(startX) < 175 && abs(startY) < 175 && startZ > 25 && startZ < 450"
+		       "&& recoPrimary == 1 && bestEnergy>100 && trackScore < 0.5 && "
                        "energyPurity > 0.5 && energyComp > 0.5 && recoContained)");
 
     dataloader->PrepareTrainingAndTestTree(baseCut, "");
