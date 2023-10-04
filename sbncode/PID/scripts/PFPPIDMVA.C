@@ -34,28 +34,16 @@ void PFPPIDMVA()
   TTree *photonTree   = pfpTree->CopyTree("std::abs(truePDG)==22" + generic_cuts);
   TTree *pionTree     = pfpTree->CopyTree("std::abs(truePDG)==211" + generic_cuts);
   TTree *protonTree   = pfpTree->CopyTree("std::abs(truePDG)==2212" + generic_cuts);
-  TTree *otherTree    = pfpTree->CopyTree("std::abs(truePDG)!=11 && std::abs(truePDG)!=13 && std::abs(truePDG)!=22 && std::abs(truePDG)!=211 && std::abs(truePDG)!=2212" + generic_cuts);
 
   dataloader->AddTree(electronTree, "Electron");
   dataloader->AddTree(muonTree, "Muon");
   dataloader->AddTree(photonTree, "Photon");
   dataloader->AddTree(pionTree, "Pion");
   dataloader->AddTree(protonTree, "Proton");
-  dataloader->AddTree(otherTree, "Other");
 
   dataloader->AddVariable("pfp_numDaughters", "PFP N Daughters", "", 'F', 0, 5);
   dataloader->AddVariable("pfp_maxDaughterHits", "PFP Max Daughter Hits", "", 'F', 0, 500);
   dataloader->AddVariable("pfp_trackScore", "PFP Track Score", "", 'F', 0, 1);
-  dataloader->AddVariable("pfp_chargeEndFrac", "PFP Charge End Fraction", "", 'F', 0, 1);
-  dataloader->AddVariable("pfp_chargeFracSpread", "PFP Charge Fraction Spread", "", 'F', 0, 3);
-  dataloader->AddVariable("pfp_linearFitDiff", "PFP Linear Fit Difference", "", 'F', 0, .5);
-  dataloader->AddVariable("pfp_linearFitLength", "PFP Linear Fit Length", "cm", 'F', 0, 500);
-  dataloader->AddVariable("pfp_linearFitGapLength", "PFP Linear Fit Gap Length", "cm", 'F', 0, 1);
-  dataloader->AddVariable("pfp_linearFitRMS", "PFP Linear Fit RMS", "", 'F', 0, 4);
-  dataloader->AddVariable("pfp_openAngleDiff", "PFP Opening Angle Difference", "#circ", 'F', 0, 50);
-  dataloader->AddVariable("pfp_secondaryPCARatio", "PFP Secondary PCA Ratio", "", 'F', 0, 1);
-  dataloader->AddVariable("pfp_tertiaryPCARatio", "PFP Tertiary PCA Ratio", "", 'F', 0, 1);
-  dataloader->AddVariable("pfp_vertexDist", "PFP Vertex Distance", "cm", 'F', 0, 500);
 
   dataloader->AddVariable("trk_length", "Track Length", "cm", 'F', 0, 250);
   dataloader->AddVariable("trk_chi2PIDMuon", "Track Chi2 PID Muon", "", 'F', 0, 80);
@@ -74,15 +62,17 @@ void PFPPIDMVA()
   dataloader->AddVariable("shw_modHitDensity", "Shower Modified Hit Density", "", 'F', 0, 10);
   dataloader->AddVariable("shw_sqrtEnergyDensity", "Shower Sqrt Energy Density", "", 'F', 0, 10);
 
-
-  const TCut baseCut("(abs(trackStartX) < 175 && abs(trackStartY) < 175 && trackStartZ > 25 && trackStartZ < 450"
-                     " && abs(showerStartX) < 175 && abs(showerStartY) < 175 && showerStartZ > 25 && showerStartZ < 450"
-                     " && recoPrimary == 1 && energyPurity > 0.5 && energyComp > 0.5 && trackContained && showerContained)");
+  const TCut baseCut("(abs(trackStartX) < 180 && abs(trackStartY) < 180 && trackStartZ > 10"
+                     " && trackStartZ < 450 && abs(showerStartX) < 180 && abs(showerStartY) < 180"
+                     " && showerStartZ > 10 && showerStartZ < 450 && recoPrimary == 1"
+                     " && energyPurity > 0.5 && energyComp > 0.5)");
 
   dataloader->PrepareTrainingAndTestTree(baseCut, "");
 
   factory->BookMethod(dataloader, TMVA::Types::kBDT, "BDTG",
-                      "!H:!V:NTrees=100:BoostType=Grad:Shrinkage=0.50::BaggedSampleFraction=0.60:nCuts=100:MaxDepth=3:DoBoostMonitor");
+                      "!H:!V:NTrees=100:BoostType=Grad:Shrinkage=0.50::BaggedSampleFraction=0.60"
+                      ":nCuts=100:MaxDepth=3:DoBoostMonitor");
+
   factory->TrainAllMethods();
 
   // Evaluate all MVAs using the set of test events
