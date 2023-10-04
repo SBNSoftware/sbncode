@@ -22,18 +22,10 @@ int CRUMBSTMVADriver()
   std::cout << std::endl;
   std::cout << "==> Start CRUMBS TMVA Training" << std::endl;
 
-  TFile *input(0);
-  TString fname = "PATH/TO/YOUR/TREE/FILE/HERE";
-  if (!gSystem->AccessPathName( fname )) {
-    input = TFile::Open( fname );
-  }
-  if (!input) {
-    std::cout << "ERROR: could not open data file" << std::endl;
-    exit(1);
-  }
-  std::cout << "--- CRUMBS TMVA Training     : Using input file: " << input->GetName() << std::endl;
-
-  TTree *inputTree     = (TTree*)input->Get("crumbs/SliceTree");
+  TChain *inputTree = new TChain("crumbs/SliceTree");
+  inputTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv2/NCPiZeroAv2_rockbox.root");
+  inputTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv2/NCPiZeroAv2_intrnue.root");
+  inputTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv2/NCPiZeroAv2_intime.root");
 
   if (!inputTree) {
     std::cout << "ERROR: could not access tree" << std::endl;
@@ -72,7 +64,7 @@ void TrainCRUMBSInstance(const TString outDirName, TTree *inputTree,
   TFile* outputFile = TFile::Open( outfileName, "RECREATE" );
 
   TMVA::Factory *factory = new TMVA::Factory( "CrumbsTMVAClassification", outputFile,
-                                              "!V:!Silent:Color:DrawProgressBar:Transformations=I;D;P;G,D:AnalysisType=Classification" );
+                                              "!V:!Silent:Color:DrawProgressBar:AnalysisType=Classification" );
 
   dataloader->AddVariable("tpc_CRFracHitsInLongestTrack","Fraction of Hits in Longest Track (Cosmic Reco)","",'F');
   dataloader->AddVariable("tpc_CRLongestTrackDeflection","Longest Track Deflection (Cosmic Reco)","",'F');
@@ -90,6 +82,10 @@ void TrainCRUMBSInstance(const TString outDirName, TTree *inputTree,
   dataloader->AddVariable("pds_FMPE","nPE in flash","",'F');
   dataloader->AddVariable("pds_FMTime","FM Time","#mu s",'F');
 
+  //dataloader->AddVariable("pds_OpT0Score","OpT0 Score","",'F');
+  //dataloader->AddVariable("isinf(pds_OpT0MeasuredPE) ? -10000 : pds_OpT0MeasuredPE",
+  //			  "OpT0 Measured PE","",'F');
+
   dataloader->AddVariable("crt_TrackScore","CRT Track Match Score","",'F');
   dataloader->AddVariable("crt_SPScore","CRT SpacePoint Match Score","",'F');
   dataloader->AddVariable("crt_TrackTime","CRT Track Match Time","#mu s",'F');
@@ -101,7 +97,7 @@ void TrainCRUMBSInstance(const TString outDirName, TTree *inputTree,
   dataloader->PrepareTrainingAndTestTree( sigCut, backCut, "SplitMode=random:!V" );
   
   factory->BookMethod( dataloader, TMVA::Types::kBDT, "BDT",
-                       "!H:!V:NTrees=850:MinNodeSize=2.5%:MaxDepth=3:BoostType=AdaBoost:AdaBoostBeta=0.5:UseBaggedBoost:BaggedSampleFraction=0.5:SeparationType=GiniIndex:nCuts=20");
+                       "!H:!V:NTrees=100:MinNodeSize=2.5%:MaxDepth=3:BoostType=AdaBoost:AdaBoostBeta=0.5:UseBaggedBoost:BaggedSampleFraction=0.5:SeparationType=GiniIndex:nCuts=100");
 
   factory->TrainAllMethods();
   
