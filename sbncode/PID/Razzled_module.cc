@@ -226,6 +226,7 @@ namespace sbn {
 
           reader->AddVariable("pfp_numDaughters", &pfp_numDaughters);
           reader->AddVariable("pfp_maxDaughterHits", &pfp_maxDaughterHits);
+          reader->AddVariable("pfp_trackScore", &pfp_trackScore);
 
           reader->AddVariable("trk_length", &trk_length);
           reader->AddVariable("trk_chi2PIDMuon", &trk_chi2PIDMuon);
@@ -233,10 +234,10 @@ namespace sbn {
           reader->AddVariable("trk_chi2PIDMuonPionDiff", &trk_chi2PIDMuonPionDiff);
           reader->AddVariable("trk_mcsScatterMean", &trk_mcsScatterMean);
           reader->AddVariable("trk_mcsScatterMaxRatio", &trk_mcsScatterMaxRatio);
-          reader->AddVariable("trk_momDiff", &trk_momDiff);
           reader->AddVariable("trk_meanDCA", &trk_meanDCA);
           reader->AddVariable("trk_stoppingdEdxChi2Ratio", &trk_stoppingdEdxChi2Ratio);
           reader->AddVariable("trk_chi2Pol0dEdxFit", &trk_chi2Pol0dEdxFit);
+          reader->AddVariable("trk_momDiff", &trk_momDiff);
 
           reader->AddVariable("shw_bestdEdx", &shw_bestdEdx);
           reader->AddVariable("shw_convGap", &shw_convGap);
@@ -931,7 +932,6 @@ namespace sbn {
     pidResults.AddScore(22, mvaScores.at(2));
     pidResults.AddScore(211, mvaScores.at(3));
     pidResults.AddScore(2212, mvaScores.at(4));
-    pidResults.AddScore(0, mvaScores.at(5));
 
     if(!fMakeTree)
       return pidResults;
@@ -941,7 +941,6 @@ namespace sbn {
     photonScore   = mvaScores.at(2);
     pionScore     = mvaScores.at(3);
     protonScore   = mvaScores.at(4);
-    otherScore    = mvaScores.at(5);
 
     bestScore = pidResults.BestScore();
     bestPDG   = pidResults.BestPDG();
