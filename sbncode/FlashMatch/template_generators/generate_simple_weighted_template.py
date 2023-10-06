@@ -415,16 +415,16 @@ def generator(nuslice_tree, rootfile, pset, suffix, flash_type):
 
     # fill rr_h2 and ratio_h2 first
     for e in nuslice_tree:
-        oldunfolded_score_scatter.SetFillColor(ROOT.kBlue)
-        unfolded_score_scatter.SetFillColor(ROOT.kBlue)
-        unfolded_score_scatter_3D.SetFillColor(ROOT.kBlue)
-        match_score_scatter.SetFillColor(ROOT.kBlue)
+        oldunfolded_score_scatter.SetMarkerColor(ROOT.kBlue)
+        unfolded_score_scatter.SetMarkerColor(ROOT.kBlue)
+        unfolded_score_scatter_3D.SetMarkerColor(ROOT.kBlue)
+        match_score_scatter.SetMarkerColor(ROOT.kBlue)
 
         if not quality_checks(e, beam_spill_time_end):
-            oldunfolded_score_scatter.SetFillColor(ROOT.kRed)
-            unfolded_score_scatter.SetFillColor(ROOT.kRed)
-            unfolded_score_scatter_3D.SetFillColor(ROOT.kRed)
-            match_score_scatter.SetFillColor(ROOT.kRed)
+            oldunfolded_score_scatter.SetMarkerColor(ROOT.kRed)
+            unfolded_score_scatter.SetMarkerColor(ROOT.kRed)
+            unfolded_score_scatter_3D.SetMarkerColor(ROOT.kRed)
+            match_score_scatter.SetMarkerColor(ROOT.kRed)
 
         qX = e.charge_x
         md['rr'].h2.Fill(qX, e.flash_rr)
@@ -534,7 +534,16 @@ def generator(nuslice_tree, rootfile, pset, suffix, flash_type):
 
     for e in nuslice_tree:
         # calculate match score
-        # if not quality_checks(e, beam_spill_time_end): continue
+        oldunfolded_score_scatter.SetMarkerColor(ROOT.kBlue)
+        unfolded_score_scatter.SetMarkerColor(ROOT.kBlue)
+        unfolded_score_scatter_3D.SetMarkerColor(ROOT.kBlue)
+        match_score_scatter.SetMarkerColor(ROOT.kBlue)
+
+        if not quality_checks(e, beam_spill_time_end):
+            oldunfolded_score_scatter.SetMarkerColor(ROOT.kRed)
+            unfolded_score_scatter.SetMarkerColor(ROOT.kRed)
+            unfolded_score_scatter_3D.SetMarkerColor(ROOT.kRed)
+            match_score_scatter.SetMarkerColor(ROOT.kRed)
         qX = e.charge_x
         qXGl = e.charge_x_gl
         isl = int(qX/xbin_width)

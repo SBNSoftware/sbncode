@@ -878,11 +878,8 @@ FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
     flash.zw = oph2Z->GetStdDev();
 
     flash.ratio = fOpDetNormalizer * flash.unpe / flash.pe;
-    if(fSBND){
-      flash.ratio = (fOpDetNormalizer * flash.unpe) / (flash.pe - flash.unpe);
-      if(fFlashType == "simpleflash_ara" || fFlashType == "opflash_ara") {
+    if(fSBND && (fFlashType == "simpleflash_ara" || fFlashType == "opflash_ara")) {
         flash.ratio = flash.unpe / (flash.pe + flash.unpe);
-      }
     }
     flash.yb  = sum_PE2Y / sum_PE2;
     flash.zb  = sum_PE2Z / sum_PE2;
@@ -962,22 +959,33 @@ FlashPredict::FlashMetrics FlashPredict::getFlashMetrics(
             [this] (const recob::OpHit& oph1, const recob::OpHit& oph2)
               { return (opHitTime(oph1) < opHitTime(oph2)); });
 
-
-  bool oph_l = false; bool oph_r = false;
-
   // Search for ophits in either TPC. X-coordinate is flipped by convention
-  for(auto& oph : ophits) {
-    auto& opDet = fGeometry->OpDetGeoFromOpChannel(oph.OpChannel());
-    auto opDetXYZ = opDet.GetCenter();
-    if(opDetXYZ.X() < 0.) oph_r = true;
-    else oph_l = true;
-  }
   auto fm = computeFlashMetrics(ophits);
   fm.id = id;
   if(fSBND) fm.time = opflash.AbsTime();
   else if(fICARUS) fm.time = opflash.Time();
-  if(oph_l) {
-    fm.activity = (oph_r) ? kActivityInBoth : kActivityInLeft;
+
+  bool in_left = false, in_right = false;
+  if(fSBND) {
+    for(auto const& oph : ophits) {
+      auto ch = oph.OpChannel();
+      auto opDetX = fGeometry->OpDetGeoFromOpChannel(ch).GetCenter().X();
+      if(opDetX >= 0.) in_left = true;
+      else in_right = true;
+    }
+  }
+  else if(fICARUS) {
+    for(auto const& oph : ophits) {
+      auto ch = oph.OpChannel();
+      auto opDetXYZ = fGeometry->OpDetGeoFromOpChannel(ch).GetCenter();
+      if(!fGeoCryo->ContainsPosition(opDetXYZ)) continue;
+      unsigned t = icarusPDinTPC(ch);
+      if(t/fTPCPerDriftVolume == kRght) in_right = true;
+      else if(t/fTPCPerDriftVolume == kLeft) in_left = true;
+    }
+  }
+  if(in_left) {
+    fm.activity = (in_right) ? kActivityInBoth : kActivityInLeft;
   }
   else fm.activity = kActivityInRght;
   if(fUseOpCoords) {
@@ -997,10 +1005,20 @@ bool FlashPredict::isConcurrent(
   unsigned ophsInVolume,
   unsigned hitsInVolume) const
 {
-  return (hitsInVolume == kActivityInBoth ||
-          hitsInVolume == ophsInVolume    ||
-          ophsInVolume == kActivityInBoth ||
-          !fForceConcurrence);
+  bool is_concurrent = true;
+  if(hitsInVolume != ophsInVolume) {
+    if(fSBND) {
+      if(fForceConcurrence && fIsSimple) is_concurrent = false;
+      else if((hitsInVolume < kActivityInBoth) &&
+              (ophsInVolume < kActivityInBoth)) is_concurrent = false;
+    }
+    else if(fICARUS) {
+      if((hitsInVolume < kActivityInBoth) &&
+         (ophsInVolume < kActivityInBoth)) is_concurrent = false;
+      else if(fForceConcurrence && hitsInVolume == kActivityInBoth && fIsSimple) is_concurrent = false;
+    }
+  }
+  return is_concurrent;
 }
 
 FlashPredict::Score FlashPredict::computeScore(
