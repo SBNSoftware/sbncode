@@ -806,7 +806,8 @@ namespace sbn {
     const float length = shower->Length();
     shw_openAngle      = TMath::RadToDeg() * shower->OpenAngle();
     if(shw_openAngle < 0)
-      std::cout << "============================ shw_openAngle: " << shw_openAngle << std::endl;
+      shw_openAngle = -10.f;
+
     const TVector3 start = shower->ShowerStart();
     const TVector3 end   = start + length * shower->Direction();
 
