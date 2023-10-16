@@ -581,6 +581,9 @@ namespace sbn {
     trueEndProcess  = trueParticle->EndProcess();
     trueEndMomentum = trueParticle->EndMomentum().Vect().Mag();
 
+    if(trueParticle->Process() == "primary")
+      return;
+
     const simb::MCParticle* trueMother = particleInv->TrackIdToParticle_P(trueParticle->Mother());
 
     if(trueMother == NULL)
