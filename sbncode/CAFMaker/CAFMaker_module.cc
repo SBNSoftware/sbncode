@@ -1671,6 +1671,25 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceCRUMBS(slcCRUMBS, recslc);
     FillSliceBarycenter(slcHits, slcSpacePoints, recslc);
 
+    double min_dist = 1e9;
+    double early_time = 1e9;
+    for(const auto& flash: srflashes) {
+      // Hack for ICARUS to check if flash is in the same cryostat as slice
+      // Not sure this will give the right answer for SBND since we never want this
+      // condition to be true in SBND.
+      if(flash.cryo != (recslc.charge_center.x > 0)) continue;
+      double dist = std::abs(flash.center.z - recslc.charge_center.z);
+      if(dist < min_dist) {
+        min_dist = dist;
+        recslc.nearest_flash = flash;
+      }
+      // Use a slightly larger window for time since I'm not sure what time in data will look like
+      if(flash.firsttime > -0.2 && flash.firsttime < 1.8 && flash.firsttime < early_time) {
+        early_time = flash.firsttime;
+        recslc.earliest_flash = flash;
+      }
+    }
+
     // select slice
     if (!SelectSlice(recslc, fParams.CutClearCosmic())) continue;
 
