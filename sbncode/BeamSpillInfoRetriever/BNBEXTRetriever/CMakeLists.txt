@@ -1,5 +1,5 @@
 
-cet_build_plugin(EXTRetriever art::module
+cet_build_plugin(BNBEXTRetriever art::module
     LIBRARIES
         art::Persistency_Common
         art::Utilities canvas::canvas

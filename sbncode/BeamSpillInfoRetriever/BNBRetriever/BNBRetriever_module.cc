@@ -20,7 +20,7 @@
 #include "larcorealg/CoreUtils/counter.h"
 
 #include "artdaq-core/Data/Fragment.hh"
-#include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerV2Fragment.hh"
+#include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerV3Fragment.hh"
 
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
 
@@ -245,23 +245,23 @@ sbn::BNBRetriever::TriggerInfo_t sbn::BNBRetriever::extractTriggerInfo(art::Even
   // 2. the time of the previously triggered event, t_previous_event (NOTE: Events are non-sequential!)
   // 3. the number of beam spills since the previously triggered event, number_of_gates_since_previous_event
   
-  auto const & raw_data = e.getProduct< std::vector<artdaq::Fragment> >({ raw_data_label, "ICARUSTriggerV2" });
+  auto const & raw_data = e.getProduct< std::vector<artdaq::Fragment> >({ raw_data_label, "ICARUSTriggerV3" });
   
   TriggerInfo_t triggerInfo;
 
   for(auto raw_datum : raw_data){
    
     uint64_t artdaq_ts = raw_datum.timestamp();
-    icarus::ICARUSTriggerV2Fragment frag(raw_datum);
+    icarus::ICARUSTriggerV3Fragment frag(raw_datum);
     std::string data = frag.GetDataString();
     char *buffer = const_cast<char*>(data.c_str());
-    icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerV2String(buffer);
+    icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerV3String(buffer);
     triggerInfo.gate_type = datastream_info.gate_type;
-    triggerInfo.number_of_gates_since_previous_event = frag.getDeltaGatesBNB();
+    triggerInfo.number_of_gates_since_previous_event = frag.getDeltaGatesBNBMaj();
   
     triggerInfo.t_current_event = static_cast<double>(artdaq_ts)/(1000000000.0); //check this offset...
     if(triggerInfo.gate_type == 1)
-      triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampBNB()))/(1e9);
+      triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampBNBMaj()))/(1e9);
     else
       triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampOther()))/(1000000000.0);
     
