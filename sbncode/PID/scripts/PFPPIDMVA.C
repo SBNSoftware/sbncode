@@ -27,7 +27,7 @@ void PFPPIDMVA()
   pfpTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv2/NCPiZeroAv2_intrnue.root");
   pfpTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv2/NCPiZeroAv2_intime.root");
 
-  TCut generic_cuts = "!unambiguousSlice && trk_length > 5 && showerEnergy > 10";
+  TCut generic_cuts = "!unambiguousSlice && (trk_length > 3 || showerEnergy > 10)";
 
   TTree *electronTree = pfpTree->CopyTree("std::abs(truePDG)==11" + generic_cuts);
   TTree *muonTree     = pfpTree->CopyTree("std::abs(truePDG)==13" + generic_cuts);
