@@ -255,10 +255,10 @@ product			version		qual	flags		<table_format=2>
 genie_xsec		v3_04_00	-
 larcv2			v2_1_3		-
 larsoft			v09_79_00	-
-sbnanaobj		v09_21_04	-
+sbnanaobj		v09_21_05	-
 sbndaq_artdaq_core	v1_08_00of1	-
 sbndata			v01_05		-
-sbnobj			v09_17_08	-
+sbnobj			v09_17_09	-
 systematicstools	v01_03_03	-
 nusystematics		v01_03_12	-
 cetmodules		v3_21_01	-	only_for_build
