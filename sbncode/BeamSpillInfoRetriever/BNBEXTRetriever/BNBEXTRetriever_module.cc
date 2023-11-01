@@ -78,6 +78,8 @@ private:
   // input labels
   std::string raw_data_label_;
   float TotalEXTCounts;  
+  float totalMinBias;
+  float evtCount;
   float scale_factor;
 
 };
@@ -90,6 +92,8 @@ sbn::BNBEXTRetriever::BNBEXTRetriever(Parameters const& params)
  
   produces< std::vector< sbn::EXTCountInfo >, art::InSubRun >();
   TotalEXTCounts = 0;
+  totalMinBias = 0;
+  evtCount = 0;
   scale_factor = 0;
 }
 
@@ -114,9 +118,14 @@ void sbn::BNBEXTRetriever::produce(art::Event& e)
     icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerV3String(buffer);
     gate_type = datastream_info.gate_type;
     number_of_gates_since_previous_event = frag.getDeltaGatesBNBOffMaj();
-    scale_factor = 1. - (1./frag.getDeltaGatesBNBOffMinbias());
-    std::cout << "BNB OFF MAJ : " << frag.getDeltaGatesBNBOffMaj() << std::endl; 
-    std::cout << "Scale Factor : " << scale_factor << std::endl; 
+    
+    if(frag.getDeltaGatesBNBOffMinbias() > 0){
+      evtCount++;  
+      totalMinBias += frag.getDeltaGatesBNBOffMinbias();
+    }
+    
+    //    std::cout << "BNB OFF MAJ : " << frag.getDeltaGatesBNBOffMaj() << std::endl; 
+    //    std::cout << "Scale Factor : " << scale_factor << std::endl; 
 
   }
   
@@ -125,11 +134,11 @@ void sbn::BNBEXTRetriever::produce(art::Event& e)
   {
     // Keep track of the number of beam gates the DAQ thinks 
     //   are in this file
-    TotalEXTCounts += number_of_gates_since_previous_event*scale_factor;
+    TotalEXTCounts += number_of_gates_since_previous_event;
    
       //Store everything in our data-product
       sbn::EXTCountInfo extInfo;
-      extInfo.gates_since_last_trigger = number_of_gates_since_previous_event*scale_factor;
+      extInfo.gates_since_last_trigger = number_of_gates_since_previous_event;
 
       fOutExtInfos.push_back(extInfo);
       // We do not write these to the art::Events because 
@@ -142,14 +151,31 @@ void sbn::BNBEXTRetriever::produce(art::Event& e)
 
 void sbn::BNBEXTRetriever::beginSubRun(art::SubRun& sr)
 {
+  TotalEXTCounts = 0;
+  totalMinBias = 0;
+  evtCount = 0;
+  scale_factor = 0;
   return;
 }
 
-//____________________________________________________________________________                                                                                                                                                                                      
+//____________________________________________________________________________                                                                                                                                                                                     
 void sbn::BNBEXTRetriever::endSubRun(art::SubRun& sr)
 {
   // We will add all of the EXTCountInfo data-products to the 
   // art::SubRun so it persists 
+
+  if(evtCount != 0 && totalMinBias != 0)
+    scale_factor = 1. - (evtCount/totalMinBias);
+  else
+    std::cout << "FAILED! " << std::endl;
+  // probably want to throw an exception here
+
+  for(auto ExtInfo : fOutExtInfos){
+    
+    ExtInfo.gates_since_last_trigger *= scale_factor;
+    
+  } 
+
   auto p =  std::make_unique< std::vector< sbn::EXTCountInfo > >(fOutExtInfos);
 
   sr.put(std::move(p), art::subRunFragment());
