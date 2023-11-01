@@ -73,6 +73,7 @@ private:
   float _x_cut; // cm, only saves neutrinos with x in [-_xcut, +_xcut] (to be set via fcl)
   float _y_cut; // cm, only saves neutrinos with y in [-_ycut, +_ycut] (to be set via fcl)
 
+  bool _add_systs; // wheter or not to add systs
 
   const TDatabasePDG *_pdg_database = TDatabasePDG::Instance();
 
@@ -272,38 +273,40 @@ void FluxReaderAna::analyze(art::Event const& e)
     }
 
     // Flux weights
-    std::vector<art::Ptr<sbn::evwgh::EventWeightMap>> flux_ewm_v = mct_to_fluxewm.at(inu);
-    if (flux_ewm_v.size() != 1) {
-      std::cout << "[FluxReaderAna] EventWeightMap of " << _flux_eventweight_multisim_producer << " bigger than 1?" << std::endl;
-    }
-    std::map<std::string, std::vector<float>> evtwgt_map = *(flux_ewm_v[0]);
+    if (_add_systs) {
+      std::vector<art::Ptr<sbn::evwgh::EventWeightMap>> flux_ewm_v = mct_to_fluxewm.at(inu);
+      if (flux_ewm_v.size() != 1) {
+        std::cout << "[FluxReaderAna] EventWeightMap of " << _flux_eventweight_multisim_producer << " bigger than 1?" << std::endl;
+      }
+      std::map<std::string, std::vector<float>> evtwgt_map = *(flux_ewm_v[0]);
 
-    _evtwgt_flux_oneweight.clear();
+      _evtwgt_flux_oneweight.clear();
 
-    std::vector<float> previous_weights;
-    std::vector<float> final_weights;
+      std::vector<float> previous_weights;
+      std::vector<float> final_weights;
 
-    int countFunc = 0;
-    for(auto it : evtwgt_map) {
-      std::string func_name = it.first;
-      std::vector<float> weight_v = it.second;
+      int countFunc = 0;
+      for(auto it : evtwgt_map) {
+        std::string func_name = it.first;
+        std::vector<float> weight_v = it.second;
 
-      if (previous_weights.size() == 0) {
-        previous_weights.resize(weight_v.size(), 1.);
-        final_weights.resize(weight_v.size(), 1.);
+        if (previous_weights.size() == 0) {
+          previous_weights.resize(weight_v.size(), 1.);
+          final_weights.resize(weight_v.size(), 1.);
+        }
+
+        countFunc++;
+
+        // Construct a single weight
+        std::transform(previous_weights.begin(), previous_weights.end(),
+                       weight_v.begin(),
+                       final_weights.begin(),
+                       std::multiplies<float>());
+        previous_weights = final_weights;
       }
 
-      countFunc++;
-
-      // Construct a single weight
-      std::transform(previous_weights.begin(), previous_weights.end(),
-                     weight_v.begin(),
-                     final_weights.begin(),
-                     std::multiplies<float>());
-      previous_weights = final_weights;
+      _evtwgt_flux_oneweight = final_weights;
     }
-
-    _evtwgt_flux_oneweight = final_weights;
 
     _tree->Fill();
   }

@@ -66,13 +66,14 @@ physics:
       # 49000 cm is ICARUS location in SBND coordinate system (600 - 110) m
       # 36000 cm is MicroBooNE location in SBND coordinate system (470 - 110) m
       ApplyPositionCuts: true
-      XCut: 200 # cm
-      YCut: 200 # cm
+      XCut: 400 # cm
+      YCut: 400 # cm
       RequestedNuPDGs: [12, -12] # Keep neutrinos with these PDGs
     }
   }
 
-  filter: [ rns, fluxfilter, fluxweight ]
+  # filter: [ rns, fluxfilter, fluxweight ]
+  filter: [ rns, fluxweight ]
   ana: [ fluxana ]
   stream1: [ out1 ]
   trigger_paths: [ filter ]
