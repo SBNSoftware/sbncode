@@ -91,9 +91,9 @@ void TrainCRUMBSInstance(const TString outDirName, TTree *inputTree,
   dataloader->AddVariable("pds_FMTime","FM Time","#mu s",'F');
 
   dataloader->AddVariable("crt_TrackScore","CRT Track Match Score","",'F');
-  dataloader->AddVariable("crt_HitScore","CRT Hit Match Score","",'F');
+  dataloader->AddVariable("crt_SPScore","CRT SpacePoint Match Score","",'F');
   dataloader->AddVariable("crt_TrackTime","CRT Track Match Time","#mu s",'F');
-  dataloader->AddVariable("crt_HitTime","CRT Hit Match Time","#mu s",'F');
+  dataloader->AddVariable("crt_SPTime","CRT SpacePoint Match Time","#mu s",'F');
 
   dataloader->AddSignalTree    (inputTree, signalWeight);
   dataloader->AddBackgroundTree(inputTree, backgroundWeight);
