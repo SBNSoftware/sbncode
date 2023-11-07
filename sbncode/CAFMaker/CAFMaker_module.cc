@@ -106,6 +106,7 @@
 #include "sbnobj/Common/SBNEventWeight/EventWeightMap.h"
 #include "sbnobj/Common/SBNEventWeight/EventWeightParameterSet.h"
 #include "sbnobj/Common/Reco/MVAPID.h"
+#include "sbnobj/Common/Reco/CNNScore.h"
 #include "sbnobj/Common/Reco/ScatterClosestApproach.h"
 #include "sbnobj/Common/Reco/StoppingChi2Fit.h"
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
@@ -1572,6 +1573,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<sbn::MVAPID>(slcShowers, evt,
           fParams.ShowerRazzleLabel() + slice_tag_suff);
 
+    art::FindOneP<sbn::PFPCNNScore> foCNNScores = 
+      FindOnePStrict<sbn::PFPCNNScore>(fmPFPart, evt,
+          fParams.CNNScoreLabel() + slice_tag_suff);
+
     art::FindManyP<recob::Vertex> fmVertex =
       FindManyPStrict<recob::Vertex>(fmPFPart, evt,
              fParams.PFParticleLabel() + slice_tag_suff);
@@ -1743,6 +1748,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
       const larpandoraobj::PFParticleMetadata *pfpMeta = (fmPFPMeta.at(iPart).empty()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
       FillPFPVars(thisParticle, primary, pfpMeta, thisPFPT0, pfp);
+
+      if (foCNNScores.isValid()) {
+        const sbn::PFPCNNScore *cnnScores = foCNNScores.at(iPart).get();
+        FillCNNScores(thisParticle, cnnScores, pfp);
+      }
 
       if (!thisTrack.empty())  { // it has a track!
         assert(thisTrack.size() == 1);
