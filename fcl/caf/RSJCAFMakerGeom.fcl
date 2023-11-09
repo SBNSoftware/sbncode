@@ -1,0 +1,32 @@
+BEGIN_PROLOG
+
+#   This file defines the configuration for the job module "CAFMaker" 
+#   Inspired by the NOvA CAFMaker package.
+
+standard_cafmaker:{
+    module_type:          CAFMaker
+
+#    SliceLabel00:         "pandoraGausCryo0"
+#    SliceLabel01:         "pandora"
+
+    CAFFilename:          "" # Provide a string to override the automatic filename
+    DataTier:             "caf" # Provide a string to override automatic filename
+    FileExtension:        ".caf.root"
+    GeneratorInput:       "generator"
+    SystWeightLabels:     [] # If weights exist they are likely "genieweight" and "fluxweight"
+    XMinFV:               [-184.15, 1.5]
+    XMaxFV:               [-1.5, 184.15]
+    YMinFV:               [-185, -185]
+    YMaxFV:               [ 185,  185]
+    ZMinFV:               [ 15,  15]
+    ZMaxFV:               [420, 420]
+    XMinAV:               [-199.15, 0]
+    XMaxAV:               [0, 199.15]
+    YMinAV:               [-200, -200]
+    YMaxAV:               [200, 200]
+    ZMinAV:               [0, 0]
+    ZMaxAV:               [500, 500]
+    StrictMode:           false    # Abort if any required product is not found, unless the label is empty
+}
+
+END_PROLOG

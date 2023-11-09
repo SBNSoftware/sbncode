@@ -22,11 +22,15 @@ float ContainedLength(const TVector3 &v0, const TVector3 &v1,
 bool FRFillNumuCC(const simb::MCTruth &mctruth,
                   const std::vector<art::Ptr<sim::MCTrack>> &mctracks,
                   const std::vector<geo::BoxBoundedGeo> &volumes,
+                  const std::map<std::string, std::vector<float> > &customVolumes,
+                  const bool &proposalStyle,
                   TRandom &rand,
                   caf::SRFakeReco &fakereco);
 bool FRFillNueCC(const simb::MCTruth &mctruth,
                   const std::vector<caf::SRTrueParticle> &srparticle,
                   const std::vector<geo::BoxBoundedGeo> &volumes,
+                  const std::map<std::string, std::vector<float> > &customVolumes,
+                  const bool &proposalStyle,
                   TRandom &rand,
                   caf::SRFakeReco &fakereco);
 
@@ -68,7 +72,7 @@ double SmearLepton(const caf::SRTrueParticle &lepton, TRandom& rand) {
 
 double SmearHadron(const caf::SRTrueParticle &hadron, TRandom& rand) {
   const double smearing = 0.05;
-  const double true_E = hadron.startE - PDGMass(hadron.pdg) / 1000;
+  const double true_E = hadron.startE - PDGMass(hadron.pdg) / 1000.;
   const double smeared_E = rand.Gaus(true_E, smearing * true_E);
   return std::max(smeared_E, 0.0);
 }
@@ -243,13 +247,16 @@ namespace caf {
                          caf::SRSlice &srslice,
                          const std::vector<caf::SRTrueParticle> &srparticles,
                          const std::vector<art::Ptr<sim::MCTrack>> &mctracks,
-                         const std::vector<geo::BoxBoundedGeo> &volumes, TRandom &rand)
+                         const std::vector<geo::BoxBoundedGeo> &volumes, 
+                         const std::map<std::string, std::vector<float> > &customVolumes,
+                         const bool &proposalStyle,
+                         TRandom &rand)
   {
     caf::SRTruthMatch tmatch = MatchSlice2Truth(hits, neutrinos, srmc, inventory_service, clockData);
     if(tmatch.index >= 0) {
-      FRFillNumuCC(*neutrinos[tmatch.index], mctracks, volumes, rand, srslice.fake_reco);
+      FRFillNumuCC(*neutrinos[tmatch.index], mctracks, volumes, customVolumes, proposalStyle, rand, srslice.fake_reco);
       if(!srslice.fake_reco.filled)
-        FRFillNueCC(*neutrinos[tmatch.index], srparticles, volumes, rand, srslice.fake_reco);
+        FRFillNueCC(*neutrinos[tmatch.index], srparticles, volumes, customVolumes, proposalStyle, rand, srslice.fake_reco);
     }
   }//FillSliceFakeReco
 
@@ -366,7 +373,6 @@ namespace caf {
       const simb::MCNeutrino& nu = mctruth->GetNeutrino();
       srneutrino.isnc = nu.CCNC()  && (nu.Mode() != simb::kWeakMix);
       srneutrino.iscc = (!nu.CCNC()) && (nu.Mode() != simb::kWeakMix);
-      std::cout << " CC: " << srneutrino.iscc << " NC: " << srneutrino.isnc << std::endl;
       srneutrino.pdg = nu.Nu().PdgCode();
       srneutrino.targetPDG = nu.Target();
       srneutrino.hitnuc = nu.HitNuc();
@@ -659,12 +665,19 @@ namespace caf {
       }
     }
 
+    std::cout << " TrackID: " << particle.TrackId() << std::endl;
+    std::cout << " #IDEs:" << particle_ides.size() << std::endl;
+    std::cin.get();
     for (auto const &ide_pair: particle_ides) {
       const geo::WireID &w = ide_pair.first;
       const sim::IDE *ide = ide_pair.second;
 
+      std::cout << " visE: " << ide->energy / 1000. << ", w.Plane: " << w.Plane << ", w.Cryostat " << w.Cryostat << std::endl;
+      std::cin.get();
       if(w.Plane >= 0 && w.Plane < 3 && w.Cryostat < 2){
         srparticle.plane[w.Cryostat][w.Plane].visE += ide->energy / 1000. /* MeV -> GeV*/;
+        std::cout << " visE: " << ide->energy / 1000. << ", w.Plane: " << w.Plane << ", w.Cryostat " << w.Cryostat << std::endl;
+        std::cin.get();
       }
     }
 
@@ -836,14 +849,24 @@ namespace caf {
                     const std::vector<caf::SRTrueParticle> &srparticles,
                     const std::vector<art::Ptr<sim::MCTrack>> &mctracks,
                     const std::vector<geo::BoxBoundedGeo> &volumes,
+                    const std::map<std::string, std::vector<float> > &customVolumes,
+                    const bool &numuOnly,
+                    const bool &nueOnly,
+                    const bool &proposalStyle,
                     TRandom &rand,
                     std::vector<caf::SRFakeReco> &srfakereco) {
     // iterate and fill
     for (const art::Ptr<simb::MCTruth> mctruth: mctruths) {
       bool do_fill = false;
       caf::SRFakeReco this_fakereco;
-      do_fill = FRFillNumuCC(*mctruth, mctracks, volumes, rand, this_fakereco);
-      if(!do_fill) do_fill = FRFillNueCC(*mctruth, srparticles, volumes, rand, this_fakereco);
+      if(numuOnly) 
+        do_fill = FRFillNumuCC(*mctruth, mctracks, volumes, customVolumes, proposalStyle, rand, this_fakereco);
+      else if(nueOnly)
+        do_fill = FRFillNueCC(*mctruth, srparticles, volumes, customVolumes, proposalStyle, rand, this_fakereco);
+      else{
+        do_fill = FRFillNumuCC(*mctruth, mctracks, volumes, customVolumes, proposalStyle, rand, this_fakereco);
+        if(!do_fill) do_fill = FRFillNueCC(*mctruth, srparticles, volumes, customVolumes, proposalStyle, rand, this_fakereco);
+      }
 
       // TODO: others?
       // if (!do_fill) ...
@@ -851,7 +874,7 @@ namespace caf {
       if (do_fill) srfakereco.push_back(this_fakereco);
       
     }
-  }
+  } // FillFakeReco (services)
 
   std::map<int, caf::HitsEnergy> SetupIDHitEnergyMap(const std::vector<art::Ptr<recob::Hit>> &allHits,
                                                            const detinfo::DetectorClocksData &clockData, 
@@ -909,17 +932,11 @@ namespace caf {
 bool FRFillNumuCC(const simb::MCTruth &mctruth,
                   const std::vector<art::Ptr<sim::MCTrack>> &mctracks,
                   const std::vector<geo::BoxBoundedGeo> &volumes,
+                  const std::map<std::string, std::vector<float> > &customVolumes,
+                  const bool &proposalStyle,
                   TRandom &rand,
                   caf::SRFakeReco &fakereco) {
   // Configuration -- TODO: make configurable?
-
-  // Fiducial Volume
-  float xmin = 10.;
-  float xmax = 10.;
-  float ymin = 10.;
-  float ymax = 10.;
-  float zmin = 10.;
-  float zmax = 100.;
 
   // energy smearing
   float hadron_smearing = 0.05;
@@ -942,17 +959,58 @@ bool FRFillNumuCC(const simb::MCTruth &mctruth,
   // first check if neutrino exists
   if (!mctruth.NeutrinoSet()) return false;
 
-  // then check if fiducial
+  // Geometry stuff
+  bool customFV = false;
+  if(customVolumes.find("XMinFV")->second.size() > 0) customFV = true;
+
+  // Setup the boxes
   int cryo_index = -1;
-  for (unsigned i = 0; i < volumes.size(); i++) {
-    const geo::BoxBoundedGeo &vol = volumes[i];
-    geo::BoxBoundedGeo FV(vol.MinX() + xmin, vol.MaxX() - xmax, vol.MinY() + ymin, vol.MaxY() - ymax, vol.MinZ() + zmin, vol.MaxZ() - zmax);
-    if (FV.ContainsPosition(mctruth.GetNeutrino().Nu().Position().Vect())) {
-      cryo_index = i;
-      break;
+  // Fiducial Volume
+  float xmin = 10.;
+  float xmax = 10.;
+  float ymin = 10.;
+  float ymax = 10.;
+  float zmin = 10.;
+  float zmax = 100.;
+
+  if(!customFV){
+    // then check if fiducial
+    for (unsigned i = 0; i < volumes.size(); i++) {
+      const geo::BoxBoundedGeo &vol = volumes[i];
+      geo::BoxBoundedGeo FV(vol.MinX() + xmin, vol.MaxX() - xmax, vol.MinY() + ymin, vol.MaxY() - ymax, vol.MinZ() + zmin, vol.MaxZ() - zmax);
+      if (FV.ContainsPosition(mctruth.GetNeutrino().Nu().Position().Vect())) {
+        cryo_index = i;
+        break;
+      }
     }
   }
-
+  else{
+    for(unsigned int v = 0; v < customVolumes.find("XMinFV")->second.size(); ++v){
+      geo::BoxBoundedGeo FV(customVolumes.find("XMinFV")->second.at(v),
+                            customVolumes.find("XMaxFV")->second.at(v), 
+                            customVolumes.find("YMinFV")->second.at(v),
+                            customVolumes.find("YMaxFV")->second.at(v), 
+                            customVolumes.find("ZMinFV")->second.at(v),
+                            customVolumes.find("ZMaxFV")->second.at(v));
+      if (FV.ContainsPosition(mctruth.GetNeutrino().Nu().Position().Vect())){
+        bool cryoFound = false;
+        for (unsigned i = 0; i < volumes.size(); i++) {
+          const geo::BoxBoundedGeo &vol = volumes[i];
+          geo::BoxBoundedGeo AV(vol.MinX(), vol.MaxX(), vol.MinY(), vol.MaxY(), vol.MinZ(), vol.MaxZ());
+          if (AV.ContainsPosition(mctruth.GetNeutrino().Nu().Position().Vect())) {
+            cryo_index = i;
+            cryoFound = true;
+            break;
+          }
+        }
+        // Check if a cryostat has been found for this event, if not error
+        if(!cryoFound){
+          std::cerr << " Error: True vertex inside custom fiducial volume but corresponding cryostat not found " << std::endl;
+          std::exit(1);
+        }
+      }
+    }
+  }
   if (cryo_index == -1) return false;
 
   std::vector<geoalgo::AABox> aa_volumes;
@@ -960,24 +1018,29 @@ bool FRFillNumuCC(const simb::MCTruth &mctruth,
   aa_volumes.emplace_back(v.MinX(), v.MinY(), v.MinZ(), v.MaxX(), v.MaxY(), v.MaxZ());
 
   // look for CC lepton or a \pi^+/- which can "fake" a numu CC interaction
-
   int lepton_ind = -1;
+
+  // Set signal flag for this event if we find a muon
+  bool is_signal = false;
   // CC lepton
-  if (abs(mctruth.GetNeutrino().Nu().PdgCode()) == 14 && mctruth.GetNeutrino().CCNC() == 0) {
+  if ((!proposalStyle && abs(mctruth.GetNeutrino().Nu().PdgCode()) == 14 && mctruth.GetNeutrino().CCNC() == 0) || proposalStyle) {
     for (int i = 0; i < (int)mctracks.size(); i++) {
       if (isFromNuVertex(mctruth, *mctracks[i]) && abs(mctracks[i]->PdgCode()) == 13 && mctracks[i]->Process() == "primary") {
         if (lepton_ind == -1 || mctracks[lepton_ind]->Start().E() < mctracks[i]->Start().E()) {
           lepton_ind = i;
+          is_signal = true;
         }
       }
     }
   }
   // NC pion
-  else if (mctruth.GetNeutrino().CCNC() == 1) {
-    for (int i = 0; i < (int)mctracks.size(); i++) {
-      if (isFromNuVertex(mctruth, *mctracks[i]) && abs(mctracks[i]->PdgCode()) == 211 && mctracks[i]->Process() == "primary") {
-        if (lepton_ind == -1 || mctracks[lepton_ind]->Start().E() < mctracks[i]->Start().E()) {
-          lepton_ind = i;
+  if ((!proposalStyle && abs(mctruth.GetNeutrino().Nu().PdgCode()) != 14 && mctruth.GetNeutrino().CCNC() == 1) || proposalStyle) {
+    if(lepton_ind == -1){
+      for (int i = 0; i < (int)mctracks.size(); i++) {
+        if (isFromNuVertex(mctruth, *mctracks[i]) && abs(mctracks[i]->PdgCode()) == 211 && mctracks[i]->Process() == "primary") {
+          if (lepton_ind == -1 || mctracks[lepton_ind]->Start().E() < mctracks[i]->Start().E()) {
+            lepton_ind = i;
+          }
         }
       }
     }
@@ -986,13 +1049,16 @@ bool FRFillNumuCC(const simb::MCTruth &mctruth,
   // no matching track -- no fake reco
   if (lepton_ind == -1) return false;
 
+  // Signal definition in proposal is CC only
+  if(mctruth.GetNeutrino().CCNC() == 0 && proposalStyle) is_signal = true;
+
   // Now set the "lepton"
   caf::SRFakeRecoParticle fake_lepton;
 
   fake_lepton.pid = 13;
   fake_lepton.contained = false;
   for (const geo::BoxBoundedGeo &vol: volumes) {
-    if (vol.ContainsPosition(mctracks[lepton_ind]->Start().Position().Vect()) && vol.ContainsPosition(mctracks[lepton_ind]->Start().Position().Vect())) {
+    if (vol.ContainsPosition(mctracks[lepton_ind]->Start().Position().Vect()) && vol.ContainsPosition(mctracks[lepton_ind]->End().Position().Vect())) {
       fake_lepton.contained = true;
     }
   }
@@ -1003,10 +1069,13 @@ bool FRFillNumuCC(const simb::MCTruth &mctruth,
   if (fake_lepton.contained && fake_lepton.len < contained_length_cut) return false;
   if (!fake_lepton.contained && fake_lepton.len < exiting_length_cut) return false;
 
-
   // smear the lepton energy
   float smearing = fake_lepton.contained ? lepton_contained_smearing : lepton_exiting_smearing(fake_lepton.len);
   float ke = (mctracks[lepton_ind]->Start().E() - PDGMass(mctracks[lepton_ind]->PdgCode())) / 1000. /* MeV -> GeV*/;
+  
+  // Apply the kinetic energy cut
+  if(ke < hadronic_energy_threshold) return false;
+
   fake_lepton.ke = rand.Gaus(ke, smearing * ke);
   fake_lepton.ke = std::max(fake_lepton.ke, 0.f);
 
@@ -1015,7 +1084,7 @@ bool FRFillNumuCC(const simb::MCTruth &mctruth,
 
   for (int i = 0; i < (int)mctracks.size(); i++) {
     if (isFromNuVertex(mctruth, *mctracks[i]) // from this interaction
-     && (abs(mctracks[i]->PdgCode()) == 211 || abs(mctracks[i]->PdgCode() == 111) || abs(mctracks[i]->PdgCode()) == 321 || abs(mctracks[i]->PdgCode()) == 2212) // hadronic
+     && (abs(mctracks[i]->PdgCode()) == 211 || abs(mctracks[i]->PdgCode()) == 321 || abs(mctracks[i]->PdgCode()) == 2212) // hadronic
      && mctracks[i]->Process() == "primary" // primary
      && i != lepton_ind // not the fake lepton
     ) {
@@ -1023,11 +1092,11 @@ bool FRFillNumuCC(const simb::MCTruth &mctruth,
       hadron.pid = abs(mctracks[i]->PdgCode());
       hadron.contained = false;
       for (const geo::BoxBoundedGeo &vol: volumes) {
-        if (vol.ContainsPosition(mctracks[i]->Start().Position().Vect()) && vol.ContainsPosition(mctracks[i]->Start().Position().Vect())) {
+        if (vol.ContainsPosition(mctracks[i]->Start().Position().Vect()) && vol.ContainsPosition(mctracks[i]->End().Position().Vect())) {
           hadron.contained = true;
         }
       }
-      hadron.len = ContainedLength(mctracks[i]->Start().Position().Vect(), mctracks[i]->Start().Position().Vect(), aa_volumes);
+      hadron.len = ContainedLength(mctracks[i]->Start().Position().Vect(), mctracks[i]->End().Position().Vect(), aa_volumes);
       hadron.costh = mctracks[i]->Start().Position().Vect().CosTheta();
 
       float ke = (mctracks[i]->Start().E() - PDGMass(mctracks[i]->PdgCode())) / 1000. /* MeV -> GeV*/;
@@ -1056,11 +1125,14 @@ bool FRFillNumuCC(const simb::MCTruth &mctruth,
   fakereco.vtx.z = vertex.Z();
 
   // signal
-  if (abs(mctruth.GetNeutrino().Nu().PdgCode()) == 14 && mctruth.GetNeutrino().CCNC() == 0) {
+  if (is_signal) {
     fakereco.wgt = 0.8;
   }
   // bkg
   else {
+    //if(proposalStyle)
+    //  fakereco.wgt = 0.8;
+    //else
     fakereco.wgt = 1.;
   }
   fakereco.nhad = fakereco.hadrons.size();
@@ -1072,7 +1144,7 @@ bool FRFillNumuCC(const simb::MCTruth &mctruth,
     if(abs(had.pid) == 321) fakereco.nkaon++;
     if(abs(had.pid) == 2212) fakereco.nproton++;
   }
-    
+  
   fakereco.filled = true;
 
   return true;
@@ -1081,17 +1153,11 @@ bool FRFillNumuCC(const simb::MCTruth &mctruth,
 bool FRFillNueCC(const simb::MCTruth &mctruth,
                   const std::vector<caf::SRTrueParticle> &srparticles,
                   const std::vector<geo::BoxBoundedGeo> &volumes,
+                  const std::map<std::string, std::vector<float> > &customVolumes,
+                  const bool &proposalStyle,
                   TRandom &rand,
                   caf::SRFakeReco &fakereco) {
   // Configuration -- TODO: make configurable?
-
-  // Fiducial Volume
-  float xmin = 10.;
-  float xmax = 10.;
-  float ymin = 10.;
-  float ymax = 10.;
-  float zmin = 10.;
-  float zmax = 100.;
 
   // energy smearing
 /*  auto smear_lepton = [&rand](const caf::SRTrueParticle &lepton) -> float {
@@ -1114,23 +1180,67 @@ bool FRFillNueCC(const simb::MCTruth &mctruth,
 
   fakereco.filled = false;
 
+  std::cout << __LINE__ << std::endl;
   // first check if neutrino exists
   if (!mctruth.NeutrinoSet()) return false;
 
+  std::cout << __LINE__ << std::endl;
   TVector3 nuVtx = mctruth.GetNeutrino().Nu().Position().Vect();
 
-  // then check if fiducial
+  // Geometry stuff
+  bool customVolume = false;
+  if(customVolumes.find("XMin")->second.size() > 0) customVolume = true;
+
+  // Setup the boxes
   int cryo_index = -1;
-  for (unsigned i = 0; i < volumes.size(); i++) {
-    const geo::BoxBoundedGeo &vol = volumes[i];
-    geo::BoxBoundedGeo FV(vol.MinX() + xmin, vol.MaxX() - xmax, vol.MinY() + ymin, vol.MaxY() - ymax, vol.MinZ() + zmin, vol.MaxZ() - zmax);
-    if (FV.ContainsPosition(nuVtx)) {
-      cryo_index = i;
-      break;
+  if(!customVolume){
+    // Fiducial Volume
+    float xmin = 10.;
+    float xmax = 10.;
+    float ymin = 10.;
+    float ymax = 10.;
+    float zmin = 10.;
+    float zmax = 100.;
+
+    // then check if fiducial
+    for (unsigned i = 0; i < volumes.size(); i++) {
+      const geo::BoxBoundedGeo &vol = volumes[i];
+      geo::BoxBoundedGeo FV(vol.MinX() + xmin, vol.MaxX() - xmax, vol.MinY() + ymin, vol.MaxY() - ymax, vol.MinZ() + zmin, vol.MaxZ() - zmax);
+      if (FV.ContainsPosition(nuVtx)) {
+        cryo_index = i;
+        break;
+      }
     }
   }
-
+  else{
+    for(unsigned int v = 0; v < customVolumes.find("XMin")->second.size(); ++v){
+      geo::BoxBoundedGeo FV(customVolumes.find("XMin")->second.at(v),
+                            customVolumes.find("XMax")->second.at(v), 
+                            customVolumes.find("YMin")->second.at(v),
+                            customVolumes.find("YMax")->second.at(v), 
+                            customVolumes.find("ZMin")->second.at(v),
+                            customVolumes.find("ZMax")->second.at(v));
+      if (FV.ContainsPosition(mctruth.GetNeutrino().Nu().Position().Vect())) {
+        bool cryoFound = false;
+        for (unsigned i = 0; i < volumes.size(); i++) {
+          const geo::BoxBoundedGeo &vol = volumes[i];
+          geo::BoxBoundedGeo AV(vol.MinX(), vol.MaxX(), vol.MinY(), vol.MaxY(), vol.MinZ(), vol.MaxZ());
+          if (AV.ContainsPosition(mctruth.GetNeutrino().Nu().Position().Vect())) {
+            cryo_index = i;
+            cryoFound = true;
+            break;
+          }
+        }
+        // Check if a cryostat has been found for this event, if not error
+        if(!cryoFound){
+          std::cerr << " Error: True vertex inside custom fiducial volume but corresponding cryostat not found " << std::endl;
+          std::exit(1);
+        }
+      }
+    }
+  }
   if (cryo_index == -1) return false;
+  std::cout << __LINE__ << std::endl;
 
   std::vector<geoalgo::AABox> aa_volumes;
   const geo::BoxBoundedGeo &v = volumes.at(cryo_index);
@@ -1143,28 +1253,35 @@ bool FRFillNueCC(const simb::MCTruth &mctruth,
 
   std::vector<const caf::SRTrueParticle*> lepton_candidates;
   for(const auto& particle: srparticles) {
+    std::cout << " Particles" << std::endl;
     const int pdg = std::abs(particle.pdg);
     const float distance_from_vertex = std::hypot(nuVtx.X() - particle.start.x,
                                                   nuVtx.Y() - particle.start.y,
                                                   nuVtx.Z() - particle.start.z);
+    if(pdg == 11 && distance_from_vertex < 5){
+      lepton_candidates.push_back(&particle);
+    }
+    /*
     if((pdg == 11 || pdg == 22) && distance_from_vertex < 5) {
       const auto parent = std::find_if(srparticles.begin(), srparticles.end(),
-        [&particle](const caf::SRTrueParticle& parent_candidate) -> bool {
+          [&particle](const caf::SRTrueParticle& parent_candidate) -> bool {
           return particle.parent == std::abs(parent_candidate.G4ID);
-        });
+          });
       if((parent == srparticles.end()
-           || !(std::abs((*parent).pdg) == 11 || std::abs((*parent).pdg) == 22))
-         && SmearLepton(particle, rand) > 0.1) {
+            || !(std::abs((*parent).pdg) == 11 || std::abs((*parent).pdg) == 22))
+          && SmearLepton(particle, rand) > 0.1) {
         lepton_candidates.push_back(&particle);
       }
-    }
+    }*/
   }
+  std::cout << " Lepton candidates: " << lepton_candidates.size() << std::endl;
   if(lepton_candidates.size() != 1) return false;
+  std::cout << __LINE__ << std::endl;
   
   const caf::SRTrueParticle* lepton = lepton_candidates[0];
   caf::SRFakeRecoParticle fake_lepton;
   fake_lepton.pid = 11;
-  fake_lepton.ke = SmearLepton(*lepton, rand) - PDGMass(11) / 1000;
+  fake_lepton.ke = SmearLepton(*lepton, rand) - PDGMass(11) / 1000.;
   // Should these be set for a shower?
   // fake_lepton.len = ???;
   // fake_lepton.costh = ???;
@@ -1181,7 +1298,7 @@ bool FRFillNueCC(const simb::MCTruth &mctruth,
                                                   nuVtx.Y() - particle.start.y,
                                                   nuVtx.Z() - particle.start.z);
 
-    if((pdg == 111 || pdg == 2212 || pdg == 211 || pdg == 321) && distance_from_vertex < 5
+    if((pdg == 2212 || pdg == 211 || pdg == 321) && distance_from_vertex < 5
        && particle.start_process == caf::kG4primary && ke > hadronic_energy_threshold) {
       caf::SRFakeRecoParticle fake_hadron;
       fake_hadron.pid = pdg;
@@ -1207,6 +1324,7 @@ bool FRFillNueCC(const simb::MCTruth &mctruth,
   
   if(lepton->pdg == 22 && hadronic_E > 0.05 && (TVector3(lepton->end) - nuVtx).Mag() > 3)
     return false;
+  std::cout << __LINE__ << std::endl;
 
   // Remaining photons undergo a dE/dx cut resulting in a 94% background rejection.
 
@@ -1231,13 +1349,17 @@ bool FRFillNueCC(const simb::MCTruth &mctruth,
     if(muon != NULL && ContainedLength(TVector3(muon->start), TVector3(muon->end), aa_volumes) > 100)
       return false;
   }
+  std::cout << __LINE__ << std::endl;
 
   // Events where the shower has an energy less than 200 MeV are removed
 
-  if((lepton->plane[0][2].visE + lepton->plane[1][2].visE) < 0.2) return false;
+  //if((lepton->plane[0][2].visE + lepton->plane[1][2].visE) < 0.2) return false;
+  std::cout << __LINE__ << std::endl;
 
   // total up the energy to get the reco neutrino energy
-  fakereco.nuE = fake_lepton.ke + PDGMass(11) / 1000 + hadronic_E;
+  fakereco.nuE = fake_lepton.ke + PDGMass(11) / 1000. + hadronic_E;
+  std::cout << " nuE: " << fakereco.nuE << " = " << fake_lepton.ke << " + " << PDGMass(11) / 1000. << " + " << hadronic_E << std::endl;
+  std::cin.get();
 
   // save the particles
   fakereco.lepton = fake_lepton;
@@ -1261,6 +1383,7 @@ bool FRFillNueCC(const simb::MCTruth &mctruth,
     if(abs(had.pid) == 2212) fakereco.nproton++;
   }
     
+  std::cout << __LINE__ << std::endl;
   fakereco.filled = true;
 
   return true;

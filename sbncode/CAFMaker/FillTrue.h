@@ -70,7 +70,10 @@ namespace caf
                          caf::SRSlice &srslice, 
                          const std::vector<caf::SRTrueParticle> &srparticles,
                          const std::vector<art::Ptr<sim::MCTrack>> &mctracks,
-                         const std::vector<geo::BoxBoundedGeo> &volumes, TRandom &rand);
+                         const std::vector<geo::BoxBoundedGeo> &volumes, 
+                         const std::map<std::string, std::vector<float> > &customVolumes,
+                         const bool &proposalStyle,
+                         TRandom &rand);
 
   void FillTrueGenParticle(const simb::MCParticle &particle,
         const std::vector<geo::BoxBoundedGeo> &active_volumes,
@@ -132,6 +135,10 @@ namespace caf
                     const std::vector<caf::SRTrueParticle> &srparticles, 
                     const std::vector<art::Ptr<sim::MCTrack>> &mctracks, 
                     const std::vector<geo::BoxBoundedGeo> &volumes,
+                    const std::map<std::string, std::vector<float> > &customVolumes,
+                    const bool &numuOnly,
+                    const bool &nueOnly,
+                    const bool &proposalStyle,
                     TRandom &rand,
                     std::vector<caf::SRFakeReco> &srfakereco);
 

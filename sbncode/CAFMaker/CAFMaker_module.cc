@@ -214,9 +214,18 @@ class CAFMaker : public art::EDProducer {
 
   Det_t fDet;  ///< Detector ID in caf namespace typedef
 
+  // FR selection options
+  bool fNumuOnly = false;
+  bool fNueOnly = false;
+  bool fCustomGeo = false;
+  bool fProposalStyle = false;
+  
   // volumes
   std::vector<std::vector<geo::BoxBoundedGeo>> fTPCVolumes;
   std::vector<geo::BoxBoundedGeo> fActiveVolumes;
+  std::map<std::string, std::vector<float>> fCustomVolumes;
+  std::vector<float> fXMinFVs, fXMaxFVs, fYMinFVs, fYMaxFVs, fZMinFVs, fZMaxFVs; // Vectors for a custom geometry
+  std::vector<float> fXMinAVs, fXMaxAVs, fYMinAVs, fYMaxAVs, fZMinAVs, fZMaxAVs; // Vectors for a custom geometry
 
   // random number generator for fake reco
   TRandom *fFakeRecoTRandom;
@@ -330,6 +339,60 @@ class CAFMaker : public art::EDProducer {
 
   produces<std::vector<caf::StandardRecord>>();
   //produces<art::Assns<caf::StandardRecord, recob::Slice>>();
+
+  // Collect the custom geometry if desired
+  fParams.XMinFV(fXMinFVs);
+  fParams.XMaxFV(fXMaxFVs);
+  fParams.YMinFV(fYMinFVs);
+  fParams.YMaxFV(fYMaxFVs);
+  fParams.ZMinFV(fZMinFVs);
+  fParams.ZMaxFV(fZMaxFVs);
+  if (fXMinFVs.size() > 0 &&
+      fXMaxFVs.size() > 0 &&
+      fYMinFVs.size() > 0 &&
+      fYMaxFVs.size() > 0 &&
+      fZMinFVs.size() > 0 &&
+      fZMaxFVs.size() > 0){
+    if(((fXMinFVs.size()+fXMaxFVs.size()+fYMinFVs.size()+fYMaxFVs.size()+fZMinFVs.size()+fZMaxFVs.size())/6. - fXMinFVs.size()) > std::numeric_limits<float>::epsilon()){
+      std::cerr << " Error: The Fiducial Volume coordinates do not have the same number of entries" << std::endl;
+      std::exit(1);
+    }
+    
+    // Initiiase the custom volume maps
+    fCustomVolumes.emplace("XMinFV",fXMinFVs);
+    fCustomVolumes.emplace("XMaxFV",fXMaxFVs);
+    fCustomVolumes.emplace("YMinFV",fYMinFVs);
+    fCustomVolumes.emplace("YMaxFV",fYMaxFVs);
+    fCustomVolumes.emplace("ZMinFV",fZMinFVs);
+    fCustomVolumes.emplace("ZMaxFV",fZMaxFVs);
+  }
+  
+  fParams.XMinAV(fXMinAVs);
+  fParams.XMaxAV(fXMaxAVs);
+  fParams.YMinAV(fYMinAVs);
+  fParams.YMaxAV(fYMaxAVs);
+  fParams.ZMinAV(fZMinAVs);
+  fParams.ZMaxAV(fZMaxAVs);
+  if (fXMinAVs.size() > 0 &&
+      fXMaxAVs.size() > 0 &&
+      fYMinAVs.size() > 0 &&
+      fYMaxAVs.size() > 0 &&
+      fZMinAVs.size() > 0 &&
+      fZMaxAVs.size() > 0){
+    if(((fXMinAVs.size()+fXMaxAVs.size()+fYMinAVs.size()+fYMaxAVs.size()+fZMinAVs.size()+fZMaxAVs.size())/6. - fXMinAVs.size()) > std::numeric_limits<float>::epsilon()){
+      std::cerr << " Error: The Active Volume coordinates do not have the same number of entries" << std::endl;
+      std::exit(1);
+    }
+    fCustomGeo = true;
+    
+    // Initiiase the custom volume maps
+    fCustomVolumes.emplace("XMinAV",fXMinAVs);
+    fCustomVolumes.emplace("XMaxAV",fXMaxAVs);
+    fCustomVolumes.emplace("YMinAV",fYMinAVs);
+    fCustomVolumes.emplace("YMaxAV",fYMaxAVs);
+    fCustomVolumes.emplace("ZMinAV",fZMinAVs);
+    fCustomVolumes.emplace("ZMaxAV",fZMaxAVs);
+  }
 
   // setup volume definitions
   InitVolumes();
@@ -475,12 +538,28 @@ void CAFMaker::InitVolumes() {
   const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
 
   // first the TPC volumes
-  for (auto const &cryo: geometry->Iterate<geo::CryostatGeo>()) {
-    std::vector<geo::BoxBoundedGeo> this_tpc_volumes;
-    for (auto const& TPC : geometry->Iterate<geo::TPCGeo>(cryo.ID())) {
-      this_tpc_volumes.push_back(TPC.ActiveBoundingBox());
+  if(!fCustomGeo){
+    for (auto const &cryo: geometry->Iterate<geo::CryostatGeo>()) {
+      std::vector<geo::BoxBoundedGeo> this_tpc_volumes;
+      for (auto const& TPC : geometry->Iterate<geo::TPCGeo>(cryo.ID())) {
+        this_tpc_volumes.push_back(TPC.ActiveBoundingBox());
+      }
+      fTPCVolumes.push_back(std::move(this_tpc_volumes));
     }
-     fTPCVolumes.push_back(std::move(this_tpc_volumes));
+  }
+  else{
+    // Initialise a BoxBoundedGeo for each TPC volume from the configuration
+    std::vector<geo::BoxBoundedGeo> this_tpc_volumes;
+    for(unsigned int j = 0; j < fCustomVolumes.find("XMinAV")->second.size(); ++j){
+      geo::BoxBoundedGeo TPC(fCustomVolumes.find("XMinAV")->second.at(j),
+                             fCustomVolumes.find("XMaxAV")->second.at(j), 
+                             fCustomVolumes.find("YMinAV")->second.at(j),
+                             fCustomVolumes.find("YMaxAV")->second.at(j), 
+                             fCustomVolumes.find("ZMinAV")->second.at(j),
+                             fCustomVolumes.find("ZMaxAV")->second.at(j));
+      this_tpc_volumes.push_back(std::move(TPC));
+    }
+    fTPCVolumes.push_back(std::move(this_tpc_volumes));
   }
 
   // then combine them into active volumes
@@ -1096,6 +1175,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   if (simchannel_handle.isValid()) {
     art::fill_ptr_vector(simchannels, simchannel_handle);
   }
+  if(simchannels.size() > 0){
+    std::cout << " #SimChannels:" << simchannels.size() << std::endl;
+    std::cin.get();
+  }
 
   art::Handle<std::vector<simb::MCFlux>> mcflux_handle;
   GetByLabelStrict(evt, std::string("generator"), mcflux_handle);
@@ -1124,6 +1207,66 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   auto const dprop =
     art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clock_data);
   const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
+
+  // Whether to fill only numu or nue
+  fNumuOnly = fParams.NumuOnly();
+  fNueOnly = fParams.NueOnly();
+  fProposalStyle = fParams.ProposalStyle();
+
+  // Collect the custom geometry if desired
+  std::vector<float> XMinFVs, XMaxFVs, YMinFVs, YMaxFVs, ZMinFVs, ZMaxFVs; // Vectors for a custom geometry
+  std::vector<float> XMinAVs, XMaxAVs, YMinAVs, YMaxAVs, ZMinAVs, ZMaxAVs; // Vectors for a custom geometry
+  fParams.XMinFV(XMinFVs);
+  fParams.XMaxFV(XMaxFVs);
+  fParams.YMinFV(YMinFVs);
+  fParams.YMaxFV(YMaxFVs);
+  fParams.ZMinFV(ZMinFVs);
+  fParams.ZMaxFV(ZMaxFVs);
+  if (XMinFVs.size() > 0 &&
+      XMaxFVs.size() > 0 &&
+      YMinFVs.size() > 0 &&
+      YMaxFVs.size() > 0 &&
+      ZMinFVs.size() > 0 &&
+      ZMaxFVs.size() > 0){
+    if(((XMinFVs.size()+XMaxFVs.size()+YMinFVs.size()+YMaxFVs.size()+ZMinFVs.size()+ZMaxFVs.size())/6. - XMinFVs.size()) > std::numeric_limits<float>::epsilon()){
+      std::cerr << " Error: The Fiducial Volume coordinates do not have the same number of entries" << std::endl;
+      std::exit(1);
+    }
+    
+    // Initiiase the custom volume maps
+    fCustomVolumes.emplace("XMinFV",XMinFVs);
+    fCustomVolumes.emplace("XMaxFV",XMaxFVs);
+    fCustomVolumes.emplace("YMinFV",YMinFVs);
+    fCustomVolumes.emplace("YMaxFV",YMaxFVs);
+    fCustomVolumes.emplace("ZMinFV",ZMinFVs);
+    fCustomVolumes.emplace("ZMaxFV",ZMaxFVs);
+  }
+  
+  fParams.XMinAV(XMinAVs);
+  fParams.XMaxAV(XMaxAVs);
+  fParams.YMinAV(YMinAVs);
+  fParams.YMaxAV(YMaxAVs);
+  fParams.ZMinAV(ZMinAVs);
+  fParams.ZMaxAV(ZMaxAVs);
+  if (XMinAVs.size() > 0 &&
+      XMaxAVs.size() > 0 &&
+      YMinAVs.size() > 0 &&
+      YMaxAVs.size() > 0 &&
+      ZMinAVs.size() > 0 &&
+      ZMaxAVs.size() > 0){
+    if(((XMinAVs.size()+XMaxAVs.size()+YMinAVs.size()+YMaxAVs.size()+ZMinAVs.size()+ZMaxAVs.size())/6. - XMinAVs.size()) > std::numeric_limits<float>::epsilon()){
+      std::cerr << " Error: The Active Volume coordinates do not have the same number of entries" << std::endl;
+      std::exit(1);
+    }
+    
+    // Initiiase the custom volume maps
+    fCustomVolumes.emplace("XMinAV",XMinAVs);
+    fCustomVolumes.emplace("XMaxAV",XMaxAVs);
+    fCustomVolumes.emplace("YMinAV",YMinAVs);
+    fCustomVolumes.emplace("YMaxAV",YMaxAVs);
+    fCustomVolumes.emplace("ZMinAV",ZMinAVs);
+    fCustomVolumes.emplace("ZMaxAV",ZMaxAVs);
+  }
 
   // Collect the input TPC reco tags
   std::vector<std::string> pandora_tag_suffixes;
@@ -1198,8 +1341,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     srtruthbranch.nnu ++;
 
     if ( !isRealData ) FillTrueNeutrino(mctruth, mcflux, gtruth, true_particles, id_to_truehit_map, srtruthbranch.nu.back(), i, fActiveVolumes);
-    std::cout << " CAFMaker" << std::endl;
-    std::cout << " CC: " << srtruthbranch.nu.back().iscc << " NC: " << srtruthbranch.nu.back().isnc << std::endl;
 
     // Don't check for syst weight assocations until we have something (MCTruth
     // corresponding to a neutrino) that could plausibly be reweighted. This
@@ -1223,7 +1364,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         FillEventWeight(*wgtmap, srtruthbranch.nu.back(), fWeightPSetIndex);
       } // end for wgtmap
     } // end for fm
+  } // end for i (mctruths)
 
+  // Fill the fake reco with GEANT particle information only
+  std::vector<caf::SRFakeReco> srfakereco;
+  FillFakeReco(mctruths, true_particles, mctracks, fActiveVolumes, fCustomVolumes, fNumuOnly, fNueOnly, fProposalStyle, *fFakeRecoTRandom, srfakereco);
+
+  // Now fill the GENIE particles
+  for (size_t i=0; i<mctruths.size(); i++) {
+    auto const& mctruth = mctruths.at(i);
     // Loop over the particle list and fill all with final state != 1 (not covered by G4)
     art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
     art::ServiceHandle<cheat::BackTrackerService> bt_serv;
@@ -1244,7 +1393,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
                          true_particles.back());                        
     } // MCTruth particles
   } // end for i (mctruths)
-
+  
   // get the number of events generated in the gen stage
   unsigned n_gen_evt = 0;
   for (const art::ProcessConfiguration &process: evt.processHistory()) {
@@ -1258,9 +1407,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       }
     }
   }
-
-  std::vector<caf::SRFakeReco> srfakereco;
-  FillFakeReco(mctruths, true_particles, mctracks, fActiveVolumes, *fFakeRecoTRandom, srfakereco);
 
   // Fill the MeVPrtl stuff
   for (unsigned i_prtl = 0; i_prtl < mevprtl_truths.size(); i_prtl++) {
@@ -1621,7 +1767,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
       FillSliceFakeReco(slcHits, mctruths, srtruthbranch,
 			*pi_serv, clock_data, recslc, true_particles, mctracks, 
-                        fActiveVolumes, *fFakeRecoTRandom);
+                        fActiveVolumes, fCustomVolumes, fProposalStyle, *fFakeRecoTRandom);
     }
 
     //#######################################################
