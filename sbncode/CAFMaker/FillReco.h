@@ -20,7 +20,6 @@
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/SpacePoint.h"
 #include "lardataobj/RecoBase/OpFlash.h"
-#include "lardataobj/RecoBase/OpHit.h"
 #include "lardataobj/AnalysisBase/Calorimetry.h"
 #include "lardataobj/AnalysisBase/ParticleID.h"
 #include "lardataobj/AnalysisBase/T0.h"
@@ -33,10 +32,8 @@
 #include "sbnobj/Common/Reco/ScatterClosestApproach.h"
 #include "sbnobj/Common/Reco/StoppingChi2Fit.h"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
-#include "sbnobj/Common/Reco/OpT0FinderResult.h"
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "sbnobj/Common/CRT/CRTTrack.hh"
-#include "sbnobj/Common/CRT/CRTPMTMatching.hh"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 
@@ -93,13 +90,6 @@ namespace caf
   void FillSliceCRUMBS(const sbn::CRUMBSResult *crumbs,
                        caf::SRSlice& slice,
                        bool allowEmpty = false);
-
-  void FillSliceOpT0Finder(const std::vector<art::Ptr<sbn::OpT0Finder>> &opt0_v,
-                           caf::SRSlice &slice);
-
-  void FillSliceBarycenter(const std::vector<art::Ptr<recob::Hit>> &inputHits,
-                           const std::vector<art::Ptr<recob::SpacePoint>> &inputPoints,
-                           caf::SRSlice &slice);
 
   bool SelectSlice(const caf::SRSlice &slice, bool cut_clear_cosmic);
 
@@ -193,13 +183,9 @@ namespace caf
                   bool allowEmpty = false);
 
   void FillOpFlash(const recob::OpFlash &flash,
-                  std::vector<recob::OpHit const*> const& hits,
                   int cryo,
                   caf::SROpFlash &srflash,
                   bool allowEmpty = false);
-  void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,
-		  caf::SRCRTPMTMatch &srmatch,
-		  bool allowEmpty = false);
 
   template<class T, class U>
   void CopyPropertyIfSet( const std::map<std::string, T>& props, const std::string& search, U& value );

@@ -47,11 +47,8 @@
 #include "TTree.h"
 #include "TMath.h"
 #include "TTimeStamp.h"
+#include "TRandomGen.h"
 #include "TObjString.h"
-
-// CLHEP libraries
-#include "CLHEP/Random/RandEngine.h" // CLHEP::HepRandomEngine
-#include "CLHEP/Random/RandFlat.h"
 
 // Framework includes
 #include "art/Framework/Core/EDProducer.h"
@@ -67,8 +64,6 @@
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
-#include "larevt/SpaceCharge/SpaceCharge.h"
-#include "larevt/SpaceChargeServices/SpaceChargeService.h"
 
 #include "art_root_io/TFileService.h"
 
@@ -112,7 +107,7 @@
 #include "sbnobj/Common/POTAccounting/NuMISpillInfo.h"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
-#include "sbnobj/Common/Reco/OpT0FinderResult.h"
+
 
 #include "canvas/Persistency/Provenance/ProcessConfiguration.h"
 #include "larcoreobj/SummaryData/POTSummary.h"
@@ -179,11 +174,9 @@ class CAFMaker : public art::EDProducer {
   std::string fFlatCafFilename;
   std::string fFlatCafBlindFilename;
   std::string fFlatCafPrescaleFilename;
-  
-  std::string fSourceFile;
 
   bool fFirstInSubRun;
-  unsigned int fIndexInFile = SRHeader::NoSourceIndex;
+  bool fFirstInFile;
   bool fFirstBlindInFile;
   bool fFirstPrescaleInFile;
   int fFileNumber;
@@ -221,15 +214,24 @@ class CAFMaker : public art::EDProducer {
 
   Det_t fDet;  ///< Detector ID in caf namespace typedef
 
+  // FR selection options
+  bool fNumuOnly = false;
+  bool fNueOnly = false;
+  bool fCustomGeo = false;
+  bool fProposalStyle = false;
+  
   // volumes
   std::vector<std::vector<geo::BoxBoundedGeo>> fTPCVolumes;
   std::vector<geo::BoxBoundedGeo> fActiveVolumes;
+  std::map<std::string, std::vector<float>> fCustomVolumes;
+  std::vector<float> fXMinFVs, fXMaxFVs, fYMinFVs, fYMaxFVs, fZMinFVs, fZMaxFVs; // Vectors for a custom geometry
+  std::vector<float> fXMinAVs, fXMaxAVs, fYMinAVs, fYMaxAVs, fZMinAVs, fZMaxAVs; // Vectors for a custom geometry
 
   // random number generator for fake reco
-  CLHEP::HepRandomEngine& fFakeRecoRandomEngine;
+  TRandom *fFakeRecoTRandom;
 
   // random number generator for prescaling
-  CLHEP::HepRandomEngine& fBlindRandomEngine;
+  TRandom *fBlindTRandom;
 
   /// What position in the vector each parameter set take
   std::map<std::string, unsigned int> fWeightPSetIndex;
@@ -238,8 +240,6 @@ class CAFMaker : public art::EDProducer {
 
   std::string DeriveFilename(const std::string& inname,
                              const std::string& ext) const;
-
-  static std::string Basename(const std::string& path);
 
   void AddEnvToFile(TFile* f);
   void AddMetadataToFile(TFile* f,
@@ -327,17 +327,7 @@ class CAFMaker : public art::EDProducer {
 
   CAFMaker::CAFMaker(const Parameters& params)
   : art::EDProducer{params},
-    fParams(params()), fFile(0),
-    fFakeRecoRandomEngine(
-      art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(
-        createEngine(0, "HepJamesRandom", "FakeReco"),
-        "HepJamesRandom", "FakeReco", fParams.FakeRecoRandomSeed
-      )),
-    fBlindRandomEngine(
-      art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(
-        createEngine(0, "HepJamesRandom", "Blinding"),
-        "HepJamesRandom", "Blinding", fParams.BlindingRandomSeed
-      ))
+    fParams(params()), fFile(0)
   {
   // Note: we will define isRealData on a per event basis in produce function [using event.isRealData()], at least for now.
 
@@ -350,9 +340,68 @@ class CAFMaker : public art::EDProducer {
   produces<std::vector<caf::StandardRecord>>();
   //produces<art::Assns<caf::StandardRecord, recob::Slice>>();
 
+  // Collect the custom geometry if desired
+  fParams.XMinFV(fXMinFVs);
+  fParams.XMaxFV(fXMaxFVs);
+  fParams.YMinFV(fYMinFVs);
+  fParams.YMaxFV(fYMaxFVs);
+  fParams.ZMinFV(fZMinFVs);
+  fParams.ZMaxFV(fZMaxFVs);
+  if (fXMinFVs.size() > 0 &&
+      fXMaxFVs.size() > 0 &&
+      fYMinFVs.size() > 0 &&
+      fYMaxFVs.size() > 0 &&
+      fZMinFVs.size() > 0 &&
+      fZMaxFVs.size() > 0){
+    if(((fXMinFVs.size()+fXMaxFVs.size()+fYMinFVs.size()+fYMaxFVs.size()+fZMinFVs.size()+fZMaxFVs.size())/6. - fXMinFVs.size()) > std::numeric_limits<float>::epsilon()){
+      std::cerr << " Error: The Fiducial Volume coordinates do not have the same number of entries" << std::endl;
+      std::exit(1);
+    }
+    
+    // Initiiase the custom volume maps
+    fCustomVolumes.emplace("XMinFV",fXMinFVs);
+    fCustomVolumes.emplace("XMaxFV",fXMaxFVs);
+    fCustomVolumes.emplace("YMinFV",fYMinFVs);
+    fCustomVolumes.emplace("YMaxFV",fYMaxFVs);
+    fCustomVolumes.emplace("ZMinFV",fZMinFVs);
+    fCustomVolumes.emplace("ZMaxFV",fZMaxFVs);
+  }
+  
+  fParams.XMinAV(fXMinAVs);
+  fParams.XMaxAV(fXMaxAVs);
+  fParams.YMinAV(fYMinAVs);
+  fParams.YMaxAV(fYMaxAVs);
+  fParams.ZMinAV(fZMinAVs);
+  fParams.ZMaxAV(fZMaxAVs);
+  if (fXMinAVs.size() > 0 &&
+      fXMaxAVs.size() > 0 &&
+      fYMinAVs.size() > 0 &&
+      fYMaxAVs.size() > 0 &&
+      fZMinAVs.size() > 0 &&
+      fZMaxAVs.size() > 0){
+    if(((fXMinAVs.size()+fXMaxAVs.size()+fYMinAVs.size()+fYMaxAVs.size()+fZMinAVs.size()+fZMaxAVs.size())/6. - fXMinAVs.size()) > std::numeric_limits<float>::epsilon()){
+      std::cerr << " Error: The Active Volume coordinates do not have the same number of entries" << std::endl;
+      std::exit(1);
+    }
+    fCustomGeo = true;
+    
+    // Initiiase the custom volume maps
+    fCustomVolumes.emplace("XMinAV",fXMinAVs);
+    fCustomVolumes.emplace("XMaxAV",fXMaxAVs);
+    fCustomVolumes.emplace("YMinAV",fYMinAVs);
+    fCustomVolumes.emplace("YMaxAV",fYMaxAVs);
+    fCustomVolumes.emplace("ZMinAV",fZMinAVs);
+    fCustomVolumes.emplace("ZMaxAV",fZMaxAVs);
+  }
+
   // setup volume definitions
   InitVolumes();
 
+  // setup random number generators
+  fFakeRecoTRandom = new TRandomMT64(art::ServiceHandle<rndm::NuRandomService>()->getSeed());
+  if (fParams.CreateBlindedCAF()) {
+    fBlindTRandom = new TRandomMT64(art::ServiceHandle<rndm::NuRandomService>()->getSeed());
+  }
 }
 
 //......................................................................
@@ -489,12 +538,28 @@ void CAFMaker::InitVolumes() {
   const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
 
   // first the TPC volumes
-  for (auto const &cryo: geometry->Iterate<geo::CryostatGeo>()) {
-    std::vector<geo::BoxBoundedGeo> this_tpc_volumes;
-    for (auto const& TPC : geometry->Iterate<geo::TPCGeo>(cryo.ID())) {
-      this_tpc_volumes.push_back(TPC.ActiveBoundingBox());
+  if(!fCustomGeo){
+    for (auto const &cryo: geometry->Iterate<geo::CryostatGeo>()) {
+      std::vector<geo::BoxBoundedGeo> this_tpc_volumes;
+      for (auto const& TPC : geometry->Iterate<geo::TPCGeo>(cryo.ID())) {
+        this_tpc_volumes.push_back(TPC.ActiveBoundingBox());
+      }
+      fTPCVolumes.push_back(std::move(this_tpc_volumes));
     }
-     fTPCVolumes.push_back(std::move(this_tpc_volumes));
+  }
+  else{
+    // Initialise a BoxBoundedGeo for each TPC volume from the configuration
+    std::vector<geo::BoxBoundedGeo> this_tpc_volumes;
+    for(unsigned int j = 0; j < fCustomVolumes.find("XMinAV")->second.size(); ++j){
+      geo::BoxBoundedGeo TPC(fCustomVolumes.find("XMinAV")->second.at(j),
+                             fCustomVolumes.find("XMaxAV")->second.at(j), 
+                             fCustomVolumes.find("YMinAV")->second.at(j),
+                             fCustomVolumes.find("YMaxAV")->second.at(j), 
+                             fCustomVolumes.find("ZMinAV")->second.at(j),
+                             fCustomVolumes.find("ZMaxAV")->second.at(j));
+      this_tpc_volumes.push_back(std::move(TPC));
+    }
+    fTPCVolumes.push_back(std::move(this_tpc_volumes));
   }
 
   // then combine them into active volumes
@@ -532,17 +597,11 @@ CAFMaker::~CAFMaker()
     delete fFlatTreep;
     delete fFlatFileb;
     delete fFlatFilep;
+    delete fBlindTRandom;
   }
 
-}
+  delete fFakeRecoTRandom;
 
-//......................................................................
-std::string CAFMaker::Basename(const std::string& path)
-{
-  // C++17: use filesystem library (Clang 7 still not compliant)
-  constexpr char sep = '/';
-  std::size_t const iSep = path.rfind(sep);
-  return (iSep == std::string::npos)? path: path.substr(iSep + 1);
 }
 
 //......................................................................
@@ -562,9 +621,6 @@ std::string CAFMaker::DeriveFilename(const std::string& inname,
 
 //......................................................................
 void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
-  
-  std::string const inputBasename = Basename(fb.fileName()); // includes suffix
-  
   if ((fParams.CreateCAF() && !fFile) ||
       (fParams.CreateFlatCAF() && !fFlatFile) ||
       (fParams.CreateBlindedCAF() && (!fFileb || !fFilep))) {
@@ -614,10 +670,9 @@ void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
   }
 
   fFileNumber ++;
-  fIndexInFile = 0;
+  fFirstInFile = true;
   fFirstBlindInFile = true;
   fFirstPrescaleInFile = true;
-  fSourceFile = inputBasename;
 
 }
 
@@ -934,7 +989,7 @@ void CAFMaker::InitializeOutfiles()
   fTotalEvents = 0;
   fBlindEvents = 0;
   fPrescaleEvents = 0;
-  fIndexInFile = SRHeader::NoSourceIndex;
+  fFirstInFile = false;
   fFirstInSubRun = false;
   // fCycle = -5;
   // fBatch = -5;
@@ -1059,8 +1114,6 @@ bool CAFMaker::GetPsetParameter(const fhicl::ParameterSet& pset,
 //......................................................................
 void CAFMaker::produce(art::Event& evt) noexcept {
 
-  bool const firstInFile = (fIndexInFile++ == 0);
-  
   // is this event real data?
   bool isRealData = evt.isRealData();
 
@@ -1122,6 +1175,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   if (simchannel_handle.isValid()) {
     art::fill_ptr_vector(simchannels, simchannel_handle);
   }
+  if(simchannels.size() > 0){
+    std::cout << " #SimChannels:" << simchannels.size() << std::endl;
+    std::cin.get();
+  }
 
   art::Handle<std::vector<simb::MCFlux>> mcflux_handle;
   GetByLabelStrict(evt, std::string("generator"), mcflux_handle);
@@ -1151,7 +1208,65 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clock_data);
   const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
 
-  auto const *sce = lar::providerFrom<spacecharge::SpaceChargeService>();
+  // Whether to fill only numu or nue
+  fNumuOnly = fParams.NumuOnly();
+  fNueOnly = fParams.NueOnly();
+  fProposalStyle = fParams.ProposalStyle();
+
+  // Collect the custom geometry if desired
+  std::vector<float> XMinFVs, XMaxFVs, YMinFVs, YMaxFVs, ZMinFVs, ZMaxFVs; // Vectors for a custom geometry
+  std::vector<float> XMinAVs, XMaxAVs, YMinAVs, YMaxAVs, ZMinAVs, ZMaxAVs; // Vectors for a custom geometry
+  fParams.XMinFV(XMinFVs);
+  fParams.XMaxFV(XMaxFVs);
+  fParams.YMinFV(YMinFVs);
+  fParams.YMaxFV(YMaxFVs);
+  fParams.ZMinFV(ZMinFVs);
+  fParams.ZMaxFV(ZMaxFVs);
+  if (XMinFVs.size() > 0 &&
+      XMaxFVs.size() > 0 &&
+      YMinFVs.size() > 0 &&
+      YMaxFVs.size() > 0 &&
+      ZMinFVs.size() > 0 &&
+      ZMaxFVs.size() > 0){
+    if(((XMinFVs.size()+XMaxFVs.size()+YMinFVs.size()+YMaxFVs.size()+ZMinFVs.size()+ZMaxFVs.size())/6. - XMinFVs.size()) > std::numeric_limits<float>::epsilon()){
+      std::cerr << " Error: The Fiducial Volume coordinates do not have the same number of entries" << std::endl;
+      std::exit(1);
+    }
+    
+    // Initiiase the custom volume maps
+    fCustomVolumes.emplace("XMinFV",XMinFVs);
+    fCustomVolumes.emplace("XMaxFV",XMaxFVs);
+    fCustomVolumes.emplace("YMinFV",YMinFVs);
+    fCustomVolumes.emplace("YMaxFV",YMaxFVs);
+    fCustomVolumes.emplace("ZMinFV",ZMinFVs);
+    fCustomVolumes.emplace("ZMaxFV",ZMaxFVs);
+  }
+  
+  fParams.XMinAV(XMinAVs);
+  fParams.XMaxAV(XMaxAVs);
+  fParams.YMinAV(YMinAVs);
+  fParams.YMaxAV(YMaxAVs);
+  fParams.ZMinAV(ZMinAVs);
+  fParams.ZMaxAV(ZMaxAVs);
+  if (XMinAVs.size() > 0 &&
+      XMaxAVs.size() > 0 &&
+      YMinAVs.size() > 0 &&
+      YMaxAVs.size() > 0 &&
+      ZMinAVs.size() > 0 &&
+      ZMaxAVs.size() > 0){
+    if(((XMinAVs.size()+XMaxAVs.size()+YMinAVs.size()+YMaxAVs.size()+ZMinAVs.size()+ZMaxAVs.size())/6. - XMinAVs.size()) > std::numeric_limits<float>::epsilon()){
+      std::cerr << " Error: The Active Volume coordinates do not have the same number of entries" << std::endl;
+      std::exit(1);
+    }
+    
+    // Initiiase the custom volume maps
+    fCustomVolumes.emplace("XMinAV",XMinAVs);
+    fCustomVolumes.emplace("XMaxAV",XMaxAVs);
+    fCustomVolumes.emplace("YMinAV",YMinAVs);
+    fCustomVolumes.emplace("YMaxAV",YMaxAVs);
+    fCustomVolumes.emplace("ZMinAV",ZMinAVs);
+    fCustomVolumes.emplace("ZMaxAV",ZMaxAVs);
+  }
 
   // Collect the input TPC reco tags
   std::vector<std::string> pandora_tag_suffixes;
@@ -1251,6 +1366,34 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     } // end for fm
   } // end for i (mctruths)
 
+  // Fill the fake reco with GEANT particle information only
+  std::vector<caf::SRFakeReco> srfakereco;
+  FillFakeReco(mctruths, true_particles, mctracks, fActiveVolumes, fCustomVolumes, fNumuOnly, fNueOnly, fProposalStyle, *fFakeRecoTRandom, srfakereco);
+
+  // Now fill the GENIE particles
+  for (size_t i=0; i<mctruths.size(); i++) {
+    auto const& mctruth = mctruths.at(i);
+    // Loop over the particle list and fill all with final state != 1 (not covered by G4)
+    art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
+    art::ServiceHandle<cheat::BackTrackerService> bt_serv;
+
+    for(int p = 0; p < mctruth->NParticles(); ++p){
+      true_particles.emplace_back();
+      const simb::MCParticle part = mctruth->GetParticle(p);
+      if(part.StatusCode() == 1 || part.StatusCode() == -1) continue;
+
+      
+      FillTrueGenParticle(part,
+                         fActiveVolumes,
+                         fTPCVolumes,
+                         id_to_ide_map,
+                         id_to_truehit_map,
+                         *bt_serv,
+                         *pi_serv,
+                         true_particles.back());                        
+    } // MCTruth particles
+  } // end for i (mctruths)
+  
   // get the number of events generated in the gen stage
   unsigned n_gen_evt = 0;
   for (const art::ProcessConfiguration &process: evt.processHistory()) {
@@ -1263,9 +1406,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       }
     }
   }
-
-  std::vector<caf::SRFakeReco> srfakereco;
-  FillFakeReco(mctruths, true_particles, mctracks, fActiveVolumes, fFakeRecoRandomEngine, srfakereco);
 
   // Fill the MeVPrtl stuff
   for (unsigned i_prtl = 0; i_prtl < mevprtl_truths.size(); i_prtl++) {
@@ -1312,11 +1452,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   art::Handle<std::vector<sbn::crt::CRTHit>> crthits_handle;
   GetByLabelStrict(evt, fParams.CRTHitLabel(), crthits_handle);
   // fill into event
-  //int64_t CRT_T0_reference_time = fParams.ReferenceCRTT0ToBeam() ? -srtrigger.beam_gate_time_abs : 0; // ns, signed
-  //double CRT_T1_reference_time = fParams.ReferenceCRTT1FromTriggerToBeam() ? srtrigger.trigger_within_gate : 0.;
-  int64_t CRT_T0_reference_time = isRealData ?  -srtrigger.beam_gate_time_abs : -fParams.CRTSimT0Offset();
-  double CRT_T1_reference_time = isRealData ? srtrigger.trigger_within_gate : -fParams.CRTSimT0Offset();
-
+  int64_t CRT_T0_reference_time = fParams.ReferenceCRTT0ToBeam() ? -srtrigger.beam_gate_time_abs : 0; // ns, signed
+  double CRT_T1_reference_time = fParams.ReferenceCRTT1FromTriggerToBeam() ? srtrigger.trigger_within_gate : 0.;
   if (crthits_handle.isValid()) {
     const std::vector<sbn::crt::CRTHit> &crthits = *crthits_handle;
     for (unsigned i = 0; i < crthits.size(); i++) {
@@ -1339,23 +1476,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
   }
 
-  // Get all of the CRTPMT Matches .. 
-  std::vector<caf::SRCRTPMTMatch> srcrtpmtmatches;
-  std::cout << "srcrtpmtmatches.size = " << srcrtpmtmatches.size() << "\n";
-  art::Handle<std::vector<sbn::crt::CRTPMTMatching>> crtpmtmatch_handle;
-  GetByLabelStrict(evt, fParams.CRTPMTLabel(), crtpmtmatch_handle);
-  if(crtpmtmatch_handle.isValid()){
-    std::cout << "valid handle! label: " << fParams.CRTPMTLabel() << "\n";
-    const std::vector<sbn::crt::CRTPMTMatching> &crtpmtmatches = *crtpmtmatch_handle;
-    for (unsigned i = 0; i < crtpmtmatches.size(); i++) {
-      srcrtpmtmatches.emplace_back();
-      FillCRTPMTMatch(crtpmtmatches[i],srcrtpmtmatches.back());
-    }
-  }
-  else{
-    std::cout << "crtpmtmatch_handle.isNOTValid!\n";
-  }
-
   // Get all of the OpFlashes
   std::vector<caf::SROpFlash> srflashes;
 
@@ -1366,18 +1486,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     if (flashes_handle.isValid()) {
       const std::vector<recob::OpFlash> &opflashes = *flashes_handle;
       int cryostat = ( pandora_tag_suffix.find("W") != std::string::npos ) ? 1 : 0;
-
-      // get associated OpHits for each OpFlash
-      art::FindMany<recob::OpHit> findManyHits(flashes_handle, evt, fParams.OpFlashLabel() + pandora_tag_suffix);
-
-      int iflash=0;
       for (const recob::OpFlash& flash : opflashes) {
-
-        std::vector<recob::OpHit const*> const& ophits = findManyHits.at(iflash);
-
         srflashes.emplace_back();
-        FillOpFlash(flash, ophits, cryostat, srflashes.back());
-        iflash++;
+        FillOpFlash(flash, cryostat, srflashes.back());
       }
     }
   }
@@ -1441,12 +1552,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     if (foSlcCRUMBS.isValid()) {
       slcCRUMBS = foSlcCRUMBS.at(0).get();
     }
-
-    art::FindManyP<sbn::OpT0Finder> fmOpT0 = 
-      FindManyPStrict<sbn::OpT0Finder>(sliceList, evt, fParams.OpT0Label() + slice_tag_suff);
-    std::vector<art::Ptr<sbn::OpT0Finder>> slcOpT0;
-    if (fmOpT0.isValid())  
-      slcOpT0 = fmOpT0.at(0);
 
     art::FindManyP<sbn::SimpleFlashMatch> fm_sFM =
       FindManyPStrict<sbn::SimpleFlashMatch>(fmPFPart, evt,
@@ -1642,8 +1747,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceFlashMatchA(fmatch, recslc);
     FillSliceVertex(vertex, recslc);
     FillSliceCRUMBS(slcCRUMBS, recslc);
-    FillSliceOpT0Finder(slcOpT0, recslc);
-    FillSliceBarycenter(slcHits, slcSpacePoints, recslc);
 
     // select slice
     if (!SelectSlice(recslc, fParams.CutClearCosmic())) continue;
@@ -1663,7 +1766,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
       FillSliceFakeReco(slcHits, mctruths, srtruthbranch,
 			*pi_serv, clock_data, recslc, true_particles, mctracks, 
-                        fActiveVolumes, fFakeRecoRandomEngine);
+                        fActiveVolumes, fCustomVolumes, fProposalStyle, *fFakeRecoTRandom);
     }
 
     //#######################################################
@@ -1792,6 +1895,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
               fParams.TrackHitFillRRStartCut(), fParams.TrackHitFillRREndCut(),
               lar::providerFrom<geo::Geometry>(), dprop, trk);
         }
+        if (fmTrackHit.isValid()) {
+          if ( !isRealData ) FillTrackTruth(fmTrackHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, trk);
+        }
         if (fmCRTHitMatch.isValid()) {
           art::FindManyP<sbn::crt::CRTHit> CRTT02Hit = FindManyPStrict<sbn::crt::CRTHit>
               (fmCRTHitMatch.at(iPart), evt, fParams.CRTHitMatchLabel() + slice_tag_suff);
@@ -1805,16 +1911,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         if (fmCRTTrackMatch.isValid()) {
           FillTrackCRTTrack(fmCRTTrackMatch.at(iPart), trk);
         }
-        // Truth matching
-        if (fmTrackHit.isValid()) {
-          if ( !isRealData ) {
-            // Track -> particle matching
-            FillTrackTruth(fmTrackHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, trk);
-            // Hit truth information corresponding to Calo-Points
-            // Assumes truth matching and calo-points are filled
-            if (mc_particles.isValid() && fParams.FillTrackCaloTruth()) FillTrackCaloTruth(id_to_ide_map, *mc_particles, geometry, clock_data, sce, trk);
-          }
-        }
       } // thisTrack exists
 
       if (!thisShower.empty()) { // it has shower!
@@ -1824,6 +1920,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, shw);
 
         // We may have many residuals per shower depending on how many showers ar in the slice
+
         if (fmShowerRazzle.isValid() && fmShowerRazzle.at(iPart).size()==1) {
            FillShowerRazzle(fmShowerRazzle.at(iPart).front(), shw);
         }
@@ -1883,8 +1980,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     rec.true_particles  = true_particles;
   }
   rec.ntrue_particles = true_particles.size();
-  rec.crtpmt_matches = srcrtpmtmatches;
-  rec.ncrtpmt_matches = srcrtpmtmatches.size();
 
   // Fix the Reference time
   //
@@ -1935,7 +2030,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.hdr.ismc    = !isRealData;
   rec.hdr.det     = fDet;
   rec.hdr.fno     = fFileNumber;
-  if(firstInFile)
+  if(fFirstInFile)
   {
     rec.hdr.nbnbinfo = fBNBInfo.size();
     rec.hdr.bnbinfo = fBNBInfo;
@@ -1946,9 +2041,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   
   rec.hdr.ngenevt = n_gen_evt;
   rec.hdr.mctype  = mctype;
-  rec.hdr.sourceName = fSourceFile;
-  rec.hdr.sourceIndex = fIndexInFile;
-  rec.hdr.first_in_file = firstInFile;
+  rec.hdr.first_in_file = fFirstInFile;
   rec.hdr.first_in_subrun = fFirstInSubRun;
   rec.hdr.triggerinfo = srtrigger;
   // rec.hdr.cycle = fCycle;
@@ -1971,13 +2064,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     //Generate random number to decide if event is saved in prescale or blinded file
     if (fParams.CreateBlindedCAF()) {
-      CLHEP::RandFlat uniformGen{ fBlindRandomEngine };
-      const bool keepprescale = uniformGen.fire() < 1/fParams.PrescaleFactor();
+      const bool keepprescale = fBlindTRandom->Uniform() < 1/fParams.PrescaleFactor();
       rec.hdr.evt = 0;
       rec.hdr.isblind = true;
       if (keepprescale) {
-        mf::LogVerbatim("CAFMaker") << "CAFMaker: " << evt.id() << " is not blinded.";
-        StandardRecord* precp = new StandardRecord (*prec);
+      	StandardRecord* precp = new StandardRecord (*prec);
 	if (fFirstPrescaleInFile) {
 	  precp->hdr.pot = fSubRunPOT*(1/fParams.PrescaleFactor());
 	  precp->hdr.first_in_file = true;
@@ -2023,6 +2114,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   }
 
 // reset
+  fFirstInFile = false;
   fFirstInSubRun = false;
   srcol->push_back(rec);
   evt.put(std::move(srcol));

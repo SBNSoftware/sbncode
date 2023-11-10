@@ -68,7 +68,7 @@ namespace caf
                   bool allowEmpty) {
 
     srhit.t0 = ( (long long)(hit.ts0()) /*u_int64_t to int64_t*/ + CRT_T0_reference_time )/1000.;
-    srhit.t1 = hit.ts1()/1000.+CRT_T1_reference_time; // ns -> us
+    srhit.t1 = hit.ts1()/1000.-CRT_T1_reference_time; // ns -> us
     srhit.time = use_ts0 ? srhit.t0 : srhit.t1;
 
     srhit.position.x = hit.x_pos;
@@ -112,39 +112,7 @@ namespace caf
     srtrack.hitb.plane = track.plane2;
   }
 
-  void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,
-		       caf::SRCRTPMTMatch &srmatch,
-		       bool allowEmpty){
-    // allowEmpty does not (yet) matter here                                                           
-    (void) allowEmpty;
-    //srmatch.setDefault();
-    srmatch.flashID = match.flashID;
-    srmatch.flashTime_us = match.flashTime;
-    srmatch.flashGateTime = match.flashGateTime;
-    srmatch.firstOpHitPeakTime = match.firstOpHitPeakTime;
-    srmatch.firstOpHitStartTime = match.firstOpHitStartTime;
-    srmatch.flashInGate = match.flashInGate;
-    srmatch.flashInBeam = match.flashInBeam;
-    srmatch.flashPE = match.flashPE;
-    srmatch.flashPosition = SRVector3D (match.flashPosition.X(), match.flashPosition.Y(), match.flashPosition.Z());
-    srmatch.flashYWidth = match.flashYWidth;
-    srmatch.flashZWidth = match.flashZWidth;
-    srmatch.flashClassification = static_cast<int>(match.flashClassification);
-    for(const auto& matchedCRTHit : match.matchedCRTHits){
-      std::cout << "CRTPMTTimeDiff = "<< matchedCRTHit.PMTTimeDiff << "\n";
-      caf::SRMatchedCRT matchedCRT;
-      matchedCRT.PMTTimeDiff = matchedCRTHit.PMTTimeDiff; 
-      matchedCRT.time = matchedCRTHit.time;
-      matchedCRT.sys = matchedCRTHit.sys;
-      matchedCRT.region = matchedCRTHit.region;
-      matchedCRT.position = SRVector3D(matchedCRTHit.position.X(), matchedCRTHit.position.Y(), matchedCRTHit.position.Z());
-      srmatch.matchedCRTHits.push_back(matchedCRT);
-    }
-  }
-
-
   void FillOpFlash(const recob::OpFlash &flash,
-                  std::vector<recob::OpHit const*> const& hits,
                   int cryo, 
                   caf::SROpFlash &srflash,
                   bool allowEmpty) {
@@ -153,15 +121,6 @@ namespace caf
 
     srflash.time = flash.Time();
     srflash.timewidth = flash.TimeWidth();
-
-    double firstTime = std::numeric_limits<double>::max();
-    for(const auto& hit: hits){
-      double const hitTime = hit->HasStartTime()? hit->StartTime(): hit->PeakTime();
-      if (firstTime > hitTime)
-        firstTime = hitTime;
-    }
-    srflash.firsttime = firstTime;
-
     srflash.cryo = cryo; // 0 in SBND, 0/1 for E/W in ICARUS
 
     // Sum over each wall, not very SBND-compliant
@@ -343,7 +302,7 @@ namespace caf
     // collect the properties
     if (primary_meta != NULL) {
       auto const &properties = primary_meta->GetPropertiesMap();
-      if (properties.count("IsClearCosmic") || (properties.count("NuScore") && properties.at("NuScore") < 0)) {
+      if (properties.count("IsClearCosmic")) {
         assert(!properties.count("IsNeutrino"));
         srslice.is_clear_cosmic = true;
       }
@@ -415,96 +374,6 @@ namespace caf
     }
   }
 
-  void FillSliceOpT0Finder(const std::vector<art::Ptr<sbn::OpT0Finder>> &opt0_v,
-                           caf::SRSlice &slice)
-  {
-    if (opt0_v.empty()==false){
-      unsigned int nopt0 = opt0_v.size();
-      double max_score=-1.; // score of the opt0 object with the highest score 
-      double sec_score=-1.; // score of the opt0 object with the 2nd highest score 
-
-      unsigned int max_idx = 0;
-      unsigned int sec_idx = 0;
-
-      // fill the default, which is the maximum 
-      for (unsigned int i = 0; i < nopt0; i++ ) {
-        const sbn::OpT0Finder &thisOpT0 = *opt0_v[i];
-        if (thisOpT0.score > max_score){
-          max_score = thisOpT0.score;
-          max_idx = i;
-        }
-      }
-
-      const sbn::OpT0Finder &maxOpT0 = *opt0_v[max_idx];
-      slice.opt0.tpc    = maxOpT0.tpc;
-      slice.opt0.time   = maxOpT0.time;
-      slice.opt0.score  = maxOpT0.score;
-      slice.opt0.measPE = maxOpT0.measPE;
-      slice.opt0.hypoPE = maxOpT0.hypoPE;
-      
-      // in case there are more matches, find the opt0 object with the second highest score
-      // usually this is filled for a slice that is split across two tpcs
-      if (nopt0>1){    
-        for (unsigned int i = 0; i < nopt0; i++ ) {
-          if (i == max_idx) continue;
-          const sbn::OpT0Finder &thisOpT0 = *opt0_v[i];
-          if (thisOpT0.score > sec_score){
-            sec_score = thisOpT0.score;
-            sec_idx = i;
-          }
-        }
-        const sbn::OpT0Finder &secOpT0 = *opt0_v[sec_idx];
-        slice.opt0_sec.tpc    = secOpT0.tpc;
-        slice.opt0_sec.time   = secOpT0.time;
-        slice.opt0_sec.score  = secOpT0.score;
-        slice.opt0_sec.measPE = secOpT0.measPE;
-        slice.opt0_sec.hypoPE = secOpT0.hypoPE;
-      }
-    }
-  }
-
-  void FillSliceBarycenter(const std::vector<art::Ptr<recob::Hit>> &inputHits,
-                           const std::vector<art::Ptr<recob::SpacePoint>> &inputPoints,
-                           caf::SRSlice &slice)
-  {
-    unsigned int nHits = inputHits.size();
-    double sumCharge = 0.;
-    double sumX = 0.; double sumY = 0.; double sumZ = 0.;
-    double sumXX = 0.; double sumYY = 0.; double sumZZ = 0.;
-    double thisHitCharge, thisPointXYZ[3], chargeCenter[3], chargeWidth[3];
-
-    for ( unsigned int i = 0; i < nHits; i++ ) {
-      const recob::Hit &thisHit = *inputHits[i];
-      if ( thisHit.SignalType() != geo::kCollection ) continue;
-      art::Ptr<recob::SpacePoint> const& thisPoint = inputPoints.at(i);
-      if ( !thisPoint ) continue;
-
-      thisHitCharge = thisHit.Integral();
-      thisPointXYZ[0] = thisPoint->XYZ()[0];
-      thisPointXYZ[1] = thisPoint->XYZ()[1];
-      thisPointXYZ[2] = thisPoint->XYZ()[2];
-
-      sumCharge += thisHitCharge;
-      sumX += thisPointXYZ[0] * thisHitCharge;
-      sumY += thisPointXYZ[1] * thisHitCharge;
-      sumZ += thisPointXYZ[2] * thisHitCharge;
-      sumXX += thisPointXYZ[0] * thisPointXYZ[0] * thisHitCharge;
-      sumYY += thisPointXYZ[1] * thisPointXYZ[1] * thisHitCharge;
-      sumZZ += thisPointXYZ[2] * thisPointXYZ[2] * thisHitCharge;
-    }
-
-    if( sumCharge != 0 ) {
-      chargeCenter[0] = sumX / sumCharge;
-      chargeCenter[1] = sumY / sumCharge;
-      chargeCenter[2] = sumZ / sumCharge;
-      chargeWidth[0] = pow( (sumXX/sumCharge - pow(sumX/sumCharge, 2)), .5);
-      chargeWidth[1] = pow( (sumYY/sumCharge - pow(sumY/sumCharge, 2)), .5);
-      chargeWidth[2] = pow( (sumZZ/sumCharge - pow(sumZ/sumCharge, 2)), .5);
-
-      slice.charge_center.SetXYZ( chargeCenter[0], chargeCenter[1], chargeCenter[2] ); 
-      slice.charge_width.SetXYZ( chargeWidth[0], chargeWidth[1], chargeWidth[2] );
-    }
-  }
 
   //......................................................................
 
@@ -703,14 +572,9 @@ namespace caf
           if (h.key() == tps[i]) {
             p.wire = h->WireID().Wire;
             p.tpc = h->WireID().TPC;
-            p.channel = h->Channel();
             p.sumadc = h->SummedADC();
             p.integral = h->Integral();
             p.t = h->PeakTime();
-            p.width = h->RMS();
-            p.mult = h->Multiplicity();
-            p.start = h->StartTick();
-            p.end = h->EndTick();
           }
         }
 
