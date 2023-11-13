@@ -140,6 +140,7 @@ FluxReaderAna::FluxReaderAna(fhicl::ParameterSet const& p)
   _x_cut = p.get<float>("XCut"); // cm
   _y_cut = p.get<float>("YCut"); // cm
 
+  _add_systs = p.get<bool>("AddSysts");
 
   art::ServiceHandle<art::TFileService> fs;
   _tree = fs->make<TTree>("tree", "");
