@@ -114,6 +114,10 @@
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
 #include "sbnobj/Common/Reco/OpT0FinderResult.h"
 
+// FRAMS object
+#include "sbnobj/SBND/FRAMSObj/FRAMSObj.h"
+
+
 #include "canvas/Persistency/Provenance/ProcessConfiguration.h"
 #include "larcoreobj/SummaryData/POTSummary.h"
 
@@ -1630,6 +1634,26 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         fmatch = fmatches[0].get();
       }
     }
+
+    //get the FRAMS true score (one per slice)
+    std::cout<<" Looking for FRAMS true objects in CAFMaker\n";
+    art::FindOneP<sbnd::FRAMSObj> foSlcFRAMSScoreTrue = FindOnePStrict<sbnd::FRAMSObj>(sliceList, evt, fParams.FRAMSTrueLabel() + slice_tag_suff);
+    const sbnd::FRAMSObj *slcFRAMSScoreTrue = nullptr;
+    if (foSlcFRAMSScoreTrue.isValid()) {
+      std::cout<<"Found for FRAMS true objects in CAFMaker\n";
+      slcFRAMSScoreTrue = foSlcFRAMSScoreTrue.at(0).get();
+    }
+
+    //get the FRAMS reco score (one per slice)
+    std::cout<<" Looking for FRAMS reco objects in CAFMaker\n";
+    art::FindOneP<sbnd::FRAMSObj> foSlcFRAMSScoreReco = FindOnePStrict<sbnd::FRAMSObj>(sliceList, evt, fParams.FRAMSRecoLabel() + slice_tag_suff);
+    const sbnd::FRAMSObj *slcFRAMSScoreReco = nullptr;
+    if (foSlcFRAMSScoreReco.isValid()) {
+      std::cout<<"Found for FRAMS reco objects in CAFMaker\n";
+      slcFRAMSScoreReco = foSlcFRAMSScoreReco.at(0).get();
+    }
+
+
     // get the primary vertex
     const recob::Vertex *vertex = (iPart == fmPFPart.size() || !fmVertex.at(iPart).size()) ? NULL : fmVertex.at(iPart).at(0).get();
 
@@ -1644,6 +1668,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceCRUMBS(slcCRUMBS, recslc);
     FillSliceOpT0Finder(slcOpT0, recslc);
     FillSliceBarycenter(slcHits, slcSpacePoints, recslc);
+
+    // fill frams score
+    FillFRAMSScoreTrue(slcFRAMSScoreTrue, recslc);
+    FillFRAMSScoreReco(slcFRAMSScoreReco, recslc);
 
     // select slice
     if (!SelectSlice(recslc, fParams.CutClearCosmic())) continue;

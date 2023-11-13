@@ -157,6 +157,18 @@ namespace caf
       Comment("Base label of OpT0Finder producer"),
       "opt0finder"
     };
+    
+    Atom<string> FRAMSTrueLabel {
+      Name("FRAMSTrueLabel"),
+      Comment("Base label of FRAMS true producer."),
+      "framsTrue"
+    };
+
+    Atom<string> FRAMSRecoLabel {
+      Name("FRAMSRecoLabel"),
+      Comment("Base label of FRAMS reco producer."),
+      "framsReco"
+    };
 
     Atom<bool> FillHits {
       Name("FillHits"),
