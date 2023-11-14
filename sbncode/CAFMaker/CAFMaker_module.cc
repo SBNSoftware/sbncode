@@ -148,6 +148,13 @@ namespace sbn{
 
 namespace caf {
 
+/// Function to calculate a timestamp from the spill info product
+template <typename SpillInfo>
+double spillInfoToTimestamp(SpillInfo const& info) {
+  return static_cast<double>(info.spill_time_s) +
+         static_cast<double>(info.spill_time_ns)*1.0e-9;
+}
+
 /// Module to create Common Analysis Files from ART files
 class CAFMaker : public art::EDProducer {
  public:
@@ -785,12 +792,9 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
     fHasBNBInfo = true;
     for(const sbn::BNBSpillInfo& info: *bnb_spill)
     {
-      if ( fBNBInfoEventMap.find(info.event)==fBNBInfoEventMap.end() ) {
-        fBNBInfoEventMap[info.event] = info;
-      }
-      else if ( (info.spill_time_s+(info.spill_time_ns/1.0e9)) >
-                (fBNBInfoEventMap[info.event].spill_time_s+(fBNBInfoEventMap[info.event].spill_time_ns/1.0e9)) ) {
-        fBNBInfoEventMap[info.event] = info;
+      auto& storedInfo = fBNBInfoEventMap[info.event]; // creates if needed
+      if ( (storedInfo.event == UINT_MAX) || spillInfoToTimestamp(info) > spillInfoToTimestamp(storedInfo) ) {
+        storedInfo = std::move(info);
       }
     }
   }
@@ -803,12 +807,9 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
     fHasNuMIInfo = true;
     for(const sbn::NuMISpillInfo& info: *numi_spill)
     {
-      if ( fNuMIInfoEventMap.find(info.event)==fNuMIInfoEventMap.end() ) {
-        fNuMIInfoEventMap[info.event] = info;
-      }
-      else if ( (info.spill_time_s+(info.spill_time_ns/1.0e9)) >
-                (fNuMIInfoEventMap[info.event].spill_time_s+(fNuMIInfoEventMap[info.event].spill_time_ns/1.0e9)) ) {
-        fNuMIInfoEventMap[info.event] = info;
+      auto& storedInfo = fNuMIInfoEventMap[info.event]; // creates if needed
+      if ( (storedInfo.event == UINT_MAX) || spillInfoToTimestamp(info) > spillInfoToTimestamp(storedInfo) ) {
+        storedInfo = std::move(info);
       }
     }
   }
@@ -2024,7 +2025,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   // Fill the header info for the given event's spill quality info
   if ( fHasBNBInfo && fHasNuMIInfo ) {
-    std::cout << "Found > 0 BNBInfo size and NuMIInfo size, which seems strange. Will not fill event-specific spill quality info for this event..." << std::endl;
+    std::cout << "Found > 0 BNBInfo size and NuMIInfo size, which seems strange. Throwing..." << std::endl;
+    abort();
   }
   else if ( fHasBNBInfo ) {
     if ( fBNBInfoEventMap.find(evt.id().event()) == fBNBInfoEventMap.end() )
