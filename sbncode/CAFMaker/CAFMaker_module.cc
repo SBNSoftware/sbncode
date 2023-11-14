@@ -2000,15 +2000,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     std::cout << "Found > 0 BNBInfo size and NuMIInfo size, which seems strange. Throwing..." << std::endl;
     abort();
   }
-  else if ( fHasBNBInfo ) {
-    if ( fBNBInfoEventMap.find(evt.id().event()) == fBNBInfoEventMap.end() )
-      std::cout << "We think (since fHasBNBInfo) that this event should be BNB, but did not find this event in the spill info map." << std::endl;
-    else rec.hdr.spillbnbinfo = makeSRBNBInfo(fBNBInfoEventMap.at(evt.id().event()));
+  unsigned int const eventNo = evt.id().event();
+  if ( fBNBInfoEventMap.count(eventNo) > 0 ) {
+    rec.hdr.spillbnbinfo = makeSRBNBInfo(fBNBInfoEventMap.at(eventNo));
   }
-  else if ( fHasNuMIInfo ) {
-    if ( fNuMIInfoEventMap.find(evt.id().event()) == fNuMIInfoEventMap.end() )
-      std::cout << "We think (since fHasNuMIInfo) that this event should be NuMI, but did not find this event in the spill info map." << std::endl;
-    else rec.hdr.spillnumiinfo = makeSRNuMIInfo(fNuMIInfoEventMap.at(evt.id().event()));
+  else if ( fNuMIInfoEventMap.count(eventNo) > 0 ) {
+    rec.hdr.spillnumiinfo = makeSRNuMIInfo(fNuMIInfoEventMap.at(eventNo));
+  }
+  else {
+    std::cout << "Did not find this event in the spill info map." << std::endl;
   }
 
   if(fRecTree){
