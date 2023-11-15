@@ -345,6 +345,7 @@ std::vector<geo::BoxBoundedGeo> TrajectoryMCSFitter::setFiducialVolumes() const 
     double zMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxZ() < rhs.MaxZ(); })->MaxZ();
     ActiveVolumes.emplace_back(xMin, xMax, yMin, yMax, zMin, zMax);
   }
+
   double fidInsetMinX = fiducialVolumeInsets_[0];
   double fidInsetMaxX = fiducialVolumeInsets_[1];
   double fidInsetMinY = fiducialVolumeInsets_[2];
@@ -352,15 +353,6 @@ std::vector<geo::BoxBoundedGeo> TrajectoryMCSFitter::setFiducialVolumes() const 
   double fidInsetMinZ = fiducialVolumeInsets_[4];
   double fidInsetMaxZ = fiducialVolumeInsets_[5];
 
-  if (fiducialVolumeInsets_.size() != 6) {
-    std::cout << "Error: fiducialVolumeInsets vector must have length of 6, not fiducializing" << std::endl;
-    fidInsetMinX = 0.0;
-    fidInsetMaxX = 0.0;
-    fidInsetMinY = 0.0;
-    fidInsetMaxY = 0.0;
-    fidInsetMinZ = 0.0;
-    fidInsetMaxZ = 0.0;
-  }
   for (const geo::BoxBoundedGeo &AV: ActiveVolumes) {
     fiducialVolumes.emplace_back(AV.MinX() + fidInsetMinX, AV.MaxX() - fidInsetMaxX,
                                  AV.MinY() + fidInsetMinY, AV.MaxY() - fidInsetMaxY,

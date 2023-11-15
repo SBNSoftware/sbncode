@@ -114,6 +114,8 @@ namespace trkf::sbn {
       pStep_ = pStep;
       angResol_ = angResol;
       fiducialVolumeInsets_ = fiducialVolumeInsets;
+      if(fiducialVolumeInsets_.size() != 6)
+	fiducialVolumeInsets_ = std::vector<double>(6, 0.);
       excludeVolumes_ = excludeVolumes;
     }
     explicit TrajectoryMCSFitter(const Parameters & p)
