@@ -25,6 +25,8 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "art_root_io/TFileService.h"
+#include "canvas/Persistency/Common/FindManyP.h"
+#include "canvas/Persistency/Common/TriggerResults.h"
 
 #include "larcore/Geometry/Geometry.h"
 #include "TGeoManager.h"
@@ -34,6 +36,9 @@
 
 #include "nusimdata/SimulationBase/MCFlux.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
+#include "larcoreobj/SummaryData/POTSummary.h"
+
+#include "sbnobj/Common/SBNEventWeight/EventWeightMap.h"
 
 class FluxReaderAna;
 
@@ -52,19 +57,23 @@ public:
 
   // Required functions.
   void analyze(art::Event const& e) override;
+  virtual void beginSubRun(art::SubRun const& sr) override;
 
 private:
 
   std::string _flux_label; ///< Label for flux dataproduct (to be set via fcl)
+  std::string _flux_eventweight_multisim_producer; ///< Label for flux weights (to be set via fcl)
   float _x_shift; // cm (to be set via fcl)
   float _baseline; // cm (to be set via fcl)
   float _nu_intersection_z; ///< Z position where to evaluate the flux (to be set via fcl)
   float _nu_other_intersection_z; ///< Additional Z position where to evaluate the flux (to be set via fcl)
+  std::vector<int> _requested_nu_pdgs; ///< Only save neutrinos with PDGs in this list (to be set via fcl)
 
   bool _apply_position_cuts; // wheter or not to apply position cuts (to be set via fcl)
   float _x_cut; // cm, only saves neutrinos with x in [-_xcut, +_xcut] (to be set via fcl)
   float _y_cut; // cm, only saves neutrinos with y in [-_ycut, +_ycut] (to be set via fcl)
 
+  bool _add_systs; // wheter or not to add systs
 
   const TDatabasePDG *_pdg_database = TDatabasePDG::Instance();
 
@@ -101,6 +110,13 @@ private:
   float _nu_other_y; /// Y poisition of neutrino at the front face of the TPC (other)
   float _nu_other_z; /// Z poisition of neutrino at the front face of the TPC (other)
   float _nu_other_t; /// Time of the neutrino (other)
+
+  std::vector<float> _evtwgt_flux_oneweight; ///< Weights for FLUX reweighting (multisim) (combines all variations)
+
+  TTree* _sr_tree;
+  int _sr_run, _sr_subrun;
+  double _sr_begintime, _sr_endtime;
+  double _sr_pot; ///< Number of POTs per subrun
 };
 
 
@@ -109,6 +125,8 @@ FluxReaderAna::FluxReaderAna(fhicl::ParameterSet const& p)
 {
 
   _flux_label = p.get<std::string>("FluxLabel", "flux");
+  _flux_eventweight_multisim_producer = p.get<std::string>("FluxEventWeightProducer", "fluxweight");
+  _requested_nu_pdgs = p.get<std::vector<int>>("RequestedNuPDGs", std::vector<int>());
 
   _baseline = p.get<float>("Baseline"); // cm, distance from detector to target position
   _x_shift = p.get<float>("XShift", 0.); // cm, detector shift along X w.r.t. beamline coordinate system
@@ -154,10 +172,28 @@ FluxReaderAna::FluxReaderAna(fhicl::ParameterSet const& p)
   _tree->Branch("nu_other_y", &_nu_other_y, "nu_other_y/F");
   _tree->Branch("nu_other_z", &_nu_other_z, "nu_other_z/F");
   _tree->Branch("nu_other_t", &_nu_other_t, "nu_other_t/F");
+
+  _tree->Branch("evtwgt_flux_oneweight", "std::vector<float>", &_evtwgt_flux_oneweight);
+
+
+  _sr_tree = fs->make<TTree>("pottree","");
+  _sr_tree->Branch("run", &_sr_run, "run/I");
+  _sr_tree->Branch("subrun", &_sr_subrun, "subrun/I");
+  _sr_tree->Branch("begintime", &_sr_begintime, "begintime/D");
+  _sr_tree->Branch("endtime", &_sr_endtime, "endtime/D");
+  _sr_tree->Branch("pot", &_sr_pot, "pot/D");
 }
 
 void FluxReaderAna::analyze(art::Event const& e)
 {
+
+  art::Handle<art::TriggerResults> trigger_h;
+  e.getByLabel("TriggerResults", trigger_h);
+  art::TriggerResults const& trigger = *trigger_h;
+  if (!trigger.accept()) {
+    std::cout << "[FluxReaderAna] Event was not accepted." << std::endl;
+    return;
+  }
 
   art::Handle< std::vector<simb::MCFlux> > mcFluxHandle;
   e.getByLabel(_flux_label, mcFluxHandle);
@@ -167,9 +203,17 @@ void FluxReaderAna::analyze(art::Event const& e)
   e.getByLabel(_flux_label, mctruthHandle);
   std::vector<simb::MCTruth> const& mclist = *mctruthHandle;
 
+  art::FindManyP<sbn::evwgh::EventWeightMap> mct_to_fluxewm(mctruthHandle, e, _flux_eventweight_multisim_producer);
+
   for(unsigned int inu = 0; inu < mclist.size(); inu++) {
     simb::MCParticle nu = mclist[inu].GetNeutrino().Nu();
     simb::MCFlux flux = fluxlist[inu];
+
+    if (_requested_nu_pdgs.size() &&
+        std::find(_requested_nu_pdgs.begin(), _requested_nu_pdgs.end(), nu.PdgCode()) == _requested_nu_pdgs.end()) {
+      std::cout << "[FluxReaderAna] Skipping neutrino with PDG " << nu.PdgCode() << std::endl;
+      continue;
+    }
 
     // std::cout << "This neutrino has vtx " << nu.Vx() << ", " << nu.Vy() << ", " << nu.Vz() << std::endl;
     // std::cout << "This neutrino has dir " << nu.Px() << ", " << nu.Py() << ", " << nu.Pz() << std::endl;
@@ -228,6 +272,42 @@ void FluxReaderAna::analyze(art::Event const& e)
       }
     }
 
+    // Flux weights
+    if (_add_systs) {
+      std::vector<art::Ptr<sbn::evwgh::EventWeightMap>> flux_ewm_v = mct_to_fluxewm.at(inu);
+      if (flux_ewm_v.size() != 1) {
+        std::cout << "[FluxReaderAna] EventWeightMap of " << _flux_eventweight_multisim_producer << " bigger than 1?" << std::endl;
+      }
+      std::map<std::string, std::vector<float>> evtwgt_map = *(flux_ewm_v[0]);
+
+      _evtwgt_flux_oneweight.clear();
+
+      std::vector<float> previous_weights;
+      std::vector<float> final_weights;
+
+      int countFunc = 0;
+      for(auto it : evtwgt_map) {
+        std::string func_name = it.first;
+        std::vector<float> weight_v = it.second;
+
+        if (previous_weights.size() == 0) {
+          previous_weights.resize(weight_v.size(), 1.);
+          final_weights.resize(weight_v.size(), 1.);
+        }
+
+        countFunc++;
+
+        // Construct a single weight
+        std::transform(previous_weights.begin(), previous_weights.end(),
+                       weight_v.begin(),
+                       final_weights.begin(),
+                       std::multiplies<float>());
+        previous_weights = final_weights;
+      }
+
+      _evtwgt_flux_oneweight = final_weights;
+    }
+
     _tree->Fill();
   }
 }
@@ -242,6 +322,28 @@ TVector3 FluxReaderAna::GetIntersection(TVector3 nu_pos, TVector3 nu_dir, float 
   double prod2 = nu_dir.Dot(plane_normal);
   double prod3 = prod1 / prod2;
   return nu_pos - nu_dir * prod3;
+
+}
+
+
+void FluxReaderAna::beginSubRun(art::SubRun const& sr) {
+
+  _sr_run       = sr.run();
+  _sr_subrun    = sr.subRun();
+  _sr_begintime = sr.beginTime().value();
+  _sr_endtime   = sr.endTime().value();
+
+  art::Handle<sumdata::POTSummary> pot_handle;
+  sr.getByLabel(_flux_label, pot_handle);
+
+  if (pot_handle.isValid()) {
+    _sr_pot = pot_handle->totpot;
+  } else {
+    _sr_pot = 0.;
+  }
+  std::cout << "POT for this subrun: " << _sr_pot << std::endl;
+
+  _sr_tree->Fill();
 
 }
 
