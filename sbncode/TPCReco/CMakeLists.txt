@@ -2,8 +2,7 @@ add_subdirectory(TrackHit)
 add_subdirectory(TrackSplit)
 add_subdirectory(VertexStub)
 add_subdirectory(CalorimetryAnalysis)
-if (TensorFlow_FOUND)
-  add_subdirectory(CNNHitClassification)
+add_subdirectory(CNNHitClassification)
 
 
 cet_build_plugin(NuVertexChargeTree art::module

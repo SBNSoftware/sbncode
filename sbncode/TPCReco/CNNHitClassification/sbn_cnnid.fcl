@@ -5,11 +5,28 @@ BEGIN_PROLOG
 
 cnnid_sbnd: {
   module_type: CNNID
-  BatchSize:                    256 
+  BatchSize:                    256
   WireLabel:                    "caldata"
   HitModuleLabel:               "gaushit"
   ClusterModuleLabel:           "pandora"
   PFParticleModuleLabel:        "pandora"
+  SkipClearCosmics:             true
+  DoMichel:                     true
+  MichelRegionSize:             [30, 120]
+  SparseLengthCut:              150
+  DoPFP:                        true
+  SparseRate:                   5
+  Views:                        []
+  PointIdAlg: @local::pointidalg_sbnd
+}
+
+cnnid_sbnd_sce: {
+  module_type: CNNID
+  BatchSize:                    256
+  WireLabel:                    "simtpc2d:gauss"
+  HitModuleLabel:               "gaushit"
+  ClusterModuleLabel:           "pandoraSCE"
+  PFParticleModuleLabel:        "pandoraSCE"
   SkipClearCosmics:             true
   DoMichel:                     true
   MichelRegionSize:             [30, 120]
