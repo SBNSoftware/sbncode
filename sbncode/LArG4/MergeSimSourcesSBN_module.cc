@@ -73,6 +73,18 @@ public:
       true // default
     };
 
+    fhicl::Atom<bool> FillMCParticlesLite{
+      fhicl::Name{"FillMCParticlesLite"},
+      fhicl::Comment{"whether to merge MCParticleLite"},
+      true // default
+    };
+
+    fhicl::Atom<bool> FillMCParticlesAssociated{
+      fhicl::Name{"FillMCParticlesAssociated"},
+      fhicl::Comment{"whether to merge art::Assns<simb::MCParticle, simb::MCTruth, sim::GeneratedParticleInfo>"},
+      true // default
+    };
+
     fhicl::Atom<bool> FillSimPhotons{
       fhicl::Name{"FillSimPhotons"},
       fhicl::Comment{"whether to merge SimPhotons"},
@@ -140,6 +152,8 @@ private:
   bool const fUseLitePhotons;
   bool const fStoreReflected;
   bool const fFillMCParticles;
+  bool const fFillMCParticlesLite;
+  bool const fFillMCParticlesAssociated;
   bool const fFillSimPhotons;
   bool const fFillSimChannels;
   bool const fFillAuxDetSimChannels;
@@ -180,6 +194,8 @@ sbn::MergeSimSourcesSBN::MergeSimSourcesSBN(Parameters const& params)
   , fUseLitePhotons(art::ServiceHandle<sim::LArG4Parameters const>()->UseLitePhotons())
   , fStoreReflected(params().StoreReflected())
   , fFillMCParticles(params().FillMCParticles())
+  , fFillMCParticlesLite(params().FillMCParticlesLite())
+  , fFillMCParticlesAssociated(params().FillMCParticlesAssociated())
   , fFillSimPhotons(params().FillSimPhotons())
   , fFillSimChannels(params().FillSimChannels())
   , fFillAuxDetSimChannels(params().FillAuxDetSimChannels())
@@ -200,8 +216,13 @@ sbn::MergeSimSourcesSBN::MergeSimSourcesSBN(Parameters const& params)
 
     if (fFillMCParticles) {
       consumes<std::vector<simb::MCParticle>>(tag);
-      consumes<art::Assns<simb::MCParticle, simb::MCTruth, sim::GeneratedParticleInfo>>(tag);
+    }
+    if (fFillMCParticlesLite) {
       consumes<std::vector<sim::MCParticleLite>>(tag);
+    }
+
+    if (fFillMCParticlesAssociated) {
+      consumes<art::Assns<simb::MCTruth, simb::MCParticle, sim::GeneratedParticleInfo>>(tag);
     }
 
     if (fFillSimChannels) { consumes<std::vector<sim::SimChannel>>(tag); }
@@ -241,9 +262,10 @@ sbn::MergeSimSourcesSBN::MergeSimSourcesSBN(Parameters const& params)
 
   if (fFillMCParticles) {
     produces<std::vector<simb::MCParticle>>();
-    produces<art::Assns<simb::MCTruth, simb::MCParticle, sim::GeneratedParticleInfo>>();
-    produces<std::vector<sim::MCParticleLite>>();
   }
+  if (fFillMCParticlesLite) { produces<std::vector<sim::MCParticleLite>>(); }
+  if (fFillMCParticlesAssociated) {
+    produces<art::Assns<simb::MCTruth, simb::MCParticle, sim::GeneratedParticleInfo>>();}
   if (fFillSimChannels) { produces<std::vector<sim::SimChannel>>(); }
   if (fFillAuxDetSimChannels) { produces<std::vector<sim::AuxDetSimChannel>>(); }
 
@@ -300,11 +322,12 @@ void sbn::MergeSimSourcesSBN::produce(art::Event& e)
 
   for (auto const& [i_source, input_label] : util::enumerate(fInputSourcesLabels)) {
 
+    auto const input_partCol = e.getValidHandle<std::vector<simb::MCParticle>>(input_label);
+    art::PtrMaker<simb::MCParticle> const makePartPtr{e};
     if (fFillMCParticles) {
-      art::PtrMaker<simb::MCParticle> const makePartPtr{e};
-      auto const input_partCol = e.getValidHandle<std::vector<simb::MCParticle>>(input_label);
       MergeUtility.MergeMCParticles(*partCol, *input_partCol, i_source);
-
+    }
+    if (fFillMCParticlesAssociated){
       //truth-->particle assoc stuff here
       const std::vector<size_t>& assocVectorPrimitive =
         MergeUtility.GetMCParticleListMap().at(i_source);
@@ -313,7 +336,8 @@ void sbn::MergeSimSourcesSBN::produce(art::Event& e)
       for (auto const i_p : util::counter(mctAssn.size()))
         tpassn->addSingle(
           mctAssn.at(i_p), makePartPtr(assocVectorPrimitive[i_p]), mctAssn.data(i_p).ref());
-
+    }
+    if (fFillMCParticlesLite) {
       // MCParticleLite
       //art::PtrMaker<sim::MCParticleLite> const makePartPtrLite{e};
       auto const input_partLiteCol = e.getValidHandle<std::vector<sim::MCParticleLite>>(input_label);
@@ -375,9 +399,9 @@ void sbn::MergeSimSourcesSBN::produce(art::Event& e)
 
   if (fFillMCParticles) {
     e.put(std::move(partCol));
-    e.put(std::move(tpassn));
-    e.put(std::move(partLiteCol));
   }
+  if (fFillMCParticlesLite) { e.put(std::move(partLiteCol)); }
+  if (fFillMCParticlesAssociated) { e.put(std::move(tpassn)); }
   if (fFillSimChannels) { e.put(std::move(scCol)); }
   if (fFillAuxDetSimChannels) { e.put(std::move(adCol)); }
   if (fFillSimPhotons) {
@@ -418,6 +442,10 @@ void sbn::MergeSimSourcesSBN::dumpConfiguration() const
     log << "\n   [" << i_source << "] '" << tag.encode() << "' (ID offset: " << offset << ")";
   } // for
   if (fFillMCParticles) log << "\n - filling MCParticles";
+
+  if (fFillMCParticlesLite) log << "\n - filling MCParticlesLite";
+
+  if (fFillMCParticlesAssociated) log << "\n - filling MCParticlesAssociated";
 
   if (fFillSimChannels) log << "\n - filling SimChannels";
 
