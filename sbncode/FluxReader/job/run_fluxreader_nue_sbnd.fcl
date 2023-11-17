@@ -2,6 +2,7 @@
 # for SBND
 
 #include "simulationservices_sbnd.fcl"
+#include "fluxfilter_sbnd.fcl"
 #include "eventweight_flux_sbn.fcl"
 
 process_name: FluxReader
@@ -20,7 +21,7 @@ services:
 source:
 {
   fileNames:        []
-  module_type:      FluxReader
+  module_type:	    FluxReader
   skipEvents:       0
   maxEvents:        -1
   inputType:        "gsimple"
@@ -28,6 +29,18 @@ source:
   Elow:             0
   Ehigh:            10
   SelfIncrementRun: true
+}
+
+outputs:
+{
+ out1:
+  {
+    module_type: RootOutput
+    fileName:    "fluxreader.root"
+    compressionLevel: 1
+    dataTier:    "simulated"
+    SelectEvents: [ filter ]
+  }
 }
 
 physics:
@@ -38,25 +51,34 @@ physics:
     fluxweight:  @local::sbn_eventweight_flux
   }
 
+  filters:
+  {
+    fluxfilter: @local::flux_filter
+  }
+
   analyzers:
   {
     fluxana: {
       module_type: "FluxReaderAna"
       Baseline: 11000 # cm, distance from detector to target position
       XShift: -73.78 # cm, detector shift along X w.r.t. beamline coordinate system
-      NuOtherIntersectionZ: 10 # cm distance from start of detector to start of FV
+      NuOtherIntersectionZ: 49000 # cm
+      # 49000 cm is ICARUS location in SBND coordinate system (600 - 110) m
+      # 36000 cm is MicroBooNE location in SBND coordinate system (470 - 110) m
       ApplyPositionCuts: true
-      XCut: 200 # cm
-      YCut: 200 # cm
-      AddSysts: true
+      XCut: 400 # cm
+      YCut: 400 # cm
+      RequestedNuPDGs: [12, -12] # Keep neutrinos with these PDGs
     }
   }
 
-  prod:   [ rns, fluxweight ]
-  ana:    [ fluxana ]
-
-  trigger_paths: [ prod ]
-  end_paths:     [ ana ]
+  # filter: [ rns, fluxfilter, fluxweight ]
+  filter: [ rns, fluxweight ]
+  ana: [ fluxana ]
+  stream1: [ out1 ]
+  trigger_paths: [ filter ]
+  end_paths: [ ana, stream1 ]
+  # end_paths: [ stream1 ]
 }
 
 physics.producers.fluxweight.generator_module_label: "flux"

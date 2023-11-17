@@ -13,9 +13,10 @@ crumbs_sbnd:
   TrackModuleLabel:			"pandoraTrack"
   SliceModuleLabel:			"pandora"
   FlashMatchModuleLabel:		"fmatch"
-  CRTTrackMatchModuleLabel:		"crttrackt0"
-  CRTSPMatchModuleLabel:		"crthitt0"
+  CRTTrackMatchModuleLabel:		"crttrackmatching"
+  CRTSPMatchModuleLabel:		"crtspacepointmatching"
   CalorimetryModuleLabel:		"pandoraCalo"
+  OpT0ModuleLabel:			"opt0finder"
   
   MVAName:                              "BDT"
   MVAFileName:                          "CRUMBS/CRUMBS_SBND.weights.xml"

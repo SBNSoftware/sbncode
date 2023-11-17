@@ -227,7 +227,7 @@ namespace sbn {
       }
 
       //Iterate through each neutrino in the event
-    std::cout<<"SBNEventWeight Flux: Get calculator "<<CalcType<<std::endl;
+      //    std::cout<<"SBNEventWeight Flux: Get calculator "<<CalcType<<std::endl;
       if( CalcType == "Unisim"){//Unisim Calculator
         weights.resize(NUni);
         //Unisim specific

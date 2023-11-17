@@ -39,6 +39,7 @@
 #include "sbncode/GeometryTools/TPCGeoAlg.h"
 #include "sbnobj/Common/Reco/SimpleFlashMatchVars.h"
 #include "sbnobj/Common/Reco/StoppingChi2Fit.h"
+#include "sbnobj/Common/Reco/OpT0FinderResult.h"
 #include "sbncode/LArRecoProducer/TrackStoppingChi2Alg.h"
 #include "sbnobj/SBND/CRT/CRTTrack.hh"
 #include "sbnobj/SBND/CRT/CRTSpacePoint.hh"
@@ -70,7 +71,7 @@ namespace sbn {
     void ResetVars();
 
     void GetMaps(art::Event const& e, std::map<int, int> &trackIDToGenMap, std::map<int, std::string> &genTypeMap,
-		 std::map<int, int> &genCCNCMap, std::map<int, int> &genNuTypeMap);
+                 std::map<int, int> &genCCNCMap, std::map<int, int> &genNuTypeMap);
 
     art::Ptr<recob::PFParticle> GetSlicePrimary(art::Event const& e,
                                                 const art::Ptr<recob::Slice> &slice,
@@ -104,11 +105,11 @@ namespace sbn {
   private:
 
     // Bools to control training
-    bool fTrainingMode, fEvaluateResultInTrainingMode, fProcessNeutrinos, fProcessCosmics;
+    bool fTrainingMode, fEvaluateResultInTrainingMode, fProcessNeutrinos, fProcessCosmics, fUseSimpleFlash, fUseOpT0Finder;
 
     // Module labels
     std::string fMCParticleModuleLabel, fGeneratorModuleLabel, fCosmicModuleLabel, fPFParticleModuleLabel, fHitModuleLabel, fTrackModuleLabel, fSliceModuleLabel, 
-      fFlashMatchModuleLabel, fCRTTrackMatchModuleLabel, fCRTSPMatchModuleLabel, fCalorimetryModuleLabel;
+      fFlashMatchModuleLabel, fCRTTrackMatchModuleLabel, fCRTSPMatchModuleLabel, fCalorimetryModuleLabel, fOpT0ModuleLabel;
 
     // MVA location and type for loading
     std::string fMVAName, fMVAFileName, fCCNuMuMVAName, fCCNuMuMVAFileName, fCCNuEMVAName, fCCNuEMVAFileName, fNCMVAName, fNCMVAFileName;
@@ -159,6 +160,12 @@ namespace sbn {
     float pds_FMPE;                       // the total number of photoelectrons in the associated flash
     float pds_FMTime;                     // the time associated with the flash [us]
 
+    // OpT0Finder Variables
+    float pds_OpT0Time;                   // the time of the flash
+    float pds_OpT0Score;                  // the goodness-of-match score
+    float pds_OpT0MeasuredPE;             // the measured PE in the flash
+    float pds_OpT0HypothesisPE;           // the PE in the charge-based predicted flash
+
     // CRT Track and Hit Matching Variables
     float crt_TrackScore;                // a combination of the DCA and angle between the best matched TPC & CRT tracks
     float crt_SPScore;                   // the best distance from an extrapolated TPC track to a CRT SP [cm]
@@ -173,6 +180,8 @@ namespace sbn {
     fEvaluateResultInTrainingMode (p.get<bool>("EvaluateResultInTrainingMode",false)),
     fProcessNeutrinos             (p.get<bool>("ProcessNeutrinos",true)),
     fProcessCosmics               (p.get<bool>("ProcessCosmics",true)),
+    fUseSimpleFlash               (p.get<bool>("UseSimpleFlash",true)),
+    fUseOpT0Finder                (p.get<bool>("UseOpT0Finder",false)),
     fMCParticleModuleLabel        (p.get<std::string>("MCParticleModuleLabel","")),
     fGeneratorModuleLabel         (p.get<std::string>("GeneratorModuleLabel","")),
     fCosmicModuleLabel            (p.get<std::string>("CosmicModuleLabel","")),
@@ -184,6 +193,7 @@ namespace sbn {
     fCRTTrackMatchModuleLabel     (p.get<std::string>("CRTTrackMatchModuleLabel")),
     fCRTSPMatchModuleLabel        (p.get<std::string>("CRTSPMatchModuleLabel")),
     fCalorimetryModuleLabel       (p.get<std::string>("CalorimetryModuleLabel")),
+    fOpT0ModuleLabel              (p.get<std::string>("OpT0ModuleLabel")),
     fMVAName                      (p.get<std::string>("MVAName")),
     fMVAFileName                  (p.get<std::string>("MVAFileName")),
     fCCNuMuMVAName                (p.get<std::string>("CCNuMuMVAName")),
@@ -196,15 +206,15 @@ namespace sbn {
     fTrackStoppingChi2Alg(fChi2FitParams)
     {
       if(!fTrainingMode || fEvaluateResultInTrainingMode)
-	{
-	  produces<std::vector<CRUMBSResult>>();
-	  produces<art::Assns<recob::Slice, CRUMBSResult>>();
+        {
+          produces<std::vector<CRUMBSResult>>();
+          produces<art::Assns<recob::Slice, CRUMBSResult>>();
 
-	  InitialiseMVAReader(fMVAReader, fMVAName, fMVAFileName);
-	  InitialiseMVAReader(fCCNuMuMVAReader, fCCNuMuMVAName, fCCNuMuMVAFileName);
-	  InitialiseMVAReader(fCCNuEMVAReader, fCCNuEMVAName, fCCNuEMVAFileName);
-	  InitialiseMVAReader(fNCMVAReader, fNCMVAName, fNCMVAFileName);
-	}
+          InitialiseMVAReader(fMVAReader, fMVAName, fMVAFileName);
+          InitialiseMVAReader(fCCNuMuMVAReader, fCCNuMuMVAName, fCCNuMuMVAFileName);
+          InitialiseMVAReader(fCCNuEMVAReader, fCCNuEMVAName, fCCNuEMVAFileName);
+          InitialiseMVAReader(fNCMVAReader, fNCMVAName, fNCMVAFileName);
+        }
 
       art::ServiceHandle<art::TFileService> tfs;
       if(fTrainingMode)
@@ -227,6 +237,11 @@ namespace sbn {
           fSliceTree->Branch("pds_FMTotalScore",&pds_FMTotalScore);
           fSliceTree->Branch("pds_FMPE",&pds_FMPE);
           fSliceTree->Branch("pds_FMTime",&pds_FMTime);
+
+          fSliceTree->Branch("pds_OpT0Time",&pds_OpT0Time);
+          fSliceTree->Branch("pds_OpT0Score",&pds_OpT0Score);
+          fSliceTree->Branch("pds_OpT0MeasuredPE",&pds_OpT0MeasuredPE);
+          fSliceTree->Branch("pds_OpT0HypothesisPE",&pds_OpT0HypothesisPE);
 
           fSliceTree->Branch("crt_TrackScore",&crt_TrackScore);
           fSliceTree->Branch("crt_SPScore",&crt_SPScore);
@@ -259,14 +274,23 @@ namespace sbn {
     mvaReader.AddVariable("tpc_NuWeightedDirZ",&tpc_NuWeightedDirZ);
     mvaReader.AddVariable("tpc_StoppingChi2CosmicRatio",&tpc_StoppingChi2CosmicRatio);
 
-    mvaReader.AddVariable("pds_FMTotalScore",&pds_FMTotalScore);
-    mvaReader.AddVariable("pds_FMPE",&pds_FMPE);
-    mvaReader.AddVariable("pds_FMTime",&pds_FMTime);
+    if(fUseSimpleFlash)
+      {
+        mvaReader.AddVariable("pds_FMTotalScore",&pds_FMTotalScore);
+        mvaReader.AddVariable("pds_FMPE",&pds_FMPE);
+        mvaReader.AddVariable("pds_FMTime",&pds_FMTime);
+      }
+
+    if(fUseOpT0Finder)
+      {
+        mvaReader.AddVariable("pds_OpT0Score",&pds_OpT0Score);
+        mvaReader.AddVariable("isinf(pds_OpT0MeasuredPE) ? -10000 : pds_OpT0MeasuredPE",&pds_OpT0MeasuredPE);
+      }
 
     mvaReader.AddVariable("crt_TrackScore",&crt_TrackScore);
-    mvaReader.AddVariable("crt_HitScore",&crt_SPScore);
+    mvaReader.AddVariable("crt_SPScore",&crt_SPScore);
     mvaReader.AddVariable("crt_TrackTime",&crt_TrackTime);
-    mvaReader.AddVariable("crt_HitTime",&crt_SPTime);
+    mvaReader.AddVariable("crt_SPTime",&crt_SPTime);
 
     cet::search_path searchPath("FW_SEARCH_PATH");
     std::string weightFileFullPath;
@@ -282,7 +306,9 @@ namespace sbn {
     tpc_NuEigenRatioInSphere = -999999.; tpc_NuNFinalStatePfos = -999999.; tpc_NuNHitsTotal = -999999.; tpc_NuNSpacePointsInSphere = -999999.; tpc_NuVertexY = -999999.;
     tpc_NuWeightedDirZ = -999999.; tpc_StoppingChi2CosmicRatio = -4.;
 
-    pds_FMTotalScore = -999999.; pds_FMPE = -999999.; pds_FMTime = -500.;
+    pds_FMTotalScore = -10.; pds_FMPE = -5000.; pds_FMTime = -500.;
+
+    pds_OpT0Time = -1.; pds_OpT0Score = -5000.; pds_OpT0MeasuredPE = -10000.; pds_OpT0HypothesisPE = -10000.;
 
     crt_TrackScore = -4.; crt_SPScore = -4.; crt_TrackTime = -3000; crt_SPTime = -3000;
 
@@ -293,7 +319,7 @@ namespace sbn {
   }
 
   void CRUMBS::GetMaps(art::Event const& e, std::map<int, int> &trackIDToGenMap, std::map<int, std::string> &genTypeMap, 
-		       std::map<int, int> &genCCNCMap, std::map<int, int> &genNuTypeMap)
+                       std::map<int, int> &genCCNCMap, std::map<int, int> &genNuTypeMap)
   {
 
     unsigned nNu(0), nCos(0);
@@ -321,8 +347,8 @@ namespace sbn {
             }
           ++nNu;
 
-	  genCCNCMap[i]   = mcTruth->GetNeutrino().CCNC();
-	  genNuTypeMap[i] = mcTruth->GetNeutrino().Nu().PdgCode();
+          genCCNCMap[i]   = mcTruth->GetNeutrino().CCNC();
+          genNuTypeMap[i] = mcTruth->GetNeutrino().Nu().PdgCode();
         }
       }
 
@@ -346,8 +372,8 @@ namespace sbn {
             }
           ++nCos;
 
-	  genCCNCMap[i + nNu]   = -1;
-	  genNuTypeMap[i + nNu] = -1;
+          genCCNCMap[i + nNu]   = -1;
+          genNuTypeMap[i + nNu] = -1;
         }
       }
 
@@ -383,6 +409,7 @@ namespace sbn {
 
     art::FindManyP<larpandoraobj::PFParticleMetadata> pfpMetadataAssoc(handlePFPs, e, fPFParticleModuleLabel);
     art::FindManyP<sbn::SimpleFlashMatch> pfpFMAssoc(handlePFPs, e, fFlashMatchModuleLabel);
+    art::FindManyP<sbn::OpT0Finder> sliceOpT0Assoc(handleSlices, e, fOpT0ModuleLabel);
 
     for(auto const &slice : slices)
       {
@@ -398,6 +425,7 @@ namespace sbn {
 
         const std::vector<art::Ptr<larpandoraobj::PFParticleMetadata> > pfpMetaVec = pfpMetadataAssoc.at(primary.key());
         const std::vector<art::Ptr<sbn::SimpleFlashMatch> > pfpFMVec = pfpFMAssoc.at(primary.key());
+        std::vector<art::Ptr<sbn::OpT0Finder> > sliceOpT0Vec = sliceOpT0Assoc.at(slice.key());
         const std::vector<anab::T0> sliceCRTTrackT0s = this->GetCRTTrackT0s(e, slice, handlePFPs, handleSlices);
         const std::vector<anab::T0> sliceCRTSPT0s = this->GetCRTSPT0s(e, slice, handlePFPs, handleSlices);
 
@@ -414,25 +442,37 @@ namespace sbn {
         pds_FMTotalScore = flashmatch->score.total;
         pds_FMPE = flashmatch->light.pe;
         pds_FMTime = std::max(flashmatch->time, -100.);
-      
-	if(!fTrainingMode || fEvaluateResultInTrainingMode)
-	  {
-	    const float score       = fMVAReader.EvaluateMVA(fMVAName);
-	    const float ccnumuscore = fCCNuMuMVAReader.EvaluateMVA(fCCNuMuMVAName);
-	    const float ccnuescore  = fCCNuEMVAReader.EvaluateMVA(fCCNuEMVAName);
-	    const float ncscore     = fNCMVAReader.EvaluateMVA(fNCMVAName);
 
-	    const float bestscore   = (ccnumuscore > ccnuescore && ccnumuscore > ncscore) ? ccnumuscore : (ccnuescore > ncscore) ? ccnuescore : ncscore;
-	    const int   bestid      = (ccnumuscore > ccnuescore && ccnumuscore > ncscore) ? 14 : (ccnuescore > ncscore) ? 12 : 1;
-	    
-	    resultsVec->emplace_back(score, ccnumuscore, ccnuescore, ncscore, bestscore, bestid, tpc_CRFracHitsInLongestTrack, tpc_CRLongestTrackDeflection, 
-				     tpc_CRLongestTrackDirY, std::round(tpc_CRNHitsMax), tpc_NuEigenRatioInSphere, std::round(tpc_NuNFinalStatePfos), 
-				     std::round(tpc_NuNHitsTotal), std::round(tpc_NuNSpacePointsInSphere), tpc_NuVertexY, tpc_NuWeightedDirZ, 
-				     tpc_StoppingChi2CosmicRatio, pds_FMTotalScore, pds_FMPE, pds_FMTime, crt_TrackScore, crt_SPScore, 
-				     crt_TrackTime, crt_SPTime);
-	    
-	    util::CreateAssn(*this, e, *resultsVec, slice, *sliceAssns);
-	  }
+        if(sliceOpT0Vec.size() > 0)
+          {
+            std::sort(sliceOpT0Vec.begin(), sliceOpT0Vec.end(),
+                      [](auto const& a, auto const& b)
+                      { return a->score > b->score; });
+
+            pds_OpT0Time         = sliceOpT0Vec[0]->time;
+            pds_OpT0Score        = sliceOpT0Vec[0]->score;
+            pds_OpT0MeasuredPE   = isinf(sliceOpT0Vec[0]->measPE) ? -10000 : sliceOpT0Vec[0]->measPE;
+            pds_OpT0HypothesisPE = isinf(sliceOpT0Vec[0]->hypoPE) ? -10000 : sliceOpT0Vec[0]->hypoPE;
+          }
+
+        if(!fTrainingMode || fEvaluateResultInTrainingMode)
+          {
+            const float score       = fMVAReader.EvaluateMVA(fMVAName);
+            const float ccnumuscore = fCCNuMuMVAReader.EvaluateMVA(fCCNuMuMVAName);
+            const float ccnuescore  = fCCNuEMVAReader.EvaluateMVA(fCCNuEMVAName);
+            const float ncscore     = fNCMVAReader.EvaluateMVA(fNCMVAName);
+
+            const float bestscore   = (ccnumuscore > ccnuescore && ccnumuscore > ncscore) ? ccnumuscore : (ccnuescore > ncscore) ? ccnuescore : ncscore;
+            const int   bestid      = (ccnumuscore > ccnuescore && ccnumuscore > ncscore) ? 14 : (ccnuescore > ncscore) ? 12 : 1;
+            
+            resultsVec->emplace_back(score, ccnumuscore, ccnuescore, ncscore, bestscore, bestid, tpc_CRFracHitsInLongestTrack, tpc_CRLongestTrackDeflection, 
+                                     tpc_CRLongestTrackDirY, std::round(tpc_CRNHitsMax), tpc_NuEigenRatioInSphere, std::round(tpc_NuNFinalStatePfos), 
+                                     std::round(tpc_NuNHitsTotal), std::round(tpc_NuNSpacePointsInSphere), tpc_NuVertexY, tpc_NuWeightedDirZ, 
+                                     tpc_StoppingChi2CosmicRatio, pds_FMTotalScore, pds_FMPE, pds_FMTime, crt_TrackScore, crt_SPScore, 
+                                     crt_TrackTime, crt_SPTime);
+            
+            util::CreateAssn(*this, e, *resultsVec, slice, *sliceAssns);
+          }
 
         if(fTrainingMode)
           {
@@ -444,8 +484,8 @@ namespace sbn {
             slicePDG = primary->PdgCode();
             matchedType = genTypeMap[matchedID];
       
-	    ccnc   = genCCNCMap[matchedID];
-	    nutype = genNuTypeMap[matchedID];
+            ccnc   = genCCNCMap[matchedID];
+            nutype = genNuTypeMap[matchedID];
 
             fSliceTree->Fill();
           }
@@ -453,8 +493,8 @@ namespace sbn {
 
     if(!fTrainingMode || fEvaluateResultInTrainingMode)
       {
-	e.put(std::move(resultsVec));
-	e.put(std::move(sliceAssns));
+        e.put(std::move(resultsVec));
+        e.put(std::move(sliceAssns));
       }
   }
 
@@ -653,13 +693,13 @@ namespace sbn {
 
         const art::Ptr<recob::Track> track = tracks.front();
 
-	const art::Ptr<sbnd::crt::CRTTrack> crttrack = trackT0Assn.at(track.key());
+        const art::Ptr<sbnd::crt::CRTTrack> crttrack = trackT0Assn.at(track.key());
 
-	if(crttrack.isNonnull())
-	  {
-	    const anab::T0 t0 = trackT0Assn.data(track.key()).ref();
-	    t0Vec.push_back(t0);
-	  }
+        if(crttrack.isNonnull())
+          {
+            const anab::T0 t0 = trackT0Assn.data(track.key()).ref();
+            t0Vec.push_back(t0);
+          }
       }
   
     return t0Vec;
@@ -691,13 +731,13 @@ namespace sbn {
 
         const art::Ptr<recob::Track> track = tracks.front();
 
-	const art::Ptr<sbnd::crt::CRTSpacePoint> crtsp = trackT0Assn.at(track.key());
+        const art::Ptr<sbnd::crt::CRTSpacePoint> crtsp = trackT0Assn.at(track.key());
 
-	if(crtsp.isNonnull())
-	  {
-	    const anab::T0 t0 = trackT0Assn.data(track.key()).ref();
-	    t0Vec.push_back(t0);
-	  }
+        if(crtsp.isNonnull())
+          {
+            const anab::T0 t0 = trackT0Assn.data(track.key()).ref();
+            t0Vec.push_back(t0);
+          }
       }
   
     return t0Vec;

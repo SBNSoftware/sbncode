@@ -42,6 +42,33 @@ razzle:
   ZMax:                 495
 }
 
+razzled:
+{
+  module_type:          Razzled
+  PFPLabel:             "pandora"
+  ClusterLabel:         "pandora"
+  TrackLabel:           "pandoraTrack"
+  ShowerLabel:          "pandoraShowerSBN"
+  CaloLabel:            "pandoraCalo"
+  MCSLabel:             "pandoraTrackMCS"
+  Chi2Label:            "pandoraPid"
+  RangeLabel:           "pandoraTrackRange"
+  ClosestApproachLabel: "pandoraTrackClosestApproach"
+  StoppingChi2Label:    "pandoraTrackStoppingChi2"
+  DazzleLabel:          "pandoraTrackDazzle"
+  RazzleLabel:          "pandoraShowerRazzle"
+  MinTrackLength:       0
+  MinShowerEnergy:      0
+  MakeTree:             false
+  RunMVA:               false
+  SaveFullCalo:         false
+  XMin:                -195
+  XMax:                 195
+  YMin:                -195
+  YMax:                 195
+  ZMin:                 5
+  ZMax:                 495
+}
 
 dazzle_sbnd: @local::dazzle
 dazzle_sbnd.RunMVA: true
@@ -52,5 +79,18 @@ razzle_sbnd: @local::razzle
 razzle_sbnd.RunMVA: true
 razzle_sbnd.MethodName: "BDT::BDTG"
 razzle_sbnd.WeightFile: "PID/Razzle.weights.xml"
+
+razzled_sbnd:            @local::razzled
+razzled_sbnd.RunMVA:     true
+razzled_sbnd.MethodName: "BDT::BDTG"
+razzled_sbnd.WeightFile: "PID/Razzled.weights.xml"
+
+razzled_sbnd_sce:              @local::razzled_sbnd
+razzled_sbnd_sce.PFPLabel:     "pandoraSCE"
+razzled_sbnd_sce.ClusterLabel: "pandoraSCE"
+razzled_sbnd_sce.TrackLabel:   "pandoraSCETrack"
+razzled_sbnd_sce.ShowerLabel:  "pandoraSCEShowerSBN"
+razzled_sbnd_sce.CaloLabel:    "pandoraSCECalo"
+razzled_sbnd_sce.Chi2Label:    "pandoraSCEPid"
 
 END_PROLOG
