@@ -923,6 +923,8 @@ namespace caf
       slice.barycenterFM.overlapY  = matchInfo->overlapY;
       slice.barycenterFM.overlapZ  = matchInfo->overlapZ;
       slice.barycenterFM.deltaZ_Trigger  = matchInfo->deltaZ_Trigger;
+      slice.barycenterFM.deltaY_Trigger  = matchInfo->deltaY_Trigger;
+      slice.barycenterFM.radius_Trigger  = matchInfo->radius_Trigger;
     }
   }
 
