@@ -1458,10 +1458,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::FindOneP<sbn::BarycenterMatch> foBarycenterMatch =
       FindOnePStrict<sbn::BarycenterMatch>(sliceList, evt,
           fParams.BarycenterMatchLabel() + slice_tag_suff);
-    const sbn::BarycenterMatch *barycenterMatch = nullptr;
-    if (foBarycenterMatch.isValid()) {
-      barycenterMatch = foBarycenterMatch.at(0).get();
-    }
+    const sbn::BarycenterMatch *barycenterMatch
+      = foBarycenterMatch.isValid()? foBarycenterMatch.at(0).get(): nullptr;
 
     art::FindManyP<larpandoraobj::PFParticleMetadata> fmPFPMeta =
       FindManyPStrict<larpandoraobj::PFParticleMetadata>(fmPFPart, evt,
