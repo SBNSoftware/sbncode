@@ -272,10 +272,10 @@ namespace caf
       "crtpmt" // this variable exists in icaruscode, pretty sure it does not yet exist in sbnd
     };
 
-    Atom<string> BarycenterMatchLabel {
-      Name("BarycenterMatchLabel"),
+    Atom<string> TPCPMTBarycenterMatchLabel {
+      Name("TPCPMTBarycenterMatchLabel"),
       Comment("Label of Slice-OpFlash matching via barycenters."),
-      "barycentermatch"
+      "tpcpmtbarycentermatch"
     };
 
     Atom<string> OpFlashLabel {

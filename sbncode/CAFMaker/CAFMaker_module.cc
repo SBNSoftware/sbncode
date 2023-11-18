@@ -1455,11 +1455,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<sbn::SimpleFlashMatch>(fmPFPart, evt,
                                              fParams.FlashMatchLabel() + slice_tag_suff);
 
-    art::FindOneP<sbn::BarycenterMatch> foBarycenterMatch =
-      FindOnePStrict<sbn::BarycenterMatch>(sliceList, evt,
-          fParams.BarycenterMatchLabel() + slice_tag_suff);
-    const sbn::BarycenterMatch *barycenterMatch
-      = foBarycenterMatch.isValid()? foBarycenterMatch.at(0).get(): nullptr;
+    art::FindOneP<sbn::TPCPMTBarycenterMatch> foTPCPMTBarycenterMatch =
+      FindOnePStrict<sbn::TPCPMTBarycenterMatch>(sliceList, evt,
+          fParams.TPCPMTBarycenterMatchLabel() + slice_tag_suff);
+    const sbn::TPCPMTBarycenterMatch *barycenterMatch
+      = foTPCPMTBarycenterMatch.isValid()? foTPCPMTBarycenterMatch.at(0).get(): nullptr;
 
     art::FindManyP<larpandoraobj::PFParticleMetadata> fmPFPMeta =
       FindManyPStrict<larpandoraobj::PFParticleMetadata>(fmPFPart, evt,
@@ -1653,7 +1653,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceCRUMBS(slcCRUMBS, recslc);
     FillSliceOpT0Finder(slcOpT0, recslc);
     FillSliceBarycenter(slcHits, slcSpacePoints, recslc);
-    FillBarycenterMatch(barycenterMatch, recslc);
+    FillTPCPMTBarycenterMatch(barycenterMatch, recslc);
 
     // select slice
     if (!SelectSlice(recslc, fParams.CutClearCosmic())) continue;

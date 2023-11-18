@@ -901,7 +901,7 @@ namespace caf
     srhit.spacepoint.ID = spacepoint.ID();
   }
 
-  void FillBarycenterMatch(const sbn::BarycenterMatch *matchInfo,
+  void FillTPCPMTBarycenterMatch(const sbn::TPCPMTBarycenterMatch *matchInfo,
                            caf::SRSlice& slice)
   { 
     slice.barycenterFM.setDefault();
