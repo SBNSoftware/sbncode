@@ -275,7 +275,7 @@ namespace caf
     Atom<string> TPCPMTBarycenterMatchLabel {
       Name("TPCPMTBarycenterMatchLabel"),
       Comment("Label of Slice-OpFlash matching via barycenters."),
-      "tpcpmtbarycentermatch"
+      "" //Empty by default, configured in icaruscode cafmaker_defs
     };
 
     Atom<string> OpFlashLabel {
