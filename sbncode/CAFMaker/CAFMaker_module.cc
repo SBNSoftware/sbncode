@@ -47,8 +47,11 @@
 #include "TTree.h"
 #include "TMath.h"
 #include "TTimeStamp.h"
-#include "TRandomGen.h"
 #include "TObjString.h"
+
+// CLHEP libraries
+#include "CLHEP/Random/RandEngine.h" // CLHEP::HepRandomEngine
+#include "CLHEP/Random/RandFlat.h"
 
 // Framework includes
 #include "art/Framework/Core/EDProducer.h"
@@ -109,7 +112,7 @@
 #include "sbnobj/Common/POTAccounting/NuMISpillInfo.h"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
-
+#include "sbnobj/Common/Reco/OpT0FinderResult.h"
 
 #include "canvas/Persistency/Provenance/ProcessConfiguration.h"
 #include "larcoreobj/SummaryData/POTSummary.h"
@@ -176,9 +179,11 @@ class CAFMaker : public art::EDProducer {
   std::string fFlatCafFilename;
   std::string fFlatCafBlindFilename;
   std::string fFlatCafPrescaleFilename;
+  
+  std::string fSourceFile;
 
   bool fFirstInSubRun;
-  bool fFirstInFile;
+  unsigned int fIndexInFile = SRHeader::NoSourceIndex;
   bool fFirstBlindInFile;
   bool fFirstPrescaleInFile;
   int fFileNumber;
@@ -221,10 +226,10 @@ class CAFMaker : public art::EDProducer {
   std::vector<geo::BoxBoundedGeo> fActiveVolumes;
 
   // random number generator for fake reco
-  TRandom *fFakeRecoTRandom;
+  CLHEP::HepRandomEngine& fFakeRecoRandomEngine;
 
   // random number generator for prescaling
-  TRandom *fBlindTRandom;
+  CLHEP::HepRandomEngine& fBlindRandomEngine;
 
   /// What position in the vector each parameter set take
   std::map<std::string, unsigned int> fWeightPSetIndex;
@@ -233,6 +238,8 @@ class CAFMaker : public art::EDProducer {
 
   std::string DeriveFilename(const std::string& inname,
                              const std::string& ext) const;
+
+  static std::string Basename(const std::string& path);
 
   void AddEnvToFile(TFile* f);
   void AddMetadataToFile(TFile* f,
@@ -320,7 +327,17 @@ class CAFMaker : public art::EDProducer {
 
   CAFMaker::CAFMaker(const Parameters& params)
   : art::EDProducer{params},
-    fParams(params()), fFile(0)
+    fParams(params()), fFile(0),
+    fFakeRecoRandomEngine(
+      art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(
+        createEngine(0, "HepJamesRandom", "FakeReco"),
+        "HepJamesRandom", "FakeReco", fParams.FakeRecoRandomSeed
+      )),
+    fBlindRandomEngine(
+      art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(
+        createEngine(0, "HepJamesRandom", "Blinding"),
+        "HepJamesRandom", "Blinding", fParams.BlindingRandomSeed
+      ))
   {
   // Note: we will define isRealData on a per event basis in produce function [using event.isRealData()], at least for now.
 
@@ -336,11 +353,6 @@ class CAFMaker : public art::EDProducer {
   // setup volume definitions
   InitVolumes();
 
-  // setup random number generators
-  fFakeRecoTRandom = new TRandomMT64(art::ServiceHandle<rndm::NuRandomService>()->getSeed());
-  if (fParams.CreateBlindedCAF()) {
-    fBlindTRandom = new TRandomMT64(art::ServiceHandle<rndm::NuRandomService>()->getSeed());
-  }
 }
 
 //......................................................................
@@ -520,11 +532,17 @@ CAFMaker::~CAFMaker()
     delete fFlatTreep;
     delete fFlatFileb;
     delete fFlatFilep;
-    delete fBlindTRandom;
   }
 
-  delete fFakeRecoTRandom;
+}
 
+//......................................................................
+std::string CAFMaker::Basename(const std::string& path)
+{
+  // C++17: use filesystem library (Clang 7 still not compliant)
+  constexpr char sep = '/';
+  std::size_t const iSep = path.rfind(sep);
+  return (iSep == std::string::npos)? path: path.substr(iSep + 1);
 }
 
 //......................................................................
@@ -544,6 +562,9 @@ std::string CAFMaker::DeriveFilename(const std::string& inname,
 
 //......................................................................
 void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
+  
+  std::string const inputBasename = Basename(fb.fileName()); // includes suffix
+  
   if ((fParams.CreateCAF() && !fFile) ||
       (fParams.CreateFlatCAF() && !fFlatFile) ||
       (fParams.CreateBlindedCAF() && (!fFileb || !fFilep))) {
@@ -593,9 +614,10 @@ void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
   }
 
   fFileNumber ++;
-  fFirstInFile = true;
+  fIndexInFile = 0;
   fFirstBlindInFile = true;
   fFirstPrescaleInFile = true;
+  fSourceFile = inputBasename;
 
 }
 
@@ -912,7 +934,7 @@ void CAFMaker::InitializeOutfiles()
   fTotalEvents = 0;
   fBlindEvents = 0;
   fPrescaleEvents = 0;
-  fFirstInFile = false;
+  fIndexInFile = SRHeader::NoSourceIndex;
   fFirstInSubRun = false;
   // fCycle = -5;
   // fBatch = -5;
@@ -1037,6 +1059,8 @@ bool CAFMaker::GetPsetParameter(const fhicl::ParameterSet& pset,
 //......................................................................
 void CAFMaker::produce(art::Event& evt) noexcept {
 
+  bool const firstInFile = (fIndexInFile++ == 0);
+  
   // is this event real data?
   bool isRealData = evt.isRealData();
 
@@ -1241,7 +1265,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   }
 
   std::vector<caf::SRFakeReco> srfakereco;
-  FillFakeReco(mctruths, true_particles, mctracks, fActiveVolumes, *fFakeRecoTRandom, srfakereco);
+  FillFakeReco(mctruths, true_particles, mctracks, fActiveVolumes, fFakeRecoRandomEngine, srfakereco);
 
   // Fill the MeVPrtl stuff
   for (unsigned i_prtl = 0; i_prtl < mevprtl_truths.size(); i_prtl++) {
@@ -1417,6 +1441,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     if (foSlcCRUMBS.isValid()) {
       slcCRUMBS = foSlcCRUMBS.at(0).get();
     }
+
+    art::FindManyP<sbn::OpT0Finder> fmOpT0 = 
+      FindManyPStrict<sbn::OpT0Finder>(sliceList, evt, fParams.OpT0Label() + slice_tag_suff);
+    std::vector<art::Ptr<sbn::OpT0Finder>> slcOpT0;
+    if (fmOpT0.isValid())  
+      slcOpT0 = fmOpT0.at(0);
 
     art::FindManyP<sbn::SimpleFlashMatch> fm_sFM =
       FindManyPStrict<sbn::SimpleFlashMatch>(fmPFPart, evt,
@@ -1612,6 +1642,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceFlashMatchA(fmatch, recslc);
     FillSliceVertex(vertex, recslc);
     FillSliceCRUMBS(slcCRUMBS, recslc);
+    FillSliceOpT0Finder(slcOpT0, recslc);
     FillSliceBarycenter(slcHits, slcSpacePoints, recslc);
 
     // select slice
@@ -1632,7 +1663,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
       FillSliceFakeReco(slcHits, mctruths, srtruthbranch,
 			*pi_serv, clock_data, recslc, true_particles, mctracks, 
-                        fActiveVolumes, *fFakeRecoTRandom);
+                        fActiveVolumes, fFakeRecoRandomEngine);
     }
 
     //#######################################################
@@ -1904,7 +1935,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.hdr.ismc    = !isRealData;
   rec.hdr.det     = fDet;
   rec.hdr.fno     = fFileNumber;
-  if(fFirstInFile)
+  if(firstInFile)
   {
     rec.hdr.nbnbinfo = fBNBInfo.size();
     rec.hdr.bnbinfo = fBNBInfo;
@@ -1915,7 +1946,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   
   rec.hdr.ngenevt = n_gen_evt;
   rec.hdr.mctype  = mctype;
-  rec.hdr.first_in_file = fFirstInFile;
+  rec.hdr.sourceName = fSourceFile;
+  rec.hdr.sourceIndex = fIndexInFile;
+  rec.hdr.first_in_file = firstInFile;
   rec.hdr.first_in_subrun = fFirstInSubRun;
   rec.hdr.triggerinfo = srtrigger;
   // rec.hdr.cycle = fCycle;
@@ -1938,11 +1971,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     //Generate random number to decide if event is saved in prescale or blinded file
     if (fParams.CreateBlindedCAF()) {
-      const bool keepprescale = fBlindTRandom->Uniform() < 1/fParams.PrescaleFactor();
+      CLHEP::RandFlat uniformGen{ fBlindRandomEngine };
+      const bool keepprescale = uniformGen.fire() < 1/fParams.PrescaleFactor();
       rec.hdr.evt = 0;
       rec.hdr.isblind = true;
       if (keepprescale) {
-      	StandardRecord* precp = new StandardRecord (*prec);
+        mf::LogVerbatim("CAFMaker") << "CAFMaker: " << evt.id() << " is not blinded.";
+        StandardRecord* precp = new StandardRecord (*prec);
 	if (fFirstPrescaleInFile) {
 	  precp->hdr.pot = fSubRunPOT*(1/fParams.PrescaleFactor());
 	  precp->hdr.first_in_file = true;
@@ -1988,7 +2023,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   }
 
 // reset
-  fFirstInFile = false;
   fFirstInSubRun = false;
   srcol->push_back(rec);
   evt.put(std::move(srcol));
