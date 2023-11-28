@@ -441,6 +441,9 @@ void CAFMaker::FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_ti
     s.fmatch.time += PMT_reference_time;
     s.fmatch_a.time += PMT_reference_time;
     s.fmatch_b.time += PMT_reference_time;
+
+    s.barycenterFM.flashTime +=PMT_reference_time;
+    s.barycenterFM.flashFirstHit +=PMT_reference_time;
   }
 
   // TODO: fix more?
@@ -1479,6 +1482,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<sbn::SimpleFlashMatch>(fmPFPart, evt,
                                              fParams.FlashMatchLabel() + slice_tag_suff);
 
+    art::FindOneP<sbn::TPCPMTBarycenterMatch> foTPCPMTBarycenterMatch =
+      FindOnePStrict<sbn::TPCPMTBarycenterMatch>(sliceList, evt,
+          fParams.TPCPMTBarycenterMatchLabel() + slice_tag_suff);
+    const sbn::TPCPMTBarycenterMatch *barycenterMatch
+      = foTPCPMTBarycenterMatch.isValid()? foTPCPMTBarycenterMatch.at(0).get(): nullptr;
+
     art::FindManyP<larpandoraobj::PFParticleMetadata> fmPFPMeta =
       FindManyPStrict<larpandoraobj::PFParticleMetadata>(fmPFPart, evt,
                fParams.PFParticleLabel() + slice_tag_suff);
@@ -1670,6 +1679,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceVertex(vertex, recslc);
     FillSliceCRUMBS(slcCRUMBS, recslc);
     FillSliceBarycenter(slcHits, slcSpacePoints, recslc);
+    FillTPCPMTBarycenterMatch(barycenterMatch, recslc);
 
     // select slice
     if (!SelectSlice(recslc, fParams.CutClearCosmic())) continue;
