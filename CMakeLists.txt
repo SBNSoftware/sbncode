@@ -65,7 +65,6 @@ find_package( artdaq_core EXPORT REQUIRED )
 find_package( sbnobj REQUIRED )
 find_package( sbnanaobj REQUIRED )
 find_package( sbndaq_artdaq_core EXPORT REQUIRED )
-
 find_package( ifdh_art REQUIRED )
 find_package( ifbeam REQUIRED )
 find_package( libwda REQUIRED )
