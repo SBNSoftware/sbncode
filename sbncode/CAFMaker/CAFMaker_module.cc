@@ -182,6 +182,8 @@ class CAFMaker : public art::EDProducer {
 
   bool fFirstInSubRun;
   unsigned int fIndexInFile = SRHeader::NoSourceIndex();
+  bool fFirstBlindInSubRun;
+  bool fFirstPrescaleInSubRun;
   bool fFirstBlindInFile;
   bool fFirstPrescaleInFile;
   int fFileNumber;
@@ -814,6 +816,8 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
   std::cout << "POT: " << fSubRunPOT << std::endl;
 
   fFirstInSubRun = true;
+  fFirstBlindInSubRun = true;
+  fFirstPrescaleInSubRun = true;
 }
 
 //......................................................................
@@ -971,6 +975,8 @@ void CAFMaker::InitializeOutfiles()
   fPrescaleEvents = 0;
   fIndexInFile = SRHeader::NoSourceIndex();
   fFirstInSubRun = false;
+  fFirstBlindInSubRun = false;
+  fFirstPrescaleInSubRun = false;
   // fCycle = -5;
   // fBatch = -5;
 }
@@ -1971,7 +1977,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.hdr.ismc    = !isRealData;
   rec.hdr.det     = fDet;
   rec.hdr.fno     = fFileNumber;
-  if(firstInFile)
+  if(fFirstInSubRun)
   {
     rec.hdr.nbnbinfo = fBNBInfo.size();
     rec.hdr.bnbinfo = fBNBInfo;
@@ -2013,47 +2019,49 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       rec.hdr.evt = 0;
       rec.hdr.isblind = true;
       if (keepprescale) {
-      	StandardRecord* precp = new StandardRecord (*prec);
-	if (fFirstPrescaleInFile) {
-	  precp->hdr.pot = fSubRunPOT*(1/fParams.PrescaleFactor());
-	  precp->hdr.first_in_file = true;
-	  precp->hdr.first_in_subrun = true;
-	  precp->hdr.nbnbinfo = fBNBInfo.size()*(1/fParams.PrescaleFactor());
-	  precp->hdr.nnumiinfo = fNuMIInfo.size()*(1/fParams.PrescaleFactor());
-	}
-	precp->hdr.ngenevt = n_gen_evt*(1/fParams.PrescaleFactor());
-	precp->hdr.evt = evtID;
-	fRecTreep->SetBranchAddress("rec", &precp);
-      	fRecTreep->Fill();
-	fPrescaleEvents += 1;
-	if (fFlatTreep) {
-	  fFlatRecordp->Clear();
-	  fFlatRecordp->Fill(*precp);
-	  fFlatTreep->Fill();
-	}
-	fFirstPrescaleInFile = false;
+        StandardRecord* precp = new StandardRecord (*prec);
+        if (fFirstPrescaleInSubRun) {
+          precp->hdr.pot = fSubRunPOT*(1/fParams.PrescaleFactor());
+          precp->hdr.first_in_file = fFirstPrescaleInFile;
+          precp->hdr.first_in_subrun = true;
+          precp->hdr.nbnbinfo = fBNBInfo.size()*(1/fParams.PrescaleFactor());
+          precp->hdr.nnumiinfo = fNuMIInfo.size()*(1/fParams.PrescaleFactor());
+        }
+        precp->hdr.ngenevt = n_gen_evt*(1/fParams.PrescaleFactor());
+        precp->hdr.evt = evtID;
+        fRecTreep->SetBranchAddress("rec", &precp);
+        fRecTreep->Fill();
+        fPrescaleEvents += 1;
+        if (fFlatTreep) {
+          fFlatRecordp->Clear();
+          fFlatRecordp->Fill(*precp);
+          fFlatTreep->Fill();
+        }
+        fFirstPrescaleInFile = false;
+        fFirstPrescaleInSubRun = false;
       }
       else {
-	StandardRecord* precb = new StandardRecord (*prec);
-	BlindEnergyParameters(precb);
-	if (fFirstBlindInFile) {
-	  precb->hdr.pot = fSubRunPOT*(1-(1/fParams.PrescaleFactor()))*GetBlindPOTScale();
-	  precb->hdr.first_in_file = true;
-	  precb->hdr.first_in_subrun = true;
-	  precb->hdr.nbnbinfo = fBNBInfo.size()*(1 - (1/fParams.PrescaleFactor()));
-	  precb->hdr.nnumiinfo = fNuMIInfo.size()*(1-(1/fParams.PrescaleFactor()));
-	}
-	precb->hdr.ngenevt = n_gen_evt*(1 - (1/fParams.PrescaleFactor()));
-	precb->hdr.evt = evtID;
-	fRecTreeb->SetBranchAddress("rec", &precb);
-	fRecTreeb->Fill();
-	fBlindEvents += 1;
-	if (fFlatTreeb) {
-	  fFlatRecordb->Clear();
-	  fFlatRecordb->Fill(*precb);
-	  fFlatTreeb->Fill();
-	}
-	fFirstBlindInFile = false;
+        StandardRecord* precb = new StandardRecord (*prec);
+        BlindEnergyParameters(precb);
+        if (fFirstBlindInSubRun) {
+          precb->hdr.pot = fSubRunPOT*(1-(1/fParams.PrescaleFactor()))*GetBlindPOTScale();
+          precb->hdr.first_in_file = fFirstBlindInFile;
+          precb->hdr.first_in_subrun = true;
+          precb->hdr.nbnbinfo = fBNBInfo.size()*(1 - (1/fParams.PrescaleFactor()));
+          precb->hdr.nnumiinfo = fNuMIInfo.size()*(1-(1/fParams.PrescaleFactor()));
+        }
+        precb->hdr.ngenevt = n_gen_evt*(1 - (1/fParams.PrescaleFactor()));
+        precb->hdr.evt = evtID;
+        fRecTreeb->SetBranchAddress("rec", &precb);
+        fRecTreeb->Fill();
+        fBlindEvents += 1;
+        if (fFlatTreeb) {
+          fFlatRecordb->Clear();
+          fFlatRecordb->Fill(*precb);
+          fFlatTreeb->Fill();
+        }
+        fFirstBlindInFile = false;
+        fFirstBlindInSubRun = false;
       }
     }
   }
@@ -2063,9 +2071,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   srcol->push_back(rec);
   evt.put(std::move(srcol));
 
-  fBNBInfo.clear();
-  fNuMIInfo.clear();
-  rec.hdr.pot = 0;
+  // Only clear these if we've filled into all file types
+  if(!fFirstInSubRun && (!fParams.CreateBlindedCAF() || (!fFirstBlindInSubRun && !fFirstPrescaleInSubRun))) {
+    fBNBInfo.clear();
+    fNuMIInfo.clear();
+    rec.hdr.pot = 0;
+  }
 }
 
 void CAFMaker::endSubRun(art::SubRun& sr) {
