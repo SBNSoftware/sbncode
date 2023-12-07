@@ -1192,7 +1192,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
     art::ServiceHandle<cheat::BackTrackerService> bt_serv;
 
-    for (const simb::MCParticle part: *mc_particles) {
+    for (const simb::MCParticle &part: *mc_particles) {
       true_particles.emplace_back();
 
       FillTrueG4Particle(part,

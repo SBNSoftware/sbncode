@@ -136,7 +136,8 @@ namespace single_photon
 
       //energy for an MCParticle that comprises the most energy when sum over associated hits in PFP
       //total energy of the reco PFP taken from the sum of the hits associated to an MCParticle
-      double maxe=-1, tote=0;                
+      // double maxe=-1, tote=0;                // tote unused
+      double maxe=-1;                
 
       std::vector<double> total_energy_on_plane = {0.0,0.0,0.0};
       //simb::MCParticle const * best_matched_mcparticle = NULL; //pointer for the particle match we will calculate
@@ -197,7 +198,7 @@ namespace single_photon
           }
 
           //add the energy of the back tracked hit to the total energy for the PFP
-          tote += match_vec[i_p]->energy; //calculate total energy deposited
+          // tote += match_vec[i_p]->energy; //calculate total energy deposited // unused
           total_energy_on_plane[which_plane]+=match_vec[i_p]->energy;
 
 
