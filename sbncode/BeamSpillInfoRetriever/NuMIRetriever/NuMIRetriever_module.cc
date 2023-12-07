@@ -110,7 +110,7 @@ void sbn::NuMIRetriever::produce(art::Event &e)
   auto const & raw_data = (*raw_data_ptr);
 
   // NOTE: Really we should skip the first event of each trigger type, so let's make this look at that too...
-  if ( raw_data.size()==0 ) return;
+  if ( raw_data.empty() ) return;
   else {
     icarus::ICARUSTriggerV3Fragment frag(raw_data.at(0));
     if ( frag.getTotalTriggerNuMIMaj() <= 1 ) return;
