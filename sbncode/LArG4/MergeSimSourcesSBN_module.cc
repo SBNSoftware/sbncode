@@ -323,11 +323,11 @@ void sbn::MergeSimSourcesSBN::produce(art::Event& e)
   for (auto const& [i_source, input_label] : util::enumerate(fInputSourcesLabels)) {
 
     auto const input_partCol = e.getValidHandle<std::vector<simb::MCParticle>>(input_label);
-    art::PtrMaker<simb::MCParticle> const makePartPtr{e};
     if (fFillMCParticles) {
       MergeUtility.MergeMCParticles(*partCol, *input_partCol, i_source);
     }
     if (fFillMCParticlesAssociated){
+      art::PtrMaker<simb::MCParticle> const makePartPtr{e};
       //truth-->particle assoc stuff here
       const std::vector<size_t>& assocVectorPrimitive =
         MergeUtility.GetMCParticleListMap().at(i_source);
@@ -339,7 +339,6 @@ void sbn::MergeSimSourcesSBN::produce(art::Event& e)
     }
     if (fFillMCParticlesLite) {
       // MCParticleLite
-      //art::PtrMaker<sim::MCParticleLite> const makePartPtrLite{e};
       auto const input_partLiteCol = e.getValidHandle<std::vector<sim::MCParticleLite>>(input_label);
       MergeUtilityLite.MergeMCParticleLites(*partLiteCol, *input_partLiteCol, i_source);
     }
