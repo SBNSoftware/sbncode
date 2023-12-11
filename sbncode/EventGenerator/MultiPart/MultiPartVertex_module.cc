@@ -156,7 +156,7 @@ MultiPartVertex::MultiPartVertex(fhicl::ParameterSet const & p)
   auto const zrange = p.get<std::vector<double> > ("ZRange");
 
   auto const part_cfg = p.get<fhicl::ParameterSet>("ParticleParameter");
-  _gamma_beta_range = p.get<std::array<double,2> >("GammaBetaRange", {0.0,0.0});
+  _gamma_beta_range = p.get<std::array<double,2> >("GammaBetaRange", {0.0,0.0}); // _gamma_beta denotes gamma * beta
 
   _param_v.clear();
   auto const pdg_v      = part_cfg.get<std::vector<std::vector<int>    > > ("PDGCode");
@@ -389,7 +389,7 @@ void MultiPartVertex::GenPosition(double& x, double& y, double& z) {
 
 void MultiPartVertex::GenBoost(double& bx, double& by, double& bz) {
 
-  double gbmag = 0.;
+  double gbmag = 0.; // saves gamma * beta
   if ( _gamma_beta_range[1] > _gamma_beta_range[0]) {
     gbmag = fFlatRandom->fire(_gamma_beta_range[0],_gamma_beta_range[1]);
   }
