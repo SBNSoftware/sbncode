@@ -1,7 +1,10 @@
 BEGIN_PROLOG
 mcs_sbn: {
   module_type: MCSFitAllPID
-  MCS: {}
+  MCS: {
+    fiducialVolumeInsets: [] 
+    excludeVolumes: [] 
+  }
   TrackLabel: pandoraTrack
 }
 

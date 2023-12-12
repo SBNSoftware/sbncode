@@ -114,6 +114,8 @@ namespace flashmatch {
 
   private:
 
+    FlashMatch_t OnePMTSpectrumMatch(const Flash_t &flash);
+
     FlashMatch_t PESpectrumMatch(const QCluster_t &pt_v, const Flash_t &flash, const bool init_x0);
 
     FlashMatch_t OnePMTMatch(const Flash_t &flash);
@@ -122,7 +124,14 @@ namespace flashmatch {
 
     QLLMode_t _mode;   ///< Minimizer mode
     bool _record;      ///< Boolean switch to record minimizer history
-    double _normalize; ///< Noramalize hypothesis PE spectrum
+    double _normalize; ///< Noramalize hypothesis and measured PE spectrum
+    double _chi_error; ///< width of an additional uncertainty to add to Chi2 method 
+    bool _use_minuit;  ///< Minimize or not
+    
+    double _saturated_thresh; // threshold for hypothesis PE to ignore due to saturated measured PE 
+    double _nonlinear_thresh; // parameters to correct for nonlinear **PMT** effects
+    double _nonlinear_slope;  // parameters to correct for nonlinear **PMT** effects
+    double _nonlinear_offset; // parameters to correct for nonlinear **PMT** effects
 
     std::vector<double>  _penalty_threshold_v;
     std::vector<double>  _penalty_value_v;
@@ -135,6 +144,7 @@ namespace flashmatch {
     flashmatch::QCluster_t _var_trk;
     flashmatch::Flash_t    _hypothesis;  ///< Hypothesis PE distribution over PMTs
     flashmatch::Flash_t    _measurement; ///< Flash PE distribution over PMTs
+    std::vector<int> _match_mask; ///< OpDet Channel Mask for a cluster+flash pair 
 
     double _current_chi2;
     double _current_llhd;
