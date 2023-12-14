@@ -213,6 +213,7 @@ namespace sbn {
         std::vector<art::Ptr<larpandoraobj::PFParticleMetadata>> metas = metaFMpfp.at(pfp.key());
         auto const &properties = metas[0]->GetPropertiesMap();
         if (properties.count("IsClearCosmic")) continue;
+        // TODO: assign nan values instead of skipping?
       }
 
       // loop over clusters

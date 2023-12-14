@@ -1573,8 +1573,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<sbn::MVAPID>(slcShowers, evt,
           fParams.ShowerRazzleLabel() + slice_tag_suff);
 
-    art::FindOneP<sbn::PFPCNNScore> foCNNScores = 
-      FindOnePStrict<sbn::PFPCNNScore>(fmPFPart, evt,
+    art::FindManyP<sbn::PFPCNNScore> foCNNScores = 
+      FindManyPStrict<sbn::PFPCNNScore>(fmPFPart, evt,
           fParams.CNNScoreLabel() + slice_tag_suff);
 
     art::FindManyP<recob::Vertex> fmVertex =
@@ -1752,6 +1752,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       if (foCNNScores.isValid()) {
         const sbn::PFPCNNScore *cnnScores = foCNNScores.at(iPart).get();
         FillCNNScores(thisParticle, cnnScores, pfp);
+        std::cout << "CNN score filled!" << std::endl;
       }
 
       if (!thisTrack.empty())  { // it has a track!
