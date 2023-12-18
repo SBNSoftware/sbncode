@@ -144,9 +144,9 @@ void G4InfoReducer::produce(art::Event& e)
     // << " useOrigID : " << fUseOrigTrackID
     // << std::endl;
     // Voxelize coordinates to closest coordinate using fVoxelSize
-    double x = sed.X() - std::fmod(sed.X() - fMinX, fVoxelSizeX);
-    double y = sed.Y() - std::fmod(sed.Y() - fMinY, fVoxelSizeY);
-    double z = sed.Z() - std::fmod(sed.Z() - fMinZ, fVoxelSizeZ);
+    double x = sed.X() - std::fmod(sed.X() - fMinX, fVoxelSizeX) + fVoxelSizeX/2.;
+    double y = sed.Y() - std::fmod(sed.Y() - fMinY, fVoxelSizeY) + fVoxelSizeY/2.;
+    double z = sed.Z() - std::fmod(sed.Z() - fMinZ, fVoxelSizeZ) + fVoxelSizeZ/2.;
 
     // Copy info to SimEnergyDepositLite
     if (fUseOrigTrackID){
