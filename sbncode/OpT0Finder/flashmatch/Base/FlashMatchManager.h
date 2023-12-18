@@ -96,6 +96,9 @@ namespace flashmatch {
     /// Sets the op channels to be used for matching
     void SetChannelMask(std::vector<int>);
 
+    /// for differentiating between different optical detector types (PMT vs arapucas)
+    void SetChannelType(std::vector<int>);
+    
     /// Sets the TPC and Cryo numbers
     void SetTPCCryo(int tpc, int _cryo);
 
