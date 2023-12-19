@@ -12,10 +12,14 @@ cet_make_library(
     ${ROOT_BASIC_LIB_LIST}
     ${ROOT_HIST}
     art_root_io::TFileService_service
+    larcorealg::Geometry
+    larcore::Geometry_Geometry_service
     lardataobj::AnalysisBase
     lardataobj::RawData
     lardataobj::RecoBase
+    lardataalg::DetectorInfo 
     lardata::RecoObjects
+    lardata::Utilities
     larreco::RecoAlg
     ${LARRECO_LIB}
     ${LARDATA_LIB}
