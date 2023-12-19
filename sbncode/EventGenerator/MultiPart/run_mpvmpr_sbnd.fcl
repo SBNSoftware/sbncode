@@ -1,0 +1,66 @@
+#B. Carlson
+#bcarlson1@ufl.edu
+
+#Generator and g4
+#include "simulationservices_sbnd.fcl"
+#include "multipartvertex_sbnd.fcl"
+#include "services_sbnd.fcl"
+
+process_name: MPVMPR
+
+services:
+{
+	#@table::sbnd_simulation_services
+	TFileService: { fileName: "hists_prodmpvmpr_sbnd_%p-%tc.root" }
+	IFDH: {}
+  @table::sbnd_simulation_services # load simulation services in bulk
+}
+
+services.message: @local::sbnd_message_services_interactive #from messages_sbnd.fcl
+
+source:
+{
+	module_type: EmptyEvent
+	timestampPlugin: { plugin_type: "GeneratedEventTimestamp" }
+	maxEvents: 10
+	firstRun: 1
+	firstEvent: 1
+}
+
+physics:
+{
+
+ producers:
+ {
+	rns:       { module_type: "RandomNumberSaver" }
+  generator: @local::MultiPartVertex
+  rain:      @local::MultiPartRain
+ }
+
+ simulate: [ rns
+            , generator
+            , rain
+            ]
+ out_stream: [ out1   ]
+
+ trigger_paths: [simulate]
+ end_paths: [out_stream]
+}
+#Set seeds
+#services.NuRandomService.policy: "perEvent"
+#physics.producers.generator.SEED         : 42
+#physics.producers.rain.SEED         : 42
+
+# block to define where the output goes.  if you defined a filter in the physics
+# block and put it in the trigger_paths then you need to put a SelectEvents: {SelectEvents: [XXX]}
+# entry in the output stream you want those to go to, where XXX is the label of the filter module(s)
+outputs:
+{
+  out1:
+  {
+    module_type: RootOutput
+    fileName:    "prodmpvmpr_sbnd_%p-%tc.root" # default file name, can override from command line with -o or --output
+    dataTier:    "generated"
+    saveMemoryObjectThreshold: 0
+  }
+}

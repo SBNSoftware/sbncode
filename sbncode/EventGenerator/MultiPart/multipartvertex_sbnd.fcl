@@ -3,40 +3,41 @@ BEGIN_PROLOG
 MultiPartVertex : {
     module_type  : "MultiPartVertex"
     DebugMode    : 0
-    G4Time       : 1700
-    G4TimeJitter : 0
+    G4Time       : 340.8
+    G4TimeJitter : 1.6
     TPCRange     : [[0,0],[0,1]]
-    XRange       : [10]
-    YRange       : [10]
-    ZRange       : [10]
+    XRange       : [30,30]
+    YRange       : [30,30]
+    ZRange       : [30,30]
     MultiMax     : 6
-    MultiMin     : 1
+    MultiMin     : 2
     ParticleParameter: {
-        PDGCode      : [   [11,13],      [22], [211,-211],   [2212]]
-        MinMulti     : [         0,         0,          0,        0]
-        MaxMulti     : [         1,         4,          3,        3]
-        ProbWeight   : [         3,         2,          3,        3]
-        KERange      : [ [40,1500], [40,1500],  [40,1500], [50,700]]
+        PDGCode      : [   [-11,11,-13,13], [111], [211,-211],   [2212]]
+        MinMulti     : [         1,         0,          0,        0]
+        MaxMulti     : [         1,         2,          2,        4]
+        ProbWeight   : [         3,         1,          1,        3]
+        KERange      : [ [0.05,0.8], [0.05,0.4], [0.05,0.4],  [0.05,0.4]]
+        MomRange     : []
     }
 }
 
 MultiPartRain : {
     module_type  : "MultiPartRain"
     DebugMode    : 0
-    G4Time       : 0
-    G4TimeJitter : 0
+    G4Time       : 819.2 # [us]
+    G4TimeJitter : 1638.4 # [us]
     TPCRange     : [[0,0],[0,1]]
-    XRange       : [10]
-    YRange       : [10]
-    ZRange       : [10]
-    MultiMax     : 6
-    MultiMin     : 1
+    XRange       : [20,20]
+    YRange       : [20,20]
+    ZRange       : [20,20]
+    MultiMax     : 15
+    MultiMin     : 8
     ParticleParameter: {
-        PDGCode      : [   [11,13],      [22], [211,-211],   [2212]]
-        MinMulti     : [         0,         0,          0,        0]
-        MaxMulti     : [         1,         4,          3,        3]
-        ProbWeight   : [         3,         2,          3,        3]
-        KERange      : [ [40,1500], [40,1500],  [40,1500], [50,700]]
+        PDGCode      : [   [-13,13],      [11,22],   [2212]]
+        MinMulti     : [         0,         0,          0]
+        MaxMulti     : [         15,         5,          15]
+        ProbWeight   : [         5,         1,          1]
+        KERange      : [ [0.05,1.0],   [0.05,0.1], [0.05,0.4]]
     }
 }
 
