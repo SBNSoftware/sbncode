@@ -116,6 +116,11 @@
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
 #include "sbnobj/Common/Reco/OpT0FinderResult.h"
 
+// GENIE
+#include "Framework/EventGen/EventRecord.h"
+#include "Framework/Ntuple/NtpMCEventRecord.h"
+#include "nugen/EventGeneratorBase/GENIE/GENIE2ART.h"
+
 #include "canvas/Persistency/Provenance/ProcessConfiguration.h"
 #include "larcoreobj/SummaryData/POTSummary.h"
 
@@ -232,6 +237,11 @@ class CAFMaker : public art::EDProducer {
   TTree* fFlatTreeb = 0;
   TTree* fFlatTreep = 0;
 
+  // GENIE EventRecord
+  genie::NtpMCEventRecord * fGenieEvtRec = 0;
+  TTree                   * fGenieTree = 0;
+  size_t fGenieEventCounter;
+
   flat::Flat<caf::StandardRecord>* fFlatRecord = 0;
   flat::Flat<caf::StandardRecord>* fFlatRecordb = 0;
   flat::Flat<caf::StandardRecord>* fFlatRecordp = 0;
@@ -289,7 +299,7 @@ class CAFMaker : public art::EDProducer {
   /// messsage and aborts if StrictMode is true.
   template <class T, class U>
   art::FindOneP<T> FindOnePStrict(const U& from, const art::Event& evt,
-				  const art::InputTag& label) const;
+          const art::InputTag& label) const;
 
   template <class T, class D, class U>
   art::FindOneP<T, D> FindOnePDStrict(const U& from,
@@ -397,15 +407,15 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
   for (caf::SRPFP& pfp: brec->reco.pfp) {
     const caf::SRVector3D start = pfp.trk.start;
     if ( ((start.x < -71.1 - 25 && start.x > -369.33 + 25 ) ||
-	  (start.x > 71.1 + 25 && start.x < 369.33 - 25 )) &&
-	 (start.y > -181.7 + 25 && start.y < 134.8 - 25 ) &&
-	 (start.z  > -895.95 + 30 && start.z < 895.95 - 50)) {
+    (start.x > 71.1 + 25 && start.x < 369.33 - 25 )) &&
+   (start.y > -181.7 + 25 && start.y < 134.8 - 25 ) &&
+   (start.z  > -895.95 + 30 && start.z < 895.95 - 50)) {
 
       if (pfp.trk.mcsP.fwdP_muon > 0.6) {
-	pfp.trk.mcsP.fwdP_muon = TMath::QuietNaN();    
+  pfp.trk.mcsP.fwdP_muon = TMath::QuietNaN();    
       }
       if (pfp.trk.rangeP.p_muon > 0.6) {
-	pfp.trk.rangeP.p_muon = TMath::QuietNaN();
+  pfp.trk.rangeP.p_muon = TMath::QuietNaN();
       }
     }
   }
@@ -414,14 +424,14 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
   for (caf::SRPFP& pfp: brec->reco.pfp) {
     const caf::SRVector3D start = pfp.shw.start;
     if ( ((start.x < -71.1 - 25 && start.x > -369.33 + 25 ) ||
-	  (start.x > 71.1 + 25 && start.x < 369.33 - 25 )) &&
-	 (start.y > -181.7 + 25 && start.y < 134.8 - 25 ) &&
-	 (start.z  > -895.95 + 30 && start.z < 895.95 - 50)) {
+    (start.x > 71.1 + 25 && start.x < 369.33 - 25 )) &&
+   (start.y > -181.7 + 25 && start.y < 134.8 - 25 ) &&
+   (start.z  > -895.95 + 30 && start.z < 895.95 - 50)) {
       if (pfp.shw.bestplane_energy > 0.6) {
-	pfp.shw.bestplane_energy = TMath::QuietNaN();
-	pfp.shw.plane[0].energy = TMath::QuietNaN();
-	pfp.shw.plane[1].energy = TMath::QuietNaN();
-	pfp.shw.plane[2].energy = TMath::QuietNaN();
+  pfp.shw.bestplane_energy = TMath::QuietNaN();
+  pfp.shw.plane[0].energy = TMath::QuietNaN();
+  pfp.shw.plane[1].energy = TMath::QuietNaN();
+  pfp.shw.plane[2].energy = TMath::QuietNaN();
       }
     }
   }
@@ -430,25 +440,25 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
   for (caf::SRSlice& slc: brec->slc) {
     const caf::SRVector3D vtx = slc.vertex;
     if ( ((vtx.x < -71.1 - 25 && vtx.x > -369.33 + 25 ) ||
-	  (vtx.x > 71.1 + 25 && vtx.x < 369.33 - 25 )) &&
-	 (vtx.y > -181.7 + 25 && vtx.y < 134.8 - 25 ) &&
-	 (vtx.z  > -895.95 + 30 && vtx.z < 895.95 - 50)) {
+    (vtx.x > 71.1 + 25 && vtx.x < 369.33 - 25 )) &&
+   (vtx.y > -181.7 + 25 && vtx.y < 134.8 - 25 ) &&
+   (vtx.z  > -895.95 + 30 && vtx.z < 895.95 - 50)) {
 
       for (caf::SRPFP& pfp: slc.reco.pfp) {
-	if (pfp.trk.mcsP.fwdP_muon > 0.6) {
-	  pfp.trk.mcsP.fwdP_muon = TMath::QuietNaN();    
-	}
-	if (pfp.trk.rangeP.p_muon > 0.6) {
-	  pfp.trk.rangeP.p_muon = TMath::QuietNaN();
-	}
+  if (pfp.trk.mcsP.fwdP_muon > 0.6) {
+    pfp.trk.mcsP.fwdP_muon = TMath::QuietNaN();    
+  }
+  if (pfp.trk.rangeP.p_muon > 0.6) {
+    pfp.trk.rangeP.p_muon = TMath::QuietNaN();
+  }
       }
       for (caf::SRPFP& pfp: slc.reco.pfp) {
-	if (pfp.shw.bestplane_energy > 0.6) {
-	  pfp.shw.bestplane_energy = TMath::QuietNaN();
-	  pfp.shw.plane[0].energy = TMath::QuietNaN();
-	  pfp.shw.plane[1].energy = TMath::QuietNaN();
-	  pfp.shw.plane[2].energy = TMath::QuietNaN();
-	}
+  if (pfp.shw.bestplane_energy > 0.6) {
+    pfp.shw.bestplane_energy = TMath::QuietNaN();
+    pfp.shw.plane[0].energy = TMath::QuietNaN();
+    pfp.shw.plane[1].energy = TMath::QuietNaN();
+    pfp.shw.plane[2].energy = TMath::QuietNaN();
+  }
       }
     }
   }
@@ -543,6 +553,9 @@ CAFMaker::~CAFMaker()
   delete fFlatTree;
   delete fFlatFile;
 
+  delete fGenieEvtRec;
+  delete fGenieTree;
+
   if (fParams.CreateBlindedCAF()) {
     delete fRecTreeb;
     delete fRecTreep;
@@ -594,28 +607,28 @@ void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
     // first file we've seen
     if(fParams.CreateCAF() && fCafFilename.empty()){
       if (fParams.CreateBlindedCAF()){
-	fCafFilename = DeriveFilename(fb.fileName(), fParams.UnblindFileExtension());
-	fCafFilename = DeriveFilename(fCafFilename, fParams.FileExtension());
-	fCafBlindFilename = DeriveFilename(fb.fileName(), fParams.BlindFileExtension());
-	fCafBlindFilename = DeriveFilename(fCafBlindFilename, fParams.FileExtension());
-	fCafPrescaleFilename = DeriveFilename(fb.fileName(), fParams.PrescaleFileExtension());
-	fCafPrescaleFilename = DeriveFilename(fCafPrescaleFilename, fParams.FileExtension());
+  fCafFilename = DeriveFilename(fb.fileName(), fParams.UnblindFileExtension());
+  fCafFilename = DeriveFilename(fCafFilename, fParams.FileExtension());
+  fCafBlindFilename = DeriveFilename(fb.fileName(), fParams.BlindFileExtension());
+  fCafBlindFilename = DeriveFilename(fCafBlindFilename, fParams.FileExtension());
+  fCafPrescaleFilename = DeriveFilename(fb.fileName(), fParams.PrescaleFileExtension());
+  fCafPrescaleFilename = DeriveFilename(fCafPrescaleFilename, fParams.FileExtension());
       }
       else {
-	fCafFilename = DeriveFilename(fb.fileName(), fParams.FileExtension());
+  fCafFilename = DeriveFilename(fb.fileName(), fParams.FileExtension());
       }
     }
     if(fParams.CreateFlatCAF() && fFlatCafFilename.empty()){
       if (fParams.CreateBlindedCAF()){
-	fFlatCafFilename = DeriveFilename(fb.fileName(), fParams.UnblindFileExtension());
-	fFlatCafFilename = DeriveFilename(fFlatCafFilename, fParams.FlatCAFFileExtension());
-	fFlatCafBlindFilename = DeriveFilename(fb.fileName(), fParams.BlindFileExtension());
-	fFlatCafBlindFilename = DeriveFilename(fFlatCafBlindFilename, fParams.FlatCAFFileExtension());
-	fFlatCafPrescaleFilename = DeriveFilename(fb.fileName(), fParams.PrescaleFileExtension());
-	fFlatCafPrescaleFilename = DeriveFilename(fFlatCafPrescaleFilename, fParams.FlatCAFFileExtension());
+  fFlatCafFilename = DeriveFilename(fb.fileName(), fParams.UnblindFileExtension());
+  fFlatCafFilename = DeriveFilename(fFlatCafFilename, fParams.FlatCAFFileExtension());
+  fFlatCafBlindFilename = DeriveFilename(fb.fileName(), fParams.BlindFileExtension());
+  fFlatCafBlindFilename = DeriveFilename(fFlatCafBlindFilename, fParams.FlatCAFFileExtension());
+  fFlatCafPrescaleFilename = DeriveFilename(fb.fileName(), fParams.PrescaleFileExtension());
+  fFlatCafPrescaleFilename = DeriveFilename(fFlatCafPrescaleFilename, fParams.FlatCAFFileExtension());
       }
       else {
-	fFlatCafFilename = DeriveFilename(fb.fileName(), fParams.FlatCAFFileExtension());
+  fFlatCafFilename = DeriveFilename(fb.fileName(), fParams.FlatCAFFileExtension());
       }
     }
     if (fParams.CreateBlindedCAF() && fCafBlindFilename.empty()) {
@@ -999,18 +1012,24 @@ void CAFMaker::InitializeOutfiles()
       // LZ4 is the fastest format to decompress. I get 3x faster loading with
       // this compared to the default, and the files are only slightly larger.
       fFlatFileb = new TFile(fFlatCafBlindFilename.c_str(), "RECREATE", "",
-			     ROOT::CompressionSettings(ROOT::kLZ4, 1));
+           ROOT::CompressionSettings(ROOT::kLZ4, 1));
       fFlatTreeb = new TTree("recTree", "recTree");
       fFlatRecordb = new flat::Flat<caf::StandardRecord>(fFlatTreeb, "rec", "", 0);
       AddEnvToFile(fFlatFileb);
 
       fFlatFilep = new TFile(fFlatCafPrescaleFilename.c_str(), "RECREATE", "",
-			     ROOT::CompressionSettings(ROOT::kLZ4, 1));
+           ROOT::CompressionSettings(ROOT::kLZ4, 1));
       fFlatTreep = new TTree("recTree", "recTree");
       fFlatRecordp = new flat::Flat<caf::StandardRecord>(fFlatTreep, "rec", "", 0);
       AddEnvToFile(fFlatFilep);
     }
 
+  }
+
+  if (fParams.SaveGENIEEventRecord()) {
+    fGenieTree = new TTree( "GenieEvtRecTree", "GenieEvtRecTree" );
+    fGenieTree->Branch("GenieEvtRec", &fGenieEvtRec);
+    fGenieEventCounter = 0;
   }
 
   fFileNumber = -1;
@@ -1070,8 +1089,8 @@ art::FindManyP<T, D> CAFMaker::FindManyPDStrict(const U& from,
 //......................................................................
 template <class T, class U>
 art::FindOneP<T> CAFMaker::FindOnePStrict(const U& from,
-					  const art::Event& evt,
-					  const art::InputTag& tag) const {
+            const art::Event& evt,
+            const art::InputTag& tag) const {
   art::FindOneP<T> ret(from, evt, tag);
 
   if (!tag.label().empty() && !ret.isValid() && fParams.StrictMode()) {
@@ -1327,6 +1346,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     bool ok = GetAssociatedProduct(fmp_gtruth, i, gtruth);
     if(!ok){
       std::cout << "Failed to get GTruth object!" << std::endl;
+    }
+
+    //GENIE EventRecord
+
+    if(fGenieTree){
+      genie::EventRecord* genie_rec = evgb::RetrieveGHEP(*mctruth, gtruth);
+      fGenieEvtRec->Fill(fGenieEventCounter, genie_rec);
+      fGenieTree->Fill();
+      fGenieEventCounter++;
     }
 
     srtruthbranch.nu.push_back(SRTrueInteraction());
@@ -1843,7 +1871,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
 
       FillSliceTruth(slcHits, mctruths, srtruthbranch,
-		     *pi_serv, clock_data, recslc);
+         *pi_serv, clock_data, recslc);
 
       FillSliceFakeReco(slcHits, mctruths, srtruthbranch,
 			*pi_serv, clock_data, recslc, true_particles, mctracks, 
@@ -2028,7 +2056,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
       if (!thisShower.empty()) { // it has shower!
         assert(thisShower.size() == 1);
-	
+  
         SRShower& shw = pfp.shw;
         FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, shw);
 
@@ -2337,6 +2365,11 @@ void CAFMaker::endJob() {
       fFilep->Write();
     }
 
+    if(fGenieTree){
+      fFile->cd();
+      fGenieTree->Write();
+    }
+
   }
 
   if(fFlatFile){
@@ -2357,6 +2390,12 @@ void CAFMaker::endJob() {
       fFlatFilep->cd();
       fFlatFilep->Write();
     }
+
+    if(fGenieTree){
+      fFlatFile->cd();
+      fGenieTree->Write();
+    }
+
   }
 
   std::map<std::string, std::string> metamap;
