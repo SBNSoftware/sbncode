@@ -5,6 +5,8 @@
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "RecoUtils/RecoUtils.h"
 
+#include "CLHEP/Random/RandGauss.h"
+
 #include <functional>
 #include <algorithm>
 
@@ -25,12 +27,12 @@ float ContainedLength(const TVector3 &v0, const TVector3 &v1,
 bool FRFillNumuCC(const simb::MCTruth &mctruth,
                   const std::vector<art::Ptr<sim::MCTrack>> &mctracks,
                   const std::vector<geo::BoxBoundedGeo> &volumes,
-                  TRandom &rand,
+                  CLHEP::HepRandomEngine &rand,
                   caf::SRFakeReco &fakereco);
 bool FRFillNueCC(const simb::MCTruth &mctruth,
                   const std::vector<caf::SRTrueParticle> &srparticle,
                   const std::vector<geo::BoxBoundedGeo> &volumes,
-                  TRandom &rand,
+                  CLHEP::HepRandomEngine &rand,
                   caf::SRFakeReco &fakereco);
 
 // helper function definitions
@@ -60,19 +62,21 @@ double PDGMass(int pdg) {
   }
 }
 
-double SmearLepton(const caf::SRTrueParticle &lepton, TRandom& rand) {
+double SmearLepton(const caf::SRTrueParticle &lepton, CLHEP::HepRandomEngine& rand) {
   const double smearing = 0.15;
   // Oscillation tech note says smear ionization deposition, but
   // code in old samples seems to use true energy.
   const double true_E = lepton.plane[0][2].visE + lepton.plane[1][2].visE;
-  const double smeared_E = rand.Gaus(true_E, smearing * true_E / std::sqrt(true_E));
+  CLHEP::RandGauss gaussE { rand, true_E, smearing * true_E / std::sqrt(true_E) };
+  const double smeared_E = gaussE();
   return std::max(smeared_E, 0.0);
 }
 
-double SmearHadron(const caf::SRTrueParticle &hadron, TRandom& rand) {
+double SmearHadron(const caf::SRTrueParticle &hadron, CLHEP::HepRandomEngine& rand) {
   const double smearing = 0.05;
   const double true_E = hadron.startE - PDGMass(hadron.pdg) / 1000;
-  const double smeared_E = rand.Gaus(true_E, smearing * true_E);
+  CLHEP::RandGauss gaussE { rand, true_E, smearing * true_E };
+  const double smeared_E = gaussE();
   return std::max(smeared_E, 0.0);
 }
 
@@ -434,7 +438,8 @@ namespace caf {
                          caf::SRSlice &srslice,
                          const std::vector<caf::SRTrueParticle> &srparticles,
                          const std::vector<art::Ptr<sim::MCTrack>> &mctracks,
-                         const std::vector<geo::BoxBoundedGeo> &volumes, TRandom &rand)
+                         const std::vector<geo::BoxBoundedGeo> &volumes,
+                         CLHEP::HepRandomEngine &rand)
   {
     caf::SRTruthMatch tmatch = MatchSlice2Truth(hits, neutrinos, srmc, inventory_service, clockData);
     if(tmatch.index >= 0) {
@@ -828,7 +833,7 @@ namespace caf {
                     const std::vector<caf::SRTrueParticle> &srparticles,
                     const std::vector<art::Ptr<sim::MCTrack>> &mctracks,
                     const std::vector<geo::BoxBoundedGeo> &volumes,
-                    TRandom &rand,
+                    CLHEP::HepRandomEngine &rand,
                     std::vector<caf::SRFakeReco> &srfakereco) {
     // iterate and fill
     for (const art::Ptr<simb::MCTruth> mctruth: mctruths) {
@@ -901,7 +906,7 @@ namespace caf {
 bool FRFillNumuCC(const simb::MCTruth &mctruth,
                   const std::vector<art::Ptr<sim::MCTrack>> &mctracks,
                   const std::vector<geo::BoxBoundedGeo> &volumes,
-                  TRandom &rand,
+                  CLHEP::HepRandomEngine &rand,
                   caf::SRFakeReco &fakereco) {
   // Configuration -- TODO: make configurable?
 
@@ -999,7 +1004,8 @@ bool FRFillNumuCC(const simb::MCTruth &mctruth,
   // smear the lepton energy
   float smearing = fake_lepton.contained ? lepton_contained_smearing : lepton_exiting_smearing(fake_lepton.len);
   float ke = (mctracks[lepton_ind]->Start().E() - PDGMass(mctracks[lepton_ind]->PdgCode())) / 1000. /* MeV -> GeV*/;
-  fake_lepton.ke = rand.Gaus(ke, smearing * ke);
+  CLHEP::RandGauss gausLeptonKE { rand, ke, smearing * ke };
+  fake_lepton.ke = gausLeptonKE();
   fake_lepton.ke = std::max(fake_lepton.ke, 0.f);
 
   // get the hadronic state
@@ -1025,7 +1031,8 @@ bool FRFillNumuCC(const simb::MCTruth &mctruth,
       float ke = (mctracks[i]->Start().E() - PDGMass(mctracks[i]->PdgCode())) / 1000. /* MeV -> GeV*/;
       if (ke < hadronic_energy_threshold) continue;
 
-      hadron.ke = rand.Gaus(ke, hadron_smearing * ke);
+      CLHEP::RandGauss gausHadronKE { rand, ke, hadron_smearing * ke };
+      hadron.ke = gausHadronKE();
       hadron.ke = std::max(hadron.ke, 0.f);
 
       hadrons.push_back(hadron);
@@ -1064,7 +1071,7 @@ bool FRFillNumuCC(const simb::MCTruth &mctruth,
 bool FRFillNueCC(const simb::MCTruth &mctruth,
                   const std::vector<caf::SRTrueParticle> &srparticles,
                   const std::vector<geo::BoxBoundedGeo> &volumes,
-                  TRandom &rand,
+                  CLHEP::HepRandomEngine &rand,
                   caf::SRFakeReco &fakereco) {
   // Configuration -- TODO: make configurable?
 
@@ -1082,13 +1089,15 @@ bool FRFillNueCC(const simb::MCTruth &mctruth,
     // Oscillation tech note says smear ionization deposition, but
     // code in old samples seems to use true energy.
     const double true_E = lepton.plane[0][2].visE + lepton.plane[1][2].visE;
-    const double smeared_E = rand.Gaus(true_E, smearing * true_E / std::sqrt(true_E));
+    CLHEP::RandGauss gaussE { rand, true_E, smearing * true_E / std::sqrt(true_E) };
+    const double smeared_E = gaussE();
     return std::max(smeared_E, 0.0);
   };
   auto smear_hadron = [&rand](const caf::SRTrueParticle &hadron) -> float {
     const double smearing = 0.05;
     const double true_E = hadron.startE - PDGMass(hadron.pdg) / 1000;
-    const double smeared_E = rand.Gaus(true_E, smearing * true_E);
+    CLHEP::RandGauss gaussE { rand, true_E, smearing * true_E };
+    const double smeared_E = gaussE();
     return std::max(smeared_E, 0.0);
   };
 */

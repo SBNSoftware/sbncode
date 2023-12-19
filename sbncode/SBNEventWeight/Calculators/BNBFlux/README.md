@@ -75,7 +75,7 @@ Hadron production uncertainty are derived from world data:
 - kzero
 
 `PrimaryHadronNormalization`
-- kzero
+- kminus
 
 
 ## Reference

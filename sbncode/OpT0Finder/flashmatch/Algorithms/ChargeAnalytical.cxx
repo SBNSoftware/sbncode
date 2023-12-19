@@ -14,9 +14,9 @@ namespace flashmatch {
   void ChargeAnalytical::_Configure_(const Config_t &pset)
   {
     _global_qe = pset.get<double>("GlobalQE");
-    _qe_v      = pset.get<std::vector<double> >("CCVCorrection");
+    _qe_v      = pset.get<std::vector<double> >("VUVEfficiency");
     if(_qe_v.size() != DetectorSpecs::GetME().NOpDets()) {
-      FLASH_CRITICAL() << "CCVCorrection factor array has size " << _qe_v.size()
+      FLASH_CRITICAL() << "VUV Efficiency array has size " << _qe_v.size()
 		       << " != number of opdet (" << DetectorSpecs::GetME().NOpDets() << ")!" << std::endl;
       throw OpT0FinderException();
     }
