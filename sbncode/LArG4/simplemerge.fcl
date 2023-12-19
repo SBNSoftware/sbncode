@@ -1,0 +1,9 @@
+BEGIN_PROLOG
+
+simplemerge : {
+  module_type: "SimpleMerge"
+  FillMCParticles: true
+  InputSourcesLabels: ["largeant", "largeantdropped"]
+}
+
+END_PROLOG
