@@ -38,6 +38,7 @@ MultiPartRain : {
         MaxMulti     : [         15,         5,          15]
         ProbWeight   : [         5,         1,          1]
         KERange      : [ [0.05,1.0],   [0.05,0.1], [0.05,0.4]]
+        MomRange     : []
     }
 }
 
