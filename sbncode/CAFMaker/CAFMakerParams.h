@@ -137,7 +137,7 @@ namespace caf
     Atom<string> CNNScoreLabel {
       Name("CNNScoreLabel"),
       Comment("Base label of CNN score producer."),
-      "cnnScore"
+      "cnnid"
     };
 
     Atom<string> StubLabel {

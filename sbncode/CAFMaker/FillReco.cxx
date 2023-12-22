@@ -880,13 +880,10 @@ namespace caf
                      caf::SRPFP& srpfp,
                      bool allowEmpty)
   {
-    std::cout << "filling CNN scores" << std::endl;
-    std::cout << "pfpTrackScore: " << cnnscore->pfpTrackScore << std::endl;
-    std::cout << "pfpShowerScore: " << cnnscore->pfpShowerScore << std::endl;
-    std::cout << "pfpNoiseScore: " << cnnscore->pfpNoiseScore << std::endl;
-    std::cout << "pfpMichelScore: " << cnnscore->pfpMichelScore << std::endl;
-    std::cout << "pfpEndMichelScore: " << cnnscore->pfpEndMichelScore << std::endl;
-    std::cout << "nClusters: " << cnnscore->nClusters << std::endl;
+    // std::cout << "pfpTrackScore: " << cnnscore->pfpTrackScore << std::endl;
+    // std::cout << "pfpShowerScore: " << cnnscore->pfpShowerScore << std::endl;
+    // std::cout << "pfpNoiseScore: " << cnnscore->pfpNoiseScore << std::endl;
+    // std::cout << "pfpMichelScore: " << cnnscore->pfpMichelScore << std::endl;
 
     srpfp.cnnscore.track = cnnscore->pfpTrackScore;
     srpfp.cnnscore.shower = cnnscore->pfpShowerScore;
