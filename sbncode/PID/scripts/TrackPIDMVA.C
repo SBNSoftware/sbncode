@@ -21,9 +21,9 @@ void TrackPIDMVA()
   TMVA::DataLoader *dataloader = new TMVA::DataLoader("dataset");
 
   TChain *trackTree = new TChain("dazzle/trackTree");
-  trackTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv2/NCPiZeroAv2_rockbox.root");
-  trackTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv2/NCPiZeroAv2_intrnue.root");
-  trackTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv2/NCPiZeroAv2_intime.root");
+  trackTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv12/NCPiZeroAv12_rockbox.root");
+  trackTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv12/NCPiZeroAv12_intrnue.root");
+  trackTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv12/NCPiZeroAv12_intime.root");
 
   TTree *muonTree   = trackTree->CopyTree("std::abs(truePdg)==13");
   TTree *pionTree   = trackTree->CopyTree("std::abs(truePdg)==211");
