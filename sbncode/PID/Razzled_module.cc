@@ -243,7 +243,7 @@ namespace sbn {
           reader->AddVariable("shw_convGap", &shw_convGap);
           reader->AddVariable("shw_openAngle", &shw_openAngle);
           reader->AddVariable("shw_modHitDensity", &shw_modHitDensity);
-          reader->AddVariable("shw_sqrtEnergyDensity", &shw_sqrtEnergyDensity);
+          reader->AddVariable("shw_sqrtEnergyDensity>2.5?2.5:shw_sqrtEnergyDensity", &shw_sqrtEnergyDensity);
 
           reader->BookMVA(fMethodName, fWeightFileFullPath);
         }
