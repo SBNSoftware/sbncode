@@ -41,26 +41,26 @@ void PFPPIDMVA()
   dataloader->AddTree(pionTree, "Pion");
   dataloader->AddTree(protonTree, "Proton");
 
-  dataloader->AddVariable("pfp_numDaughters", "PFP N Daughters", "", 'F', 0, 5);
-  dataloader->AddVariable("pfp_maxDaughterHits", "PFP Max Daughter Hits", "", 'F', 0, 500);
-  dataloader->AddVariable("pfp_trackScore", "PFP Track Score", "", 'F', 0, 1);
+  dataloader->AddVariable("pfp_numDaughters", "PFP N Daughters", "", 'F');
+  dataloader->AddVariable("pfp_maxDaughterHits", "PFP Max Daughter Hits", "", 'F');
+  dataloader->AddVariable("pfp_trackScore", "PFP Track Score", "", 'F');
 
-  dataloader->AddVariable("trk_length", "Track Length", "cm", 'F', 0, 250);
-  dataloader->AddVariable("trk_chi2PIDMuon", "Track Chi2 PID Muon", "", 'F', 0, 80);
-  dataloader->AddVariable("trk_chi2PIDProton", "Track Chi2 PID Proton", "", 'F', 0, 300);
-  dataloader->AddVariable("trk_chi2PIDMuonPionDiff", "Track Chi2 PID Muon-Pion", "", 'F', 0, 80);
-  dataloader->AddVariable("trk_mcsScatterMean", "Track Mean MCS Scattering Angle", "mRad", 'F', 0, 600);
-  dataloader->AddVariable("trk_mcsScatterMaxRatio", "Track Max/Mean MCS Scattering Angle Ratio", "", 'F', 0, 800);
-  dataloader->AddVariable("trk_meanDCA", "Track Mean DCA", "cm", 'F', 0, 10);
-  dataloader->AddVariable("trk_stoppingdEdxChi2Ratio", "Track Stopping Chi2Ratio", "", 'F', 0, 5);
-  dataloader->AddVariable("trk_chi2Pol0dEdxFit", "Track Fitted Pol0 dE/dx", "MeV/cm", 'F', 0, 20);
-  dataloader->AddVariable("trk_momDiff", "Track Momentum Agreement", "", 'F', 0, 10);
+  dataloader->AddVariable("trk_length", "Track Length", "cm", 'F');
+  dataloader->AddVariable("trk_chi2PIDMuon", "Track Chi2 PID Muon", "", 'F');
+  dataloader->AddVariable("trk_chi2PIDProton", "Track Chi2 PID Proton", "", 'F');
+  dataloader->AddVariable("trk_chi2PIDMuonPionDiff", "Track Chi2 PID Muon-Pion", "", 'F');
+  dataloader->AddVariable("trk_mcsScatterMean", "Track Mean MCS Scattering Angle", "mRad", 'F');
+  dataloader->AddVariable("trk_mcsScatterMaxRatio", "Track Max/Mean MCS Scattering Angle Ratio", "", 'F');
+  dataloader->AddVariable("trk_meanDCA", "Track Mean DCA", "cm", 'F');
+  dataloader->AddVariable("trk_stoppingdEdxChi2Ratio", "Track Stopping Chi2Ratio", "", 'F');
+  dataloader->AddVariable("trk_chi2Pol0dEdxFit", "Track Fitted Pol0 dE/dx", "MeV/cm", 'F');
+  dataloader->AddVariable("trk_momDiff", "Track Momentum Agreement", "", 'F');
 
-  dataloader->AddVariable("shw_bestdEdx", "Shower Best Plane dEdx", "MeV/cm", 'F', 0, 10);
-  dataloader->AddVariable("shw_convGap", "Shower Conversion Gap", "cm", 'F', 0, 10);
-  dataloader->AddVariable("shw_openAngle", "Shower Opening Angle", "rad", 'F', 0, 10);
-  dataloader->AddVariable("shw_modHitDensity", "Shower Modified Hit Density", "", 'F', 0, 10);
-  dataloader->AddVariable("shw_sqrtEnergyDensity > 2.5 ? 2.5 : shw_sqrtEnergyDensity", "Shower Sqrt Energy Density", "", 'F', 0, 10);
+  dataloader->AddVariable("shw_bestdEdx", "Shower Best Plane dEdx", "MeV/cm", 'F');
+  dataloader->AddVariable("shw_convGap", "Shower Conversion Gap", "cm", 'F');
+  dataloader->AddVariable("shw_openAngle", "Shower Opening Angle", "rad", 'F');
+  dataloader->AddVariable("shw_modHitDensity", "Shower Modified Hit Density", "", 'F');
+  dataloader->AddVariable("shw_sqrtEnergyDensity > 2.5 ? 2.5 : shw_sqrtEnergyDensity", "Shower Sqrt Energy Density", "", 'F');
 
   const TCut baseCut("(abs(trackStartX) < 180 && abs(trackStartY) < 180 && trackStartZ > 10"
                      " && trackStartZ < 450 && abs(showerStartX) < 180 && abs(showerStartY) < 180"
