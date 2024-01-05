@@ -21,9 +21,9 @@ void TrackPIDMVA()
   TMVA::DataLoader *dataloader = new TMVA::DataLoader("dataset");
 
   TChain *trackTree = new TChain("dazzle/trackTree");
-  trackTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv2/NCPiZeroAv2_rockbox.root");
-  trackTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv2/NCPiZeroAv2_intrnue.root");
-  trackTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv2/NCPiZeroAv2_intime.root");
+  trackTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv12/NCPiZeroAv12_rockbox.root");
+  trackTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv12/NCPiZeroAv12_intrnue.root");
+  trackTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv12/NCPiZeroAv12_intime.root");
 
   TTree *muonTree   = trackTree->CopyTree("std::abs(truePdg)==13");
   TTree *pionTree   = trackTree->CopyTree("std::abs(truePdg)==211");
@@ -61,7 +61,7 @@ void TrackPIDMVA()
   // dataloader->AddSpectator("chi2PIDPDGNoKaon", "Chi2 PID Type (No Kaon)", "");
 
   const TCut baseCut("(abs(startX) < 175 && abs(startY) < 175 && startZ > 25 && startZ < 450"
-                     "&& recoPrimary == 1 && recoLen>0 && trackScore > 0.5 && "
+                     "&& recoPrimary == 1 && recoLen>10 && trackScore > 0.5 && "
                      "energyPurity > 0.5 && energyComp > 0.5 && recoContained)");
 
   dataloader->PrepareTrainingAndTestTree(baseCut, "");
