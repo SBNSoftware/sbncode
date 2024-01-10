@@ -748,6 +748,9 @@ namespace caf
       CopyPropertyIfSet(propertiesMap, "LArThreeDPCAFeatureTool_SecondaryPCARatio",          srpfp.pfochar.pca2ratio);
       CopyPropertyIfSet(propertiesMap, "LArThreeDPCAFeatureTool_TertiaryPCARatio",           srpfp.pfochar.pca3ratio);
       CopyPropertyIfSet(propertiesMap, "LArThreeDVertexDistanceFeatureTool_VertexDistance",  srpfp.pfochar.vtxdist);
+      CopyPropertyIfSet(propertiesMap, "LArConeChargeFeatureTool_HaloTotalRatio",            srpfp.pfochar.halototratio);
+      CopyPropertyIfSet(propertiesMap, "LArConeChargeFeatureTool_Concentration",             srpfp.pfochar.concentration);
+      CopyPropertyIfSet(propertiesMap, "LArConeChargeFeatureTool_Conicalness",               srpfp.pfochar.conicalness);
     }
     if (t0) {
       srpfp.t0 = t0->Time() / 1e3; /* ns -> us */
