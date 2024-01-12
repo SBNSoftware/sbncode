@@ -27,7 +27,7 @@ numi_kaon: {
 
 numi_tau: {
   tool_type: TxtFileGen
-  SearchPath: "/pnfs/icarus/persistent/users/gputnam/numi_unconventional_fluxes/"
+  SearchPath: "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics-gputnam/numiflux-meson/"
   FluxFiles: ["tau*.txt"]
   RandomizeFiles: true
   NSkipLines: 2
@@ -36,15 +36,13 @@ numi_tau: {
   PDGCode: 15
 }
 
-numi_eta: {
+numi_psuedoscalar: {
   tool_type: TxtFileGen
-  SearchPath: "/pnfs/icarus/persistent/users/gputnam/numi_unconventional_fluxes/"
-  FluxFiles: ["eta*.txt"]
+  SearchPath: "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics-gputnam/numiflux-meson/"
+  FluxFiles: ["numi_icarus_incident_psuedoscalar*.txt"]
   RandomizeFiles: true
-  NSkipLines: 2
+  NSkipLines: 1
   FluxCopyMethod: DIRECT
-  POTPerMeson: 3.109
-  PDGCode: 221
 }
 
 ray_trace_box: {

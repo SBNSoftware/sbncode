@@ -831,6 +831,41 @@ sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
     }
   }
 
+  // Save the true trajectory
+  for (unsigned i_traj = 0; i_traj < particle.NumberTrajectoryPoints(); i_traj++) {
+    // Get trajectory point
+    TVector3 traj = particle.Position(i_traj).Vect();
+    geo::Point_t traj_p(traj.X(), traj.Y(), traj.Z());
+
+    // lookup TPC
+    geo::TPCID tpc; // invalid by default
+    for (auto const &cryo: geo->Iterate<geo::CryostatGeo>()) {
+      for (auto const& TPC : geo->Iterate<geo::TPCGeo>(cryo.ID())) {
+        if (TPC.ActiveBoundingBox().ContainsPosition(traj_p)) {
+          tpc = TPC.ID();
+          break;
+        }
+      }
+      if (tpc.isValid) break;
+    }
+
+    // add in space-charge-deflected position if applicable
+    geo::Point_t traj_p_sce = tpc.isValid ? TrajectoryToWirePosition(traj_p, tpc) : traj_p;
+
+    sbn::Vector3D traj_v;
+    traj_v.x = traj_p.x();
+    traj_v.y = traj_p.y();
+    traj_v.z = traj_p.z();
+
+    sbn::Vector3D traj_v_sce;
+    traj_v_sce.x = traj_p_sce.x();
+    traj_v_sce.y = traj_p_sce.y();
+    traj_v_sce.z = traj_p_sce.z();
+
+    trueparticle.traj.push_back(traj_v);
+    trueparticle.traj_sce.push_back(traj_v_sce);
+  }
+
   return trueparticle;
 }
 
