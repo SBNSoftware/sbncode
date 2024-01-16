@@ -118,8 +118,11 @@ void sbn::BNBEXTRetriever::produce(art::Event& e)
     icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerV3String(buffer);
     gate_type = datastream_info.gate_type;
     number_of_gates_since_previous_event = frag.getDeltaGatesBNBOffMaj();
+
+    if(gate_type != 3)
+      return;
     
-    if(frag.getDeltaGatesBNBOffMinbias() > 0){
+    if(frag.getDeltaGatesBNBOffMinbias() > 0 && gate_type == 3){
       evtCount++;  
       totalMinBias += frag.getDeltaGatesBNBOffMinbias();
     }
