@@ -146,6 +146,16 @@ namespace caf
       "fmatch" // same for icarus and sbnd
     };
 
+    fhicl::OptionalSequence<std::string> FlashMatchOpDetSuffixes {
+      Name("FlashMatchOpDetSuffixes"),
+      Comment("List of suffixes to add to SimpleFlash to denote Simple/Op Flashes and PDS subsystem (SBND)")
+    };
+
+    fhicl::OptionalSequence<std::string> FlashMatchSCECryoSuffixes {
+      Name("FlashMatchSCECryoSuffixes"),
+      Comment("List of suffixes to add to SimpleFlash to denote whether SCE implemented and cryostat (ICARUS)")
+    };
+
     Atom<string> CRUMBSLabel {
       Name("CRUMBSLabel"),
       Comment("Base label of CRUMBS ID producer."),
@@ -270,6 +280,12 @@ namespace caf
       Name("CRTPMTLabel"),
       Comment("Label for the CRTPMT Matched variables from the crtpmt data product"),
       "crtpmt" // this variable exists in icaruscode, pretty sure it does not yet exist in sbnd
+    };
+
+    Atom<string> TPCPMTBarycenterMatchLabel {
+      Name("TPCPMTBarycenterMatchLabel"),
+      Comment("Label of Slice-OpFlash matching via barycenters."),
+      "" //Empty by default, configured in icaruscode cafmaker_defs
     };
 
     Atom<string> OpFlashLabel {

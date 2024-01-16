@@ -116,19 +116,22 @@ void SystToolsEventWeight::produce(art::Event& e) {
           << sp->GetFullyQualifiedName() << "\n";
       }
 
-      //==== syst_resp->size() is (Number of MCTruth)
-      //==== Each index corresponds to each of MCTruth
+      // syst_resp->size() is (Number of MCTruth)
+      // Each index corresponds to each of MCTruth
       int nMCTruthIndex = 0;
       if(fDebugMode) std::cout << "[SystToolsEventWeight::produce]   syst_resp.size() (= Number of MCTruth) of this SystProvider = " << syst_resp->size() << std::endl;
 
-      //==== Looping over syst_resp is identical to looping over MCTruth
+      // Looping over syst_resp is identical to looping over MCTruth
       for(systtools::event_unit_response_t const& resp: *syst_resp) {
-        //==== resp.size() corresponds to number of knobs we altered;
-        //==== e.g., MaCCQE, MaCCRES, MvCCRE -> resp.size() = 3
+        // resp.size() corresponds to number of knobs we altered;
+        // e.g., MaCCQE, MaCCRES, MvCCRE -> resp.size() = 3
         if(fDebugMode){
           std::cout << "[SystToolsEventWeight::produce]     sp->GetSystMetaData().size() (expected) = " << sp->GetSystMetaData().size() << "\n"
                     << "[SystToolsEventWeight::produce]     resp.size() of this syst_resp (produced) = " << resp.size() << std::endl;
         }
+
+        // Below check is not valid if there is a dependent dial
+        /*
         if(sp->GetSystMetaData().size()!=resp.size()){
           throw cet::exception{ "SystToolsEventWeight" } 
             << "sp->GetFullyQualifiedName() = " << sp->GetFullyQualifiedName() << "\n"
@@ -136,14 +139,17 @@ void SystToolsEventWeight::produce(art::Event& e) {
                     << resp.size() << " are produced. "
                     << "Probably this particular event is not relevant to this systematic variation.\n";
         }
+        */
 
         sbn::evwgh::EventWeightMap mcwgh;
 
         for( auto const& r: resp){
 
-          //==== responses.size() is the number of universes
+          // responses.size() is the number of universes
           systtools::SystParamHeader const &sph = fParamHeaderHelper.GetHeader( r.pid );
           std::string prettyName = sph.prettyName;
+
+          if(sph.isResponselessParam) continue;
 
           if(fDebugMode){
             std::cout << "[SystToolsEventWeight::produce]       pid of this resp = " << r.pid << "\n"
@@ -151,7 +157,14 @@ void SystToolsEventWeight::produce(art::Event& e) {
                       << "[SystToolsEventWeight::produce]       paramVariations.size() of this resp (expected) = " << sph.paramVariations.size() << "\n"
                       << "[SystToolsEventWeight::produce]       responses.size() of this resp (produced) = " << r.responses.size() << std::endl;
           }
-          if(sph.paramVariations.size()!=r.responses.size()){
+
+          if(sph.isCorrection && (r.responses.size()!=1)){
+            throw cet::exception{ "SystToolsEventWeight" }
+              << "prettyName of this resp = " << prettyName << "\n"
+              << "We expect to have 1 universes as it is a correction, but "
+                      << r.responses.size() << " are produced\n";
+          }
+          if(!sph.isCorrection && sph.paramVariations.size()!=r.responses.size()){
             throw cet::exception{ "SystToolsEventWeight" }
               << "prettyName of this resp = " << prettyName << "\n"
               << "We expect to have " << sph.paramVariations.size() << " universes, but "
@@ -159,8 +172,8 @@ void SystToolsEventWeight::produce(art::Event& e) {
                       << "Probably this particular event is not relevant to this systematic variation.\n";
           }
 
-          //==== r.responses : std::vector<double>
-          //==== std::map<std::string, std::vector<float> > EventWeightMap
+          // r.responses : std::vector<double>
+          // std::map<std::string, std::vector<float> > EventWeightMap
           mcwgh[sp->GetFullyQualifiedName()+"_"+prettyName].assign(r.responses.cbegin(), r.responses.cend());
 
         } // END loop over knobs
@@ -191,25 +204,92 @@ void SystToolsEventWeight::beginRun(art::Run& run) {
                                   << "sp->GetFullyQualifiedName() = " << sp->GetFullyQualifiedName() << "\n"
                                   << "sp->GetInstanceName() = " << sp->GetInstanceName() << "\n"
                                   << "Printing each SystParamHeader of this ISystProviderTool..";
-    //==== Note: typedef std::vector<SystParamHeader> SystMetaData;
+    // Note: typedef std::vector<SystParamHeader> SystMetaData;
     auto const& smd = sp->GetSystMetaData();
+
+    // make a map of responsless-response params
+    std::map<systtools::paramId_t, std::vector<systtools::paramId_t>> map_resp_to_respless;
     for( auto &sph : smd ){
-      if (fDebugMode) {
-        std::cout << "  sph.prettyName = " << sph.prettyName << std::endl;
+      if(sph.isResponselessParam){
+        auto it = map_resp_to_respless.find( sph.responseParamId );
+        if( it != map_resp_to_respless.end() ){
+          it->second.push_back( sph.systParamId );
+        }
+        else{
+          map_resp_to_respless[sph.responseParamId] = {};
+          map_resp_to_respless[sph.responseParamId].push_back( sph.systParamId );
+        }
       }
-
-      std::string rwmode = "multisigma";
-      if(sph.isRandomlyThrown) rwmode = "multisim";
-
-      if (fDebugMode) {
-        std::cout << "  rwmode = " << rwmode << std::endl;
+    }
+    if (fDebugMode) {
+      for(const auto& it: map_resp_to_respless){
+        const auto& sph = systtools::GetParam(smd, it.first);
+        std::cout << "Found a dependent dial: " << sph.prettyName << std::endl;
+        for(const auto& depdialid: it.second){
+          const auto& sph_dep = systtools::GetParam(smd, depdialid);
+          std::cout << "- dep dial: " << sph_dep.prettyName << std::endl;
+        }
       }
+    }
 
-      std::vector<float> widths { sph.paramVariations.begin(), sph.paramVariations.end() };
+    for( auto &sph : smd ){
+
+      // responsless
+      if(sph.isResponselessParam){
+        if (fDebugMode) {
+          std::cout << "Responsless dial found: " << sph.prettyName << ", thus skipping" << std::endl;
+        }
+        continue;
+      }
 
       sbn::evwgh::EventWeightParameterSet fParameterSet;
-      fParameterSet.AddParameter(sph.prettyName, std::move(widths));
-      fParameterSet.Configure(sp->GetFullyQualifiedName()+"_"+sph.prettyName, rwmode, sph.paramVariations.size());
+      std::string rwmode = "";
+
+      std::vector<double> paramVars = sph.isCorrection ? std::vector<double>(1, sph.centralParamValue) : sph.paramVariations;
+
+      auto it = map_resp_to_respless.find( sph.systParamId );
+      if(it!=map_resp_to_respless.end()){
+
+        for(const auto depdialid: it->second){
+          const auto& sph_dep = systtools::GetParam(smd, depdialid);
+          std::vector<double> paramVars_dep = sph_dep.isCorrection ? std::vector<double>(1, sph_dep.centralParamValue) : sph_dep.paramVariations;
+
+          if(rwmode=="") rwmode = sph_dep.isRandomlyThrown ? "multisim" : "multisigma";
+          else{
+            if(rwmode!= (sph_dep.isRandomlyThrown ? "multisim" : "multisigma")){
+              throw cet::exception{ "SystToolsEventWeight" }
+                << sph.prettyName << " depends on other dials, but the remode are different between the deps dials\n";
+            }
+          }
+
+          std::vector<float> widths_dep { paramVars_dep.begin(), paramVars_dep.end() };
+          fParameterSet.AddParameter(sph_dep.prettyName, std::move(widths_dep));
+
+        }
+
+
+
+      }
+      else{
+
+        rwmode = sph.isRandomlyThrown ? "multisim" : "multisigma";
+
+        std::vector<float> widths { paramVars.begin(), paramVars.end() };
+
+        fParameterSet.AddParameter(sph.prettyName, std::move(widths));
+
+      }
+
+      if(rwmode==""){
+        throw cet::exception{ "SystToolsEventWeight" }
+          << "rwmode not set for " << sph.prettyName << "\n";
+      }
+
+      if (fDebugMode) {
+        std::cout << "  sph.prettyName = " << sph.prettyName << ", rwmode = " << rwmode << " is added to the header" << std::endl;
+      }
+
+      fParameterSet.Configure(sp->GetFullyQualifiedName()+"_"+sph.prettyName, rwmode, paramVars.size());
       fParameterSet.FillKnobValues();
 
       p->push_back( std::move(fParameterSet) );
