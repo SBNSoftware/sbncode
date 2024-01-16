@@ -40,7 +40,7 @@ physics:
    beamgate:  @local::icarus_standardbeamgate_BNB  # from beamgates_icarus.fcl
  }
 
- simulate: [ rns, generator, #@sequence::cosmgen, beamgate ]
+ simulate: [ rns, generator, @sequence::cosmgen, beamgate ]
 
  out_stream: [ out1   ]
 
