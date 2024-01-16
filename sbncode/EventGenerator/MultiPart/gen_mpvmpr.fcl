@@ -53,9 +53,9 @@ physics:
 # Multi-Particle Vertex generator (MPV)
 #
 physics.producers.generator.DebugMode    : 1
-# Based on BNB spill = 1.6us
-physics.producers.generator.G4Time       : 340.8 # [us]
-physics.producers.generator.G4TimeJitter : 1.6 # [us]
+# Based on BNB spill = 1.6us , now based on NUMI spill 10us
+physics.producers.generator.G4Time       : 345. # 340.8 # [us] 
+physics.producers.generator.G4TimeJitter : 10. # 1.6 # [us]
 physics.producers.generator.XRange       : [30,30]
 physics.producers.generator.YRange       : [30,30]
 physics.producers.generator.ZRange       : [30,30]
