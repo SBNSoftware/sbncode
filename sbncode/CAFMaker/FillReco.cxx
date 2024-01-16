@@ -113,8 +113,8 @@ namespace caf
   }
 
   void FillCRTSpacePoint(const sbnd::crt::CRTSpacePoint &spacepoint,
-			 caf::SRCRTSpacePoint &srspacepoint,
-			 bool allowEmpty)
+                         caf::SRCRTSpacePoint &srspacepoint,
+                         bool allowEmpty)
   {
     srspacepoint.position     = SRVector3D(spacepoint.X(), spacepoint.Y(), spacepoint.Z());
     srspacepoint.position_err = SRVector3D(spacepoint.XErr(), spacepoint.YErr(), spacepoint.ZErr());
@@ -125,8 +125,8 @@ namespace caf
   }
 
   void FillSBNDCRTTrack(const sbnd::crt::CRTTrack &track,
-			caf::SRSBNDCRTTrack &srsbndcrttrack,
-			bool allowEmpty)
+                        caf::SRSBNDCRTTrack &srsbndcrttrack,
+                        bool allowEmpty)
   {
     for(auto const& point : track.Points())
       srsbndcrttrack.points.emplace_back(point.X(), point.Y(), point.Z());
@@ -565,38 +565,22 @@ namespace caf
     }
   }
 
-  void FillTrackCRTSpacePoint(const std::vector<art::Ptr<anab::T0>> &t0match,
-                              const std::vector<art::Ptr<sbnd::crt::CRTSpacePoint>> &spacepointmatch,
+  void FillTrackCRTSpacePoint(const anab::T0 &t0match,
+                              const art::Ptr<sbnd::crt::CRTSpacePoint> &spacepointmatch,
                               caf::SRTrack &srtrack,
                               bool allowEmpty)
   {
-    if(t0match.size())
-      {
-	assert(t0match.size() == 1);
-	srtrack.crtspacepoint.score = t0match[0]->fTriggerConfidence;
-      }
-    if(spacepointmatch.size())
-      {
-	assert(spacepointmatch.size() == 1);
-	FillCRTSpacePoint(*spacepointmatch[0], srtrack.crtspacepoint.spacepoint);
-      }
+    srtrack.crtspacepoint.score = t0match.fTriggerConfidence;
+    FillCRTSpacePoint(*spacepointmatch, srtrack.crtspacepoint.spacepoint);
   }
 
-  void FillTrackSBNDCRTTrack(const std::vector<art::Ptr<anab::T0>> &t0match,
-                             const std::vector<art::Ptr<sbnd::crt::CRTTrack>> &trackmatch,
+  void FillTrackSBNDCRTTrack(const anab::T0 &t0match,
+                             const art::Ptr<sbnd::crt::CRTTrack> &trackmatch,
                              caf::SRTrack &srtrack,
-			     bool allowEmpty)
+                             bool allowEmpty)
   {
-    if(t0match.size())
-      {
-	assert(t0match.size() == 1);
-	srtrack.crtsbndtrack.score = t0match[0]->fTriggerConfidence;
-      }
-    if(trackmatch.size())
-      {
-	assert(trackmatch.size() == 1);
-	FillSBNDCRTTrack(*trackmatch[0], srtrack.crtsbndtrack.track);
-      }
+    srtrack.crtsbndtrack.score = t0match.fTriggerConfidence;
+    FillSBNDCRTTrack(*trackmatch, srtrack.crtsbndtrack.track);
   }
 
   void FillTrackMCS(const recob::Track& track,

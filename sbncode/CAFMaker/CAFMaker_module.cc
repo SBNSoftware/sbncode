@@ -276,6 +276,10 @@ class CAFMaker : public art::EDProducer {
   art::FindOneP<T> FindOnePStrict(const U& from, const art::Event& evt,
 				  const art::InputTag& label) const;
 
+  template <class T, class D, class U>
+  art::FindOneP<T, D> FindOnePDStrict(const U& from,
+                                      const art::Event& evt,
+                                      const art::InputTag& tag) const;
 
   /// \brief Retrieve an object from an association, with error handling
   ///
@@ -1008,6 +1012,25 @@ art::FindOneP<T> CAFMaker::FindOnePStrict(const U& from,
 }
 
 //......................................................................
+template <class T, class D, class U>
+art::FindOneP<T, D> CAFMaker::FindOnePDStrict(const U& from,
+                                              const art::Event& evt,
+                                              const art::InputTag& tag) const {
+  art::FindOneP<T, D> ret(from, evt, tag);
+
+  if (!tag.label().empty() && !ret.isValid() && fParams.StrictMode()) {
+    std::cout << "CAFMaker: No Assn from '"
+              << cet::demangle_symbol(typeid(from).name()) << "' to '"
+              << cet::demangle_symbol(typeid(T).name())
+              << "' found under label '" << tag << "'. "
+              << "Set 'StrictMode: false' to continue anyway." << std::endl;
+    abort();
+  }
+
+  return ret;
+}
+
+//......................................................................
 template <class T>
 bool CAFMaker::GetAssociatedProduct(const art::FindManyP<T>& fm, int idx,
                                     T& ret) const {
@@ -1329,22 +1352,22 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       GetByLabelStrict(evt, fParams.CRTHitLabel(), crthits_handle);
       // fill into event
       if (crthits_handle.isValid()) {
-	const std::vector<sbn::crt::CRTHit> &crthits = *crthits_handle;
-	for (unsigned i = 0; i < crthits.size(); i++) {
-	  srcrthits.emplace_back();
-	  FillCRTHit(crthits[i], fParams.CRTUseTS0(), CRT_T0_reference_time, CRT_T1_reference_time, srcrthits.back());
-	}
+        const std::vector<sbn::crt::CRTHit> &crthits = *crthits_handle;
+        for (unsigned i = 0; i < crthits.size(); i++) {
+          srcrthits.emplace_back();
+          FillCRTHit(crthits[i], fParams.CRTUseTS0(), CRT_T0_reference_time, CRT_T1_reference_time, srcrthits.back());
+        }
       }
 
       art::Handle<std::vector<sbn::crt::CRTTrack>> crttracks_handle;
       GetByLabelStrict(evt, fParams.CRTTrackLabel(), crttracks_handle);
       // fill into event
       if (crttracks_handle.isValid()) {
-	const std::vector<sbn::crt::CRTTrack> &crttracks = *crttracks_handle;
-	for (unsigned i = 0; i < crttracks.size(); i++) {
-	  srcrttracks.emplace_back();
-	  FillCRTTrack(crttracks[i], fParams.CRTUseTS0(), srcrttracks.back());
-	}
+        const std::vector<sbn::crt::CRTTrack> &crttracks = *crttracks_handle;
+        for (unsigned i = 0; i < crttracks.size(); i++) {
+          srcrttracks.emplace_back();
+          FillCRTTrack(crttracks[i], fParams.CRTUseTS0(), srcrttracks.back());
+        }
       }
     }
   else if(fDet == kSBND)
@@ -1353,22 +1376,22 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       GetByLabelStrict(evt, fParams.CRTSpacePointLabel(), crtspacepoints_handle);
 
       if (crtspacepoints_handle.isValid()) {
-	const std::vector<sbnd::crt::CRTSpacePoint> &crtspacepoints = *crtspacepoints_handle;
-	for (unsigned i = 0; i < crtspacepoints.size(); i++) {
-	  srcrtspacepoints.emplace_back();
-	  FillCRTSpacePoint(crtspacepoints[i], srcrtspacepoints.back());
-	}
+        const std::vector<sbnd::crt::CRTSpacePoint> &crtspacepoints = *crtspacepoints_handle;
+        for (unsigned i = 0; i < crtspacepoints.size(); i++) {
+          srcrtspacepoints.emplace_back();
+          FillCRTSpacePoint(crtspacepoints[i], srcrtspacepoints.back());
+        }
       }
 
       art::Handle<std::vector<sbnd::crt::CRTTrack>> sbndcrttracks_handle;
       GetByLabelStrict(evt, fParams.SBNDCRTTrackLabel(), sbndcrttracks_handle);
       // fill into event
       if (sbndcrttracks_handle.isValid()) {
-	const std::vector<sbnd::crt::CRTTrack> &sbndcrttracks = *sbndcrttracks_handle;
-	for (unsigned i = 0; i < sbndcrttracks.size(); i++) {
-	  srsbndcrttracks.emplace_back();
-	  FillSBNDCRTTrack(sbndcrttracks[i], srsbndcrttracks.back());
-	}
+        const std::vector<sbnd::crt::CRTTrack> &sbndcrttracks = *sbndcrttracks_handle;
+        for (unsigned i = 0; i < sbndcrttracks.size(); i++) {
+          srsbndcrttracks.emplace_back();
+          FillSBNDCRTTrack(sbndcrttracks[i], srsbndcrttracks.back());
+        }
       }
     }
 
@@ -1634,12 +1657,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<anab::T0>(slcTracks, evt,
                fParams.CRTTrackMatchLabel() + slice_tag_suff);
 
-    art::FindManyP<anab::T0> fmCRTSpacePointMatch =
-      FindManyPStrict<anab::T0>(slcTracks, evt,
+    art::FindOneP<sbnd::crt::CRTSpacePoint, anab::T0> foCRTSpacePointMatch =
+      FindOnePDStrict<sbnd::crt::CRTSpacePoint, anab::T0>(slcTracks, evt,
                fParams.CRTSpacePointMatchLabel() + slice_tag_suff);
 
-    art::FindManyP<anab::T0> fmSBNDCRTTrackMatch =
-      FindManyPStrict<anab::T0>(slcTracks, evt,
+    art::FindOneP<sbnd::crt::CRTTrack, anab::T0> foSBNDCRTTrackMatch =
+      FindOnePDStrict<sbnd::crt::CRTTrack, anab::T0>(slcTracks, evt,
                fParams.SBNDCRTTrackMatchLabel() + slice_tag_suff);
 
     std::vector<art::FindManyP<recob::MCSFitResult>> fmMCSs;
@@ -1853,28 +1876,22 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         if (fmCRTTrackMatch.isValid() && fDet == kICARUS) {
           FillTrackCRTTrack(fmCRTTrackMatch.at(iPart), trk);
         }
-	if(fmCRTSpacePointMatch.isValid() && fDet == kSBND)
-	  {
-	    art::FindManyP<sbnd::crt::CRTSpacePoint> crtT0ToSpacePoint = FindManyPStrict<sbnd::crt::CRTSpacePoint>
-	      (fmCRTSpacePointMatch.at(iPart), evt, fParams.CRTSpacePointMatchLabel() + slice_tag_suff);
 
-	    std::vector<art::Ptr<sbnd::crt::CRTSpacePoint>> crtspacepointmatch;
-	    if(crtT0ToSpacePoint.isValid() && crtT0ToSpacePoint.size() == 1)
-	      crtspacepointmatch = crtT0ToSpacePoint.at(0);
+        if(foCRTSpacePointMatch.isValid() && fDet == kSBND)
+          {
+            const art::Ptr<sbnd::crt::CRTSpacePoint> crtspacepoint = foCRTSpacePointMatch.at(iPart);
 
-	    FillTrackCRTSpacePoint(fmCRTSpacePointMatch.at(iPart), crtspacepointmatch, trk);
-	  }
-	if(fmSBNDCRTTrackMatch.isValid() && fDet == kSBND)
-	  {
-	    art::FindManyP<sbnd::crt::CRTTrack> crtT0ToSBNDTrack = FindManyPStrict<sbnd::crt::CRTTrack>
-	      (fmSBNDCRTTrackMatch.at(iPart), evt, fParams.SBNDCRTTrackMatchLabel() + slice_tag_suff);
+            if(crtspacepoint.isNonnull())
+              FillTrackCRTSpacePoint(foCRTSpacePointMatch.data(iPart).ref(), crtspacepoint, trk);
+          }
+        if(foSBNDCRTTrackMatch.isValid() && fDet == kSBND)
+          {
+            const art::Ptr<sbnd::crt::CRTTrack> sbndcrttrack = foSBNDCRTTrackMatch.at(iPart);
 
-	    std::vector<art::Ptr<sbnd::crt::CRTTrack>> sbndcrttrackmatch;
-	    if(crtT0ToSBNDTrack.isValid() && crtT0ToSBNDTrack.size() == 1)
-	      sbndcrttrackmatch = crtT0ToSBNDTrack.at(0);
+            if(sbndcrttrack.isNonnull())
+              FillTrackSBNDCRTTrack(foSBNDCRTTrackMatch.data(iPart).ref(), sbndcrttrack, trk);
+          }
 
-	    FillTrackSBNDCRTTrack(fmSBNDCRTTrackMatch.at(iPart), sbndcrttrackmatch, trk);
-	  }
         // Truth matching
         if (fmTrackHit.isValid()) {
           if ( !isRealData ) {
