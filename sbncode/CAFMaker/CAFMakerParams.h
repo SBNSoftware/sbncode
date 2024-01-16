@@ -242,6 +242,18 @@ namespace caf
       "pandoraTrackCRTTrack"
     };
 
+    Atom<string> CRTSpacePointMatchLabel {
+      Name("CRTSpacePointMatchLabel"),
+      Comment("Base label of track to CRT spacepoint matching producer."),
+      "crtspacepointmatching"
+    };
+
+    Atom<string> SBNDCRTTrackMatchLabel {
+      Name("SBNDCRTTrackMatchLabel"),
+      Comment("Base label of track to SBND CRT track matching producer."),
+      "crttrackmatching"
+    };
+
     Atom<string> TrackMCSLabel {
       Name("TrackMCSLabel"),
       Comment("Base label of track MCS momentum calculation producer."),
@@ -257,15 +269,27 @@ namespace caf
     Atom<string> CRTHitLabel {
       Name("CRTHitLabel"),
       Comment("Label of sbn CRT hits."),
-      "crthit" // same for icarus and sbnd
+      "crthit" // icarus
     };
 
     Atom<string> CRTTrackLabel {
       Name("CRTTrackLabel"),
       Comment("Label of sbn CRT tracks."),
-      "crttrack" // same for icarus and sbnd
+      "crttrack" // icarus
     };
-    
+
+    Atom<string> CRTSpacePointLabel {
+      Name("CRTSpacePointLabel"),
+      Comment("Label of sbnd CRT spacepoints."),
+      "crtspacepoints" // sbnd
+    };
+
+    Atom<string> SBNDCRTTrackLabel {
+      Name("SBNDCRTTrackLabel"),
+      Comment("Label of sbnd CRT tracks."),
+      "crttracks" // sbnd
+    };
+
     Atom<string> CRTPMTLabel {
       Name("CRTPMTLabel"),
       Comment("Label for the CRTPMT Matched variables from the crtpmt data product"),
