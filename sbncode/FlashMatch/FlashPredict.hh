@@ -33,7 +33,7 @@
 #include "lardataobj/RecoBase/SpacePoint.h"
 #include "lardataobj/RecoBase/Slice.h"
 #include "lardataobj/RecoBase/OpHit.h"
-// #include "lardataobj/RecoBase/OpFlash.h"
+#include "lardataobj/RecoBase/OpFlash.h"
 #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
 #include "larsim/Utils/TruthMatchUtils.h"
@@ -42,6 +42,8 @@
 #include "TTree.h"
 #include "TF1.h"
 #include "TFile.h"
+#include "TKey.h"
+#include "TDirectory.h"
 #include "TH1.h"
 #include "TH2.h"
 #include "TProfile3D.h"
@@ -275,7 +277,15 @@ private:
     const std::vector<art::Ptr<simb::MCParticle>>& mcParticles) const;
   ChargeMetrics computeChargeMetrics(
     const ChargeDigest& chargeDigest) const;
-  FlashMetrics computeFlashMetrics(const SimpleFlash& simpleFlash) const;
+  FlashMetrics computeFlashMetrics(const std::vector<recob::OpHit>& ophits) const;
+  FlashMetrics getFlashMetrics(
+    const FlashPredict::SimpleFlash& sf) const;
+  FlashMetrics getFlashMetrics(
+    const recob::OpFlash& opflash,
+    std::vector<art::Ptr<recob::OpHit>> ophit_v,
+    unsigned id) const;
+  bool isConcurrent(unsigned ophsInVolume,
+                      unsigned hitsInVolume) const;
   Score computeScore(const ChargeMetrics& charge,
                      const FlashMetrics& flash) const;
   Score computeScore3D(const ChargeMetrics& charge,
@@ -341,10 +351,9 @@ private:
   unsigned sbndPDinTPC(const int pdChannel) const;
   unsigned icarusPDinTPC(const int pdChannel) const;
   double opHitTime(const recob::OpHit& oph) const;
-  double wallXWithMaxPE(const OpHitIt opH_beg,
-                        const OpHitIt opH_end) const;
+  double wallXWithMaxPE(const std::vector<recob::OpHit>& ophits) const;
   double fractTimeWithFractionOfLight(
-    const SimpleFlash& simpleFlash,
+    const std::vector<recob::OpHit>& timeSortedOpH,
     const double sum_pe, const double fraction_pe,
     const bool use_square_pe = false, const bool only_unpe = false) const;
   inline double polynomialCorrection(const double skew, const double hypo_x,
@@ -369,19 +378,22 @@ private:
                     const double term,
                     Stream&& out) const;
 
+  const bool fIsSimple;
+  const std::string fFlashType;
+  const bool fUseOldMetrics;
   const art::InputTag fPandoraProducer, fSpacePointProducer,
     fOpHitProducer, fOpHitARAProducer;//, fCaloProducer, fTrackProducer;
+  const std::vector<std::string> fOpFlashProducer, fOpFlashHitProducer;
   const double fBeamSpillTimeStart, fBeamSpillTimeEnd;
   const double fFlashFindingTimeStart, fFlashFindingTimeEnd;
   const double fFlashStart, fFlashEnd;
   const unsigned fTimeBins;
   const bool fSelectNeutrino;
-  const bool fOnlyCollectionWires;
   const bool fForceConcurrence;
   const bool fUse3DMetrics;
+  const bool fUseOpCoords;
   const bool fCorrectDriftDistance;
   // const bool fUseCalo; TODO: Use calorimetry
-  const bool fUseARAPUCAS;
   const bool fStoreMCInfo;
   const ReferenceMetrics fRM;
   const bool fNoAvailableMetrics, fMakeTree;
@@ -394,6 +406,10 @@ private:
   const art::ServiceHandle<geo::Geometry> fGeometry;
   const std::string fDetector; // SBND or ICARUS
   const bool fSBND, fICARUS;
+  const std::vector<int> kSBNDPlanes = {0,1,2};
+  const std::vector<int> kICARUSPlanes = {0,1,3};
+  const std::vector<int> fPlaneList;
+  const bool fAllPlanes;
   const std::unique_ptr<opdet::PDMapAlg> fPDMapAlgPtr;
   const size_t fNTPC;
   const unsigned fTPCPerDriftVolume;
