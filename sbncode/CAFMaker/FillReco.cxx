@@ -918,6 +918,34 @@ namespace caf
     srhit.spacepoint.pfpID = particle.Self();
     srhit.spacepoint.ID = spacepoint.ID();
   }
+
+  void FillTPCPMTBarycenterMatch(const sbn::TPCPMTBarycenterMatch *matchInfo,
+                           caf::SRSlice& slice)
+  { 
+    slice.barycenterFM.setDefault();
+
+    if ( matchInfo != nullptr ) {
+      slice.barycenterFM.chargeTotal  = matchInfo->chargeTotal;
+      slice.barycenterFM.chargeCenterXLocal  = matchInfo->chargeCenterXLocal;
+      slice.barycenterFM.chargeCenter  = SRVector3D (matchInfo->chargeCenter.x(), matchInfo->chargeCenter.y(), matchInfo->chargeCenter.z());
+      slice.barycenterFM.chargeWidth  = SRVector3D (matchInfo->chargeWidth.x(), matchInfo->chargeWidth.y(), matchInfo->chargeWidth.z());
+      slice.barycenterFM.flashFirstHit  = matchInfo->flashFirstHit;
+      slice.barycenterFM.flashTime  = matchInfo->flashTime;
+      slice.barycenterFM.flashPEs  = matchInfo->flashPEs;
+      slice.barycenterFM.flashCenter  = SRVector3D (matchInfo->flashCenter.x(), matchInfo->flashCenter.y(), matchInfo->flashCenter.z());
+      slice.barycenterFM.flashWidth  = SRVector3D (matchInfo->flashWidth.x(), matchInfo->flashWidth.y(), matchInfo->flashWidth.z());
+      slice.barycenterFM.deltaT  = matchInfo->deltaT;
+      slice.barycenterFM.deltaY  = matchInfo->deltaY;
+      slice.barycenterFM.deltaZ  = matchInfo->deltaZ;
+      slice.barycenterFM.radius  = matchInfo->radius;
+      slice.barycenterFM.overlapY  = matchInfo->overlapY;
+      slice.barycenterFM.overlapZ  = matchInfo->overlapZ;
+      slice.barycenterFM.deltaZ_Trigger  = matchInfo->deltaZ_Trigger;
+      slice.barycenterFM.deltaY_Trigger  = matchInfo->deltaY_Trigger;
+      slice.barycenterFM.radius_Trigger  = matchInfo->radius_Trigger;
+    }
+  }
+
   //......................................................................
 
   void SetNuMuCCPrimary(std::vector<caf::StandardRecord> &recs,
