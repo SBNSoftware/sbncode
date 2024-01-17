@@ -12,5 +12,6 @@ bnbspillinfo: {
     MWR_TimeWindow: "3601" #seconds
     raw_data_label: "daq"
     DeviceUsedForTiming: "E:TOR860"
+    TriggerDatabaseFile: "triggerDatabase/icarus_triggers.db"
 }
 END_PROLOG

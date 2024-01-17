@@ -6,13 +6,14 @@
  * Based heavily on code by Z. Pavlovic written for MicroBooNE 
  * Based heavily on code by NOvA collaboration (Thanks NOvA!):
  *        https://cdcvs.fnal.gov/redmine/projects/novaart/repository/entry/trunk/IFDBSpillInfo/BNBInfo_module.cc
+ * Database implementation by Justin Mueller 
  */
 
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/Handle.h"
- #include "art/Framework/Principal/Run.h"
+#include "art/Framework/Principal/Run.h"
 #include "art/Framework/Principal/SubRun.h"
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/types/Atom.h"
@@ -89,7 +90,13 @@ public:
       Name{ "MWR_TimeWindow" },
       Comment{ "" } // explain what this is, what's for and its unit
       };
+
+    fhicl::Atom<std::string> TriggerDatabaseFile {
+      Name{ "TriggerDatabaseFile" },
+      Comment{ "" } // explain what this is, what's for and its unit
+      };
     
+
   }; // Config
   
   using Parameters = art::EDProducer::Table<Config>;
@@ -126,6 +133,7 @@ private:
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp_mwr;
   
   //
+  std::string fTriggerDatabaseFile;
   sqlite3 *db;
   int rc;
 
@@ -207,7 +215,7 @@ private:
 				     int func(void*,int,char**,char**), 
 				     int run, 
 				     long long int gate_time, 
-				     int threshold) const;
+				     float threshold) const;
   
 };
 
@@ -223,7 +231,7 @@ int callback_trigger_type(void *data, int argc, char **argv, char **columns)
   return 0;
 }
 
-int sbn::BNBRetriever::get_trigger_type_matching_gate(sqlite3 *db, int func(void*,int,char**,char**), int run, long long int gate_time, int threshold) const
+int sbn::BNBRetriever::get_trigger_type_matching_gate(sqlite3 *db, int func(void*,int,char**,char**), int run, long long int gate_time, float threshold) const
 {
   int trigger_type(-1), query_status;
   std::stringstream query;
@@ -240,7 +248,7 @@ int sbn::BNBRetriever::get_trigger_type_matching_gate(sqlite3 *db, int func(void
   query_status = sqlite3_exec(db, query.str().c_str(), func, &trigger_type, NULL);
   if (query_status != SQLITE_OK)
   {
-    fprintf(stderr, "SQL error: %s\n", sqlite3_errmsg(db));
+    mf::LogError("BNBEXTRetriever") << "SQL error: " << sqlite3_errmsg(db);
     trigger_type = -1;
   }
   return trigger_type;
@@ -252,7 +260,8 @@ sbn::BNBRetriever::BNBRetriever(Parameters const& params)
   raw_data_label(params().RawDataLabel()),
   fDeviceUsedForTiming(params().DeviceUsedForTiming()),
   bfp(     ifbeam_handle->getBeamFolder(params().Bundle(), params().URL(), params().TimeWindow())),
-  bfp_mwr( ifbeam_handle->getBeamFolder(params().MultiWireBundle(), params().URL(), params().MWR_TimeWindow()))
+  bfp_mwr( ifbeam_handle->getBeamFolder(params().MultiWireBundle(), params().URL(), params().MWR_TimeWindow())),
+  fTriggerDatabaseFile(params().TriggerDatabaseFile())
 {
   
   // Check fTimePad is positive 
@@ -275,10 +284,15 @@ sbn::BNBRetriever::BNBRetriever(Parameters const& params)
   produces< std::vector< sbn::BNBSpillInfo >, art::InSubRun >();
   TotalBeamSpills = 0;
 
-  rc = sqlite3_open("/pnfs/icarus/scratch/users/mueller/icarus_triggers.db", &db);
+  cet::search_path sp("FW_SEARCH_PATH");
+  std::string trigDB_path = sp.find_file(fTriggerDatabaseFile.c_str());
+
+  rc = sqlite3_open(trigDB_path.c_str(), &db);
   if(rc)
     {
       fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
+      throw art::Exception(art::errors::NotFound)
+	<< "Can't open database: " << sqlite3_errmsg(db);
     }
 
 }
@@ -347,6 +361,15 @@ sbn::BNBRetriever::TriggerInfo_t sbn::BNBRetriever::extractTriggerInfo(art::Even
     triggerInfo.gate_type = datastream_info.gate_type;
     triggerInfo.number_of_gates_since_previous_event = frag.getDeltaGatesBNBMaj();
     
+    /*                                                                                                                  
+       The DAQ trigger time is issued at the Beam Extraction Signal (BES) which is issued                               
+       36 ms *after* the $1D of the BNB, which is what is used in the IFBeam database                                   
+                                                                                                                        
+       We subtract 36ms from the Trigger time to match our triggers to the spills in the                                
+       IFBeam database                                                                                                  
+                                                                                                                        
+    */
+
     triggerInfo.t_current_event = static_cast<double>(artdaq_ts-3.6e7)/(1000000000.0); //check this offset...
     if(triggerInfo.gate_type == 1)
       triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampBNBMaj()-3.6e7))/(1e9);
@@ -553,6 +576,12 @@ int sbn::BNBRetriever::matchMultiWireData(
     }
 
     //check if this spill is is minbias   
+    /*
+      40 ms was selected to be close to but outside the 66 ms 
+      time of the next spill (when the beam is running at 15 Hz) 
+      DocDB 33155 provides documentation of this
+    */
+
     mf::LogDebug("BNBRetriever") << std::setprecision(19) << "matchMultiWireData:: trigger type : " << get_trigger_type_matching_gate(db, callback_trigger_type, run_number, times_temps[i]*1.e9-triggerInfo.WR_to_Spill_conversion+3.6e7, 40.) << " times : spill " << times_temps[i]*1.e9 << " - " << triggerInfo.WR_to_Spill_conversion << " + " << 3.6e7 <<  std::endl;
     
     if(get_trigger_type_matching_gate(db, callback_trigger_type, run_number, times_temps[i]*1.e9-triggerInfo.WR_to_Spill_conversion+3.6e7, 40.) == 1){
