@@ -53,6 +53,19 @@ cet_build_plugin( Razzle art::module
   caf_RecoUtils
 )
 
+cet_build_plugin( Razzled art::module
+  LIBRARIES
+  ROOT::TMVA
+  canvas::canvas
+  art_root_io::TFileService_service
+  art::Persistency_Provenance
+  larsim::Utils
+  larsim::MCCheater_BackTrackerService_service
+  larsim::MCCheater_ParticleInventoryService_service
+  lardata::Utilities
+  sbnobj::Common_Reco
+)
+
 install_headers()
 install_fhicl()
 install_source()
