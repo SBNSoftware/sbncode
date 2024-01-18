@@ -39,15 +39,19 @@ sbn::StoppingChi2Fit sbn::TrackStoppingChi2Alg::RunFit(const anab::Calorimetry& 
 {
 
   std::vector<float> dEdxVec, resRangeVec;
-  // Fill the dEdx vs res range vectors, ignoring the first/last points
-  for (size_t i = 1; i < calo.dEdx().size() - 1; i++) {
-    const float thisdEdx(calo.dEdx()[i]);
-    const float thisResRange(calo.ResidualRange()[i]);
-    if (thisResRange > fFitRange || thisdEdx > fMaxdEdx)
-      continue;
+  // Fill the dEdx vs res range vectors, ignoring the first/last points.
+  // Skip filling them if there are two or fewer points.
+  size_t num_dEdx_points = calo.dEdx().size();
+  if ( num_dEdx_points > 2u ) {
+    for (size_t i = 1u; i < num_dEdx_points - 1; i++) {
+      const float thisdEdx(calo.dEdx()[i]);
+      const float thisResRange(calo.ResidualRange()[i]);
+      if (thisResRange > fFitRange || thisdEdx > fMaxdEdx)
+        continue;
 
-    dEdxVec.push_back(thisdEdx);
-    resRangeVec.push_back(thisResRange);
+      dEdxVec.push_back(thisdEdx);
+      resRangeVec.push_back(thisResRange);
+    }
   }
 
   return this->RunFit(dEdxVec, resRangeVec);
