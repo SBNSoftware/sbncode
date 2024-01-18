@@ -31,7 +31,7 @@ from array import array
 
 from ROOT import TStyle, TCanvas, TColor, TGraph, TGraphErrors
 from ROOT import TH1D, TH2D, TProfile, TProfile3D, TFile, TF1
-from ROOT import gROOT, TList, TTree
+from ROOT import gROOT, TList, TTree, TDirectoryFile
 import ROOT
 
 try:
@@ -44,6 +44,14 @@ except ImportError:
     exit(1)
 
 
+def pretty_print(string_to_prettify):
+    print("\n")
+    print("*" * 50)
+    print(string_to_prettify)
+    print("*" * 50)
+    print("\n")
+    return
+
 class dotDict(dict):
     def __getattr__(self,val):
         return self[val]
@@ -53,6 +61,7 @@ class metrics_stuff:
     def __init__(self, name, pset):
         profile_option = 's'  # errors are the standard deviation
         self.name    = name
+        self.flash_type = pset.FlashType
         self.x_bins  = pset.XBins
         self.x_bins_ = pset.x_bins_
         self.x_low   = pset.x_low
@@ -82,9 +91,6 @@ class metrics_stuff:
                                   # self.low, self.up,
                                   profile_option)
         self.h1      = TH1D(name+"_h1", "", self.x_bins, self.x_low, self.x_up)
-        directory = "./yzmaps"
-        if not os.path.exists(directory):
-            os.makedirs(directory)
 
     def update_metrics(self):
         # fill histograms for match score calculation from profile histograms
@@ -96,7 +102,9 @@ class metrics_stuff:
             self.spreads[ib] = self.prof.GetBinError(ibp)
             if self.spreads[ib] <= 0.001:
                 print(f"Warning {self.name} spread close to zero.\n",
-                      f"index: {ib}. spread: {self.spreads[ib]}")
+                      f"index: {ib}. spread: {self.spreads[ib]} \n",
+                      "Setting to 0.001")
+                self.spreads[ib] = 0.001
 
     def write_metrics(self):
         self.h2.Write()
@@ -104,7 +112,7 @@ class metrics_stuff:
         self.prof3.Write()
         self.h1.Write()
 
-    def draw_metrics(self, canv):
+    def draw_metrics(self, canv, directory):
         self.h2.Draw()
         crosses = TGraphErrors(x_bins,
                              array('f', self.xvals), array('f', self.means),
@@ -112,10 +120,10 @@ class metrics_stuff:
         crosses.SetLineColor(ROOT.kAzure+9)
         crosses.SetLineWidth(3)
         crosses.Draw("Psame")
-        canv.Print(f"{self.name}.pdf")
+        canv.Print(directory.removesuffix("yzmaps") + f"{self.name}.pdf")
         canv.Update()
 
-    def draw_3D(self, canv):
+    def draw_3D(self, canv, directory):
         ROOT.gStyle.SetPalette(104)
         ROOT.gStyle.SetOptStat(0)
         m_min =  1.e8
@@ -161,10 +169,10 @@ class metrics_stuff:
                     yzmap_s.SetBinContent(zb, yb, sprd)
                 # print(y_row_means)
             yzmap_m.Draw("colz")
-            canv.Print(f"yzmaps/{self.name}_yzmap_mean_xb_{xb}.pdf")
+            canv.Print(directory + f"/{self.name}_yzmap_mean_xb_{xb}.pdf")
             canv.Update()
             yzmap_s.Draw("colz")
-            canv.Print(f"yzmaps/{self.name}_yzmap_sprd_xb_{xb}.pdf")
+            canv.Print(directory + f"/{self.name}_yzmap_sprd_xb_{xb}.pdf")
             canv.Update()
         print(f"Finish printing 3D maps of {self.name}")
 
@@ -285,7 +293,7 @@ def polynomial_correction(skew, hypo_x, pol_coeffs, skew_high_limit=10.):
     return correction * skew
 
 
-def parameters_correction_fitter(nuslice_tree, var, profile_bins,
+def parameters_correction_fitter(nuslice_tree, var, flash_type, profile_bins,
                                  x_low, x_up, fit_func, beam_spill_time_end,
                                  skew_high_limit=10., skew_low_limit=0.05):
     fit_prof = TProfile(f"fit_prof_{var}", "", profile_bins,
@@ -329,7 +337,7 @@ def parameters_correction_fitter(nuslice_tree, var, profile_bins,
     fit_result = fit_prof.Fit(fit_func, "S")
     fit_prof.Write()
     # fit_result.Print("V")
-    can.Print(f"{var}_correction_fit.pdf")
+    can.Print(f"plots/{flash_type}/{var}_correction_fit.pdf")
     params = []
     for p in fit_result.Parameters():
         params.append(sig_fig_round(p, 3))
@@ -338,10 +346,14 @@ def parameters_correction_fitter(nuslice_tree, var, profile_bins,
     return params
 
 
-def generator(nuslice_tree, rootfile, pset):
+def generator(nuslice_tree, rootfile, pset, suffix, flash_type):
     # BIG TODO: Metrics should depend on X,Y,Z.
     # Many changes needed everywhere
     half_bin_width = xbin_width/2.
+
+    directory = "plots/" + flash_type + "/yzmaps"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
     if detector == "sbnd":
         x_gl_low = -215
@@ -387,15 +399,33 @@ def generator(nuslice_tree, rootfile, pset):
     match_score_scatter.GetYaxis().SetTitle("match score (arbitrary)")
     match_score_h1 = TH1D("match_score", "Match Score",
                           pset['score']['bins'], pset['score']['low'], pset['score']['up'])
-    match_score_h1.GetXaxis().SetTitle("match score (arbitrary)")
-
     metrics_filename = 'fm_metrics_' + detector + '.root'
-    hfile = TFile(metrics_filename, 'RECREATE',
+    hfile_top = TFile(metrics_filename, 'UPDATE',
                   'Simple flash matching metrics for ' + detector.upper())
+    keys = ROOT.gDirectory.GetListOfKeys()
+    print(keys)
+    print(ftype_long)
+    dir_exists = False
+    for key in keys:
+        if ftype_long == key.GetName():
+            dir_exists = True
+    hfile = hfile_top.Get(metrics_filename+":/" + ftype_long) if(dir_exists==True) else \
+            TDirectoryFile(ftype_long, f"Metrics directory for {ftype_long}")
+    hfile.cd()
 
     # fill rr_h2 and ratio_h2 first
     for e in nuslice_tree:
-        if not quality_checks(e, beam_spill_time_end): continue
+        oldunfolded_score_scatter.SetMarkerColor(ROOT.kBlue)
+        unfolded_score_scatter.SetMarkerColor(ROOT.kBlue)
+        unfolded_score_scatter_3D.SetMarkerColor(ROOT.kBlue)
+        match_score_scatter.SetMarkerColor(ROOT.kBlue)
+
+        if not quality_checks(e, beam_spill_time_end):
+            oldunfolded_score_scatter.SetMarkerColor(ROOT.kRed)
+            unfolded_score_scatter.SetMarkerColor(ROOT.kRed)
+            unfolded_score_scatter_3D.SetMarkerColor(ROOT.kRed)
+            match_score_scatter.SetMarkerColor(ROOT.kRed)
+
         qX = e.charge_x
         md['rr'].h2.Fill(qX, e.flash_rr)
         md['rr'].prof.Fill(qX, e.flash_rr)
@@ -438,7 +468,7 @@ def generator(nuslice_tree, rootfile, pset):
 
     # Fit and create std::vector objects for polynomial correction
     # coefficients
-    y_pol_coeffs = parameters_correction_fitter(nuslice_tree, "y", pset.XBins,
+    y_pol_coeffs = parameters_correction_fitter(nuslice_tree, "y", flash_type, pset.XBins,
                                                 0., pset.DriftDistance,
                                                 pset.fit_func_y,
                                                 beam_spill_time_end,
@@ -446,7 +476,7 @@ def generator(nuslice_tree, rootfile, pset):
     y_pol_coeffs_vec = ROOT.std.vector['double']()
     for yp in y_pol_coeffs: y_pol_coeffs_vec.push_back(yp)
 
-    z_pol_coeffs = parameters_correction_fitter(nuslice_tree, "z", pset.XBins,
+    z_pol_coeffs = parameters_correction_fitter(nuslice_tree, "z", flash_type, pset.XBins,
                                                 0., pset.DriftDistance,
                                                 pset.fit_func_z,
                                                 beam_spill_time_end,
@@ -473,7 +503,8 @@ def generator(nuslice_tree, rootfile, pset):
 
     # Update the file
     rootfile.Write()
-    hfile.ReOpen("UPDATE")
+    hfile_top.ReOpen("UPDATE")
+    hfile.cd()
     hfile.Write()
 
     # Use the new corrected terms to fill the rest of H2s and Profs
@@ -503,7 +534,16 @@ def generator(nuslice_tree, rootfile, pset):
 
     for e in nuslice_tree:
         # calculate match score
-        # if not quality_checks(e, beam_spill_time_end): continue
+        oldunfolded_score_scatter.SetMarkerColor(ROOT.kBlue)
+        unfolded_score_scatter.SetMarkerColor(ROOT.kBlue)
+        unfolded_score_scatter_3D.SetMarkerColor(ROOT.kBlue)
+        match_score_scatter.SetMarkerColor(ROOT.kBlue)
+
+        if not quality_checks(e, beam_spill_time_end):
+            oldunfolded_score_scatter.SetMarkerColor(ROOT.kRed)
+            unfolded_score_scatter.SetMarkerColor(ROOT.kRed)
+            unfolded_score_scatter_3D.SetMarkerColor(ROOT.kRed)
+            match_score_scatter.SetMarkerColor(ROOT.kRed)
         qX = e.charge_x
         qXGl = e.charge_x_gl
         isl = int(qX/xbin_width)
@@ -558,27 +598,27 @@ def generator(nuslice_tree, rootfile, pset):
 
     canv = TCanvas("canv")
     for m in md.values():
-        m.draw_metrics(canv)
-        m.draw_3D(canv)
+        m.draw_metrics(canv, directory)
+        m.draw_3D(canv, directory)
 
     oldunfolded_score_scatter.Draw()
-    canv.Print("oldunfolded_score_scatter.pdf")
+    canv.Print(f"plots/{flash_type}/oldunfolded_score_scatter.pdf")
     canv.Update()
 
     unfolded_score_scatter.Draw()
-    canv.Print("unfolded_score_scatter.pdf")
+    canv.Print(f"plots/{flash_type}/unfolded_score_scatter.pdf")
     canv.Update()
 
     unfolded_score_scatter_3D.Draw()
-    canv.Print("unfolded_score_scatter_3D.pdf")
+    canv.Print(f"plots/{flash_type}/unfolded_score_scatter_3D.pdf")
     canv.Update()
 
     match_score_scatter.Draw()
-    canv.Print("match_score_scatter.pdf")
+    canv.Print(f"plots/{flash_type}/match_score_scatter.pdf")
     canv.Update()
 
     match_score_h1.Draw()
-    canv.Print("match_score.pdf")
+    canv.Print(f"plots/{flash_type}/match_score.pdf")
     canv.Update()
     sleep(20)
 
@@ -630,37 +670,66 @@ def main():
     global drift_distance
     global x_bins
     global xbin_width
-    global time_delay
+    global time_delay # TODO: Improve timing res to make this obsolete
     global tolerable_time_diff
+    global suffix_list
+    global ftype_long
     if args.sbnd:
-        fcl_params = fhicl.make_pset('flashmatch_sbnd.fcl')
-        pset = dotDict(fcl_params['sbnd_simple_flashmatch'])
         detector = "sbnd"
-        time_delay = 0.15
-        dir = rootfile.Get(file_updated+":/fmatch")
-        nuslice_tree = dir.Get("nuslicetree")
+        metrics_filename = 'fm_metrics_' + detector + '.root'
+        hfile_top = TFile(metrics_filename, 'RECREATE',
+                      'Simple flash matching metrics for ' + detector.upper())
+        hfile_top.Close()
+        suffix_list = ["", "_op", "_ara", "_opara"]
+        time_delays = [0.15, 0, 0.04, 0]
+        long_names = ["SimpleFlash_PMT", "OpFlash_PMT", "SimpleFlash_ARA", "OpFlash_ARA"]
+        for (dir_, t_delay, l_name) in zip(suffix_list, time_delays, long_names):
+            fcl_params = fhicl.make_pset('flashmatch_sbnd.fcl')
+            fhicl_table = "sbnd_simple_flashmatch" + dir_
+            pset = dotDict(fcl_params[fhicl_table])
+            time_delay = t_delay
+            ftype_long = pset.FlashType
+            dir = rootfile.Get(file_updated+":/fmatch"+dir_.replace("_", ""))
+            nuslice_tree = dir.Get("nuslicetree")
+            drift_distance = pset.DriftDistance
+            x_bins = pset.XBins
+            xbin_width = drift_distance/x_bins
+            pretty_print(l_name)
+            generator(nuslice_tree, rootfile, pset, dir_, l_name)
     elif args.icarus:
         fcl_params = fhicl.make_pset('flashmatch_simple_icarus.fcl')
-        pset = dotDict(fcl_params['icarus_simple_flashmatch_E'])
-        detector = "icarus"
         time_delay = 0.
         # by default merge the trees from both Cryos
-        dir0 = rootfile.Get(file_updated+":/fmatchCryoE")
-        nuslice_tree0 = dir0.Get("nuslicetree")
-        dir1 = rootfile.Get(file_updated+":/fmatchCryoW")
-        nuslice_tree1 = dir1.Get("nuslicetree")
-        treelist = TList()
-        treelist.Add(nuslice_tree0)
-        treelist.Add(nuslice_tree1)
-        nuslice_tree = TTree.MergeTrees(treelist);
-        nuslice_tree.SetName("nuslice_tree");
-        # nuslice_tree.Write();
+        metrics_filename = 'fm_metrics_' + detector + '.root'
+        hfile_top = TFile(metrics_filename, 'RECREATE',
+                      'Simple flash matching metrics for ' + detector.upper())
+        hfile_top.Close()
+        suffix_list = ["", "_op"]
+        long_names = ["SimpleFlash_PMT", "OpFlash_PMT"]
+        for (dir_, l_name) in zip(suffix_list, long_names):
+            detector = "icarus"
+            pset = dotDict(fcl_params['icarus_simple_flashmatch_E' + dir_])
+            fhicl_table_E = "icarus_simple_flashmatch_E" + dir_
+            fhicl_table_W = "icarus_simple_flashmatch_W" + dir_
+            dir0 = rootfile.Get(file_updated+":/fmatch"+dir_.replace("_", "")+"CryoE")
+            nuslice_tree0 = dir0.Get("nuslicetree")
+            dir1 = rootfile.Get(file_updated+":/fmatch"+dir_.replace("_", "")+"CryoW")
+            nuslice_tree1 = dir1.Get("nuslicetree")
+            treelist = TList()
+            treelist.Add(nuslice_tree0)
+            treelist.Add(nuslice_tree1)
+            nuslice_tree = TTree.MergeTrees(treelist);
+            nuslice_tree.SetName("nuslice_tree");
+            # nuslice_tree.Write();
+            ftype_long = pset.FlashType
+            drift_distance = pset.DriftDistance
+            x_bins = pset.XBins
+            xbin_width = drift_distance/x_bins
+            pretty_print(l_name)
+            generator(nuslice_tree, rootfile, pset, dir_, l_name)
 
-    drift_distance = pset.DriftDistance
-    x_bins = pset.XBins
-    xbin_width = drift_distance/x_bins
 
-    generator(nuslice_tree, rootfile, pset)
+#    generator(nuslice_tree, rootfile, pset)
 
 
 if __name__ == '__main__':

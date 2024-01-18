@@ -450,8 +450,6 @@ void CAFMaker::FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_ti
   // Fix the flash matches
   for (SRSlice &s: rec.slc) {
     s.fmatch.time += PMT_reference_time;
-    s.fmatch_a.time += PMT_reference_time;
-    s.fmatch_b.time += PMT_reference_time;
 
     s.barycenterFM.flashTime +=PMT_reference_time;
     s.barycenterFM.flashFirstHit +=PMT_reference_time;
@@ -1498,6 +1496,20 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       slcCRUMBS = foSlcCRUMBS.at(0).get();
     }
 
+    std::map<std::string, art::FindManyP<sbn::SimpleFlashMatch> > fmatch_assn_map;
+    std::vector<std::string> flashmatch_opdet_suffixes, flashmatch_scecryo_suffixes;
+    fParams.FlashMatchOpDetSuffixes(flashmatch_opdet_suffixes);
+    fParams.FlashMatchSCECryoSuffixes(flashmatch_scecryo_suffixes);
+    for(auto flash_opdet_suff : flashmatch_opdet_suffixes) {
+      std::string fname_opdet = fParams.FlashMatchLabel() + flash_opdet_suff;
+      for(auto flash_scecryo_suff : flashmatch_scecryo_suffixes) {
+        std::string fname_opdet_scecryo = fname_opdet + flash_scecryo_suff;
+        art::FindManyP<sbn::SimpleFlashMatch> sfm_assn =
+          FindManyPStrict<sbn::SimpleFlashMatch>(fmPFPart, evt, fname_opdet_scecryo);
+        fmatch_assn_map.emplace(std::make_pair(fname_opdet, sfm_assn));
+      }
+    }
+
     art::FindManyP<sbn::OpT0Finder> fmOpT0 = 
       FindManyPStrict<sbn::OpT0Finder>(sliceList, evt, fParams.OpT0Label() + slice_tag_suff);
     std::vector<art::Ptr<sbn::OpT0Finder>> slcOpT0;
@@ -1692,12 +1704,20 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     const recob::PFParticle *primary = (iPart == fmPFPart.size()) ? NULL : fmPFPart[iPart].get();
     const larpandoraobj::PFParticleMetadata *primary_meta = (iPart == fmPFPart.size()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
     // get the flash match
-    const sbn::SimpleFlashMatch* fmatch = nullptr;
-    if (fm_sFM.isValid() && primary != NULL) {
-      std::vector<art::Ptr<sbn::SimpleFlashMatch>> fmatches = fm_sFM.at(iPart);
-      if (fmatches.size() != 0) {
-        assert(fmatches.size() == 1);
-        fmatch = fmatches[0].get();
+
+    std::map<std::string, const sbn::SimpleFlashMatch*> fmatch_map;
+    std::map<std::string, art::FindManyP<sbn::SimpleFlashMatch>>::iterator fmatch_it;
+    for(fmatch_it = fmatch_assn_map.begin();fmatch_it != fmatch_assn_map.end();fmatch_it++) {
+      auto fname = fmatch_it->first;
+      auto fm_sFM = fmatch_it->second;
+      const sbn::SimpleFlashMatch* fmatch = nullptr;
+      if (fm_sFM.isValid() && primary != NULL) {
+        std::vector<art::Ptr<sbn::SimpleFlashMatch>> fmatches = fm_sFM.at(iPart);
+        if (fmatches.size() != 0) {
+          assert(fmatches.size() == 1);
+          fmatch = fmatches[0].get();
+          fmatch_map[fname] = fmatch;
+        }
       }
     }
     // get the primary vertex
@@ -1708,8 +1728,16 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     //#######################################################
     FillSliceVars(*slice, primary, producer, recslc);
     FillSliceMetadata(primary_meta, recslc);
-    FillSliceFlashMatch(fmatch, recslc);
-    FillSliceFlashMatchA(fmatch, recslc);
+    FillSliceFlashMatch(fmatch_map["fmatch"], recslc.fmatch);
+    FillSliceFlashMatch(fmatch_map["fmatchop"], recslc.fmatchop);
+    auto sr_flash = fmatch_map.find("fmatchara");
+    if(sr_flash!=fmatch_map.end()) {
+      FillSliceFlashMatch(fmatch_map["fmatchara"], recslc.fmatchara);
+    }
+    sr_flash = fmatch_map.find("fmatchopara");
+    if(sr_flash != fmatch_map.end()) {
+      FillSliceFlashMatch(fmatch_map["fmatchopara"], recslc.fmatchopara);
+    }
     FillSliceVertex(vertex, recslc);
     FillSliceCRUMBS(slcCRUMBS, recslc);
     FillSliceOpT0Finder(slcOpT0, recslc);
