@@ -198,6 +198,12 @@ namespace caf
       "pandoraShowerRazzle"
     };
 
+    Atom<string> PFPRazzledLabel {
+      Name("PFPRazzledLabel"),
+      Comment("Base label of pfp mva particle-id producer."),
+      "pandoraRazzled"
+    };
+
     Atom<string> RecoShowerSelectionLabel {
       Name("RecoShowerSelectionLabel"),
       Comment("Base label of shower selection vars producer."),

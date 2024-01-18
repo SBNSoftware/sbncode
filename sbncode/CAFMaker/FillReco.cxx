@@ -973,6 +973,22 @@ namespace caf
 
   //......................................................................
 
+  void FillPFPRazzled(const art::Ptr<sbn::MVAPID> razzled,
+                      caf::SRPFP& srpfp,
+                      bool allowEmpty)
+  {
+    srpfp.razzled.electronScore = razzled->mvaScoreMap.at(11);
+    srpfp.razzled.muonScore = razzled->mvaScoreMap.at(13);
+    srpfp.razzled.photonScore = razzled->mvaScoreMap.at(22);
+    srpfp.razzled.pionScore = razzled->mvaScoreMap.at(211);
+    srpfp.razzled.protonScore = razzled->mvaScoreMap.at(2212);
+
+    srpfp.razzled.pdg = razzled->BestPDG();
+    srpfp.razzled.bestScore = razzled->BestScore();
+  }
+
+  //......................................................................
+
   void SetNuMuCCPrimary(std::vector<caf::StandardRecord> &recs,
                         std::vector<caf::SRTrueInteraction> &srneutrinos) {
   //   // set is_primary to true by default
