@@ -1,0 +1,103 @@
+##########################################################
+## Hadron reinteraction uncertainties
+##
+## References:
+##
+##   * K. Duffy, Pion Secondary Interaction Systematics (from GEANTReweight), DocDB 25379
+##   * J. Calcutt, GEANTReweight documentation DocDB 25084, repository https://cdcvs.fnal.gov/redmine/projects/geant4reweight/repository
+##
+## From MicroBooNE, ubsim UBOONE_SUITE_v08_00_00_69
+## (uBooNE author: Kirsty Duffy (kduffy@fnal.gov))
+##
+##########################################################
+
+#include "piplus_reweight_parameters.fcl"
+#include "piminus_reweight_parameters.fcl"
+#include "proton_reweight_parameters.fcl"
+
+BEGIN_PROLOG
+
+sbn_eventweight_geant4: {
+  module_type: "SBNEventWeight"
+  AllowMissingTruth: true
+  min_weight: 0.0
+  max_weight: 100
+
+  weight_functions_reint: [ reinteractions_piplus, reinteractions_piminus, reinteractions_proton ]
+
+  reinteractions_piplus: {
+    type: Geant4
+    random_seed: 58
+    parameters: @local::PiPlusParameters
+    mode: multisim
+    number_of_multisims: 1000
+    fracsfile: "$SBNDATA_DIR/systematics/reint/g4_fracs_piplus.root"
+    xsecfile:  "$SBNDATA_DIR/systematics/reint/g4_cross_section_piplus.root"
+    makeoutputtree: false
+    pdg_to_reweight: 211
+    debug: false
+  }
+
+  reinteractions_piminus: {
+    type: Geant4
+    random_seed: 59
+    parameters: @local::PiMinusParameters
+    mode: multisim
+    number_of_multisims: 1000
+    fracsfile: "$SBNDATA_DIR/systematics/reint/g4_fracs_piminus.root"
+    xsecfile:  "$SBNDATA_DIR/systematics/reint/g4_cross_section_piminus.root"
+    makeoutputtree: false
+    pdg_to_reweight: -211
+    debug: false
+  }
+
+  reinteractions_proton: {
+    type: Geant4
+    random_seed: 60
+    parameters: @local::ProtonParameters
+    mode: multisim
+    number_of_multisims: 1000
+    fracsfile: "$SBNDATA_DIR/systematics/reint/g4_fracs_proton.root"
+    xsecfile:  "$SBNDATA_DIR/systematics/reint/g4_cross_section_proton.root"
+    makeoutputtree: false
+    pdg_to_reweight: 2212
+    debug: false
+  }
+}
+
+###
+# Reweighting parameters should be defined as
+#
+# TheParameters: [
+#  {
+#    Cut:    "reac"
+#    Name: "fReacLow"
+#    Range: [10., 200.]
+#    Nominal: 1.0
+#    Sigma: 0.3
+#  },
+# {...}
+# ]
+#
+# - Range defines the energy range over which that parameter has an effect (MeV)
+# - Nominal is not used in "multisim" mode. In "pm1sigma" mode it defines the
+#   nominal (around which you calculate +/- 1 sigma variations). In any other
+#   mode, the parameter is set to the value under Nominal (so it's not really a
+#   "nominal" value in that case, just the set value)
+# - Sigma defines the 1-sigma range for multisims and unisims. Currently the
+#   code can only accept a single value for sigma, giving symmetric
+#   uncertainty bounds: nominal-sigma and nominal+sigma
+# - Cut must be one of the following:
+#      "reac" <- total inelastic scattering cross section
+#      "abs" <- absorption cross section (pi+ and pi- only at the moment -- Oct 2019)
+#      "cex" <- charge exchange cross section (pi+ and pi- only at the moment -- Oct 2019)
+#      "dcex" <- double charge exchange cross section (pi+ and pi- only at the moment -- Oct 2019)
+#      "prod" <- pion production cross section (pi+ and pi- only at the moment -- Oct 2019)
+#      "inel" <- quasi-elastic inelastic scattering cross section (pi+ and pi- only at the moment -- Oct 2019)
+#      "elast" <- total elastic scattering cross section
+# - Name can be anything you like (but should uniquely identify that parameter/
+#   variation)
+###
+
+END_PROLOG
+

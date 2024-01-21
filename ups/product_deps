@@ -248,7 +248,7 @@ libdir	fq_dir		lib
 #   cetmodules), an entry for cetmodules is required.
 #
 # * It is an error for more than one non-(<qual-trigger> == "-default-")
-#   entry to match for a given product.
+   entry to match for a given product.
 #
 ####################################
 product			version		qual	flags		<table_format=2>
@@ -317,6 +317,7 @@ end_product_list
 #
 ####################################
 
+<<<<<<< HEAD
 qualifier	larsoft		sbnobj		sbnanaobj	sbndaq_artdaq_core  genie_xsec              sbndata larcv2          systematicstools  nusystematics notes
 c14:debug	c14:debug	c14:debug	c14:debug	c14:s120a:debug       AR2320i00000:e1000:k250 -nq-    c14:debug:p3913  c14:debug	     c14:debug	    -nq-
 c14:prof	c14:prof	c14:prof	c14:prof	c14:s120a:prof        AR2320i00000:e1000:k250 -nq-   c14:p3913:prof  c14:prof	     c14:prof	    -nq-
@@ -326,6 +327,13 @@ e26:debug	e26:debug	e26:debug	e26:debug	e26:s120a:debug      AR2320i00000:e1000:
 e26:prof	e26:prof	e26:prof	e26:prof	e26:s120a:prof       AR2320i00000:e1000:k250 -nq-    e26:p3913:prof   e26:prof	     e26:prof	    -nq-
 e20:debug	e20:debug	e20:debug	e20:debug	e20:s120a:debug      AR2320i00000:e1000:k250 -nq-    debug:e20:p3913 e20:debug	     e20:debug	    -nq-
 e20:prof	e20:prof	e20:prof	e20:prof	e20:s120a:prof       AR2320i00000:e1000:k250 -nq-    e20:p3913:prof   e20:prof	     e20:prof	    -nq-
+=======
+qualifier	larsoft		sbnobj		sbnanaobj	sbndaq_artdaq_core  genie_xsec              sbndata larcv2          systematicstools  nusystematics geant4reweight notes
+c7:debug	c7:debug	c7:debug	c7:debug	c7:debug       AR2320i00000:e1000:k250 -nq-    c7:debug:p3913  c7:debug	     c7:debug	    c7:debug:s120a	-nq-
+c7:prof		c7:prof		c7:prof		c7:prof		c7:prof        AR2320i00000:e1000:k250 -nq-    c7:p3913:prof   c7:prof	     c7:prof	    c7:prof:s120a	-nq-
+e20:debug	e20:debug	e20:debug	e20:debug	e20:debug:s120a      AR2320i00000:e1000:k250 -nq-    debug:e20:p3913 e20:debug	     e20:debug	    e20:debug:s120a	-nq-
+e20:prof	e20:prof	e20:prof	e20:prof	e20:prof:s120a       AR2320i00000:e1000:k250 -nq-    e20:p3913:prof   e20:prof	     e20:prof	    e20:prof:s120a	-nq-
+>>>>>>> sjgardiner/feature/gardiner-geant4reweight
 
 end_qualifier_list
 ####################################
