@@ -308,7 +308,6 @@ void FlashPredict::produce(art::Event& evt)
       evt.put(std::move(pfp_sFM_assn_v));
       return;
     } else {
-    std::cout << "N SimpleFlashes " << simpleFlashes.size();
     for(auto& sf : simpleFlashes) flashMetrics.push_back(getFlashMetrics(sf));
     }
   }
@@ -1805,7 +1804,6 @@ bool FlashPredict::findSimpleFlashes(
     // the iterators point to the boundaries of the partition
     OpHitIt opH_end = std::partition(opH_beg, opHits.end(),
                                  peakInsideEdges);
-    std::cout << "OpHs in flash: " << std::distance(opH_beg, opH_end) << std::endl;
     if(std::distance(opH_beg, opH_end)==0) break;
     simpleFlashes.emplace_back
       (SimpleFlash(flashId, ophsInVolume,
