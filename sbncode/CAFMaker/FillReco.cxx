@@ -433,6 +433,8 @@ namespace caf
       slice.crumbs_result.pds.fmtotalscore = crumbs->pds_FMTotalScore;
       slice.crumbs_result.pds.fmpe = crumbs->pds_FMPE;
       slice.crumbs_result.pds.fmtime = crumbs->pds_FMTime;
+      slice.crumbs_result.pds.opt0score = crumbs->pds_OpT0Score;
+      slice.crumbs_result.pds.opt0measuredpe = crumbs->pds_OpT0MeasuredPE;
       slice.crumbs_result.crt.trackscore = crumbs->crt_TrackScore;
       slice.crumbs_result.crt.hitscore = crumbs->crt_HitScore;
       slice.crumbs_result.crt.tracktime = crumbs->crt_TrackTime;
