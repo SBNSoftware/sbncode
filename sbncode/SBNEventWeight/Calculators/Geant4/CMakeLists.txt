@@ -5,6 +5,7 @@ art_make_library(
   LIBRARY_NAME sbncode_SBNEventWeight_Calculators_Geant4
   LIBRARIES
     sbncode_SBNEventWeight_Base
+    sbncode_SBNEventWeight_Calculators_MultiVariateRNG
     nusimdata::SimulationBase
     nurandom::RandomUtils_NuRandomService_service
     art::Framework_Principal
@@ -12,8 +13,8 @@ art_make_library(
     art_root_io::TFileService_service
     larcore::Geometry_Geometry_service
     cetlib_except::cetlib_except
-    ReweightBaseLib
-    PropBaseLib
+    geant4reweight::ReweightBaseLib
+    geant4reweight::PropBaseLib
     ROOT::Tree
 )
 

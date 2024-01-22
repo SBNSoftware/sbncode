@@ -17,13 +17,28 @@
 
 BEGIN_PROLOG
 
+liquidargon:
+[
+  {
+    Name: "liquidArgon"
+    Density: 1.40
+    Components :
+    [
+      {
+        Z:    18
+        Mass: 39.95
+      }
+    ]
+  }
+]
+
 sbn_eventweight_geant4: {
   module_type: "SBNEventWeight"
   AllowMissingTruth: true
   min_weight: 0.0
   max_weight: 100
 
-  weight_functions_reint: [ reinteractions_piplus, reinteractions_piminus, reinteractions_proton ]
+  weight_functions: [ reinteractions_piplus, reinteractions_piminus, reinteractions_proton ]
 
   reinteractions_piplus: {
     type: Geant4
@@ -36,6 +51,7 @@ sbn_eventweight_geant4: {
     makeoutputtree: false
     pdg_to_reweight: 211
     debug: false
+    materials: @local::liquidargon
   }
 
   reinteractions_piminus: {
@@ -49,6 +65,7 @@ sbn_eventweight_geant4: {
     makeoutputtree: false
     pdg_to_reweight: -211
     debug: false
+    materials: @local::liquidargon
   }
 
   reinteractions_proton: {
@@ -62,6 +79,7 @@ sbn_eventweight_geant4: {
     makeoutputtree: false
     pdg_to_reweight: 2212
     debug: false
+    materials: @local::liquidargon
   }
 }
 

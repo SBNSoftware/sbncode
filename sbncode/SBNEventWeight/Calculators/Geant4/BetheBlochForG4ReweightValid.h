@@ -1,4 +1,5 @@
-
+#ifndef _BetheBloch_h_
+#define _BetheBloch_h_
 
 double BetheBloch(double energy, double mass){
 
@@ -26,17 +27,17 @@ std::vector< std::pair<double, int> > ThinSliceBetheBloch(G4ReweightTraj * theTr
   std::vector< std::pair<double, int> > result;
 
   //First slice position
-//  double sliceEdge = res;
-//  double lastPos = 0.;
-//  double nextPos = 0.;
-//  double px,py,pz;
+  //  double sliceEdge = res;
+  //  double lastPos = 0.;
+  //  double nextPos = 0.;
+  //  double px,py,pz;
   int interactInSlice = 0;
 
   //Get total distance traveled in z
-//  double totalDeltaZ = 0.;
+  //  double totalDeltaZ = 0.;
   double disp = 0.;
-//  double oldDisp = 0.;
-//  int crossedSlices = 0;
+  //  double oldDisp = 0.;
+  //  int crossedSlices = 0;
 
   int currentSlice = 0;
   int oldSlice = 0;
@@ -83,8 +84,8 @@ std::vector< std::pair<double, int> > ThinSliceBetheBloch(G4ReweightTraj * theTr
       }
 
       if ((!isElastic && theProc.find(std::string("Inelastic")) != std::string::npos) || (isElastic && theProc.find(std::string("hadElastic")) != std::string::npos)) {
-          // std::cout << "found! " << theProc << '\n';
-          interactInSlice = 1;
+        // std::cout << "found! " << theProc << '\n';
+        interactInSlice = 1;
       }
     }
     //It's crossed a slice and it's the last step. Save both info
@@ -116,24 +117,24 @@ std::vector< std::pair<double, int> > ThinSliceBetheBloch(G4ReweightTraj * theTr
 
       //Save the last slice
       if ((!isElastic && theProc.find(std::string("Inelastic")) != std::string::npos) || (isElastic && theProc.find(std::string("hadElastic")) != std::string::npos)) {
-          // std::cout << "found! " << theProc << '\n';
-          interactInSlice = 1;
+        // std::cout << "found! " << theProc << '\n';
+        interactInSlice = 1;
       }
       result.push_back( std::make_pair(sliceEnergy, interactInSlice) );
     }
     //It's the end, so just save this last info
     else if( oldSlice == currentSlice && is == nSteps - 1 ){
       if ((!isElastic && theProc.find(std::string("Inelastic")) != std::string::npos) || (isElastic && theProc.find(std::string("hadElastic")) != std::string::npos)) {
-              // std::cout << "found! " << theProc << '\n';
-              interactInSlice = 1;
-          }
+        // std::cout << "found! " << theProc << '\n';
+        interactInSlice = 1;
+      }
       result.push_back( std::make_pair(sliceEnergy, interactInSlice) );
     }
     //Same slice, not the end. Check for interactions
     else{
       if ((!isElastic && theProc.find(std::string("Inelastic")) != std::string::npos) || (isElastic && theProc.find(std::string("hadElastic")) != std::string::npos)) {
-          // std::cout << "found! " << theProc << '\n';
-          interactInSlice = 1;
+        // std::cout << "found! " << theProc << '\n';
+        interactInSlice = 1;
       }
     }
 
@@ -143,3 +144,5 @@ std::vector< std::pair<double, int> > ThinSliceBetheBloch(G4ReweightTraj * theTr
 
   return result;
 }
+
+#endif
