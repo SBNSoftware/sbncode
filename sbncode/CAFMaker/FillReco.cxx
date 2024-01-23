@@ -112,6 +112,31 @@ namespace caf
     srtrack.hitb.plane = track.plane2;
   }
 
+  void FillCRTSpacePoint(const sbnd::crt::CRTSpacePoint &spacepoint,
+                         caf::SRCRTSpacePoint &srspacepoint,
+                         bool allowEmpty)
+  {
+    srspacepoint.position     = SRVector3D(spacepoint.X(), spacepoint.Y(), spacepoint.Z());
+    srspacepoint.position_err = SRVector3D(spacepoint.XErr(), spacepoint.YErr(), spacepoint.ZErr());
+    srspacepoint.pe           = spacepoint.PE();
+    srspacepoint.time         = spacepoint.Time();
+    srspacepoint.time_err     = spacepoint.TimeErr();
+    srspacepoint.complete     = spacepoint.Complete();
+  }
+
+  void FillSBNDCRTTrack(const sbnd::crt::CRTTrack &track,
+                        caf::SRSBNDCRTTrack &srsbndcrttrack,
+                        bool allowEmpty)
+  {
+    for(auto const& point : track.Points())
+      srsbndcrttrack.points.emplace_back(point.X(), point.Y(), point.Z());
+
+    srsbndcrttrack.time    = track.Time();
+    srsbndcrttrack.time_err = track.TimeErr();
+    srsbndcrttrack.pe       = track.PE();
+    srsbndcrttrack.tof      = track.ToF();
+  }
+
   void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,
 		       caf::SRCRTPMTMatch &srmatch,
 		       bool allowEmpty){
@@ -538,6 +563,24 @@ namespace caf
       // TODO/FIXME: FILL MORE ONCE WE HAVE THE CRT HIT!!!
 
     }
+  }
+
+  void FillTrackCRTSpacePoint(const anab::T0 &t0match,
+                              const art::Ptr<sbnd::crt::CRTSpacePoint> &spacepointmatch,
+                              caf::SRTrack &srtrack,
+                              bool allowEmpty)
+  {
+    srtrack.crtspacepoint.score = t0match.fTriggerConfidence;
+    FillCRTSpacePoint(*spacepointmatch, srtrack.crtspacepoint.spacepoint);
+  }
+
+  void FillTrackSBNDCRTTrack(const anab::T0 &t0match,
+                             const art::Ptr<sbnd::crt::CRTTrack> &trackmatch,
+                             caf::SRTrack &srtrack,
+                             bool allowEmpty)
+  {
+    srtrack.crtsbndtrack.score = t0match.fTriggerConfidence;
+    FillSBNDCRTTrack(*trackmatch, srtrack.crtsbndtrack.track);
   }
 
   void FillTrackMCS(const recob::Track& track,
