@@ -30,6 +30,7 @@
 #include "sbnobj/Common/Reco/RangeP.h"
 #include "sbnobj/Common/Reco/ShowerSelectionVars.h"
 #include "sbnobj/Common/Reco/MVAPID.h"
+#include "sbnobj/Common/Reco/CNNScore.h"
 #include "sbnobj/Common/Reco/ScatterClosestApproach.h"
 #include "sbnobj/Common/Reco/StoppingChi2Fit.h"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
@@ -122,6 +123,11 @@ namespace caf
                    const art::Ptr<anab::T0> t0,
                    caf::SRPFP& srpfp,
                    bool allowEmpty= false);
+
+  void FillCNNScores(const recob::PFParticle &particle,
+                     const sbn::PFPCNNScore *cnnscore,
+                     caf::SRPFP& srpfp,
+                     bool allowEmpty = false);
 
   void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
                        const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,

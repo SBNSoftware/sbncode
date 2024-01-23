@@ -875,6 +875,24 @@ namespace caf
     }
   }
 
+  void FillCNNScores(const recob::PFParticle &particle,
+                     const sbn::PFPCNNScore *cnnscore,
+                     caf::SRPFP& srpfp,
+                     bool allowEmpty)
+  {
+    // std::cout << "pfpTrackScore: " << cnnscore->pfpTrackScore << std::endl;
+    // std::cout << "pfpShowerScore: " << cnnscore->pfpShowerScore << std::endl;
+    // std::cout << "pfpNoiseScore: " << cnnscore->pfpNoiseScore << std::endl;
+    // std::cout << "pfpMichelScore: " << cnnscore->pfpMichelScore << std::endl;
+
+    srpfp.cnnscore.track = cnnscore->pfpTrackScore;
+    srpfp.cnnscore.shower = cnnscore->pfpShowerScore;
+    srpfp.cnnscore.noise = cnnscore->pfpNoiseScore;
+    srpfp.cnnscore.michel = cnnscore->pfpMichelScore;
+    srpfp.cnnscore.endmichel = cnnscore->pfpEndMichelScore;
+    srpfp.cnnscore.nclusters = cnnscore->nClusters;
+  }
+
   void FillHitVars(const recob::Hit& hit,
                    unsigned producer,
                    const recob::SpacePoint& spacepoint,
