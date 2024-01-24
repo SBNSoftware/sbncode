@@ -384,6 +384,7 @@ private:
   const art::InputTag fPandoraProducer, fSpacePointProducer,
     fOpHitProducer, fOpHitARAProducer;//, fCaloProducer, fTrackProducer;
   const std::vector<std::string> fOpFlashProducer, fOpFlashHitProducer;
+  const bool fVerbose;
   const double fBeamSpillTimeStart, fBeamSpillTimeEnd;
   const double fFlashFindingTimeStart, fFlashFindingTimeEnd;
   const double fFlashStart, fFlashEnd;

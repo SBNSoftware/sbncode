@@ -20,6 +20,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fOpHitARAProducer(p.get<std::string>("OpHitARAProducer", ""))
   , fOpFlashProducer(p.get<std::vector<std::string>>("OpFlashProducer", {}))
   , fOpFlashHitProducer(p.get<std::vector<std::string>>("OpFlashHitProducer", {}))
+  , fVerbose(p.get<bool>("Verbose", false))
     // , fCaloProducer(p.get<std::string>("CaloProducer"))
     // , fTrackProducer(p.get<std::string>("TrackProducer"))
   , fBeamSpillTimeStart(p.get<double>("BeamSpillTimeStart")) //us
@@ -751,9 +752,9 @@ FlashPredict::ChargeMetrics FlashPredict::computeChargeMetrics(
   if (charge_center_in_volume == kRght) activity = kActivityInRght;
   else if (charge_center_in_volume == kLeft) activity = kActivityInLeft;
   if (charge.activity < kActivityInBoth &&
-      (activity != charge.activity)){
+      (activity != charge.activity) && fVerbose){
     mf::LogError("FlashPredict")
-      << "ERROR!!!  The charge center: ("
+      << "INFO:  The charge center: ("
       << charge.x_gl << ", " << charge.y << ", " << charge.z << "), "
       << "belonging to volume " << charge_center_in_volume << "\n"
       << "is not inside the volume of the chargeDigest activity "
@@ -1802,7 +1803,8 @@ bool FlashPredict::findSimpleFlashes(
     // partition container to move the hits of the flash
     // the iterators point to the boundaries of the partition
     OpHitIt opH_end = std::partition(opH_beg, opHits.end(),
-                                     peakInsideEdges);
+                                 peakInsideEdges);
+    if(std::distance(opH_beg, opH_end)==0) break;
     simpleFlashes.emplace_back
       (SimpleFlash(flashId, ophsInVolume,
                    opH_beg, opH_end, maxpeak_time));
