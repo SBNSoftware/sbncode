@@ -53,9 +53,9 @@ physics:
 # Multi-Particle Vertex generator (MPV)
 #
 physics.producers.generator.DebugMode    : 1
-# Based on BNB spill = 1.6us , now based on NUMI spill 10us
-physics.producers.generator.G4Time       : 345. # 340.8 # [us] 
-physics.producers.generator.G4TimeJitter : 10. # 1.6 # [us]
+# Based on based on NUMI spill 10000ns
+physics.producers.generator.G4Time       : 5000. # [ns]  
+physics.producers.generator.G4TimeJitter : 10000. # [ns]
 physics.producers.generator.XRange       : [30,30]
 physics.producers.generator.YRange       : [30,30]
 physics.producers.generator.ZRange       : [30,30]
@@ -78,8 +78,8 @@ physics.producers.generator.ParticleParameter.MomRange     : []
 #
 physics.producers.rain.DebugMode    : 2
 # Based on TPC readout window starting at -340us and readout window size is 1638.4us
-physics.producers.rain.G4Time       : 819.2 # [us]
-physics.producers.rain.G4TimeJitter : 1638.4 # [us]
+physics.producers.rain.G4Time       : -50000 # [ns]
+physics.producers.rain.G4TimeJitter : 2900000 # [ns]
 physics.producers.rain.XRange       : [-20,-20]
 physics.producers.rain.YRange       : [-20,-20]
 physics.producers.rain.ZRange       : [-20,-20]
@@ -97,8 +97,8 @@ physics.producers.rain.ParticleParameter.MomRange     : []
 
 physics.producers.rain2.DebugMode    : 2
 # Based on TPC readout window starting at -340us and readout window size is 1638.4us
-physics.producers.rain2.G4Time       : 819.2 # [us]
-physics.producers.rain2.G4TimeJitter : 1638.4 # [us]
+physics.producers.rain2.G4Time       : -50000 # [ns]
+physics.producers.rain2.G4TimeJitter : 2900000 # [ns]
 physics.producers.rain2.XRange       : [20,20]
 physics.producers.rain2.YRange       : [20,20]
 physics.producers.rain2.ZRange       : [20,20]
