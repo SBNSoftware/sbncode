@@ -38,49 +38,21 @@ sbn_eventweight_geant4: {
   min_weight: 0.0
   max_weight: 100
 
-  weight_functions: [ reinteractions_piplus, reinteractions_piminus, reinteractions_proton ]
-
-  reinteractions_piplus: {
+  reinteractions: {
     type: Geant4
     random_seed: 58
-    parameters: @local::PiPlusParameters
+    parameters: [ @local::PiPlusParameters, @local::PiMinusParameters, @local::ProtonParameters ]
     mode: multisim
     number_of_multisims: 1000
-    fracsfile: "$SBNDATA_DIR/systematics/reint/g4_fracs_piplus.root"
-    xsecfile:  "$SBNDATA_DIR/systematics/reint/g4_cross_section_piplus.root"
+    fracsfiles: [ "$SBNDCODE_DIR/scripts/g4_fracs_piplus.root", "$SBNDCODE_DIR/scripts/g4_fracs_piminus.root", "$SBNDCODE_DIR/scripts/g4_fracs_proton.root" ]
+    xsecfiles:  [ "$SBNDCODE_DIR/scripts/g4_cross_section_piplus.root", "$SBNDCODE_DIR/scripts/g4_cross_section_piminus.root", "$SBNDCODE_DIR/scripts/g4_cross_section_proton.root" ]
     makeoutputtree: false
-    pdg_to_reweight: 211
+    pdgs_to_reweight: [ 211, -211, 2212 ]
     debug: false
     materials: @local::liquidargon
   }
 
-  reinteractions_piminus: {
-    type: Geant4
-    random_seed: 59
-    parameters: @local::PiMinusParameters
-    mode: multisim
-    number_of_multisims: 1000
-    fracsfile: "$SBNDATA_DIR/systematics/reint/g4_fracs_piminus.root"
-    xsecfile:  "$SBNDATA_DIR/systematics/reint/g4_cross_section_piminus.root"
-    makeoutputtree: false
-    pdg_to_reweight: -211
-    debug: false
-    materials: @local::liquidargon
-  }
-
-  reinteractions_proton: {
-    type: Geant4
-    random_seed: 60
-    parameters: @local::ProtonParameters
-    mode: multisim
-    number_of_multisims: 1000
-    fracsfile: "$SBNDATA_DIR/systematics/reint/g4_fracs_proton.root"
-    xsecfile:  "$SBNDATA_DIR/systematics/reint/g4_cross_section_proton.root"
-    makeoutputtree: false
-    pdg_to_reweight: 2212
-    debug: false
-    materials: @local::liquidargon
-  }
+  weight_functions: [ reinteractions ]
 }
 
 ###
