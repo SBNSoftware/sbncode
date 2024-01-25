@@ -75,6 +75,21 @@ private:
 
   bool _add_systs; // wheter or not to add systs
 
+  const std::vector<std::string> weight_names = { "expskin_Flux",
+                                                  "horncurrent_Flux",
+                                                  "kminus_Flux",
+                                                  "kplus_Flux",
+                                                  "kzero_Flux",
+                                                  "nucleoninexsec_Flux",
+                                                  "nucleonqexsec_Flux",
+                                                  "nucleontotxsec_Flux",
+                                                  "piminus_Flux",
+                                                  "pioninexsec_Flux",
+                                                  "pionqexsec_Flux",
+                                                  "piontotxsec_Flux",
+                                                  "piplus_Flux"
+  };
+
   const TDatabasePDG *_pdg_database = TDatabasePDG::Instance();
 
   /// Returns the intersection point with the front face of the TPC
@@ -112,6 +127,7 @@ private:
   float _nu_other_t; /// Time of the neutrino (other)
 
   std::vector<float> _evtwgt_flux_oneweight; ///< Weights for FLUX reweighting (multisim) (combines all variations)
+  std::vector<std::vector<float>> _evtwgt_flux_weights = std::vector<std::vector<float>>(weight_names.size(), std::vector<float>()); ///< Weights for FLUX reweighting (multisim)
 
   TTree* _sr_tree;
   int _sr_run, _sr_subrun;
@@ -176,6 +192,13 @@ FluxReaderAna::FluxReaderAna(fhicl::ParameterSet const& p)
 
   _tree->Branch("evtwgt_flux_oneweight", "std::vector<float>", &_evtwgt_flux_oneweight);
 
+  int weight_i = 0;
+
+  for(auto const& name : weight_names)
+    {
+      _tree->Branch(Form("evtwgt_flux_weight_%s", name.c_str()), &_evtwgt_flux_weights[weight_i]);
+      ++weight_i;
+    }
 
   _sr_tree = fs->make<TTree>("pottree","");
   _sr_tree->Branch("run", &_sr_run, "run/I");
@@ -269,7 +292,7 @@ void FluxReaderAna::analyze(art::Event const& e)
 
     if (_apply_position_cuts) {
       if (_nu_x < -_x_cut || _nu_x > _x_cut || _nu_y < -_y_cut || _nu_y > _y_cut) {
-       continue;
+        continue;
       }
     }
 
@@ -295,6 +318,8 @@ void FluxReaderAna::analyze(art::Event const& e)
           previous_weights.resize(weight_v.size(), 1.);
           final_weights.resize(weight_v.size(), 1.);
         }
+
+        _evtwgt_flux_weights[countFunc] = weight_v;
 
         countFunc++;
 
