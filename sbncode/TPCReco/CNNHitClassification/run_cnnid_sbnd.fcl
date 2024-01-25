@@ -1,0 +1,64 @@
+#include "services_sbnd.fcl"
+#include "simulationservices_sbnd.fcl"
+#include "calorimetry_sbnd.fcl"
+#include "pointidalg_sbnd.fcl"
+
+process_name: CNNID
+
+services:
+{
+  TFileService: { fileName: "reco_hist.root" }
+  MemoryTracker:     {}
+  TimeTracker:       {}
+  RandomNumberGenerator: {} 
+  message:              @local::sbnd_message_services_prod_debug
+  FileCatalogMetadata:  @local::art_file_catalog_mc
+             			@table::sbnd_simulation_services
+}
+
+source:
+{
+  module_type: RootInput
+  maxEvents:  -1
+}
+
+
+physics:
+{
+  producers:
+  {
+    cnnid: {
+      module_type: CNNID
+      BatchSize:                    256 
+      WireLabel:                    "caldata"
+      HitModuleLabel:               "gaushit"
+      ClusterModuleLabel:           "pandora"
+      PFParticleModuleLabel:        "pandora"
+      SkipClearCosmics:             true
+      DoMichel:                     true
+      MichelRegionSize:             [30, 120]
+      SparseLengthCut:              150
+      DoPFP:                        true
+      SparseRate:                   5
+      Views:                        []
+      PointIdAlg: @local::pointidalg_sbnd
+    }
+  }
+
+  reco: [ cnnid ]
+  stream1:  [ out1 ]
+  trigger_paths: [reco]
+  end_paths:     [stream1]
+}
+
+outputs:
+{
+ out1:
+ {
+   module_type: RootOutput
+  #  fileName:    "/pnfs/sbnd/scratch/users/munjung/cnnid_job/%ifb_cnn.root"
+   fileName:    "%ifb_cnn.root"
+   dataTier:    "full-reconstructed"
+   fastCloning: true
+ }
+}

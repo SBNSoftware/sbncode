@@ -87,7 +87,7 @@
 #>  define_pythonpath
 ####################################
 parent		sbncode
-defaultqual	e20
+defaultqual	e26
 ####################################
 
 ####################################
@@ -253,14 +253,14 @@ libdir	fq_dir		lib
 ####################################
 product			version		qual	flags		<table_format=2>
 genie_xsec		v3_04_00	-
-larcv2			v2_1_2		-
-larsoft			v09_78_04	-
-sbnanaobj		v09_21_04	-
-sbndaq_artdaq_core	v1_08_00of0	-
-sbndata			v01_04		-
-sbnobj			v09_17_07	-
-systematicstools	v01_03_02	-
-nusystematics		v01_03_11	-
+larcv2			v2_1_3		-
+larsoft			v09_82_01	-
+sbnanaobj		v09_21_07	-
+sbndaq_artdaq_core	v1_08_00of1	-
+sbndata			v01_05		-
+sbnobj			v09_17_10	-
+systematicstools	v01_03_03	-
+nusystematics		v01_03_12	-
 cetmodules		v3_21_01	-	only_for_build
 end_product_list
 ####################################
@@ -318,8 +318,12 @@ end_product_list
 ####################################
 
 qualifier	larsoft		sbnobj		sbnanaobj	sbndaq_artdaq_core  genie_xsec              sbndata larcv2          systematicstools  nusystematics notes
+c14:debug	c14:debug	c14:debug	c14:debug	c14:s120a:debug       AR2320i00000:e1000:k250 -nq-    c14:debug:p3913  c14:debug	     c14:debug	    -nq-
+c14:prof	c14:prof	c14:prof	c14:prof	c14:s120a:prof        AR2320i00000:e1000:k250 -nq-   c14:p3913:prof  c14:prof	     c14:prof	    -nq-
 c7:debug	c7:debug	c7:debug	c7:debug	c7:s120a:debug       AR2320i00000:e1000:k250 -nq-    c7:debug:p3913  c7:debug	     c7:debug	    -nq-
 c7:prof		c7:prof		c7:prof		c7:prof		c7:s120a:prof        AR2320i00000:e1000:k250 -nq-    c7:p3913:prof   c7:prof	     c7:prof	    -nq-
+e26:debug	e26:debug	e26:debug	e26:debug	e26:s120a:debug      AR2320i00000:e1000:k250 -nq-    debug:e26:p3913 e26:debug	     e26:debug	    -nq-
+e26:prof	e26:prof	e26:prof	e26:prof	e26:s120a:prof       AR2320i00000:e1000:k250 -nq-    e26:p3913:prof   e26:prof	     e26:prof	    -nq-
 e20:debug	e20:debug	e20:debug	e20:debug	e20:s120a:debug      AR2320i00000:e1000:k250 -nq-    debug:e20:p3913 e20:debug	     e20:debug	    -nq-
 e20:prof	e20:prof	e20:prof	e20:prof	e20:s120a:prof       AR2320i00000:e1000:k250 -nq-    e20:p3913:prof   e20:prof	     e20:prof	    -nq-
 
