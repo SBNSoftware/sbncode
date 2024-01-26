@@ -1686,6 +1686,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<sbn::MVAPID>(slcShowers, evt,
           fParams.ShowerRazzleLabel() + slice_tag_suff);
 
+    art::FindManyP<sbn::MVAPID> fmPFPRazzled =
+      FindManyPStrict<sbn::MVAPID>(fmPFPart, evt,
+          fParams.PFPRazzledLabel() + slice_tag_suff);
+
     art::FindOneP<sbn::PFPCNNScore> foCNNScores = 
       FindOnePStrict<sbn::PFPCNNScore>(fmPFPart, evt,
           fParams.CNNScoreLabel() + slice_tag_suff);
@@ -1914,6 +1918,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           else {
             rangePs[index] = std::vector<art::Ptr<sbn::RangeP>>();
           }
+        }
+
+        if (fmPFPRazzled.isValid() && fmPFPRazzled.at(iPart).size()==1) {
+          FillPFPRazzled(fmPFPRazzled.at(iPart).front(), pfp);
         }
 
         // fill all the stuff

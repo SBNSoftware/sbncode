@@ -231,6 +231,10 @@ namespace caf
   void FillTPCPMTBarycenterMatch(const sbn::TPCPMTBarycenterMatch *matchInfo,
                            caf::SRSlice& slice);
 
+  void FillPFPRazzled(const art::Ptr<sbn::MVAPID> razzled,
+                      caf::SRPFP& srpfp,
+                      bool allowEmpty = false);
+
   template<class T, class U>
   void CopyPropertyIfSet( const std::map<std::string, T>& props, const std::string& search, U& value );
 }
