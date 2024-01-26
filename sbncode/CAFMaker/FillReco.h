@@ -30,6 +30,7 @@
 #include "sbnobj/Common/Reco/RangeP.h"
 #include "sbnobj/Common/Reco/ShowerSelectionVars.h"
 #include "sbnobj/Common/Reco/MVAPID.h"
+#include "sbnobj/Common/Reco/CNNScore.h"
 #include "sbnobj/Common/Reco/ScatterClosestApproach.h"
 #include "sbnobj/Common/Reco/StoppingChi2Fit.h"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
@@ -37,6 +38,8 @@
 #include "sbnobj/Common/Reco/TPCPMTBarycenterMatch.h"
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "sbnobj/Common/CRT/CRTTrack.hh"
+#include "sbnobj/SBND/CRT/CRTSpacePoint.hh"
+#include "sbnobj/SBND/CRT/CRTTrack.hh"
 #include "sbnobj/Common/CRT/CRTPMTMatching.hh"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
@@ -123,6 +126,11 @@ namespace caf
                    caf::SRPFP& srpfp,
                    bool allowEmpty= false);
 
+  void FillCNNScores(const recob::PFParticle &particle,
+                     const sbn::PFPCNNScore *cnnscore,
+                     caf::SRPFP& srpfp,
+                     bool allowEmpty = false);
+
   void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
                        const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,
                        bool use_ts0,
@@ -134,6 +142,16 @@ namespace caf
   void FillTrackCRTTrack(const std::vector<art::Ptr<anab::T0>> &t0match,
                        caf::SRTrack &srtrack,
                        bool allowEmpty = false);
+
+  void FillTrackCRTSpacePoint(const anab::T0 &t0match,
+                              const art::Ptr<sbnd::crt::CRTSpacePoint> &spacepointmatch,
+                              caf::SRTrack &srtrack,
+                              bool allowEmpty = false);
+
+  void FillTrackSBNDCRTTrack(const anab::T0 &t0match,
+                             const art::Ptr<sbnd::crt::CRTTrack> &trackmatch,
+                             caf::SRTrack &srtrack,
+                             bool allowEmpty = false);
 
   void FillTrackMCS(const recob::Track& track,
                     const std::array<std::vector<art::Ptr<recob::MCSFitResult>>, 4> &mcs_results,
@@ -192,6 +210,14 @@ namespace caf
                   bool use_ts0,
                   caf::SRCRTTrack &srtrack,
                   bool allowEmpty = false);
+
+  void FillCRTSpacePoint(const sbnd::crt::CRTSpacePoint &spacepoint,
+                         caf::SRCRTSpacePoint &srspacepoint,
+                         bool allowEmpty = false);
+
+  void FillSBNDCRTTrack(const sbnd::crt::CRTTrack &track,
+                        caf::SRSBNDCRTTrack &srsbndcrttrack,
+                        bool allowEmpty = false);
 
   void FillOpFlash(const recob::OpFlash &flash,
                   std::vector<recob::OpHit const*> const& hits,
