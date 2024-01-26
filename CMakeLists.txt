@@ -16,7 +16,7 @@
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
 find_package(cetmodules 3.20.00 REQUIRED)
-project(sbncode VERSION 09.78.02 LANGUAGES CXX)
+project(sbncode VERSION 09.82.01 LANGUAGES CXX)
 
 message(STATUS "\n\n  ==========================   ${PROJECT_NAME}   ==========================")
 
@@ -59,13 +59,13 @@ find_package( lardata REQUIRED )
 find_package( larevt REQUIRED )
 find_package( larsim REQUIRED )
 find_package( larreco REQUIRED )
+find_package( larrecodnn REQUIRED )
 find_package( larpandora REQUIRED )
 find_package( larpandoracontent REQUIRED )
 find_package( artdaq_core EXPORT REQUIRED )
 find_package( sbnobj REQUIRED )
 find_package( sbnanaobj REQUIRED )
 find_package( sbndaq_artdaq_core EXPORT REQUIRED )
-find_package( ifdhc REQUIRED )
 find_package( ifdh_art REQUIRED )
 find_package( ifbeam REQUIRED )
 find_package( libwda REQUIRED )

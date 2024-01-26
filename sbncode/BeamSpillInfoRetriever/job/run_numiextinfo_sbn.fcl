@@ -1,6 +1,6 @@
-#include "extcountinfo.fcl"
+#include "numiextcountinfo.fcl"
 
-process_name: EXTInfoGen
+process_name: NuMIEXTInfoGen
 
 services:{
   IFBeam:{}
@@ -13,10 +13,10 @@ source: {
 
 physics: {
  producers: {
-   extinfo: @local::extcountinfo
+   numiextinfo: @local::numiextcountinfo
  }
 
- simulate: [extinfo ]
+ simulate: [numiextinfo ]
  stream1: [ out1 ]
 
 }
@@ -24,7 +24,7 @@ physics: {
 outputs: {
  out1: {
    module_type: RootOutput
-   fileName: "%ifb_%tc_extinfo.root"
+   fileName: "%ifb_%tc_numiextinfo.root"
    dataTier: "raw"
    compressionLevel: 1
  }

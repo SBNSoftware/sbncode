@@ -6,6 +6,7 @@
  * Based heavily on code by Z. Pavlovic written for MicroBooNE 
  * Based heavily on code by NOvA collaboration (Thanks NOvA!):
  *        https://cdcvs.fnal.gov/redmine/projects/novaart/repository/entry/trunk/IFDBSpillInfo/BNBInfo_module.cc
+ * Database implementation by Justin Mueller 
  */
 
 #include "art/Framework/Core/EDProducer.h"
@@ -20,7 +21,8 @@
 #include "larcorealg/CoreUtils/counter.h"
 
 #include "artdaq-core/Data/Fragment.hh"
-#include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerV2Fragment.hh"
+#include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerV3Fragment.hh"
+#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
 
@@ -31,6 +33,10 @@
 #include <memory>
 #include <vector>
 #include <cassert>
+
+#include <sqlite3.h>
+#include <cstdio>
+#include <sstream>
 
 namespace sbn {
   class BNBRetriever;
@@ -84,7 +90,13 @@ public:
       Name{ "MWR_TimeWindow" },
       Comment{ "" } // explain what this is, what's for and its unit
       };
+
+    fhicl::Atom<std::string> TriggerDatabaseFile {
+      Name{ "TriggerDatabaseFile" },
+      Comment{ "" } // explain what this is, what's for and its unit
+      };
     
+
   }; // Config
   
   using Parameters = art::EDProducer::Table<Config>;
@@ -111,6 +123,7 @@ private:
   double fTimePad;
   std::string fURL;
   MWRData mwrdata;
+  int run_number;
   std::string raw_data_label;
   std::string fDeviceUsedForTiming;
   unsigned int TotalBeamSpills;  
@@ -118,12 +131,18 @@ private:
   art::ServiceHandle<ifbeam_ns::IFBeam> ifbeam_handle;
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp;
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp_mwr;
+  
+  //
+  std::string fTriggerDatabaseFile;
+  sqlite3 *db;
+  int rc;
 
   struct TriggerInfo_t {
     int gate_type = 0; ///< Source of the spill: `1`: BNB, `2`: NuMI
     double t_current_event  = 0;
     double t_previous_event = 0;
     unsigned int number_of_gates_since_previous_event = 0; // FIXME needs to be integral type
+    std::int64_t WR_to_Spill_conversion = 0;
   };
   
   struct MWRdata_t {
@@ -171,7 +190,69 @@ private:
   sbn::BNBSpillInfo makeBNBSpillInfo
     (art::EventID const& eventID, double time, MWRdata_t const& MWRdata, std::vector<int> const& matched_MWR) const;
 
+/**
+ * @brief SQLite callback function for retrieving trigger_type from a query.
+ * @param data Pointer to the integer where the trigger type will be stored.
+ * @param argc Count of the number of columns returned by the query.
+ * @param argv Array of c-strings containing the column data of the query.
+ * @param columns Array of c-strings listing the names of the columns.
+ * @return 0 if successful.
+ */
+//  int callback_trigger_type(void *data, 	
+//			    int argc, 
+//			    char **argv, 
+//			    char **columns); 
+  
+/**
+ * @brief Queries the trigger database and finds the trigger_type of the matching trigger (if any).
+ * @param db The pointer to the SQLite database instance.
+ * @param run The run number of the current event (helps with queries).
+ * @param gate_time The time in milliseconds of the gate.
+ * @param threshold The required absolute time difference between gate and trigger.
+ * @return trigger_type -1: No matching trigger, 0: Majority, 1: MinBias
+ */
+  int get_trigger_type_matching_gate(sqlite3 *db, 
+				     int func(void*,int,char**,char**), 
+				     int run, 
+				     long long int gate_time, 
+				     float threshold) const;
+  
 };
+
+int callback_trigger_type(void *data, int argc, char **argv, char **columns)
+{
+  int *result = static_cast<int*>(data);
+  // Does this query return non-NULL values?
+  if(argc > 0 && argv[0])
+    *result = std::stoi(argv[0]);
+  else
+    *result = -1;
+
+  return 0;
+}
+
+int sbn::BNBRetriever::get_trigger_type_matching_gate(sqlite3 *db, int func(void*,int,char**,char**), int run, long long int gate_time, float threshold) const
+{
+  int trigger_type(-1), query_status;
+  std::stringstream query;
+  query << "SELECT trigger_type FROM triggerdata WHERE gate_type=1 AND run_number ="
+        << run
+        << " AND ABS(1000000000*wr_seconds + wr_nanoseconds  - "
+        << std::fixed << gate_time
+        << ") < "
+        << threshold*1000000
+        << " ORDER BY ABS(1000000000*wr_seconds + wr_nanoseconds  - "
+	<< std::fixed << gate_time
+	<< ") LIMIT 1;";
+
+  query_status = sqlite3_exec(db, query.str().c_str(), func, &trigger_type, NULL);
+  if (query_status != SQLITE_OK)
+  {
+    mf::LogError("BNBEXTRetriever") << "SQL error: " << sqlite3_errmsg(db);
+    trigger_type = -1;
+  }
+  return trigger_type;
+}
 
 sbn::BNBRetriever::BNBRetriever(Parameters const& params)
   : EDProducer{params},
@@ -179,7 +260,8 @@ sbn::BNBRetriever::BNBRetriever(Parameters const& params)
   raw_data_label(params().RawDataLabel()),
   fDeviceUsedForTiming(params().DeviceUsedForTiming()),
   bfp(     ifbeam_handle->getBeamFolder(params().Bundle(), params().URL(), params().TimeWindow())),
-  bfp_mwr( ifbeam_handle->getBeamFolder(params().MultiWireBundle(), params().URL(), params().MWR_TimeWindow()))
+  bfp_mwr( ifbeam_handle->getBeamFolder(params().MultiWireBundle(), params().URL(), params().MWR_TimeWindow())),
+  fTriggerDatabaseFile(params().TriggerDatabaseFile())
 {
   
   // Check fTimePad is positive 
@@ -201,6 +283,18 @@ sbn::BNBRetriever::BNBRetriever(Parameters const& params)
   bfp_mwr->setValidWindow(3605);  
   produces< std::vector< sbn::BNBSpillInfo >, art::InSubRun >();
   TotalBeamSpills = 0;
+
+  cet::search_path sp("FW_SEARCH_PATH");
+  std::string trigDB_path = sp.find_file(fTriggerDatabaseFile.c_str());
+
+  rc = sqlite3_open(trigDB_path.c_str(), &db);
+  if(rc)
+    {
+      fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
+      throw art::Exception(art::errors::NotFound)
+	<< "Can't open database: " << sqlite3_errmsg(db);
+    }
+
 }
 
 
@@ -213,8 +307,13 @@ void sbn::BNBRetriever::produce(art::Event& e)
   // spill information
   //
   // TODO: long-term goal -- can we fix this?
+  // FIXME This is wrong.... 
+  //      Need to use:  ICARUSTriggerV3Fragment long getTotalTriggerBNBMaj() const
+
   if (e.event() == 1) return;
   
+  run_number = e.id().run();
+
   TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
   
   //We only want to process BNB gates, i.e. type 1 
@@ -232,8 +331,8 @@ void sbn::BNBRetriever::produce(art::Event& e)
   
   if(spill_count > int(triggerInfo.number_of_gates_since_previous_event))
     mf::LogDebug("BNBRetriever")<< "Event Spills : " << spill_count << ", DAQ Spills : " << triggerInfo.number_of_gates_since_previous_event << " \t \t ::: WRONG!"<< std::endl;
-    else
-      mf::LogDebug("BNBRetriever")<< "Event Spills : " << spill_count << ", DAQ Spills : " << triggerInfo.number_of_gates_since_previous_event << std::endl;
+  else
+    mf::LogDebug("BNBRetriever")<< "Event Spills : " << spill_count << ", DAQ Spills : " << triggerInfo.number_of_gates_since_previous_event << std::endl;
   
 }//end iteration over art::Events
 
@@ -245,29 +344,41 @@ sbn::BNBRetriever::TriggerInfo_t sbn::BNBRetriever::extractTriggerInfo(art::Even
   // 2. the time of the previously triggered event, t_previous_event (NOTE: Events are non-sequential!)
   // 3. the number of beam spills since the previously triggered event, number_of_gates_since_previous_event
   
-  auto const & raw_data = e.getProduct< std::vector<artdaq::Fragment> >({ raw_data_label, "ICARUSTriggerV2" });
-  
-  TriggerInfo_t triggerInfo;
+  auto const & raw_data = e.getProduct< std::vector<artdaq::Fragment> >({ raw_data_label, "ICARUSTriggerV3" });
+  auto const & extraTrigInfo = e.getProduct< sbn::ExtraTriggerInfo >("daqTrigger");
 
+  TriggerInfo_t triggerInfo;
+  
+  triggerInfo.WR_to_Spill_conversion = extraTrigInfo.WRtimeToTriggerTime;   
+  
   for(auto raw_datum : raw_data){
    
     uint64_t artdaq_ts = raw_datum.timestamp();
-    icarus::ICARUSTriggerV2Fragment frag(raw_datum);
+    icarus::ICARUSTriggerV3Fragment frag(raw_datum);
     std::string data = frag.GetDataString();
     char *buffer = const_cast<char*>(data.c_str());
-    icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerV2String(buffer);
+    icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerV3String(buffer);
     triggerInfo.gate_type = datastream_info.gate_type;
-    triggerInfo.number_of_gates_since_previous_event = frag.getDeltaGatesBNB();
-  
-    triggerInfo.t_current_event = static_cast<double>(artdaq_ts)/(1000000000.0); //check this offset...
+    triggerInfo.number_of_gates_since_previous_event = frag.getDeltaGatesBNBMaj();
+    
+    /*                                                                                                                  
+       The DAQ trigger time is issued at the Beam Extraction Signal (BES) which is issued                               
+       36 ms *after* the $1D of the BNB, which is what is used in the IFBeam database                                   
+                                                                                                                        
+       We subtract 36ms from the Trigger time to match our triggers to the spills in the                                
+       IFBeam database                                                                                                  
+                                                                                                                        
+    */
+
+    triggerInfo.t_current_event = static_cast<double>(artdaq_ts-3.6e7)/(1000000000.0); //check this offset...
     if(triggerInfo.gate_type == 1)
-      triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampBNB()))/(1e9);
+      triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampBNBMaj()-3.6e7))/(1e9);
     else
-      triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampOther()))/(1000000000.0);
+      triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampOther()-3.6e7))/(1000000000.0);
     
   }
   
-  mf::LogDebug("BNBRetriever") << std::setprecision(19) << "Previous : " << triggerInfo.t_previous_event << ", Current : " << triggerInfo.t_current_event << std::endl;
+  mf::LogDebug("BNBRetriever") << std::setprecision(19) << "Previous : " << triggerInfo.t_previous_event << ", Current : " << triggerInfo.t_current_event << ", Spill Count " << triggerInfo.number_of_gates_since_previous_event << std::endl;
 
   return triggerInfo;
 }
@@ -277,9 +388,9 @@ sbn::BNBRetriever::MWRdata_t sbn::BNBRetriever::extractSpillTimes(TriggerInfo_t 
   
   // These lines get everything primed within the IFBeamDB
   //   They seem redundant but they are needed
-  try{auto cur_vec_temp = bfp->GetNamedVector((triggerInfo.t_previous_event)-fTimePad,"E:THCURR");} catch (WebAPIException &we) {}      
+  //  try{auto cur_vec_temp = bfp->GetNamedVector((triggerInfo.t_previous_event)-fTimePad,"E:THCURR");} catch (WebAPIException &we) {}      
+  try{auto cur_vec_temp = bfp->GetNamedVector((triggerInfo.t_current_event)+fTimePad,"E:THCURR");} catch (WebAPIException &we) {}      
   try{auto packed_M876BB_temp = bfp_mwr->GetNamedVector((triggerInfo.t_current_event)+fTimePad,"E:M875BB{4440:888}.RAW");} catch (WebAPIException &we) {}
-  
   
   //The multiwire chambers provide their
   // data in a vector format but we'll have 
@@ -317,7 +428,7 @@ sbn::BNBRetriever::MWRdata_t sbn::BNBRetriever::extractSpillTimes(TriggerInfo_t 
       
       //Make sure we have a device
       if(var.empty()){ 
-	mf::LogDebug("BNBRetriever") << " NO MWR DEVICES?!" << std::endl;
+	//mf::LogDebug("BNBRetriever") << " NO MWR DEVICES?!" << std::endl;
 	continue;
       }
       /// Check the device name and interate the double-vector index
@@ -325,7 +436,7 @@ sbn::BNBRetriever::MWRdata_t sbn::BNBRetriever::extractSpillTimes(TriggerInfo_t 
       else if(var.find("M876BB") != std::string::npos ) dev = 1;
       else if(var.find("MMBTBB") != std::string::npos ) dev = 2;
       else{
-	mf::LogDebug("BNBRetriever") << " NOT matched to a MWR DEVICES?!" << var << std::endl;
+	//mf::LogDebug("BNBRetriever") << " NOT matched to a MWR DEVICES?!" << var << std::endl;
 	continue;}
       
       time_for_mwr = 0;
@@ -404,9 +515,12 @@ int sbn::BNBRetriever::matchMultiWireData(
   //  we have to pick a specific variable to use
   std::vector<double> times_temps = bfp->GetTimeList(fDeviceUsedForTiming);
   
+  mf::LogDebug("BNBRetriever") << "matchMultiWireData:: Number of time spills : " << times_temps.size() << std::endl;
+
   // We'll keep track of how many of these spills match to our 
   // DAQ trigger times
   int spill_count = 0;
+  int spills_removed = 0;
   std::vector<int> matched_MWR;
   matched_MWR.resize(3);
   
@@ -434,20 +548,48 @@ int sbn::BNBRetriever::matchMultiWireData(
     
     // Remove the spills before the start of our Run
     times_temps.erase(times_temps.begin(), times_temps.end() - std::min(int(triggerInfo.number_of_gates_since_previous_event), int(times_temps.size())));
-    
+        
   }//end fix for "first event"
+  
+    ///reject time_stamps which have a trigger_type == 1 from data-base
+    //To-Do 
+
+  //  mf::LogDebug("BNBRetriever") << "Total number of Times we're going to test: " << times_temps.size() <<  std::endl;
+  // mf::LogDebug("BNBRetriever") << std::setprecision(19) << "Upper Limit : " << (triggerInfo.t_current_event)+fTimePad <<  std::endl;
+  // mf::LogDebug("BNBRetriever") << std::setprecision(19) << "Lower Limit : " << (triggerInfo.t_previous_event)+fTimePad <<  std::endl;
   
   // Iterating through each of the beamline times
   for (size_t i = 0; i < times_temps.size(); i++) {
     
     // Only continue if these times are matched to our DAQ time
-    
+    //mf::LogDebug("BNBRetriever") << std::setprecision(19) << "Time # : " <<  i << std::endl;
+
     if(!isFirstEventInRun){//We already addressed the "first event" above
-      if(times_temps[i] > (triggerInfo.t_current_event)){continue;}
-      if(times_temps[i] <= (triggerInfo.t_previous_event)){continue;}
+      if(times_temps[i] > (triggerInfo.t_current_event)+fTimePad){
+	//mf::LogDebug("BNBRetriever") << std::setprecision(19) << "Removed!  : " << times_temps[i] << std::endl;
+	spills_removed++; 
+	continue;} 
+      if(times_temps[i] <= (triggerInfo.t_previous_event)+fTimePad){
+	spills_removed++; 
+	//mf::LogDebug("BNBRetriever") << std::setprecision(19) << "Removed!  : " << times_temps[i] << std::endl;
+	continue;}
     }
 
+    //check if this spill is is minbias   
+    /*
+      40 ms was selected to be close to but outside the 66 ms 
+      time of the next spill (when the beam is running at 15 Hz) 
+      DocDB 33155 provides documentation of this
+    */
+
+    mf::LogDebug("BNBRetriever") << std::setprecision(19) << "matchMultiWireData:: trigger type : " << get_trigger_type_matching_gate(db, callback_trigger_type, run_number, times_temps[i]*1.e9-triggerInfo.WR_to_Spill_conversion+3.6e7, 40.) << " times : spill " << times_temps[i]*1.e9 << " - " << triggerInfo.WR_to_Spill_conversion << " + " << 3.6e7 <<  std::endl;
     
+    if(get_trigger_type_matching_gate(db, callback_trigger_type, run_number, times_temps[i]*1.e9-triggerInfo.WR_to_Spill_conversion+3.6e7, 40.) == 1){
+          mf::LogDebug("BNBRetriever") << std::setprecision(19)  << "matchMultiWireData:: Skipped a MinBias gate at : " << times_temps[i]*1000. << std::endl;
+
+      continue;
+    }
+      
     //Great we found a matched spill! Let's count it
     spill_count++;
 
@@ -470,7 +612,7 @@ int sbn::BNBRetriever::matchMultiWireData(
 	for (size_t j = 0; j < times_temps.size(); j++) {
 	  if( j == i) continue;
 	  if(times_temps[j] > (triggerInfo.t_current_event+fTimePad)){continue;}
-	  if(times_temps[j] <= (triggerInfo.t_previous_event-fTimePad)){continue;}
+	  if(times_temps[j] <= (triggerInfo.t_previous_event+fTimePad)){continue;}
 	  
 	  //is there a better match later in the spill sequence
 	  if(fabs((MWR_times[dev][mwrt] - times_temps[j])) < 
@@ -501,6 +643,8 @@ int sbn::BNBRetriever::matchMultiWireData(
     
   }//end iteration over beam device times
   
+  //  mf::LogDebug("BNBRetriever") << "matchMultiWireData:: Total spills counted:  " << spill_count << "   Total spills removed : " << spills_removed <<  std::endl;
+
   return spill_count;
 }
 

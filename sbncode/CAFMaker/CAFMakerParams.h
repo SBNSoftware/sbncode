@@ -134,6 +134,12 @@ namespace caf
       "pandora"
     };
 
+    Atom<string> CNNScoreLabel {
+      Name("CNNScoreLabel"),
+      Comment("Base label of CNN score producer."),
+      "cnnid"
+    };
+
     Atom<string> StubLabel {
       Name("StubLabel"),
       Comment("Base label of Stub producer."),
@@ -144,6 +150,16 @@ namespace caf
       Name("FlashMatchLabel"),
       Comment("Base label of flash match producer."),
       "fmatch" // same for icarus and sbnd
+    };
+
+    fhicl::OptionalSequence<std::string> FlashMatchOpDetSuffixes {
+      Name("FlashMatchOpDetSuffixes"),
+      Comment("List of suffixes to add to SimpleFlash to denote Simple/Op Flashes and PDS subsystem (SBND)")
+    };
+
+    fhicl::OptionalSequence<std::string> FlashMatchSCECryoSuffixes {
+      Name("FlashMatchSCECryoSuffixes"),
+      Comment("List of suffixes to add to SimpleFlash to denote whether SCE implemented and cryostat (ICARUS)")
     };
 
     Atom<string> CRUMBSLabel {
@@ -186,6 +202,12 @@ namespace caf
       Name("ShowerRazzleLabel"),
       Comment("Base label of shower mva particle-id producer."),
       "pandoraShowerRazzle"
+    };
+
+    Atom<string> PFPRazzledLabel {
+      Name("PFPRazzledLabel"),
+      Comment("Base label of pfp mva particle-id producer."),
+      "pandoraRazzled"
     };
 
     Atom<string> RecoShowerSelectionLabel {
@@ -242,6 +264,18 @@ namespace caf
       "pandoraTrackCRTTrack"
     };
 
+    Atom<string> CRTSpacePointMatchLabel {
+      Name("CRTSpacePointMatchLabel"),
+      Comment("Base label of track to CRT spacepoint matching producer."),
+      "crtspacepointmatching"
+    };
+
+    Atom<string> SBNDCRTTrackMatchLabel {
+      Name("SBNDCRTTrackMatchLabel"),
+      Comment("Base label of track to SBND CRT track matching producer."),
+      "crttrackmatching"
+    };
+
     Atom<string> TrackMCSLabel {
       Name("TrackMCSLabel"),
       Comment("Base label of track MCS momentum calculation producer."),
@@ -257,19 +291,37 @@ namespace caf
     Atom<string> CRTHitLabel {
       Name("CRTHitLabel"),
       Comment("Label of sbn CRT hits."),
-      "crthit" // same for icarus and sbnd
+      "crthit" // icarus
     };
 
     Atom<string> CRTTrackLabel {
       Name("CRTTrackLabel"),
       Comment("Label of sbn CRT tracks."),
-      "crttrack" // same for icarus and sbnd
+      "crttrack" // icarus
     };
-    
+
+    Atom<string> CRTSpacePointLabel {
+      Name("CRTSpacePointLabel"),
+      Comment("Label of sbnd CRT spacepoints."),
+      "crtspacepoints" // sbnd
+    };
+
+    Atom<string> SBNDCRTTrackLabel {
+      Name("SBNDCRTTrackLabel"),
+      Comment("Label of sbnd CRT tracks."),
+      "crttracks" // sbnd
+    };
+
     Atom<string> CRTPMTLabel {
       Name("CRTPMTLabel"),
       Comment("Label for the CRTPMT Matched variables from the crtpmt data product"),
       "crtpmt" // this variable exists in icaruscode, pretty sure it does not yet exist in sbnd
+    };
+
+    Atom<string> TPCPMTBarycenterMatchLabel {
+      Name("TPCPMTBarycenterMatchLabel"),
+      Comment("Label of Slice-OpFlash matching via barycenters."),
+      "" //Empty by default, configured in icaruscode cafmaker_defs
     };
 
     Atom<string> OpFlashLabel {
