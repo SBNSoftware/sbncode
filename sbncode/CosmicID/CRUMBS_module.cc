@@ -161,10 +161,8 @@ namespace sbn {
     float pds_FMTime;                     // the time associated with the flash [us]
 
     // OpT0Finder Variables
-    float pds_OpT0Time;                   // the time of the flash
     float pds_OpT0Score;                  // the goodness-of-match score
     float pds_OpT0MeasuredPE;             // the measured PE in the flash
-    float pds_OpT0HypothesisPE;           // the PE in the charge-based predicted flash
 
     // CRT Track and Hit Matching Variables
     float crt_TrackScore;                // a combination of the DCA and angle between the best matched TPC & CRT tracks
@@ -205,6 +203,11 @@ namespace sbn {
     fChi2FitParams                (p.get<fhicl::ParameterSet>("Chi2FitParams")),
     fTrackStoppingChi2Alg(fChi2FitParams)
     {
+      if(fUseOpT0Finder && fUseSimpleFlash)
+        throw cet::exception("CRUMBS") << "Cannot use both flash matchers, please chose one...";
+      else if(!fUseOpT0Finder && !fUseSimpleFlash)
+        throw cet::exception("CRUMBS") << "Would recommend using one of the flash matchers...";
+
       if(!fTrainingMode || fEvaluateResultInTrainingMode)
         {
           produces<std::vector<CRUMBSResult>>();
@@ -238,10 +241,8 @@ namespace sbn {
           fSliceTree->Branch("pds_FMPE",&pds_FMPE);
           fSliceTree->Branch("pds_FMTime",&pds_FMTime);
 
-          fSliceTree->Branch("pds_OpT0Time",&pds_OpT0Time);
           fSliceTree->Branch("pds_OpT0Score",&pds_OpT0Score);
           fSliceTree->Branch("pds_OpT0MeasuredPE",&pds_OpT0MeasuredPE);
-          fSliceTree->Branch("pds_OpT0HypothesisPE",&pds_OpT0HypothesisPE);
 
           fSliceTree->Branch("crt_TrackScore",&crt_TrackScore);
           fSliceTree->Branch("crt_SPScore",&crt_SPScore);
@@ -308,7 +309,7 @@ namespace sbn {
 
     pds_FMTotalScore = -10.; pds_FMPE = -5000.; pds_FMTime = -500.;
 
-    pds_OpT0Time = -1.; pds_OpT0Score = -5000.; pds_OpT0MeasuredPE = -10000.; pds_OpT0HypothesisPE = -10000.;
+    pds_OpT0Score = -5000.; pds_OpT0MeasuredPE = -10000.;
 
     crt_TrackScore = -4.; crt_SPScore = -4.; crt_TrackTime = -3000; crt_SPTime = -3000;
 
@@ -449,10 +450,8 @@ namespace sbn {
                       [](auto const& a, auto const& b)
                       { return a->score > b->score; });
 
-            pds_OpT0Time         = sliceOpT0Vec[0]->time;
             pds_OpT0Score        = sliceOpT0Vec[0]->score;
             pds_OpT0MeasuredPE   = isinf(sliceOpT0Vec[0]->measPE) ? -10000 : sliceOpT0Vec[0]->measPE;
-            pds_OpT0HypothesisPE = isinf(sliceOpT0Vec[0]->hypoPE) ? -10000 : sliceOpT0Vec[0]->hypoPE;
           }
 
         if(!fTrainingMode || fEvaluateResultInTrainingMode)
@@ -464,13 +463,20 @@ namespace sbn {
 
             const float bestscore   = (ccnumuscore > ccnuescore && ccnumuscore > ncscore) ? ccnumuscore : (ccnuescore > ncscore) ? ccnuescore : ncscore;
             const int   bestid      = (ccnumuscore > ccnuescore && ccnumuscore > ncscore) ? 14 : (ccnuescore > ncscore) ? 12 : 1;
-            
-            resultsVec->emplace_back(score, ccnumuscore, ccnuescore, ncscore, bestscore, bestid, tpc_CRFracHitsInLongestTrack, tpc_CRLongestTrackDeflection, 
-                                     tpc_CRLongestTrackDirY, std::round(tpc_CRNHitsMax), tpc_NuEigenRatioInSphere, std::round(tpc_NuNFinalStatePfos), 
-                                     std::round(tpc_NuNHitsTotal), std::round(tpc_NuNSpacePointsInSphere), tpc_NuVertexY, tpc_NuWeightedDirZ, 
-                                     tpc_StoppingChi2CosmicRatio, pds_FMTotalScore, pds_FMPE, pds_FMTime, crt_TrackScore, crt_SPScore, 
-                                     crt_TrackTime, crt_SPTime);
-            
+
+            if(fUseSimpleFlash)
+              resultsVec->emplace_back(score, ccnumuscore, ccnuescore, ncscore, bestscore, bestid, tpc_CRFracHitsInLongestTrack, tpc_CRLongestTrackDeflection,
+                                       tpc_CRLongestTrackDirY, std::round(tpc_CRNHitsMax), tpc_NuEigenRatioInSphere, std::round(tpc_NuNFinalStatePfos),
+                                       std::round(tpc_NuNHitsTotal), std::round(tpc_NuNSpacePointsInSphere), tpc_NuVertexY, tpc_NuWeightedDirZ,
+                                       tpc_StoppingChi2CosmicRatio, pds_FMTotalScore, pds_FMPE, pds_FMTime, -5000., -10000.,
+                                       crt_TrackScore, crt_SPScore, crt_TrackTime, crt_SPTime);
+            else if(fUseOpT0Finder)
+              resultsVec->emplace_back(score, ccnumuscore, ccnuescore, ncscore, bestscore, bestid, tpc_CRFracHitsInLongestTrack, tpc_CRLongestTrackDeflection,
+                                       tpc_CRLongestTrackDirY, std::round(tpc_CRNHitsMax), tpc_NuEigenRatioInSphere, std::round(tpc_NuNFinalStatePfos),
+                                       std::round(tpc_NuNHitsTotal), std::round(tpc_NuNSpacePointsInSphere), tpc_NuVertexY, tpc_NuWeightedDirZ,
+                                       tpc_StoppingChi2CosmicRatio, -10., -5000., -500., pds_OpT0Score, pds_OpT0MeasuredPE,
+                                       crt_TrackScore, crt_SPScore, crt_TrackTime, crt_SPTime);
+
             util::CreateAssn(*this, e, *resultsVec, slice, *sliceAssns);
           }
 

@@ -106,6 +106,7 @@
 #include "sbnobj/Common/SBNEventWeight/EventWeightMap.h"
 #include "sbnobj/Common/SBNEventWeight/EventWeightParameterSet.h"
 #include "sbnobj/Common/Reco/MVAPID.h"
+#include "sbnobj/Common/Reco/CNNScore.h"
 #include "sbnobj/Common/Reco/ScatterClosestApproach.h"
 #include "sbnobj/Common/Reco/StoppingChi2Fit.h"
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
@@ -149,6 +150,13 @@ namespace sbn{
 }
 
 namespace caf {
+
+/// Function to calculate a timestamp from the spill info product
+template <typename SpillInfo>
+double spillInfoToTimestamp(SpillInfo const& info) {
+  return static_cast<double>(info.spill_time_s) +
+         static_cast<double>(info.spill_time_ns)*1.0e-9;
+}
 
 /// Module to create Common Analysis Files from ART files
 class CAFMaker : public art::EDProducer {
@@ -197,6 +205,10 @@ class CAFMaker : public art::EDProducer {
   double fPrescaleEvents;
   std::vector<caf::SRBNBInfo> fBNBInfo; ///< Store detailed BNB info to save into the first StandardRecord of the output file
   std::vector<caf::SRNuMIInfo> fNuMIInfo; ///< Store detailed NuMI info to save into the first StandardRecord of the output file
+  std::map<unsigned int,sbn::BNBSpillInfo> fBNBInfoEventMap; ///< Store detailed BNB info to save for the particular spills of events
+  std::map<unsigned int,sbn::NuMISpillInfo> fNuMIInfoEventMap; ///< Store detailed NuMI info to save for the particular spills of events
+  bool fHasBNBInfo;
+  bool fHasNuMIInfo;
 
   // int fCycle;
   // int fBatch;
@@ -276,6 +288,10 @@ class CAFMaker : public art::EDProducer {
   art::FindOneP<T> FindOnePStrict(const U& from, const art::Event& evt,
 				  const art::InputTag& label) const;
 
+  template <class T, class D, class U>
+  art::FindOneP<T, D> FindOnePDStrict(const U& from,
+                                      const art::Event& evt,
+                                      const art::InputTag& tag) const;
 
   /// \brief Retrieve an object from an association, with error handling
   ///
@@ -446,8 +462,6 @@ void CAFMaker::FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_ti
   // Fix the flash matches
   for (SRSlice &s: rec.slc) {
     s.fmatch.time += PMT_reference_time;
-    s.fmatch_a.time += PMT_reference_time;
-    s.fmatch_b.time += PMT_reference_time;
 
     s.barycenterFM.flashTime +=PMT_reference_time;
     s.barycenterFM.flashFirstHit +=PMT_reference_time;
@@ -752,15 +766,43 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
   // get POT information
   fBNBInfo.clear();
   fNuMIInfo.clear();
+
+  fBNBInfoEventMap.clear();
+  fNuMIInfoEventMap.clear();
+  fHasBNBInfo = false;
+  fHasNuMIInfo = false;
+
   fSubRunPOT = 0;
 
   if(auto bnb_spill = sr.getHandle<std::vector<sbn::BNBSpillInfo>>(fParams.BNBPOTDataLabel())){
     FillExposure(*bnb_spill, fBNBInfo, fSubRunPOT);
     fTotalPOT += fSubRunPOT;
+
+    // Find the spill for each event and fill the event map:
+    // We take the latest spill for a given event number to be the one to keep
+    fHasBNBInfo = true;
+    for(const sbn::BNBSpillInfo& info: *bnb_spill)
+    {
+      auto& storedInfo = fBNBInfoEventMap[info.event]; // creates if needed
+      if ( (storedInfo.event == UINT_MAX) || spillInfoToTimestamp(info) > spillInfoToTimestamp(storedInfo) ) {
+        storedInfo = std::move(info);
+      }
+    }
   }
   else if (auto numi_spill = sr.getHandle<std::vector<sbn::NuMISpillInfo>>(fParams.NuMIPOTDataLabel())) {
     FillExposureNuMI(*numi_spill, fNuMIInfo, fSubRunPOT);
     fTotalPOT += fSubRunPOT;
+
+    // Find the spill for each event and fill the event map:
+    // We take the latest spill for a given event number to be the one to keep
+    fHasNuMIInfo = true;
+    for(const sbn::NuMISpillInfo& info: *numi_spill)
+    {
+      auto& storedInfo = fNuMIInfoEventMap[info.event]; // creates if needed
+      if ( (storedInfo.event == UINT_MAX) || spillInfoToTimestamp(info) > spillInfoToTimestamp(storedInfo) ) {
+        storedInfo = std::move(info);
+      }
+    }
   }
   else if(auto pot_handle = sr.getHandle<sumdata::POTSummary>(fParams.GenLabel())){
     fSubRunPOT = pot_handle->totgoodpot;
@@ -994,6 +1036,25 @@ art::FindOneP<T> CAFMaker::FindOnePStrict(const U& from,
 					  const art::Event& evt,
 					  const art::InputTag& tag) const {
   art::FindOneP<T> ret(from, evt, tag);
+
+  if (!tag.label().empty() && !ret.isValid() && fParams.StrictMode()) {
+    std::cout << "CAFMaker: No Assn from '"
+              << cet::demangle_symbol(typeid(from).name()) << "' to '"
+              << cet::demangle_symbol(typeid(T).name())
+              << "' found under label '" << tag << "'. "
+              << "Set 'StrictMode: false' to continue anyway." << std::endl;
+    abort();
+  }
+
+  return ret;
+}
+
+//......................................................................
+template <class T, class D, class U>
+art::FindOneP<T, D> CAFMaker::FindOnePDStrict(const U& from,
+                                              const art::Event& evt,
+                                              const art::InputTag& tag) const {
+  art::FindOneP<T, D> ret(from, evt, tag);
 
   if (!tag.label().empty() && !ret.isValid() && fParams.StrictMode()) {
     std::cout << "CAFMaker: No Assn from '"
@@ -1313,40 +1374,64 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     pass_flash_trig = *flashtrig_handle;
   }
 
-  // Fill various detector information associated with the event
-  //
-  // Get all of the CRT hits
-  std::vector<caf::SRCRTHit> srcrthits;
-
-  art::Handle<std::vector<sbn::crt::CRTHit>> crthits_handle;
-  GetByLabelStrict(evt, fParams.CRTHitLabel(), crthits_handle);
-  // fill into event
-  //int64_t CRT_T0_reference_time = fParams.ReferenceCRTT0ToBeam() ? -srtrigger.beam_gate_time_abs : 0; // ns, signed
-  //double CRT_T1_reference_time = fParams.ReferenceCRTT1FromTriggerToBeam() ? srtrigger.trigger_within_gate : 0.;
   int64_t CRT_T0_reference_time = isRealData ?  -srtrigger.beam_gate_time_abs : -fParams.CRTSimT0Offset();
   double CRT_T1_reference_time = isRealData ? srtrigger.trigger_within_gate : -fParams.CRTSimT0Offset();
 
-  if (crthits_handle.isValid()) {
-    const std::vector<sbn::crt::CRTHit> &crthits = *crthits_handle;
-    for (unsigned i = 0; i < crthits.size(); i++) {
-      srcrthits.emplace_back();
-      FillCRTHit(crthits[i], fParams.CRTUseTS0(), CRT_T0_reference_time, CRT_T1_reference_time, srcrthits.back());
-    }
-  }
+  // Fill various detector information associated with the event
 
-  // Get all of the CRT Tracks
+  std::vector<caf::SRCRTHit> srcrthits;
   std::vector<caf::SRCRTTrack> srcrttracks;
+  std::vector<caf::SRCRTSpacePoint> srcrtspacepoints;
+  std::vector<caf::SRSBNDCRTTrack> srsbndcrttracks;
 
-  art::Handle<std::vector<sbn::crt::CRTTrack>> crttracks_handle;
-  GetByLabelStrict(evt, fParams.CRTTrackLabel(), crttracks_handle);
-  // fill into event
-  if (crttracks_handle.isValid()) {
-    const std::vector<sbn::crt::CRTTrack> &crttracks = *crttracks_handle;
-    for (unsigned i = 0; i < crttracks.size(); i++) {
-      srcrttracks.emplace_back();
-      FillCRTTrack(crttracks[i], fParams.CRTUseTS0(), srcrttracks.back());
+  if(fDet == kICARUS)
+    {
+      art::Handle<std::vector<sbn::crt::CRTHit>> crthits_handle;
+      GetByLabelStrict(evt, fParams.CRTHitLabel(), crthits_handle);
+      // fill into event
+      if (crthits_handle.isValid()) {
+        const std::vector<sbn::crt::CRTHit> &crthits = *crthits_handle;
+        for (unsigned i = 0; i < crthits.size(); i++) {
+          srcrthits.emplace_back();
+          FillCRTHit(crthits[i], fParams.CRTUseTS0(), CRT_T0_reference_time, CRT_T1_reference_time, srcrthits.back());
+        }
+      }
+
+      art::Handle<std::vector<sbn::crt::CRTTrack>> crttracks_handle;
+      GetByLabelStrict(evt, fParams.CRTTrackLabel(), crttracks_handle);
+      // fill into event
+      if (crttracks_handle.isValid()) {
+        const std::vector<sbn::crt::CRTTrack> &crttracks = *crttracks_handle;
+        for (unsigned i = 0; i < crttracks.size(); i++) {
+          srcrttracks.emplace_back();
+          FillCRTTrack(crttracks[i], fParams.CRTUseTS0(), srcrttracks.back());
+        }
+      }
     }
-  }
+  else if(fDet == kSBND)
+    {
+      art::Handle<std::vector<sbnd::crt::CRTSpacePoint>> crtspacepoints_handle;
+      GetByLabelStrict(evt, fParams.CRTSpacePointLabel(), crtspacepoints_handle);
+
+      if (crtspacepoints_handle.isValid()) {
+        const std::vector<sbnd::crt::CRTSpacePoint> &crtspacepoints = *crtspacepoints_handle;
+        for (unsigned i = 0; i < crtspacepoints.size(); i++) {
+          srcrtspacepoints.emplace_back();
+          FillCRTSpacePoint(crtspacepoints[i], srcrtspacepoints.back());
+        }
+      }
+
+      art::Handle<std::vector<sbnd::crt::CRTTrack>> sbndcrttracks_handle;
+      GetByLabelStrict(evt, fParams.SBNDCRTTrackLabel(), sbndcrttracks_handle);
+      // fill into event
+      if (sbndcrttracks_handle.isValid()) {
+        const std::vector<sbnd::crt::CRTTrack> &sbndcrttracks = *sbndcrttracks_handle;
+        for (unsigned i = 0; i < sbndcrttracks.size(); i++) {
+          srsbndcrttracks.emplace_back();
+          FillSBNDCRTTrack(sbndcrttracks[i], srsbndcrttracks.back());
+        }
+      }
+    }
 
   // Get all of the CRTPMT Matches .. 
   std::vector<caf::SRCRTPMTMatch> srcrtpmtmatches;
@@ -1449,6 +1534,20 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     const sbn::CRUMBSResult *slcCRUMBS = nullptr;
     if (foSlcCRUMBS.isValid()) {
       slcCRUMBS = foSlcCRUMBS.at(0).get();
+    }
+
+    std::map<std::string, art::FindManyP<sbn::SimpleFlashMatch> > fmatch_assn_map;
+    std::vector<std::string> flashmatch_opdet_suffixes, flashmatch_scecryo_suffixes;
+    fParams.FlashMatchOpDetSuffixes(flashmatch_opdet_suffixes);
+    fParams.FlashMatchSCECryoSuffixes(flashmatch_scecryo_suffixes);
+    for(auto flash_opdet_suff : flashmatch_opdet_suffixes) {
+      std::string fname_opdet = fParams.FlashMatchLabel() + flash_opdet_suff;
+      for(auto flash_scecryo_suff : flashmatch_scecryo_suffixes) {
+        std::string fname_opdet_scecryo = fname_opdet + flash_scecryo_suff;
+        art::FindManyP<sbn::SimpleFlashMatch> sfm_assn =
+          FindManyPStrict<sbn::SimpleFlashMatch>(fmPFPart, evt, fname_opdet_scecryo);
+        fmatch_assn_map.emplace(std::make_pair(fname_opdet, sfm_assn));
+      }
     }
 
     art::FindManyP<sbn::OpT0Finder> fmOpT0 = 
@@ -1587,6 +1686,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<sbn::MVAPID>(slcShowers, evt,
           fParams.ShowerRazzleLabel() + slice_tag_suff);
 
+    art::FindManyP<sbn::MVAPID> fmPFPRazzled =
+      FindManyPStrict<sbn::MVAPID>(fmPFPart, evt,
+          fParams.PFPRazzledLabel() + slice_tag_suff);
+
+    art::FindOneP<sbn::PFPCNNScore> foCNNScores = 
+      FindOnePStrict<sbn::PFPCNNScore>(fmPFPart, evt,
+          fParams.CNNScoreLabel() + slice_tag_suff);
+
     art::FindManyP<recob::Vertex> fmVertex =
       FindManyPStrict<recob::Vertex>(fmPFPart, evt,
              fParams.PFParticleLabel() + slice_tag_suff);
@@ -1609,6 +1716,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::FindManyP<anab::T0> fmCRTTrackMatch =
       FindManyPStrict<anab::T0>(slcTracks, evt,
                fParams.CRTTrackMatchLabel() + slice_tag_suff);
+
+    art::FindOneP<sbnd::crt::CRTSpacePoint, anab::T0> foCRTSpacePointMatch =
+      FindOnePDStrict<sbnd::crt::CRTSpacePoint, anab::T0>(slcTracks, evt,
+               fParams.CRTSpacePointMatchLabel() + slice_tag_suff);
+
+    art::FindOneP<sbnd::crt::CRTTrack, anab::T0> foSBNDCRTTrackMatch =
+      FindOnePDStrict<sbnd::crt::CRTTrack, anab::T0>(slcTracks, evt,
+               fParams.SBNDCRTTrackMatchLabel() + slice_tag_suff);
 
     std::vector<art::FindManyP<recob::MCSFitResult>> fmMCSs;
     static const std::vector<std::string> PIDnames {"muon", "pion", "kaon", "proton"};
@@ -1637,12 +1752,20 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     const recob::PFParticle *primary = (iPart == fmPFPart.size()) ? NULL : fmPFPart[iPart].get();
     const larpandoraobj::PFParticleMetadata *primary_meta = (iPart == fmPFPart.size()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
     // get the flash match
-    const sbn::SimpleFlashMatch* fmatch = nullptr;
-    if (fm_sFM.isValid() && primary != NULL) {
-      std::vector<art::Ptr<sbn::SimpleFlashMatch>> fmatches = fm_sFM.at(iPart);
-      if (fmatches.size() != 0) {
-        assert(fmatches.size() == 1);
-        fmatch = fmatches[0].get();
+
+    std::map<std::string, const sbn::SimpleFlashMatch*> fmatch_map;
+    std::map<std::string, art::FindManyP<sbn::SimpleFlashMatch>>::iterator fmatch_it;
+    for(fmatch_it = fmatch_assn_map.begin();fmatch_it != fmatch_assn_map.end();fmatch_it++) {
+      auto fname = fmatch_it->first;
+      auto fm_sFM = fmatch_it->second;
+      const sbn::SimpleFlashMatch* fmatch = nullptr;
+      if (fm_sFM.isValid() && primary != NULL) {
+        std::vector<art::Ptr<sbn::SimpleFlashMatch>> fmatches = fm_sFM.at(iPart);
+        if (fmatches.size() != 0) {
+          assert(fmatches.size() == 1);
+          fmatch = fmatches[0].get();
+          fmatch_map[fname] = fmatch;
+        }
       }
     }
     // get the primary vertex
@@ -1653,8 +1776,16 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     //#######################################################
     FillSliceVars(*slice, primary, producer, recslc);
     FillSliceMetadata(primary_meta, recslc);
-    FillSliceFlashMatch(fmatch, recslc);
-    FillSliceFlashMatchA(fmatch, recslc);
+    FillSliceFlashMatch(fmatch_map["fmatch"], recslc.fmatch);
+    FillSliceFlashMatch(fmatch_map["fmatchop"], recslc.fmatchop);
+    auto sr_flash = fmatch_map.find("fmatchara");
+    if(sr_flash!=fmatch_map.end()) {
+      FillSliceFlashMatch(fmatch_map["fmatchara"], recslc.fmatchara);
+    }
+    sr_flash = fmatch_map.find("fmatchopara");
+    if(sr_flash != fmatch_map.end()) {
+      FillSliceFlashMatch(fmatch_map["fmatchopara"], recslc.fmatchopara);
+    }
     FillSliceVertex(vertex, recslc);
     FillSliceCRUMBS(slcCRUMBS, recslc);
     FillSliceOpT0Finder(slcOpT0, recslc);
@@ -1760,6 +1891,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       const larpandoraobj::PFParticleMetadata *pfpMeta = (fmPFPMeta.at(iPart).empty()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
       FillPFPVars(thisParticle, primary, pfpMeta, thisPFPT0, pfp);
 
+      if (foCNNScores.isValid()) {
+        const sbn::PFPCNNScore *cnnScores = foCNNScores.at(iPart).get();
+        FillCNNScores(thisParticle, cnnScores, pfp);
+      }
+    
       if (!thisTrack.empty())  { // it has a track!
         assert(thisTrack.size() == 1);
 
@@ -1782,6 +1918,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           else {
             rangePs[index] = std::vector<art::Ptr<sbn::RangeP>>();
           }
+        }
+
+        if (fmPFPRazzled.isValid() && fmPFPRazzled.at(iPart).size()==1) {
+          FillPFPRazzled(fmPFPRazzled.at(iPart).front(), pfp);
         }
 
         // fill all the stuff
@@ -1808,7 +1948,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
               fParams.TrackHitFillRRStartCut(), fParams.TrackHitFillRREndCut(),
               lar::providerFrom<geo::Geometry>(), dprop, trk);
         }
-        if (fmCRTHitMatch.isValid()) {
+        if (fmCRTHitMatch.isValid() && fDet == kICARUS) {
           art::FindManyP<sbn::crt::CRTHit> CRTT02Hit = FindManyPStrict<sbn::crt::CRTHit>
               (fmCRTHitMatch.at(iPart), evt, fParams.CRTHitMatchLabel() + slice_tag_suff);
          
@@ -1818,9 +1958,25 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           FillTrackCRTHit(fmCRTHitMatch.at(iPart), crthitmatch, fParams.CRTUseTS0(), CRT_T0_reference_time, CRT_T1_reference_time, trk);
         }
         // NOTE: SEE TODO AT fmCRTTrackMatch
-        if (fmCRTTrackMatch.isValid()) {
+        if (fmCRTTrackMatch.isValid() && fDet == kICARUS) {
           FillTrackCRTTrack(fmCRTTrackMatch.at(iPart), trk);
         }
+
+        if(foCRTSpacePointMatch.isValid() && fDet == kSBND)
+          {
+            const art::Ptr<sbnd::crt::CRTSpacePoint> crtspacepoint = foCRTSpacePointMatch.at(iPart);
+
+            if(crtspacepoint.isNonnull())
+              FillTrackCRTSpacePoint(foCRTSpacePointMatch.data(iPart).ref(), crtspacepoint, trk);
+          }
+        if(foSBNDCRTTrackMatch.isValid() && fDet == kSBND)
+          {
+            const art::Ptr<sbnd::crt::CRTTrack> sbndcrttrack = foSBNDCRTTrackMatch.at(iPart);
+
+            if(sbndcrttrack.isNonnull())
+              FillTrackSBNDCRTTrack(foSBNDCRTTrackMatch.data(iPart).ref(), sbndcrttrack, trk);
+          }
+
         // Truth matching
         if (fmTrackHit.isValid()) {
           if ( !isRealData ) {
@@ -1884,17 +2040,21 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   //#######################################################
   //  Fill rec Tree
   //#######################################################
-  rec.nslc            = rec.slc.size();
-  rec.mc              = srtruthbranch;
-  rec.fake_reco       = srfakereco;
-  rec.nfake_reco      = srfakereco.size();
-  rec.pass_flashtrig  = pass_flash_trig;  // trigger result
-  rec.crt_hits        = srcrthits;
-  rec.ncrt_hits       = srcrthits.size();
-  rec.crt_tracks        = srcrttracks;
-  rec.ncrt_tracks       = srcrttracks.size();
-  rec.opflashes       = srflashes;
-  rec.nopflashes      = srflashes.size();
+  rec.nslc             = rec.slc.size();
+  rec.mc               = srtruthbranch;
+  rec.fake_reco        = srfakereco;
+  rec.nfake_reco       = srfakereco.size();
+  rec.pass_flashtrig   = pass_flash_trig;  // trigger result
+  rec.crt_hits         = srcrthits;
+  rec.ncrt_hits        = srcrthits.size();
+  rec.crt_tracks       = srcrttracks;
+  rec.ncrt_tracks      = srcrttracks.size();
+  rec.crt_spacepoints  = srcrtspacepoints;
+  rec.ncrt_spacepoints = srcrtspacepoints.size();
+  rec.sbnd_crt_tracks  = srsbndcrttracks;
+  rec.nsbnd_crt_tracks = srsbndcrttracks.size();
+  rec.opflashes        = srflashes;
+  rec.nopflashes       = srflashes.size();
   if (fParams.FillTrueParticles()) {
     rec.true_particles  = true_particles;
   }
@@ -1972,6 +2132,21 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // rec.hdr.blind = 0;
   // rec.hdr.filt = rb::IsFiltered(evt, slices, sliceID);
 
+  // Fill the header info for the given event's spill quality info
+  if ( fHasBNBInfo && fHasNuMIInfo ) {
+    std::cout << "Found > 0 BNBInfo size and NuMIInfo size, which seems strange. Throwing..." << std::endl;
+    abort();
+  }
+  unsigned int const eventNo = evt.id().event();
+  if ( fBNBInfoEventMap.count(eventNo) > 0 ) {
+    rec.hdr.spillbnbinfo = makeSRBNBInfo(fBNBInfoEventMap.at(eventNo));
+  }
+  else if ( fNuMIInfoEventMap.count(eventNo) > 0 ) {
+    rec.hdr.spillnumiinfo = makeSRNuMIInfo(fNuMIInfoEventMap.at(eventNo));
+  }
+  else {
+    std::cout << "Did not find this event in the spill info map." << std::endl;
+  }
 
   if(fRecTree){
     // Save the standard-record

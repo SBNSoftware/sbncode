@@ -23,6 +23,8 @@ void PFPPIDMVA()
   TMVA::DataLoader *dataloader = new TMVA::DataLoader("Razzled" + instance);
 
   TChain *pfpTree = new TChain("razzled/pfpTree");
+  //  pfpTree->Add("/ADD/WHATEVER/SAMPLES/YOU'RE/USING/HERE");
+  // Recommend using a combination of a rockbox sample & an intrinsic electron neutrino sample.
   pfpTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv12/NCPiZeroAv12_rockbox.root");
   pfpTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv12/NCPiZeroAv12_intrnue.root");
   pfpTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv12/NCPiZeroAv12_intime.root");

@@ -21,6 +21,7 @@ void TrackPIDMVA()
   TMVA::DataLoader *dataloader = new TMVA::DataLoader("dataset");
 
   TChain *trackTree = new TChain("dazzle/trackTree");
+  //  trackTree->Add("/ADD/WHATEVER/SAMPLES/YOU'RE/USING/HERE");
   trackTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv12/NCPiZeroAv12_rockbox.root");
   trackTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv12/NCPiZeroAv12_intrnue.root");
   trackTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv12/NCPiZeroAv12_intime.root");
@@ -39,26 +40,14 @@ void TrackPIDMVA()
   dataloader->AddVariable("chi2PIDMuon", "Chi2 PID Muon", "", 'F', 0, 80);
   dataloader->AddVariable("chi2PIDProton", "Chi2 PID Proton", "", 'F', 0, 300);
   dataloader->AddVariable("chi2PIDMuonPionDiff", "Chi2 PID Muon-Pion", "", 'F', 0, 80);
-
   dataloader->AddVariable("mcsScatterMean", "Mean MCS Scattering Angle", "mRad", 'F', 0, 600);
   dataloader->AddVariable("mcsScatterMaxRatio", "Max/Mean MCS Scattering Angle Ratio", "", 'F', 0, 800);
   dataloader->AddVariable("meanDCA", "Mean DCA", "cm", 'F', 0, 10);
-
   dataloader->AddVariable("stoppingChi2Ratio", "Stopping CHi2Ratio", "", 'F', 0, 5);
-  // dataloader->AddVariable("landauGaussChi2", "Landau-Gauss Chi2", "MeV/cm", 'F', 0, 300);
-  // dataloader->AddVariable("lgcMPV", "Landau-Gauss MPV", "MeV/cm", 'F', 0, 20);
   dataloader->AddVariable("chi2Pol0Fit", "Fitted Pol0 dE/dx", "MeV/cm", 'F', 0, 20);
-
   dataloader->AddVariable("pDiff", "Momentum Agreement", "", 'F', 0, 10);
   dataloader->AddVariable("numDaughters", "Num Daughters", "", 'I', 0, 5);
   dataloader->AddVariable("maxDaughterHits", "Daughter Hits", "", 'I', 0, 300);
-  // dataloader->AddVariable("daughterTrackScore", "Daughter Track Score", "", 'F', 0, 300);
-
-  // dataloader->AddSpectator("trueP", "True Momentum", "GeV");
-  // dataloader->AddSpectator("trueStopping", "True Stopping", "");
-
-  // dataloader->AddSpectator("chi2PIDPDG", "Chi2 PID Type", "");
-  // dataloader->AddSpectator("chi2PIDPDGNoKaon", "Chi2 PID Type (No Kaon)", "");
 
   const TCut baseCut("(abs(startX) < 175 && abs(startY) < 175 && startZ > 25 && startZ < 450"
                      "&& recoPrimary == 1 && recoLen>10 && trackScore > 0.5 && "

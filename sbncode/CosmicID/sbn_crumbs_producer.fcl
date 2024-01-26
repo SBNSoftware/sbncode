@@ -27,6 +27,9 @@ crumbs_sbnd:
   NCMVAName:                            "BDT"
   NCMVAFileName:                        "CRUMBS/CRUMBS_NC_SBND.weights.xml"
     
+  UseSimpleFlash: false
+  UseOpT0Finder:  true
+
   Chi2FitParams: {
     TrackLabel: pandoraTrack
     CaloLabel: pandoraCalo

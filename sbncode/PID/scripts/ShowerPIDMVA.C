@@ -21,6 +21,7 @@ void ShowerPIDMVA()
   TMVA::DataLoader *dataloader = new TMVA::DataLoader("dataset");
 
   TChain *showerTree = new TChain("razzle/showerTree");
+  //  showerTree->Add("/ADD/WHATEVER/SAMPLES/YOU'RE/USING/HERE");
   showerTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv12/NCPiZeroAv12_rockbox.root");
   showerTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv12/NCPiZeroAv12_intrnue.root");
   showerTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv12/NCPiZeroAv12_intime.root");
@@ -38,10 +39,6 @@ void ShowerPIDMVA()
   dataloader->AddVariable("openAngle", "Opening Angle", "rad", 'F', 0, 10);
   dataloader->AddVariable("modHitDensity", "Modified Hit Density", "", 'F', 0, 10);
   dataloader->AddVariable("sqrtEnergyDensity", "Sqrt Energy Density", "", 'F', 0, 10);
-  // dataloader->AddVariable("logEnergyDensity", "Sqrt Energy Density", "cm^-1", 'F', 0, 10);
-
-  // dataloader->AddSpectator("trueP", "True Momentum", "GeV");
-  // dataloader->AddSpectator("bestEnergy", "Reco Energy", "MeV");
 
   const TCut baseCut("(abs(startX) < 175 && abs(startY) < 175 && startZ > 25 && startZ < 450"
                      "&& recoPrimary == 1 && bestEnergy>100 && trackScore < 0.5 && "

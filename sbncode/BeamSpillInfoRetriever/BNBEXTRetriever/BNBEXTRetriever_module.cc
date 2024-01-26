@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////
-// Class:       EXTRetriever
+// Class:       BNBEXTRetriever
 // Plugin Type: producer 
-// File:        EXTRetriever_module.cc
+// File:        BNBEXTRetriever_module.cc
 //
 // Created by hand Thurs June 24th 2021 by J. Zennamo (FNAL)
 //
@@ -22,7 +22,7 @@
 #include "larcorealg/Geometry/Exceptions.h"
 
 #include "artdaq-core/Data/Fragment.hh"
-#include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerUDPFragment.hh"
+#include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerV3Fragment.hh"
 
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
@@ -36,10 +36,10 @@
 #include <time.h>
 
 namespace sbn {
-  class EXTRetriever;
+  class BNBEXTRetriever;
 }
 
-class sbn::EXTRetriever : public art::EDProducer {
+class sbn::BNBEXTRetriever : public art::EDProducer {
 public:
   
   struct Config {
@@ -57,15 +57,15 @@ public:
   using Parameters = art::EDProducer::Table<Config>;
   
   
-  explicit EXTRetriever(Parameters const& params);
+  explicit BNBEXTRetriever(Parameters const& params);
   // The compiler-generated destructor is fine for non-base
   // classes without bare pointers or other resource use.
 
   // Plugins should not be copied or assigned.
-  EXTRetriever(EXTRetriever const&) = delete;
-  EXTRetriever(EXTRetriever&&) = delete;
-  EXTRetriever& operator=(EXTRetriever const&) = delete;
-  EXTRetriever& operator=(EXTRetriever&&) = delete;
+  BNBEXTRetriever(BNBEXTRetriever const&) = delete;
+  BNBEXTRetriever(BNBEXTRetriever&&) = delete;
+  BNBEXTRetriever& operator=(BNBEXTRetriever const&) = delete;
+  BNBEXTRetriever& operator=(BNBEXTRetriever&&) = delete;
 
   // Required functions.
   void produce(art::Event& e) override;
@@ -77,21 +77,27 @@ private:
  
   // input labels
   std::string raw_data_label_;
-  int TotalEXTCounts;  
+  float TotalEXTCounts;  
+  float totalMinBias;
+  float evtCount;
+  float scale_factor;
 
 };
 
 
-sbn::EXTRetriever::EXTRetriever(Parameters const& params)
+sbn::BNBEXTRetriever::BNBEXTRetriever(Parameters const& params)
   : EDProducer{params},
   raw_data_label_(params().RawDataLabel())
 {
  
   produces< std::vector< sbn::EXTCountInfo >, art::InSubRun >();
   TotalEXTCounts = 0;
+  totalMinBias = 0;
+  evtCount = 0;
+  scale_factor = 0;
 }
 
-void sbn::EXTRetriever::produce(art::Event& e)
+void sbn::BNBEXTRetriever::produce(art::Event& e)
 {
   
   //Here we read in the artdaq Fragments and extract three pieces of information:
@@ -100,19 +106,30 @@ void sbn::EXTRetriever::produce(art::Event& e)
   // 3. the number of beam spills since the previously triggered event, number_of_gates_since_previous_event
   
   int gate_type = 0;
-  auto const & raw_data = e.getProduct< std::vector<artdaq::Fragment> >({ raw_data_label_, "ICARUSTriggerUDP" });
+  auto const & raw_data = e.getProduct< std::vector<artdaq::Fragment> >({ raw_data_label_, "ICARUSTriggerV3" });
 
   unsigned int number_of_gates_since_previous_event = 0;
   
   for(auto raw_datum : raw_data){
    
-    icarus::ICARUSTriggerUDPFragment frag(raw_datum);
+    icarus::ICARUSTriggerV3Fragment frag(raw_datum);
     std::string data = frag.GetDataString();
     char *buffer = const_cast<char*>(data.c_str());
-    icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerString(buffer);
+    icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerV3String(buffer);
     gate_type = datastream_info.gate_type;
-    number_of_gates_since_previous_event = frag.getDeltaGatesBNB();
-  
+    number_of_gates_since_previous_event = frag.getDeltaGatesBNBOffMaj();
+
+    if(gate_type != 3)
+      return;
+    
+    if(frag.getDeltaGatesBNBOffMinbias() > 0 && gate_type == 3){
+      evtCount++;  
+      totalMinBias += frag.getDeltaGatesBNBOffMinbias();
+    }
+    
+    //    std::cout << "BNB OFF MAJ : " << frag.getDeltaGatesBNBOffMaj() << std::endl; 
+    //    std::cout << "Scale Factor : " << scale_factor << std::endl; 
+
   }
   
   //We only want to process EXT gates, i.e. type 3
@@ -135,16 +152,33 @@ void sbn::EXTRetriever::produce(art::Event& e)
 } //end loop over events
 
 
-void sbn::EXTRetriever::beginSubRun(art::SubRun& sr)
+void sbn::BNBEXTRetriever::beginSubRun(art::SubRun& sr)
 {
+  TotalEXTCounts = 0;
+  totalMinBias = 0;
+  evtCount = 0;
+  scale_factor = 0;
   return;
 }
 
-//____________________________________________________________________________                                                                                                                                                                                      
-void sbn::EXTRetriever::endSubRun(art::SubRun& sr)
+//____________________________________________________________________________                                                                                                                                                                                     
+void sbn::BNBEXTRetriever::endSubRun(art::SubRun& sr)
 {
   // We will add all of the EXTCountInfo data-products to the 
   // art::SubRun so it persists 
+
+  if(evtCount != 0 && totalMinBias != 0)
+    scale_factor = 1. - (evtCount/totalMinBias);
+  else
+    std::cout << "FAILED! " << std::endl;
+  // probably want to throw an exception here
+
+  for(auto ExtInfo : fOutExtInfos){
+    
+    ExtInfo.gates_since_last_trigger *= scale_factor;
+    
+  } 
+
   auto p =  std::make_unique< std::vector< sbn::EXTCountInfo > >(fOutExtInfos);
 
   sr.put(std::move(p), art::subRunFragment());
@@ -152,4 +186,4 @@ void sbn::EXTRetriever::endSubRun(art::SubRun& sr)
   return;
 }
 
-DEFINE_ART_MODULE(sbn::EXTRetriever)    
+DEFINE_ART_MODULE(sbn::BNBEXTRetriever)    
