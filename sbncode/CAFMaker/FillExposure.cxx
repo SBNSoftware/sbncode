@@ -72,4 +72,34 @@ namespace caf
       NuMIInfo.back().daq_gates = info.daq_gates;
     }
   }
+
+  caf::SRNuMIInfo makeSRNuMIInfo(sbn::NuMISpillInfo const& info)
+  {
+    caf::SRNuMIInfo single_store;
+
+    single_store.HP121 = info.HP121;
+    single_store.VP121 = info.VP121;
+    single_store.HPTGT = info.HPTGT;
+    single_store.VPTGT = info.VPTGT;
+    single_store.HITGT = info.HITGT;
+    single_store.VITGT = info.VITGT;
+    single_store.MTGTDS = info.MTGTDS;
+    single_store.HRNDIR = info.HRNDIR;
+    single_store.NSLINA = info.NSLINA;
+    single_store.NSLINB = info.NSLINB;
+    single_store.NSLINC = info.NSLINC;
+    single_store.NSLIND = info.NSLIND;
+    single_store.TRTGTD = info.TRTGTD;
+    single_store.TR101D = info.TR101D;
+    single_store.TORTGT = info.TORTGT;
+    single_store.TOR101 = info.TOR101;
+    single_store.time = info.time;
+    single_store.spill_time_s = info.spill_time_s;
+    single_store.spill_time_ns = info.spill_time_ns;
+    single_store.event = info.event;
+    single_store.daq_gates = info.daq_gates;
+
+    return single_store;
+  }
+
 }
