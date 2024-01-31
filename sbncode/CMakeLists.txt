@@ -1,5 +1,5 @@
 
-find_package(sbnanaobj REQUIRED) 
+find_package(sbnanaobj REQUIRED)
 
 add_subdirectory(SinglePhotonAnalysis)
 add_subdirectory(SBNEventWeight)
@@ -22,6 +22,8 @@ add_subdirectory(EventGenerator)
 add_subdirectory(PID)
 add_subdirectory(GeometryTools)
 add_subdirectory(CosmicID)
+
+add_subdirectory(DetSim)
 
 # Supera
 #
