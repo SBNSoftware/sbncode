@@ -52,6 +52,8 @@ private:
   // Declare member data here.
   std::vector<art::InputTag> const fInputSourcesLabels;
   bool const fFillMCParticles;
+  std::vector<int> fTrackIDOffsets;
+  bool const fResetMotherID;
 
 };
 
@@ -60,6 +62,8 @@ sbn::SimpleMerge::SimpleMerge(fhicl::ParameterSet const& p)
   : EDProducer{p}
   , fInputSourcesLabels(p.get<std::vector<art::InputTag>>("InputSourcesLabels"))
   , fFillMCParticles(p.get<bool>("FillMCParticles", false))
+  , fTrackIDOffsets(p.get<std::vector<int>>("TrackIDOffsets", std::vector<int>(0)))
+  , fResetMotherID(p.get<bool>("ResetMotherID", false))
   // Anything else you want to merge can be added here...
 {
   if (fFillMCParticles) {
@@ -77,15 +81,23 @@ void sbn::SimpleMerge::produce(art::Event& e)
   auto partCol = std::make_unique<std::vector<simb::MCParticle>>();
   for (auto const& [i_source,input_label] : util::enumerate(fInputSourcesLabels)) {
     if (fFillMCParticles){
-      auto const& parts = e.getValidHandle<std::vector<simb::MCParticle>>(input_label);
-      for (auto const& part : *parts) {
+      auto parts = e.getValidHandle<std::vector<simb::MCParticle>>(input_label);
+      for (auto part : *parts) {
+        if (fResetMotherID){
+          for (auto const& offset : fTrackIDOffsets) {
+            if (part.Mother() == offset) {
+              part.SetMother(0);
+              break;
+            } // if part.Mother
+          } // for offsets
+        } // if fResetMotherID
         partCol->push_back(part);
       }// for parts
     }// if fFillMCParticles
   }// for input_label
   if (fFillMCParticles){
     e.put(std::move(partCol));
-  }
+  } // if fFillMCParticles
 }// produce
 
 DEFINE_ART_MODULE(sbn::SimpleMerge)

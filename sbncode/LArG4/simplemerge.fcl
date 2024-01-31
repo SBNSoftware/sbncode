@@ -4,6 +4,8 @@ simplemerge : {
   module_type: "SimpleMerge"
   FillMCParticles: true
   InputSourcesLabels: ["largeant", "largeantdropped"]
+  TrackIDOffsets: [10000000,20000000]
+  ResetMotherID: true
 }
 
 END_PROLOG
