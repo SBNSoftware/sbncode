@@ -776,8 +776,8 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
   fHasNuMIInfo = false;
 
   fSubRunPOT = 0;
-  fOffbeamBNBGates = 0;
-  fOffbeamNuMIGates = 0;
+  fOffbeamBNBGates = 0.;
+  fOffbeamNuMIGates = 0.;
 
   auto bnb_spill          = sr.getHandle<std::vector<sbn::BNBSpillInfo>>(fParams.BNBPOTDataLabel());
   auto numi_spill         = sr.getHandle<std::vector<sbn::NuMISpillInfo>>(fParams.NuMIPOTDataLabel());
