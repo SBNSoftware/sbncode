@@ -40,7 +40,7 @@ physics:
    beamgate:  @local::icarus_standardbeamgate_BNB  # from beamgates_icarus.fcl
  }
 
- simulate: [ rns, generator, #@sequence::cosmgen, beamgate ]
+ simulate: [ rns, generator, @sequence::cosmgen, beamgate ]
 
  out_stream: [ out1   ]
 
@@ -53,9 +53,9 @@ physics:
 # Multi-Particle Vertex generator (MPV)
 #
 physics.producers.generator.DebugMode    : 1
-# Based on BNB spill = 1.6us
-physics.producers.generator.G4Time       : 340.8 # [us]
-physics.producers.generator.G4TimeJitter : 1.6 # [us]
+# Based on based on NUMI spill 10000ns
+physics.producers.generator.G4Time       : 5000. # [ns]  
+physics.producers.generator.G4TimeJitter : 10000. # [ns]
 physics.producers.generator.XRange       : [30,30]
 physics.producers.generator.YRange       : [30,30]
 physics.producers.generator.ZRange       : [30,30]
@@ -76,10 +76,11 @@ physics.producers.generator.ParticleParameter.MomRange     : []
 #
 # Multi-Particle Rain generator (MPR)
 #
+# `rain` for uniform MPR
 physics.producers.rain.DebugMode    : 2
 # Based on TPC readout window starting at -340us and readout window size is 1638.4us
-physics.producers.rain.G4Time       : 819.2 # [us]
-physics.producers.rain.G4TimeJitter : 1638.4 # [us]
+physics.producers.rain.G4Time       : -50000 # [ns]
+physics.producers.rain.G4TimeJitter : 2900000 # [ns]
 physics.producers.rain.XRange       : [-20,-20]
 physics.producers.rain.YRange       : [-20,-20]
 physics.producers.rain.ZRange       : [-20,-20]
@@ -88,17 +89,18 @@ physics.producers.rain.TPCRange     : [[0,0],[0,1],[0,2],[0,3]] #,[1,0],[1,1],[1
 physics.producers.rain.MultiMax     : 4
 physics.producers.rain.MultiMin     : 2
 physics.producers.rain.CosmicDistribution : false
-physics.producers.rain.ParticleParameter.PDGCode      : [   [-13,13], [-13,13],    [11,-11],   [22],       [2212]]
-physics.producers.rain.ParticleParameter.MinMulti     : [          0,        0,           0,      0,            0]
-physics.producers.rain.ParticleParameter.MaxMulti     : [          5,        5,           2,      3,            5]
-physics.producers.rain.ParticleParameter.ProbWeight   : [          5,        5,           1,      2,            1]
-physics.producers.rain.ParticleParameter.KERange      : [ [0.0,20.0], [0.0,2.0],  [0.0,1.0], [0.0,1.0], [0.0,1.0]]
+physics.producers.rain.ParticleParameter.PDGCode      : [   [-13,13], [-13,13],     [2212]]
+physics.producers.rain.ParticleParameter.MinMulti     : [          0,        0,          0]
+physics.producers.rain.ParticleParameter.MaxMulti     : [          5,        5,          5]
+physics.producers.rain.ParticleParameter.ProbWeight   : [          5,        5,          1]
+physics.producers.rain.ParticleParameter.KERange      : [ [0.0,20.0], [0.0,2.0], [0.0,1.0]]
 physics.producers.rain.ParticleParameter.MomRange     : []
 
-physics.producers.rain2.DebugMode    : 2
+# `rain2` for localized MPR 
+physics.producers.rain2.DebugMode    : 2 
 # Based on TPC readout window starting at -340us and readout window size is 1638.4us
-physics.producers.rain2.G4Time       : 819.2 # [us]
-physics.producers.rain2.G4TimeJitter : 1638.4 # [us]
+physics.producers.rain2.G4Time       : 5000 # [ns] , timing matched with MPV
+physics.producers.rain2.G4TimeJitter : 10000 # [ns] , timing matched with MPV
 physics.producers.rain2.XRange       : [20,20]
 physics.producers.rain2.YRange       : [20,20]
 physics.producers.rain2.ZRange       : [20,20]
