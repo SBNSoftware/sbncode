@@ -200,8 +200,8 @@ class CAFMaker : public art::EDProducer {
   int fFileNumber;
   double fTotalPOT;
   double fSubRunPOT;
-  unsigned int fOffbeamBNBGates;
-  unsigned int fOffbeamNuMIGates;
+  double fOffbeamBNBGates;
+  double fOffbeamNuMIGates;
   double fTotalSinglePOT;
   double fTotalEvents;
   double fBlindEvents;
