@@ -1,0 +1,3 @@
+    # currently, XML pandora files are installed in 'scripts':
+    pathPrepend(FW_SEARCH_PATH, ${SBNCODE_DIR}/scripts)
+    pathPrepend(PYTHONPATH, ${SBNCODE_FQ_DIR}/lib)

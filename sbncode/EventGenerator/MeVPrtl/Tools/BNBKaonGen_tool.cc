@@ -456,8 +456,8 @@ simb::MCFlux BNBKaonGen::MakeMCFlux(const bsim::BooNe &boone) {
   flux.fevtno    = fBooneNtp.eventn;
   flux.ftgptype  = evgen::GeantToPdg(fBooneNtp.id[npart-2]);
 
-  // flux.fnenergyn = flux.fnenergyf = enu;
-  // flux.fnwtnear  = flux.fnwtfar = wgt; 
+  //flux.fnenergyn = flux.fnenergyf = enu;
+  //flux.fnwtnear  = flux.fnwtfar = wgt; 
   // ignore variables dealing with the neutrino
   flux.fnenergyn = -1;
   flux.fnwtnear = flux.fnwtfar = -1;
