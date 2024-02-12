@@ -207,12 +207,28 @@ namespace sbn {
       std::vector<float> pfpNoiseScore;
       std::vector<float> pfpMichelScore;
       std::vector<float> pfpEndMichelScore;
+      float pfpAvgTrackScore;
+      float pfpAvgShowerScore;
+      float pfpAvgNoiseScore;
+      float pfpAvgMichelScore;
+      float pfpAvgEndMichelScore;
       int nClusters = 0; 
 
       if (fSkipClearCosmics) { // skip clear cosmic PFPs
         std::vector<art::Ptr<larpandoraobj::PFParticleMetadata>> metas = metaFMpfp.at(pfp.key());
         auto const &properties = metas[0]->GetPropertiesMap();
-        if (properties.count("IsClearCosmic")) continue;
+        if (properties.count("IsClearCosmic")) {
+        //    continue;
+        // TODO: assign nan values instead of skipping?
+            pfpAvgTrackScore = std::numeric_limits<float>::signaling_NaN();
+            pfpAvgShowerScore = std::numeric_limits<float>::signaling_NaN();
+            pfpAvgNoiseScore = std::numeric_limits<float>::signaling_NaN();
+            pfpAvgMichelScore = std::numeric_limits<float>::signaling_NaN();
+            pfpAvgEndMichelScore = std::numeric_limits<float>::signaling_NaN();
+            pfpScores->emplace_back(pfpAvgTrackScore, pfpAvgShowerScore, pfpAvgNoiseScore, pfpAvgMichelScore, pfpAvgEndMichelScore, nClusters); //
+            util::CreateAssn(*this, evt, *pfpScores, pfp, *pfpAssns);
+            continue;
+        }
       }
 
       // loop over clusters
@@ -334,14 +350,13 @@ namespace sbn {
         pfpEndMichelScore.push_back(cluEndMichelScore);
       }
 
-      float pfpAvgTrackScore = getAvgScore(pfpTrackScore);
-      float pfpAvgShowerScore = getAvgScore(pfpShowerScore);
-      float pfpAvgNoiseScore = getAvgScore(pfpNoiseScore);
-      float pfpAvgMichelScore = getAvgScore(pfpMichelScore);
-      float pfpAvgEndMichelScore = getAvgScore(pfpEndMichelScore);
+      pfpAvgTrackScore = getAvgScore(pfpTrackScore);
+      pfpAvgShowerScore = getAvgScore(pfpShowerScore);
+      pfpAvgNoiseScore = getAvgScore(pfpNoiseScore);
+      pfpAvgMichelScore = getAvgScore(pfpMichelScore);
+      pfpAvgEndMichelScore = getAvgScore(pfpEndMichelScore);
 
-      // std::cout << "-----------" << " PFP " << pfp->Self() << "-----------" << std::endl;
-      // std::cout << " average track score: " << pfpAvgTrackScore << std::endl;
+      // std::cout << "PFP ID: " << pfp->Self() << std::endl;
       // std::cout << " average shower score: " << pfpAvgShowerScore << std::endl;
       // std::cout << " average noise score: " << pfpAvgNoiseScore << std::endl;
       // std::cout << " average michel score: " << pfpAvgMichelScore << std::endl;

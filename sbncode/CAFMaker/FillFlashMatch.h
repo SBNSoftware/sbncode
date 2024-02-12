@@ -19,16 +19,8 @@ namespace caf
 {
 
   void FillSliceFlashMatch(const sbn::SimpleFlashMatch* fmatch,
-                           caf::SRSlice& srslice,
+                           caf::SRFlashMatch& srflash,
                            bool allowEmpty = false);
 
-  void FillSliceFlashMatchA(const sbn::SimpleFlashMatch* fmatch,
-                            caf::SRSlice& srslice,
-                            bool allowEmpty = false);
-
-  void FillSliceFlashMatchB(const sbn::SimpleFlashMatch* fmatch,
-                            caf::SRSlice& srslice,
-                            bool allowEmpty = false);
 }
-
 #endif

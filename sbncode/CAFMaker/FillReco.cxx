@@ -112,6 +112,31 @@ namespace caf
     srtrack.hitb.plane = track.plane2;
   }
 
+  void FillCRTSpacePoint(const sbnd::crt::CRTSpacePoint &spacepoint,
+                         caf::SRCRTSpacePoint &srspacepoint,
+                         bool allowEmpty)
+  {
+    srspacepoint.position     = SRVector3D(spacepoint.X(), spacepoint.Y(), spacepoint.Z());
+    srspacepoint.position_err = SRVector3D(spacepoint.XErr(), spacepoint.YErr(), spacepoint.ZErr());
+    srspacepoint.pe           = spacepoint.PE();
+    srspacepoint.time         = spacepoint.Time();
+    srspacepoint.time_err     = spacepoint.TimeErr();
+    srspacepoint.complete     = spacepoint.Complete();
+  }
+
+  void FillSBNDCRTTrack(const sbnd::crt::CRTTrack &track,
+                        caf::SRSBNDCRTTrack &srsbndcrttrack,
+                        bool allowEmpty)
+  {
+    for(auto const& point : track.Points())
+      srsbndcrttrack.points.emplace_back(point.X(), point.Y(), point.Z());
+
+    srsbndcrttrack.time    = track.Time();
+    srsbndcrttrack.time_err = track.TimeErr();
+    srsbndcrttrack.pe       = track.PE();
+    srsbndcrttrack.tof      = track.ToF();
+  }
+
   void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,
 		       caf::SRCRTPMTMatch &srmatch,
 		       bool allowEmpty){
@@ -408,10 +433,12 @@ namespace caf
       slice.crumbs_result.pds.fmtotalscore = crumbs->pds_FMTotalScore;
       slice.crumbs_result.pds.fmpe = crumbs->pds_FMPE;
       slice.crumbs_result.pds.fmtime = crumbs->pds_FMTime;
+      slice.crumbs_result.pds.opt0score = crumbs->pds_OpT0Score;
+      slice.crumbs_result.pds.opt0measuredpe = crumbs->pds_OpT0MeasuredPE;
       slice.crumbs_result.crt.trackscore = crumbs->crt_TrackScore;
-      slice.crumbs_result.crt.hitscore = crumbs->crt_HitScore;
+      slice.crumbs_result.crt.spscore = crumbs->crt_SPScore;
       slice.crumbs_result.crt.tracktime = crumbs->crt_TrackTime;
-      slice.crumbs_result.crt.hittime = crumbs->crt_HitTime;
+      slice.crumbs_result.crt.sptime = crumbs->crt_SPTime;
     }
   }
 
@@ -538,6 +565,24 @@ namespace caf
       // TODO/FIXME: FILL MORE ONCE WE HAVE THE CRT HIT!!!
 
     }
+  }
+
+  void FillTrackCRTSpacePoint(const anab::T0 &t0match,
+                              const art::Ptr<sbnd::crt::CRTSpacePoint> &spacepointmatch,
+                              caf::SRTrack &srtrack,
+                              bool allowEmpty)
+  {
+    srtrack.crtspacepoint.score = t0match.fTriggerConfidence;
+    FillCRTSpacePoint(*spacepointmatch, srtrack.crtspacepoint.spacepoint);
+  }
+
+  void FillTrackSBNDCRTTrack(const anab::T0 &t0match,
+                             const art::Ptr<sbnd::crt::CRTTrack> &trackmatch,
+                             caf::SRTrack &srtrack,
+                             bool allowEmpty)
+  {
+    srtrack.crtsbndtrack.score = t0match.fTriggerConfidence;
+    FillSBNDCRTTrack(*trackmatch, srtrack.crtsbndtrack.track);
   }
 
   void FillTrackMCS(const recob::Track& track,
@@ -869,6 +914,9 @@ namespace caf
       CopyPropertyIfSet(propertiesMap, "LArThreeDPCAFeatureTool_SecondaryPCARatio",          srpfp.pfochar.pca2ratio);
       CopyPropertyIfSet(propertiesMap, "LArThreeDPCAFeatureTool_TertiaryPCARatio",           srpfp.pfochar.pca3ratio);
       CopyPropertyIfSet(propertiesMap, "LArThreeDVertexDistanceFeatureTool_VertexDistance",  srpfp.pfochar.vtxdist);
+      CopyPropertyIfSet(propertiesMap, "LArConeChargeFeatureTool_HaloTotalRatio",            srpfp.pfochar.halototratio);
+      CopyPropertyIfSet(propertiesMap, "LArConeChargeFeatureTool_Concentration",             srpfp.pfochar.concentration);
+      CopyPropertyIfSet(propertiesMap, "LArConeChargeFeatureTool_Conicalness",               srpfp.pfochar.conicalness);
     }
     if (t0) {
       srpfp.t0 = t0->Time() / 1e3; /* ns -> us */
@@ -880,6 +928,11 @@ namespace caf
                      caf::SRPFP& srpfp,
                      bool allowEmpty)
   {
+    // std::cout << "pfpTrackScore: " << cnnscore->pfpTrackScore << std::endl;
+    // std::cout << "pfpShowerScore: " << cnnscore->pfpShowerScore << std::endl;
+    // std::cout << "pfpNoiseScore: " << cnnscore->pfpNoiseScore << std::endl;
+    // std::cout << "pfpMichelScore: " << cnnscore->pfpMichelScore << std::endl;
+
     srpfp.cnnscore.track = cnnscore->pfpTrackScore;
     srpfp.cnnscore.shower = cnnscore->pfpShowerScore;
     srpfp.cnnscore.noise = cnnscore->pfpNoiseScore;
@@ -913,6 +966,50 @@ namespace caf
     srhit.spacepoint.pfpID = particle.Self();
     srhit.spacepoint.ID = spacepoint.ID();
   }
+
+  void FillTPCPMTBarycenterMatch(const sbn::TPCPMTBarycenterMatch *matchInfo,
+                           caf::SRSlice& slice)
+  { 
+    slice.barycenterFM.setDefault();
+
+    if ( matchInfo != nullptr ) {
+      slice.barycenterFM.chargeTotal  = matchInfo->chargeTotal;
+      slice.barycenterFM.chargeCenterXLocal  = matchInfo->chargeCenterXLocal;
+      slice.barycenterFM.chargeCenter  = SRVector3D (matchInfo->chargeCenter.x(), matchInfo->chargeCenter.y(), matchInfo->chargeCenter.z());
+      slice.barycenterFM.chargeWidth  = SRVector3D (matchInfo->chargeWidth.x(), matchInfo->chargeWidth.y(), matchInfo->chargeWidth.z());
+      slice.barycenterFM.flashFirstHit  = matchInfo->flashFirstHit;
+      slice.barycenterFM.flashTime  = matchInfo->flashTime;
+      slice.barycenterFM.flashPEs  = matchInfo->flashPEs;
+      slice.barycenterFM.flashCenter  = SRVector3D (matchInfo->flashCenter.x(), matchInfo->flashCenter.y(), matchInfo->flashCenter.z());
+      slice.barycenterFM.flashWidth  = SRVector3D (matchInfo->flashWidth.x(), matchInfo->flashWidth.y(), matchInfo->flashWidth.z());
+      slice.barycenterFM.deltaT  = matchInfo->deltaT;
+      slice.barycenterFM.deltaY  = matchInfo->deltaY;
+      slice.barycenterFM.deltaZ  = matchInfo->deltaZ;
+      slice.barycenterFM.radius  = matchInfo->radius;
+      slice.barycenterFM.overlapY  = matchInfo->overlapY;
+      slice.barycenterFM.overlapZ  = matchInfo->overlapZ;
+      slice.barycenterFM.deltaZ_Trigger  = matchInfo->deltaZ_Trigger;
+      slice.barycenterFM.deltaY_Trigger  = matchInfo->deltaY_Trigger;
+      slice.barycenterFM.radius_Trigger  = matchInfo->radius_Trigger;
+    }
+  }
+
+  //......................................................................
+
+  void FillPFPRazzled(const art::Ptr<sbn::MVAPID> razzled,
+                      caf::SRPFP& srpfp,
+                      bool allowEmpty)
+  {
+    srpfp.razzled.electronScore = razzled->mvaScoreMap.at(11);
+    srpfp.razzled.muonScore = razzled->mvaScoreMap.at(13);
+    srpfp.razzled.photonScore = razzled->mvaScoreMap.at(22);
+    srpfp.razzled.pionScore = razzled->mvaScoreMap.at(211);
+    srpfp.razzled.protonScore = razzled->mvaScoreMap.at(2212);
+
+    srpfp.razzled.pdg = razzled->BestPDG();
+    srpfp.razzled.bestScore = razzled->BestScore();
+  }
+
   //......................................................................
 
   void SetNuMuCCPrimary(std::vector<caf::StandardRecord> &recs,

@@ -14,9 +14,22 @@
 
 void TrainCRUMBSInstance(const TString outDirName, TTree *inputTree, 
                          const TCut sigCut, const TCut backCut,
+                         const bool useOpT0Finder = true, const bool useSimpleFlash = false,
                          const double signalWeight = 1.0, const double backgroundWeight = 1.0);
-int CRUMBSTMVADriver()
+
+int CRUMBSTMVADriver(const bool useOpT0Finder = true, const bool useSimpleFlash = false)
 {
+  if(useOpT0Finder && useSimpleFlash)
+    {
+      std::cout << "Cannot use both flash matchers, please chose one..." << std::endl;
+      return 0;
+    }
+  else if(!useOpT0Finder && !useSimpleFlash)
+    {
+      std::cout << "Would recommend using one of the flash matchers..." << std::endl;
+      return 0;
+    }
+
   TMVA::Tools::Instance();
 
   std::cout << std::endl;
@@ -39,10 +52,10 @@ int CRUMBSTMVADriver()
   TCut ccnueSignal     = inclusiveSignal + "ccnc == 0 && abs(nutype) == 12";
   TCut ncSignal        = inclusiveSignal + "ccnc == 1";
 
-  TrainCRUMBSInstance("CRUMBS_Inclusive", inputTree, inclusiveSignal, background);
-  TrainCRUMBSInstance("CRUMBS_CCNuMu", inputTree, ccnumuSignal, background);
-  TrainCRUMBSInstance("CRUMBS_CCNuE", inputTree, ccnueSignal, background);
-  TrainCRUMBSInstance("CRUMBS_NC", inputTree, ncSignal, background);
+  TrainCRUMBSInstance("CRUMBS_Inclusive", inputTree, inclusiveSignal, background, useOpT0Finder, useSimpleFlash);
+  TrainCRUMBSInstance("CRUMBS_CCNuMu", inputTree, ccnumuSignal, background, useOpT0Finder, useSimpleFlash);
+  TrainCRUMBSInstance("CRUMBS_CCNuE", inputTree, ccnueSignal, background, useOpT0Finder, useSimpleFlash);
+  TrainCRUMBSInstance("CRUMBS_NC", inputTree, ncSignal, background, useOpT0Finder, useSimpleFlash);
 
   std::cout << std::endl;
   std::cout << "==> Finish CRUMBS TMVA Training" << std::endl;
@@ -52,6 +65,7 @@ int CRUMBSTMVADriver()
 
 void TrainCRUMBSInstance(const TString outDirName, TTree *inputTree, 
                          const TCut sigCut, const TCut backCut,
+                         const bool useOpT0Finder, const bool useSimpleFlash,
                          const double signalWeight, const double backgroundWeight)
 {
   std::cout << std::endl;
