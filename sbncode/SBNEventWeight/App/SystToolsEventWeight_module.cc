@@ -200,12 +200,11 @@ void SystToolsEventWeight::beginRun(art::Run& run) {
 
   auto p = std::make_unique<std::vector<sbn::evwgh::EventWeightParameterSet> >();
   for( auto &sp : fSystProviders ) {
-    if(fDebugMode)
-      MF_LOG_INFO("SystToolsEventWeight") << "sp->GetToolType() = " << sp->GetToolType() << "\n"
-                                          << "sp->GetFullyQualifiedName() = " << sp->GetFullyQualifiedName() << "\n"
-                                          << "sp->GetInstanceName() = " << sp->GetInstanceName() << "\n"
-                                          << "Printing each SystParamHeader of this ISystProviderTool..";
-    //==== Note: typedef std::vector<SystParamHeader> SystMetaData;
+    MF_LOG_INFO("SystToolsEventWeight") << "sp->GetToolType() = " << sp->GetToolType() << "\n"
+                                  << "sp->GetFullyQualifiedName() = " << sp->GetFullyQualifiedName() << "\n"
+                                  << "sp->GetInstanceName() = " << sp->GetInstanceName() << "\n"
+                                  << "Printing each SystParamHeader of this ISystProviderTool..";
+    // Note: typedef std::vector<SystParamHeader> SystMetaData;
     auto const& smd = sp->GetSystMetaData();
 
     // make a map of responsless-response params
