@@ -1,0 +1,137 @@
+#include "beamgates_icarus.fcl"
+#include "services_icarus_simulation.fcl"
+#include "largeantmodules_icarus.fcl"
+#include "detsimmodules_ICARUS.fcl"
+#include "multipartvertex_icarus.fcl"
+#include "stage0_icarus_defs.fcl"
+#include "stage0_icarus_mc_defs.fcl"
+#include "stage1_icarus_defs.fcl"
+#include "channelmapping_icarus.fcl"
+#include "mcreco.fcl"
+
+process_name: GenMPVMPR
+
+services:
+{
+	@table::icarus_gen_services
+	IFDH: {}
+}
+
+source:
+{
+	module_type: EmptyEvent
+	timestampPlugin: { plugin_type: "GeneratedEventTimestamp" }
+	maxEvents: 10
+	firstRun: 1
+	firstEvent: 1
+}
+
+cosmgen: [rain, rain2]
+
+physics:
+{
+
+ producers:
+ {
+  rns: { module_type: RandomNumberSaver }
+   generator: @local::MultiPartVertex
+   rain: @local::MultiPartRain
+   rain2: @local::MultiPartRain
+   beamgate:  @local::icarus_standardbeamgate_BNB  # from beamgates_icarus.fcl
+ }
+
+ simulate: [ rns, generator, @sequence::cosmgen, beamgate ]
+
+ out_stream: [ out1   ]
+
+ trigger_paths: [simulate]
+
+ end_paths: [out_stream]
+}
+
+#
+# Multi-Particle Vertex generator (MPV)
+#
+physics.producers.generator.DebugMode    : 1
+# Based on based on NUMI spill 10000ns
+physics.producers.generator.G4Time       : 5000. # [ns]  
+physics.producers.generator.G4TimeJitter : 10000. # [ns]
+physics.producers.generator.XRange       : [30,30]
+physics.producers.generator.YRange       : [30,30]
+physics.producers.generator.ZRange       : [30,30]
+#physics.producers.generator.TPCRange     : [[0,0],[0,1],[0,2],[0,3],[1,0],[1,1],[1,2],[1,3]]
+physics.producers.generator.TPCRange     : [[0,0],[0,1],[0,2],[0,3]] #[1,0],[1,1],[1,2],[1,3]]
+physics.producers.generator.MultiMax     : 7 #6
+physics.producers.generator.GammaBetaRange : [0.0, 3.0] # [0.0,20.0] # Boost, GammaBeta = Gamma * Beta
+physics.producers.generator.Revert: 0 #1
+physics.producers.generator.UseBoost : 0# 1
+physics.producers.generator.MultiMin     : 2
+physics.producers.generator.ParticleParameter.PDGCode      : [[-11,11,-13,13],     [111],  [211,-211],      [2212],     [22]]
+physics.producers.generator.ParticleParameter.MinMulti     : [              0,          0,          0,           0,        0]
+physics.producers.generator.ParticleParameter.MaxMulti     : [              1,          2,          2,           4,        2]
+physics.producers.generator.ParticleParameter.ProbWeight   : [              3,          1,          1,           3,        1]
+physics.producers.generator.ParticleParameter.KERange      : [     [0.0,3.0], [0.0,1.0], [0.0,1.0],  [0.0, 1.0],  [0.0, 1.0]]
+physics.producers.generator.ParticleParameter.MomRange     : []
+
+#
+# Multi-Particle Rain generator (MPR)
+#
+# `rain` for uniform MPR
+physics.producers.rain.DebugMode    : 2
+# Based on TPC readout window starting at -340us and readout window size is 1638.4us
+physics.producers.rain.G4Time       : -50000 # [ns]
+physics.producers.rain.G4TimeJitter : 2900000 # [ns]
+physics.producers.rain.XRange       : [-20,-20]
+physics.producers.rain.YRange       : [-20,-20]
+physics.producers.rain.ZRange       : [-20,-20]
+physics.producers.rain.DirectInward : true
+physics.producers.rain.TPCRange     : [[0,0],[0,1],[0,2],[0,3]] #,[1,0],[1,1],[1,2],[1,3]]
+physics.producers.rain.MultiMax     : 4
+physics.producers.rain.MultiMin     : 2
+physics.producers.rain.CosmicDistribution : false
+physics.producers.rain.ParticleParameter.PDGCode      : [   [-13,13], [-13,13],     [2212]]
+physics.producers.rain.ParticleParameter.MinMulti     : [          0,        0,          0]
+physics.producers.rain.ParticleParameter.MaxMulti     : [          5,        5,          5]
+physics.producers.rain.ParticleParameter.ProbWeight   : [          5,        5,          1]
+physics.producers.rain.ParticleParameter.KERange      : [ [0.0,20.0], [0.0,2.0], [0.0,1.0]]
+physics.producers.rain.ParticleParameter.MomRange     : []
+
+# `rain2` for localized MPR 
+physics.producers.rain2.DebugMode    : 2 
+# Based on TPC readout window starting at -340us and readout window size is 1638.4us
+physics.producers.rain2.G4Time       : 5000 # [ns] , timing matched with MPV
+physics.producers.rain2.G4TimeJitter : 10000 # [ns] , timing matched with MPV
+physics.producers.rain2.XRange       : [20,20]
+physics.producers.rain2.YRange       : [20,20]
+physics.producers.rain2.ZRange       : [20,20]
+physics.producers.rain2.DirectInward : true
+physics.producers.rain2.TPCRange     : [[0,0],[0,1],[0,2],[0,3]] #,[1,0],[1,1],[1,2],[1,3]]
+physics.producers.rain2.MultiMax     : 5
+physics.producers.rain2.MultiMin     : 3
+physics.producers.rain2.CosmicDistribution : false
+physics.producers.rain2.ParticleParameter.PDGCode      : [   [-13,13], [-13,13],    [11,-11],   [22],       [2212]]
+physics.producers.rain2.ParticleParameter.MinMulti     : [          0,        0,           0,      0,            0]
+physics.producers.rain2.ParticleParameter.MaxMulti     : [          5,        5,           2,      3,            5]
+physics.producers.rain2.ParticleParameter.ProbWeight   : [          5,        5,           1,      2,            1]
+physics.producers.rain2.ParticleParameter.KERange      : [ [0.0,20.0], [0.0,2.0],  [0.0,1.0], [0.0,1.0], [0.0,1.0]]
+physics.producers.rain2.ParticleParameter.MomRange     : []
+physics.producers.rain2.MPVLabel: "generator"
+physics.producers.rain2.MPVBoxSize: 270.4 #230.4
+
+
+#
+# Services
+#
+
+outputs:
+{
+ out1:
+ {
+   module_type: RootOutput
+   fileName:    "GenMPVMPR_%tc.root"
+   dataTier:    "simulated"
+   compressionLevel: 1
+ }
+}
+
+services.TFileService.fileName: "GenMPVMPR_ana_%tc.root"

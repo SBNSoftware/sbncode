@@ -1,0 +1,10 @@
+
+BEGIN_PROLOG
+
+bnbextcountinfo: {
+
+    module_type: "BNBEXTRetriever"    
+    raw_data_label: "daq"
+
+}
+END_PROLOG
