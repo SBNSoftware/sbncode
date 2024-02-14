@@ -64,13 +64,7 @@ cet_build_plugin(SimpleMerge art::EDProducer
   LIBRARIES
   lardataobj::MCBase
   larcorealg::headers
-  art::Framework_Principal
-  art::Framework_Services_Registry
-  art::Persistency_Common
   messagefacility::MF_MessageLogger
-  canvas::canvas
-  fhiclcpp::types
-  fhiclcpp::fhiclcpp
   BASENAME_ONLY
 )
 
