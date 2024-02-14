@@ -17,12 +17,14 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
+// #include "lardataalg/DetectorInfo/DetectorClocksData.h"
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "lardataobj/RawData/TriggerData.h"
 #include "lardataobj/Simulation/BeamGateInfo.h"
 #include "lardataobj/Simulation/SimEnergyDeposit.h"
 #include "lardataobj/Simulation/SimPhotons.h"
 
+#include <lardata/DetectorInfoServices/DetectorClocksService.h>
 #include <memory>
 
 class AdjustSimForTrigger;
@@ -48,6 +50,7 @@ private:
   art::InputTag fInputTriggerLabel;
   art::InputTag fInputWaveformLabel;
   art::InputTag fInputBeamGateInfoLabel;
+  double fAdditionalOffset;
 };
 
 AdjustSimForTrigger::AdjustSimForTrigger(fhicl::ParameterSet const& p)
@@ -57,6 +60,7 @@ AdjustSimForTrigger::AdjustSimForTrigger(fhicl::ParameterSet const& p)
   , fInputTriggerLabel{p.get<art::InputTag>("InputTriggerLabel")}
   , fInputWaveformLabel(p.get<std::string>("InputWaveformLabel"))
   , fInputBeamGateInfoLabel{p.get<art::InputTag>("InputBeamGateInfoLabel")}
+  , fAdditionalOffset{p.get<double>("AdditionalOffset")}
 {
   produces<std::vector<sim::SimEnergyDeposit>>();
   produces<std::vector<sim::SimPhotons>>();
@@ -66,6 +70,7 @@ AdjustSimForTrigger::AdjustSimForTrigger(fhicl::ParameterSet const& p)
 
 void AdjustSimForTrigger::produce(art::Event& e)
 {
+  auto const& clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
   auto const& simEDeps =
     e.getProduct<std::vector<sim::SimEnergyDeposit>>(fInputSimEnergyDepositLabel);
   auto const& simPhotons = e.getProduct<std::vector<sim::SimPhotons>>(fInputSimPhotonsLabel);
@@ -98,7 +103,7 @@ void AdjustSimForTrigger::produce(art::Event& e)
       (std::numeric_limits<double>::max() - std::numeric_limits<double>::epsilon());
 
   const double timeShiftForTrigger_us =
-    hasValidTriggerTime ? trigger.TriggerTime() - trigger.BeamGateTime() : 0.;
+    hasValidTriggerTime ? clock_data.TriggerTime() - trigger.TriggerTime() + fAdditionalOffset : 0.;
   const double timeShiftForTrigger_ns = 1000. * timeShiftForTrigger_us;
 
   mf::LogInfo("AdjustSimForTrigger")
@@ -116,8 +121,8 @@ void AdjustSimForTrigger::produce(art::Event& e)
     const geo::Point_t start = {
       inSimEDep.Start().X(), inSimEDep.Start().Y(), inSimEDep.Start().Z()};
     const geo::Point_t end = {inSimEDep.End().X(), inSimEDep.End().Y(), inSimEDep.End().Z()};
-    const double startT = inSimEDep.StartT() - timeShiftForTrigger_ns;
-    const double endT = inSimEDep.EndT() - timeShiftForTrigger_ns;
+    const double startT = inSimEDep.StartT() + timeShiftForTrigger_ns;
+    const double endT = inSimEDep.EndT() + timeShiftForTrigger_ns;
     const int thisID = inSimEDep.TrackID();
     const int thisPDG = inSimEDep.PdgCode();
     const int origID = inSimEDep.OrigTrackID();
@@ -138,7 +143,7 @@ void AdjustSimForTrigger::produce(art::Event& e)
   // Repeat for sim::BeamGateInfo
   const auto& beamGate = beamGates[0];
 
-  const double shiftedBeamGateStart = beamGate.Start() - timeShiftForTrigger_ns;
+  const double shiftedBeamGateStart = beamGate.Start() + timeShiftForTrigger_ns;
   const double gateWidth = beamGate.Width();
   const sim::BeamType_t beam = beamGate.BeamType();
 
@@ -151,7 +156,7 @@ void AdjustSimForTrigger::produce(art::Event& e)
 
   for (auto& photons : *pSimPhotonss) {
     for (auto& photon : photons) {
-      photon.Time -= timeShiftForTrigger_ns;
+      photon.Time += timeShiftForTrigger_ns;
     }
   }
 
@@ -159,7 +164,7 @@ void AdjustSimForTrigger::produce(art::Event& e)
   auto pWaveforms = std::make_unique<std::vector<raw::OpDetWaveform>>(waveforms);
 
   for (auto& waveform : *pWaveforms) {
-    waveform.SetTimeStamp(waveform.TimeStamp() - timeShiftForTrigger_us);
+    waveform.SetTimeStamp(waveform.TimeStamp() + timeShiftForTrigger_us);
   }
 
   e.put(std::move(pSimEDeps));
