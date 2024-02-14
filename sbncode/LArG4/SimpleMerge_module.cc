@@ -62,7 +62,7 @@ sbn::SimpleMerge::SimpleMerge(fhicl::ParameterSet const& p)
   : EDProducer{p}
   , fInputSourcesLabels(p.get<std::vector<art::InputTag>>("InputSourcesLabels"))
   , fFillMCParticles(p.get<bool>("FillMCParticles", false))
-  , fTrackIDOffsets(p.get<std::vector<int>>("TrackIDOffsets", std::vector<int>(0)))
+  , fTrackIDOffsets(p.get<std::vector<int>>("TrackIDOffsets", std::vector<int>{}))
   , fResetMotherID(p.get<bool>("ResetMotherID", false))
   // Anything else you want to merge can be added here...
 {
