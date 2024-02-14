@@ -76,6 +76,7 @@ private:
   double fcG; //!< Axion coupling to gluon
   double fcB; //!< Axion coupling to U(1) B boson (before EW symmetry breaking)
   double fcW; //!< Axion coupling to SU(2) W bosons (before EW symmetry breaking)
+  bool fIncludeMassSuppressionFactor; // Whether to include a phenomonological suppression to mixing at high mass
 
   // branching ratios
   double fPi0BR;
@@ -115,6 +116,7 @@ void Meson2ALP::configure(fhicl::ParameterSet const &pset)
   fMaxWeightPi0 = pset.get<double>("MaxWeightPi0", 1.);
   fMaxWeightEta = pset.get<double>("MaxWeightEta", 1.);
   fMaxWeightEtaP = pset.get<double>("MaxWeightEtaP", 1.);
+  fIncludeMassSuppressionFactor = pset.get<bool>("IncludeMassSuppressionFactor", false);
 
   fPi0BR = Pi0BR();
   fEtaBR = EtaBR();
@@ -136,7 +138,7 @@ double Meson2ALP::EtaBR() const {
 
   double mixing_angle = (1. / sqrt(6)) * (fcG * fpion / ffa) * (fM*fM - (4./9.)*pzero_mass*pzero_mass) / (fM*fM - eta_mass*eta_mass);
   double qcd_rate_f = 1.;
-  if (fM > eta_mass) qcd_rate_f = pow(fM/eta_mass, -1.6);
+  if (fIncludeMassSuppressionFactor && fM > eta_mass) qcd_rate_f = pow(fM/eta_mass, -1.6);
 
   return mixing_angle*mixing_angle*qcd_rate_f;
 }
@@ -148,7 +150,7 @@ double Meson2ALP::EtaPBR() const {
 
   double mixing_angle = (1. / sqrt(12)) * (fcG * fpion / ffa) * (fM*fM - (16./9.)*pzero_mass*pzero_mass) / (fM*fM - etap_mass*etap_mass);
   double qcd_rate_f = 1.;
-  if (fM > etap_mass) qcd_rate_f = pow(fM/etap_mass, -1.6);
+  if (fIncludeMassSuppressionFactor && fM > etap_mass) qcd_rate_f = pow(fM/etap_mass, -1.6);
 
   return mixing_angle*mixing_angle*qcd_rate_f;
 }
@@ -160,7 +162,7 @@ double Meson2ALP::Pi0BR() const {
   double mixing_angle = (1./6) * (fcG * fpion / ffa) * fM*fM / (fM*fM - pzero_mass*pzero_mass);
 
   double qcd_rate_f = 1.;
-  if (fM > pzero_mass) qcd_rate_f = pow(fM/pzero_mass, -1.6);
+  if (fIncludeMassSuppressionFactor && fM > pzero_mass) qcd_rate_f = pow(fM/pzero_mass, -1.6);
 
   return mixing_angle*mixing_angle*qcd_rate_f;
 }
@@ -177,6 +179,10 @@ bool Meson2ALP::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux &alp,
 
   // Energy is same as for meson (don't worry about momentum conservation)
   double alp_energy = meson.mom.E();
+
+  // ignore if alp isn't energetic enough
+  if (alp_energy < fM) return false;
+
   double alp_momentum = sqrt(alp_energy*alp_energy - fM*fM);
 
   // Momentum 4-vector
