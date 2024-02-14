@@ -65,7 +65,6 @@ cet_build_plugin(SimpleMerge art::EDProducer
   lardataobj::MCBase
   larcorealg::headers
   messagefacility::MF_MessageLogger
-  BASENAME_ONLY
 )
 
 install_headers()
