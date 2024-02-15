@@ -1023,13 +1023,13 @@ void CAFMaker::InitializeOutfiles()
       // LZ4 is the fastest format to decompress. I get 3x faster loading with
       // this compared to the default, and the files are only slightly larger.
       fFlatFileb = new TFile(fFlatCafBlindFilename.c_str(), "RECREATE", "",
-           ROOT::CompressionSettings(ROOT::kLZ4, 1));
+			     ROOT::CompressionSettings(ROOT::kLZ4, 1));
       fFlatTreeb = new TTree("recTree", "recTree");
       fFlatRecordb = new flat::Flat<caf::StandardRecord>(fFlatTreeb, "rec", "", 0);
       AddEnvToFile(fFlatFileb);
 
       fFlatFilep = new TFile(fFlatCafPrescaleFilename.c_str(), "RECREATE", "",
-           ROOT::CompressionSettings(ROOT::kLZ4, 1));
+			     ROOT::CompressionSettings(ROOT::kLZ4, 1));
       fFlatTreep = new TTree("recTree", "recTree");
       fFlatRecordp = new flat::Flat<caf::StandardRecord>(fFlatTreep, "rec", "", 0);
       AddEnvToFile(fFlatFilep);
@@ -1101,8 +1101,8 @@ art::FindManyP<T, D> CAFMaker::FindManyPDStrict(const U& from,
 //......................................................................
 template <class T, class U>
 art::FindOneP<T> CAFMaker::FindOnePStrict(const U& from,
-            const art::Event& evt,
-            const art::InputTag& tag) const {
+					  const art::Event& evt,
+					  const art::InputTag& tag) const {
   art::FindOneP<T> ret(from, evt, tag);
 
   if (!tag.label().empty() && !ret.isValid() && fParams.StrictMode()) {
@@ -1897,7 +1897,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
 
       FillSliceTruth(slcHits, mctruths, srtruthbranch,
-         *pi_serv, clock_data, recslc);
+		     *pi_serv, clock_data, recslc);
 
       FillSliceFakeReco(slcHits, mctruths, srtruthbranch,
 			*pi_serv, clock_data, recslc, true_particles, mctracks, 
