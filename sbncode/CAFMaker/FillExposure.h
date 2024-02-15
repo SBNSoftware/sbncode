@@ -20,6 +20,7 @@ namespace caf
 		    std::vector<caf::SRNuMIInfo>& NuMIInfo,
 		    double& subRunPOT);
 
+  caf::SRNuMIInfo makeSRNuMIInfo(sbn::NuMISpillInfo const& info);
   
 }
 
