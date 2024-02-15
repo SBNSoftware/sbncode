@@ -470,7 +470,9 @@ namespace caf {
     for(const caf::SRTrueParticle& part: srparticles){
       // save the G4 particles that came from this interaction
       if(part.interaction_id == (int)i) {
-        if(part.start_process == caf::kG4primary) srneutrino.prim.push_back(part);
+        //if(part.start_process == caf::kG4primary) srneutrino.prim.push_back(part);
+        // Feb. 15th 2024, Jaesung Kim: Saving non-primaries for G4Reweight study
+        srneutrino.prim.push_back(part);
 
         // total up the deposited energy
         for(int p = 0; p < 3; ++p) { 
