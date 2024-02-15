@@ -302,7 +302,7 @@ class CAFMaker : public art::EDProducer {
   /// messsage and aborts if StrictMode is true.
   template <class T, class U>
   art::FindOneP<T> FindOnePStrict(const U& from, const art::Event& evt,
-          const art::InputTag& label) const;
+				  const art::InputTag& label) const;
 
   template <class T, class D, class U>
   art::FindOneP<T, D> FindOnePDStrict(const U& from,
@@ -407,20 +407,20 @@ class CAFMaker : public art::EDProducer {
 //......................................................................
 void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
 
- //simple cuts for trk and shower variables
+  //simple cuts for trk and shower variables
   //blind events with a potential lepton with momentum > 0.6 that starts in fiducial volume
   for (caf::SRPFP& pfp: brec->reco.pfp) {
     const caf::SRVector3D start = pfp.trk.start;
     if ( ((start.x < -71.1 - 25 && start.x > -369.33 + 25 ) ||
-    (start.x > 71.1 + 25 && start.x < 369.33 - 25 )) &&
-   (start.y > -181.7 + 25 && start.y < 134.8 - 25 ) &&
-   (start.z  > -895.95 + 30 && start.z < 895.95 - 50)) {
+	  (start.x > 71.1 + 25 && start.x < 369.33 - 25 )) &&
+	 (start.y > -181.7 + 25 && start.y < 134.8 - 25 ) &&
+	 (start.z  > -895.95 + 30 && start.z < 895.95 - 50)) {
 
       if (pfp.trk.mcsP.fwdP_muon > 0.6) {
-  pfp.trk.mcsP.fwdP_muon = TMath::QuietNaN();
+	pfp.trk.mcsP.fwdP_muon = TMath::QuietNaN();
       }
       if (pfp.trk.rangeP.p_muon > 0.6) {
-  pfp.trk.rangeP.p_muon = TMath::QuietNaN();
+	pfp.trk.rangeP.p_muon = TMath::QuietNaN();
       }
     }
   }
@@ -429,14 +429,14 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
   for (caf::SRPFP& pfp: brec->reco.pfp) {
     const caf::SRVector3D start = pfp.shw.start;
     if ( ((start.x < -71.1 - 25 && start.x > -369.33 + 25 ) ||
-    (start.x > 71.1 + 25 && start.x < 369.33 - 25 )) &&
-   (start.y > -181.7 + 25 && start.y < 134.8 - 25 ) &&
-   (start.z  > -895.95 + 30 && start.z < 895.95 - 50)) {
+	  (start.x > 71.1 + 25 && start.x < 369.33 - 25 )) &&
+	 (start.y > -181.7 + 25 && start.y < 134.8 - 25 ) &&
+	 (start.z  > -895.95 + 30 && start.z < 895.95 - 50)) {
       if (pfp.shw.bestplane_energy > 0.6) {
-  pfp.shw.bestplane_energy = TMath::QuietNaN();
-  pfp.shw.plane[0].energy = TMath::QuietNaN();
-  pfp.shw.plane[1].energy = TMath::QuietNaN();
-  pfp.shw.plane[2].energy = TMath::QuietNaN();
+	pfp.shw.bestplane_energy = TMath::QuietNaN();
+	pfp.shw.plane[0].energy = TMath::QuietNaN();
+	pfp.shw.plane[1].energy = TMath::QuietNaN();
+	pfp.shw.plane[2].energy = TMath::QuietNaN();
       }
     }
   }
@@ -445,25 +445,25 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
   for (caf::SRSlice& slc: brec->slc) {
     const caf::SRVector3D vtx = slc.vertex;
     if ( ((vtx.x < -71.1 - 25 && vtx.x > -369.33 + 25 ) ||
-    (vtx.x > 71.1 + 25 && vtx.x < 369.33 - 25 )) &&
-   (vtx.y > -181.7 + 25 && vtx.y < 134.8 - 25 ) &&
-   (vtx.z  > -895.95 + 30 && vtx.z < 895.95 - 50)) {
+	  (vtx.x > 71.1 + 25 && vtx.x < 369.33 - 25 )) &&
+	 (vtx.y > -181.7 + 25 && vtx.y < 134.8 - 25 ) &&
+	 (vtx.z  > -895.95 + 30 && vtx.z < 895.95 - 50)) {
 
       for (caf::SRPFP& pfp: slc.reco.pfp) {
-  if (pfp.trk.mcsP.fwdP_muon > 0.6) {
-    pfp.trk.mcsP.fwdP_muon = TMath::QuietNaN();
-  }
-  if (pfp.trk.rangeP.p_muon > 0.6) {
-    pfp.trk.rangeP.p_muon = TMath::QuietNaN();
-  }
+	if (pfp.trk.mcsP.fwdP_muon > 0.6) {
+	  pfp.trk.mcsP.fwdP_muon = TMath::QuietNaN();
+	}
+	if (pfp.trk.rangeP.p_muon > 0.6) {
+	  pfp.trk.rangeP.p_muon = TMath::QuietNaN();
+	}
       }
       for (caf::SRPFP& pfp: slc.reco.pfp) {
-  if (pfp.shw.bestplane_energy > 0.6) {
-    pfp.shw.bestplane_energy = TMath::QuietNaN();
-    pfp.shw.plane[0].energy = TMath::QuietNaN();
-    pfp.shw.plane[1].energy = TMath::QuietNaN();
-    pfp.shw.plane[2].energy = TMath::QuietNaN();
-  }
+	if (pfp.shw.bestplane_energy > 0.6) {
+	  pfp.shw.bestplane_energy = TMath::QuietNaN();
+	  pfp.shw.plane[0].energy = TMath::QuietNaN();
+	  pfp.shw.plane[1].energy = TMath::QuietNaN();
+	  pfp.shw.plane[2].energy = TMath::QuietNaN();
+	}
       }
     }
   }
@@ -612,28 +612,28 @@ void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
     // first file we've seen
     if(fParams.CreateCAF() && fCafFilename.empty()){
       if (fParams.CreateBlindedCAF()){
-  fCafFilename = DeriveFilename(fb.fileName(), fParams.UnblindFileExtension());
-  fCafFilename = DeriveFilename(fCafFilename, fParams.FileExtension());
-  fCafBlindFilename = DeriveFilename(fb.fileName(), fParams.BlindFileExtension());
-  fCafBlindFilename = DeriveFilename(fCafBlindFilename, fParams.FileExtension());
-  fCafPrescaleFilename = DeriveFilename(fb.fileName(), fParams.PrescaleFileExtension());
-  fCafPrescaleFilename = DeriveFilename(fCafPrescaleFilename, fParams.FileExtension());
+	fCafFilename = DeriveFilename(fb.fileName(), fParams.UnblindFileExtension());
+	fCafFilename = DeriveFilename(fCafFilename, fParams.FileExtension());
+	fCafBlindFilename = DeriveFilename(fb.fileName(), fParams.BlindFileExtension());
+	fCafBlindFilename = DeriveFilename(fCafBlindFilename, fParams.FileExtension());
+	fCafPrescaleFilename = DeriveFilename(fb.fileName(), fParams.PrescaleFileExtension());
+	fCafPrescaleFilename = DeriveFilename(fCafPrescaleFilename, fParams.FileExtension());
       }
       else {
-  fCafFilename = DeriveFilename(fb.fileName(), fParams.FileExtension());
+	fCafFilename = DeriveFilename(fb.fileName(), fParams.FileExtension());
       }
     }
     if(fParams.CreateFlatCAF() && fFlatCafFilename.empty()){
       if (fParams.CreateBlindedCAF()){
-  fFlatCafFilename = DeriveFilename(fb.fileName(), fParams.UnblindFileExtension());
-  fFlatCafFilename = DeriveFilename(fFlatCafFilename, fParams.FlatCAFFileExtension());
-  fFlatCafBlindFilename = DeriveFilename(fb.fileName(), fParams.BlindFileExtension());
-  fFlatCafBlindFilename = DeriveFilename(fFlatCafBlindFilename, fParams.FlatCAFFileExtension());
-  fFlatCafPrescaleFilename = DeriveFilename(fb.fileName(), fParams.PrescaleFileExtension());
-  fFlatCafPrescaleFilename = DeriveFilename(fFlatCafPrescaleFilename, fParams.FlatCAFFileExtension());
+	fFlatCafFilename = DeriveFilename(fb.fileName(), fParams.UnblindFileExtension());
+	fFlatCafFilename = DeriveFilename(fFlatCafFilename, fParams.FlatCAFFileExtension());
+	fFlatCafBlindFilename = DeriveFilename(fb.fileName(), fParams.BlindFileExtension());
+	fFlatCafBlindFilename = DeriveFilename(fFlatCafBlindFilename, fParams.FlatCAFFileExtension());
+	fFlatCafPrescaleFilename = DeriveFilename(fb.fileName(), fParams.PrescaleFileExtension());
+	fFlatCafPrescaleFilename = DeriveFilename(fFlatCafPrescaleFilename, fParams.FlatCAFFileExtension());
       }
       else {
-  fFlatCafFilename = DeriveFilename(fb.fileName(), fParams.FlatCAFFileExtension());
+	fFlatCafFilename = DeriveFilename(fb.fileName(), fParams.FlatCAFFileExtension());
       }
     }
     if (fParams.CreateBlindedCAF() && fCafBlindFilename.empty()) {
