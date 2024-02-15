@@ -70,14 +70,6 @@ AdjustSimForTrigger::AdjustSimForTrigger(fhicl::ParameterSet const& p)
   , fShiftWaveforms{p.get<bool>("ShiftWaveforms", false)}
   , fShiftBeamGateInfo{p.get<bool>("ShiftBeamGateInfo", false)}
 {
-  if (fShiftSimEnergyDeposits) { produces<std::vector<sim::SimEnergyDeposit>>(); }
-  if (fShiftSimPhotons) { produces<std::vector<sim::SimPhotons>>(); }
-  if (fShiftWaveforms) { produces<std::vector<raw::OpDetWaveform>>(); }
-  if (fShiftBeamGateInfo) { produces<std::vector<sim::BeamGateInfo>>(); }
-}
-
-void AdjustSimForTrigger::produce(art::Event& e)
-{
   if (!(fShiftSimEnergyDeposits | fShiftSimPhotons | fShiftWaveforms | fShiftBeamGateInfo)) {
     throw art::Exception(art::errors::EventProcessorFailure)
       << "NO SHIFTS ENABLED!\n"
@@ -87,6 +79,14 @@ void AdjustSimForTrigger::produce(art::Event& e)
       << "SHIFTING BEAMGATEINFO? " << fShiftBeamGateInfo << '\n';
   }
 
+  if (fShiftSimEnergyDeposits) { produces<std::vector<sim::SimEnergyDeposit>>(); }
+  if (fShiftSimPhotons) { produces<std::vector<sim::SimPhotons>>(); }
+  if (fShiftWaveforms) { produces<std::vector<raw::OpDetWaveform>>(); }
+  if (fShiftBeamGateInfo) { produces<std::vector<sim::BeamGateInfo>>(); }
+}
+
+void AdjustSimForTrigger::produce(art::Event& e)
+{
   auto const& clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
   auto const& triggers = e.getProduct<std::vector<raw::Trigger>>(fInputTriggerLabel);
 
