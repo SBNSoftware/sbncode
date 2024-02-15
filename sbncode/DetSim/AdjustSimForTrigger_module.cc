@@ -51,32 +51,44 @@ private:
   art::InputTag fInputWaveformLabel;
   art::InputTag fInputBeamGateInfoLabel;
   double fAdditionalOffset;
+  bool fShiftSimEnergyDeposits;
+  bool fShiftSimPhotons;
+  bool fShiftWaveforms;
+  bool fShiftBeamGateInfo;
 };
 
 AdjustSimForTrigger::AdjustSimForTrigger(fhicl::ParameterSet const& p)
   : EDProducer{p}
-  , fInputSimEnergyDepositLabel{p.get<art::InputTag>("InputSimEnergyDepositLabel")}
-  , fInputSimPhotonsLabel{p.get<art::InputTag>("InputSimPhotonsLabel")}
-  , fInputTriggerLabel{p.get<art::InputTag>("InputTriggerLabel")}
-  , fInputWaveformLabel(p.get<std::string>("InputWaveformLabel"))
-  , fInputBeamGateInfoLabel{p.get<art::InputTag>("InputBeamGateInfoLabel")}
+  , fInputSimEnergyDepositLabel{p.get<art::InputTag>("InputSimEnergyDepositLabel", "")}
+  , fInputSimPhotonsLabel{p.get<art::InputTag>("InputSimPhotonsLabel", "")}
+  , fInputTriggerLabel{p.get<art::InputTag>("InputTriggerLabel", "")}
+  , fInputWaveformLabel(p.get<art::InputTag>("InputWaveformLabel", ""))
+  , fInputBeamGateInfoLabel{p.get<art::InputTag>("InputBeamGateInfoLabel", "")}
   , fAdditionalOffset{p.get<double>("AdditionalOffset")}
+  , fShiftSimEnergyDeposits{p.get<bool>("ShiftSimEnergyDeposits", false)}
+  , fShiftSimPhotons{p.get<bool>("ShiftSimPhotons", false)}
+  , fShiftWaveforms{p.get<bool>("ShiftWaveforms", false)}
+  , fShiftBeamGateInfo{p.get<bool>("ShiftBeamGateInfo", false)}
 {
-  produces<std::vector<sim::SimEnergyDeposit>>();
-  produces<std::vector<sim::SimPhotons>>();
-  produces<std::vector<raw::OpDetWaveform>>();
-  produces<std::vector<sim::BeamGateInfo>>();
+  if (fShiftSimEnergyDeposits) { produces<std::vector<sim::SimEnergyDeposit>>(); }
+  if (fShiftSimPhotons) { produces<std::vector<sim::SimPhotons>>(); }
+  if (fShiftWaveforms) { produces<std::vector<raw::OpDetWaveform>>(); }
+  if (fShiftBeamGateInfo) { produces<std::vector<sim::BeamGateInfo>>(); }
 }
 
 void AdjustSimForTrigger::produce(art::Event& e)
 {
+  if (!(fShiftSimEnergyDeposits | fShiftSimPhotons | fShiftWaveforms | fShiftBeamGateInfo)) {
+    throw art::Exception(art::errors::EventProcessorFailure)
+      << "NO SHIFTS ENABLED!\n"
+      << "SHIFTING SIMENERGYDEPOSITS? " << fShiftSimEnergyDeposits << '\n'
+      << "SHIFTING SIMPHOTONS? " << fShiftSimPhotons << '\n'
+      << "SHIFTING OPDETWAVEFORMS? " << fShiftWaveforms << '\n'
+      << "SHIFTING BEAMGATEINFO? " << fShiftBeamGateInfo << '\n';
+  }
+
   auto const& clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
-  auto const& simEDeps =
-    e.getProduct<std::vector<sim::SimEnergyDeposit>>(fInputSimEnergyDepositLabel);
-  auto const& simPhotons = e.getProduct<std::vector<sim::SimPhotons>>(fInputSimPhotonsLabel);
   auto const& triggers = e.getProduct<std::vector<raw::Trigger>>(fInputTriggerLabel);
-  auto const& waveforms = e.getProduct<std::vector<raw::OpDetWaveform>>(fInputWaveformLabel);
-  auto const& beamGates = e.getProduct<std::vector<sim::BeamGateInfo>>(fInputBeamGateInfoLabel);
 
   if (triggers.size() != 1) {
     if (triggers.empty()) {
@@ -84,13 +96,6 @@ void AdjustSimForTrigger::produce(art::Event& e)
     }
     throw art::Exception(art::errors::EventProcessorFailure)
       << "MORE THAN ONE TRIGGER IN EVENT... why?\n";
-  }
-
-  if (beamGates.size() != 1) {
-    if (beamGates.empty()) {
-      throw art::Exception(art::errors::EventProcessorFailure) << "THERE IS NO BEAM GATE INFO!\n";
-    }
-    throw art::Exception(art::errors::EventProcessorFailure) << "MORE THAN ONE BEAM GATE?\n";
   }
 
   // Assuming there is a trigger, get time shift
@@ -110,67 +115,89 @@ void AdjustSimForTrigger::produce(art::Event& e)
     << "FOR THIS EVENT THE TIME SHIFT BEING ASSUMED IS " << timeShiftForTrigger_ns << " ns ...\n";
 
   // Loop over the SimEnergyDeposit objects and shift time BACK by the TRIGGER
-  auto pSimEDeps = std::make_unique<std::vector<sim::SimEnergyDeposit>>();
-  pSimEDeps->reserve(simEDeps.size());
+  if (fShiftSimEnergyDeposits) {
+    auto const& simEDeps =
+      e.getProduct<std::vector<sim::SimEnergyDeposit>>(fInputSimEnergyDepositLabel);
 
-  for (auto const& inSimEDep : simEDeps) {
-    const int numphotons = inSimEDep.NumPhotons();
-    const int numelectrons = inSimEDep.NumElectrons();
-    const double syratio = inSimEDep.ScintYieldRatio();
-    const double energy = inSimEDep.Energy();
-    const geo::Point_t start = {
-      inSimEDep.Start().X(), inSimEDep.Start().Y(), inSimEDep.Start().Z()};
-    const geo::Point_t end = {inSimEDep.End().X(), inSimEDep.End().Y(), inSimEDep.End().Z()};
-    const double startT = inSimEDep.StartT() + timeShiftForTrigger_ns;
-    const double endT = inSimEDep.EndT() + timeShiftForTrigger_ns;
-    const int thisID = inSimEDep.TrackID();
-    const int thisPDG = inSimEDep.PdgCode();
-    const int origID = inSimEDep.OrigTrackID();
+    auto pSimEDeps = std::make_unique<std::vector<sim::SimEnergyDeposit>>();
+    pSimEDeps->reserve(simEDeps.size());
 
-    pSimEDeps->push_back(sim::SimEnergyDeposit(numphotons,
-                                               numelectrons,
-                                               syratio,
-                                               energy,
-                                               start,
-                                               end,
-                                               startT,
-                                               endT,
-                                               thisID,
-                                               thisPDG,
-                                               origID));
+    for (auto const& inSimEDep : simEDeps) {
+      const int numphotons = inSimEDep.NumPhotons();
+      const int numelectrons = inSimEDep.NumElectrons();
+      const double syratio = inSimEDep.ScintYieldRatio();
+      const double energy = inSimEDep.Energy();
+      const geo::Point_t start = {
+        inSimEDep.Start().X(), inSimEDep.Start().Y(), inSimEDep.Start().Z()};
+      const geo::Point_t end = {inSimEDep.End().X(), inSimEDep.End().Y(), inSimEDep.End().Z()};
+      const double startT = inSimEDep.StartT() + timeShiftForTrigger_ns;
+      const double endT = inSimEDep.EndT() + timeShiftForTrigger_ns;
+      const int thisID = inSimEDep.TrackID();
+      const int thisPDG = inSimEDep.PdgCode();
+      const int origID = inSimEDep.OrigTrackID();
+
+      pSimEDeps->push_back(sim::SimEnergyDeposit(numphotons,
+                                                 numelectrons,
+                                                 syratio,
+                                                 energy,
+                                                 start,
+                                                 end,
+                                                 startT,
+                                                 endT,
+                                                 thisID,
+                                                 thisPDG,
+                                                 origID));
+    }
+    e.put(std::move(pSimEDeps));
   }
 
-  // Repeat for sim::BeamGateInfo
-  const auto& beamGate = beamGates[0];
-
-  const double shiftedBeamGateStart = beamGate.Start() + timeShiftForTrigger_ns;
-  const double gateWidth = beamGate.Width();
-  const sim::BeamType_t beam = beamGate.BeamType();
-
-  const sim::BeamGateInfo shiftedBeamGate(shiftedBeamGateStart, gateWidth, beam);
-
-  auto pBeamGateInfos = std::make_unique<std::vector<sim::BeamGateInfo>>(1, shiftedBeamGate);
-
   // Repeat for sim::SimPhotons
-  auto pSimPhotonss = std::make_unique<std::vector<sim::SimPhotons>>(simPhotons);
+  if (fShiftSimPhotons) {
+    auto const& simPhotons = e.getProduct<std::vector<sim::SimPhotons>>(fInputSimPhotonsLabel);
+    auto pSimPhotonss = std::make_unique<std::vector<sim::SimPhotons>>(simPhotons);
 
-  for (auto& photons : *pSimPhotonss) {
-    for (auto& photon : photons) {
-      photon.Time += timeShiftForTrigger_ns;
+    for (auto& photons : *pSimPhotonss) {
+      for (auto& photon : photons) {
+        photon.Time += timeShiftForTrigger_ns;
+      }
     }
+    e.put(std::move(pSimPhotonss));
   }
 
   // Repeat for raw::OpDetWaveform
-  auto pWaveforms = std::make_unique<std::vector<raw::OpDetWaveform>>(waveforms);
+  if (fShiftWaveforms) {
+    auto const& waveforms = e.getProduct<std::vector<raw::OpDetWaveform>>(fInputWaveformLabel);
+    auto pWaveforms = std::make_unique<std::vector<raw::OpDetWaveform>>(waveforms);
 
-  for (auto& waveform : *pWaveforms) {
-    waveform.SetTimeStamp(waveform.TimeStamp() + timeShiftForTrigger_us);
+    for (auto& waveform : *pWaveforms) {
+      waveform.SetTimeStamp(waveform.TimeStamp() + timeShiftForTrigger_us);
+    }
+    e.put(std::move(pWaveforms));
   }
 
-  e.put(std::move(pSimEDeps));
-  e.put(std::move(pBeamGateInfos));
-  e.put(std::move(pSimPhotonss));
-  e.put(std::move(pWaveforms));
+  // Repeat for sim::BeamGateInfo
+  if (fShiftBeamGateInfo) {
+    auto const& beamGates = e.getProduct<std::vector<sim::BeamGateInfo>>(fInputBeamGateInfoLabel);
+
+    if (beamGates.size() != 1) {
+      if (beamGates.empty()) {
+        throw art::Exception(art::errors::EventProcessorFailure) << "THERE IS NO BEAM GATE INFO!\n";
+      }
+      throw art::Exception(art::errors::EventProcessorFailure) << "MORE THAN ONE BEAM GATE?\n";
+    }
+
+    const auto& beamGate = beamGates[0];
+
+    const double shiftedBeamGateStart = beamGate.Start() + timeShiftForTrigger_ns;
+    const double gateWidth = beamGate.Width();
+    const sim::BeamType_t beam = beamGate.BeamType();
+
+    const sim::BeamGateInfo shiftedBeamGate(shiftedBeamGateStart, gateWidth, beam);
+
+    auto pBeamGateInfos = std::make_unique<std::vector<sim::BeamGateInfo>>(1, shiftedBeamGate);
+
+    e.put(std::move(pBeamGateInfos));
+  }
 }
 
 DEFINE_ART_MODULE(AdjustSimForTrigger)
