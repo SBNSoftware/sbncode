@@ -383,7 +383,7 @@ class CAFMaker : public art::EDProducer {
 //......................................................................
 void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
 
-  //simple cuts for trk and shower variables
+ //simple cuts for trk and shower variables
   //blind events with a potential lepton with momentum > 0.6 that starts in fiducial volume
   for (caf::SRPFP& pfp: brec->reco.pfp) {
     const caf::SRVector3D start = pfp.trk.start;
@@ -393,7 +393,7 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
    (start.z  > -895.95 + 30 && start.z < 895.95 - 50)) {
 
       if (pfp.trk.mcsP.fwdP_muon > 0.6) {
-  pfp.trk.mcsP.fwdP_muon = TMath::QuietNaN();    
+  pfp.trk.mcsP.fwdP_muon = TMath::QuietNaN();
       }
       if (pfp.trk.rangeP.p_muon > 0.6) {
   pfp.trk.rangeP.p_muon = TMath::QuietNaN();
@@ -427,7 +427,7 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
 
       for (caf::SRPFP& pfp: slc.reco.pfp) {
   if (pfp.trk.mcsP.fwdP_muon > 0.6) {
-    pfp.trk.mcsP.fwdP_muon = TMath::QuietNaN();    
+    pfp.trk.mcsP.fwdP_muon = TMath::QuietNaN();
   }
   if (pfp.trk.rangeP.p_muon > 0.6) {
     pfp.trk.rangeP.p_muon = TMath::QuietNaN();
@@ -1758,7 +1758,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
          *pi_serv, clock_data, recslc);
 
       FillSliceFakeReco(slcHits, mctruths, srtruthbranch,
-      *pi_serv, clock_data, recslc, true_particles, mctracks, 
+      *pi_serv, clock_data, recslc, true_particles, mctracks,
                         fActiveVolumes, *fFakeRecoTRandom);
     }
 
@@ -1915,7 +1915,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
       if (!thisShower.empty()) { // it has shower!
         assert(thisShower.size() == 1);
-  
+	
         SRShower& shw = pfp.shw;
         FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, shw);
 
