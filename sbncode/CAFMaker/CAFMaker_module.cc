@@ -393,7 +393,7 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
 	 (start.z  > -895.95 + 30 && start.z < 895.95 - 50)) {
 
       if (pfp.trk.mcsP.fwdP_muon > 0.6) {
-	pfp.trk.mcsP.fwdP_muon = TMath::QuietNaN();
+	pfp.trk.mcsP.fwdP_muon = TMath::QuietNaN();    
       }
       if (pfp.trk.rangeP.p_muon > 0.6) {
 	pfp.trk.rangeP.p_muon = TMath::QuietNaN();
@@ -427,7 +427,7 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
 
       for (caf::SRPFP& pfp: slc.reco.pfp) {
 	if (pfp.trk.mcsP.fwdP_muon > 0.6) {
-	  pfp.trk.mcsP.fwdP_muon = TMath::QuietNaN();
+	  pfp.trk.mcsP.fwdP_muon = TMath::QuietNaN();    
 	}
 	if (pfp.trk.rangeP.p_muon > 0.6) {
 	  pfp.trk.rangeP.p_muon = TMath::QuietNaN();
