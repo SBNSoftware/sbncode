@@ -1758,7 +1758,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 		     *pi_serv, clock_data, recslc);
 
       FillSliceFakeReco(slcHits, mctruths, srtruthbranch,
-			*pi_serv, clock_data, recslc, true_particles, mctracks,
+			*pi_serv, clock_data, recslc, true_particles, mctracks, 
                         fActiveVolumes, *fFakeRecoTRandom);
     }
 
