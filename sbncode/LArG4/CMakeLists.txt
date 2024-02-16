@@ -1,3 +1,5 @@
+add_subdirectory(PhysicsLists)
+
 cet_build_plugin(G4InfoReducer art::module
                        LIBRARIES
                            larsim::Simulation
