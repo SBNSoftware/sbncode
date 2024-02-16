@@ -35,6 +35,8 @@ set(
     sbncode_LArG4_PhysicsLists
 )
 
+cet_build_plugin(PhysListLoader art::module SOURCE PhysListLoader_module.cc LIBRARIES ${MODULE_LIBRARIES})
+
 cet_make_library(SOURCE MergeSimSourcesLiteUtility.cxx
   LIBRARIES
   PUBLIC
