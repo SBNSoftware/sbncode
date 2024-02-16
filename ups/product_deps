@@ -259,8 +259,8 @@ sbnanaobj		v09_20_06	-
 sbndaq_artdaq_core	v1_06_00of0	-
 sbndata			v01_04		-
 sbnobj			v09_16_00	-
-systematicstools	v01_02_00	-
-nusystematics		v01_02_10	-
+systematicstools	v01_02_01	-
+nusystematics		v01_02_11	-
 cetmodules		v3_20_00	-	only_for_build
 end_product_list
 ####################################
