@@ -106,6 +106,7 @@
 #include "sbnobj/Common/Reco/ScatterClosestApproach.h"
 #include "sbnobj/Common/Reco/StoppingChi2Fit.h"
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
+#include "sbnobj/Common/POTAccounting/EXTCountInfo.h"
 #include "sbnobj/Common/POTAccounting/NuMISpillInfo.h"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
@@ -176,14 +177,20 @@ class CAFMaker : public art::EDProducer {
   std::string fFlatCafFilename;
   std::string fFlatCafBlindFilename;
   std::string fFlatCafPrescaleFilename;
+  
+  std::string fSourceFile;
 
   bool fFirstInSubRun;
-  bool fFirstInFile;
+  unsigned int fIndexInFile = SRHeader::NoSourceIndex();
+  bool fFirstBlindInSubRun;
+  bool fFirstPrescaleInSubRun;
   bool fFirstBlindInFile;
   bool fFirstPrescaleInFile;
   int fFileNumber;
   double fTotalPOT;
   double fSubRunPOT;
+  unsigned int fOffbeamBNBGates;
+  unsigned int fOffbeamNuMIGates;
   double fTotalSinglePOT;
   double fTotalEvents;
   double fBlindEvents;
@@ -233,6 +240,8 @@ class CAFMaker : public art::EDProducer {
 
   std::string DeriveFilename(const std::string& inname,
                              const std::string& ext) const;
+
+  static std::string Basename(const std::string& path);
 
   void AddEnvToFile(TFile* f);
   void AddMetadataToFile(TFile* f,
@@ -434,6 +443,9 @@ void CAFMaker::FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_ti
     s.fmatch.time += PMT_reference_time;
     s.fmatch_a.time += PMT_reference_time;
     s.fmatch_b.time += PMT_reference_time;
+
+    s.barycenterFM.flashTime +=PMT_reference_time;
+    s.barycenterFM.flashFirstHit +=PMT_reference_time;
   }
 
   // TODO: fix more?
@@ -528,6 +540,15 @@ CAFMaker::~CAFMaker()
 }
 
 //......................................................................
+std::string CAFMaker::Basename(const std::string& path)
+{
+  // C++17: use filesystem library (Clang 7 still not compliant)
+  constexpr char sep = '/';
+  std::size_t const iSep = path.rfind(sep);
+  return (iSep == std::string::npos)? path: path.substr(iSep + 1);
+}
+
+//......................................................................
 std::string CAFMaker::DeriveFilename(const std::string& inname,
                                      const std::string& ext) const
 {
@@ -544,6 +565,9 @@ std::string CAFMaker::DeriveFilename(const std::string& inname,
 
 //......................................................................
 void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
+  
+  std::string const inputBasename = Basename(fb.fileName()); // includes suffix
+  
   if ((fParams.CreateCAF() && !fFile) ||
       (fParams.CreateFlatCAF() && !fFlatFile) ||
       (fParams.CreateBlindedCAF() && (!fFileb || !fFilep))) {
@@ -593,9 +617,10 @@ void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
   }
 
   fFileNumber ++;
-  fFirstInFile = true;
+  fIndexInFile = 0;
   fFirstBlindInFile = true;
   fFirstPrescaleInFile = true;
+  fSourceFile = inputBasename;
 
 }
 
@@ -726,25 +751,59 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
   fBNBInfo.clear();
   fNuMIInfo.clear();
   fSubRunPOT = 0;
+  fOffbeamBNBGates = 0;
+  fOffbeamNuMIGates = 0;
 
-  if(auto bnb_spill = sr.getHandle<std::vector<sbn::BNBSpillInfo>>(fParams.BNBPOTDataLabel())){
+  auto bnb_spill          = sr.getHandle<std::vector<sbn::BNBSpillInfo>>(fParams.BNBPOTDataLabel());
+  auto numi_spill         = sr.getHandle<std::vector<sbn::NuMISpillInfo>>(fParams.NuMIPOTDataLabel());
+  auto bnb_offbeam_spill  = sr.getHandle<std::vector<sbn::EXTCountInfo>>(fParams.OffbeamBNBCountDataLabel());
+  auto numi_offbeam_spill = sr.getHandle<std::vector<sbn::EXTCountInfo>>(fParams.OffbeamNuMICountDataLabel());
+
+  if(bool(bnb_spill) + bool(numi_spill) + bool(bnb_offbeam_spill) + bool(numi_offbeam_spill) > 1) {
+    std::cout << "Expected at most one of " << fParams.BNBPOTDataLabel() << ", "
+              << fParams.NuMIPOTDataLabel() << ", " << fParams.OffbeamBNBCountDataLabel() << ", and "
+              << fParams.OffbeamNuMICountDataLabel() << ". Found ";
+    if(bnb_spill) std::cout << fParams.BNBPOTDataLabel() << " ";
+    if(numi_spill) std::cout << fParams.NuMIPOTDataLabel() << " ";
+    if(bnb_offbeam_spill) std::cout << fParams.OffbeamBNBCountDataLabel() << " ";
+    if(numi_offbeam_spill) std::cout << fParams.OffbeamNuMICountDataLabel();
+    std::cout << std::endl;
+    abort();
+  }
+
+  if(bnb_spill){
     FillExposure(*bnb_spill, fBNBInfo, fSubRunPOT);
     fTotalPOT += fSubRunPOT;
   }
-  else if (auto numi_spill = sr.getHandle<std::vector<sbn::NuMISpillInfo>>(fParams.NuMIPOTDataLabel())) {
+  else if (numi_spill) {
     FillExposureNuMI(*numi_spill, fNuMIInfo, fSubRunPOT);
     fTotalPOT += fSubRunPOT;
+  }
+  else if (bnb_offbeam_spill){
+    for(const auto& spill: *bnb_offbeam_spill) {
+      fOffbeamBNBGates += spill.gates_since_last_trigger;
+    }
+  }
+  else if (numi_offbeam_spill){
+    for(const auto& spill: *numi_offbeam_spill) {
+      fOffbeamNuMIGates += spill.gates_since_last_trigger;
+    }
   }
   else if(auto pot_handle = sr.getHandle<sumdata::POTSummary>(fParams.GenLabel())){
     fSubRunPOT = pot_handle->totgoodpot;
     fTotalPOT += fSubRunPOT;
   }
   else{
-    if(!fParams.BNBPOTDataLabel().empty() || !fParams.GenLabel().empty() || !fParams.NuMIPOTDataLabel().empty()){
+    if(!fParams.BNBPOTDataLabel().empty() || !fParams.GenLabel().empty() || !fParams.NuMIPOTDataLabel().empty() ||
+       !fParams.OffbeamBNBCountDataLabel().empty() || !fParams.OffbeamNuMICountDataLabel().empty()){
       std::cout << "Found neither BNB data POT info under '"
                 << fParams.BNBPOTDataLabel()
-                << "' not NuMIdata POT info under '"
+                << "' nor NuMIdata POT info under '"
                 << fParams.NuMIPOTDataLabel()
+                << "' nor BNB EXT Count info under '"
+                << fParams.OffbeamBNBCountDataLabel()
+                << "' nor NuMI EXT Count info under '"
+                << fParams.OffbeamNuMICountDataLabel()
                 << "' nor MC POT info under '"
                 << fParams.GenLabel() << "'"
                 << std::endl;
@@ -757,6 +816,8 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
   std::cout << "POT: " << fSubRunPOT << std::endl;
 
   fFirstInSubRun = true;
+  fFirstBlindInSubRun = true;
+  fFirstPrescaleInSubRun = true;
 }
 
 //......................................................................
@@ -912,8 +973,10 @@ void CAFMaker::InitializeOutfiles()
   fTotalEvents = 0;
   fBlindEvents = 0;
   fPrescaleEvents = 0;
-  fFirstInFile = false;
+  fIndexInFile = SRHeader::NoSourceIndex();
   fFirstInSubRun = false;
+  fFirstBlindInSubRun = false;
+  fFirstPrescaleInSubRun = false;
   // fCycle = -5;
   // fBatch = -5;
 }
@@ -1037,6 +1100,8 @@ bool CAFMaker::GetPsetParameter(const fhicl::ParameterSet& pset,
 //......................................................................
 void CAFMaker::produce(art::Event& evt) noexcept {
 
+  bool const firstInFile = (fIndexInFile++ == 0);
+  
   // is this event real data?
   bool isRealData = evt.isRealData();
 
@@ -1289,8 +1354,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   art::Handle<std::vector<sbn::crt::CRTHit>> crthits_handle;
   GetByLabelStrict(evt, fParams.CRTHitLabel(), crthits_handle);
   // fill into event
-  int64_t CRT_T0_reference_time = fParams.ReferenceCRTT0ToBeam() ? -srtrigger.beam_gate_time_abs : 0; // ns, signed
-  double CRT_T1_reference_time = fParams.ReferenceCRTT1FromTriggerToBeam() ? srtrigger.trigger_within_gate : 0.;
+  //int64_t CRT_T0_reference_time = fParams.ReferenceCRTT0ToBeam() ? -srtrigger.beam_gate_time_abs : 0; // ns, signed
+  //double CRT_T1_reference_time = fParams.ReferenceCRTT1FromTriggerToBeam() ? srtrigger.trigger_within_gate : 0.;
+  int64_t CRT_T0_reference_time = isRealData ?  -srtrigger.beam_gate_time_abs : -fParams.CRTSimT0Offset();
+  double CRT_T1_reference_time = isRealData ? srtrigger.trigger_within_gate : -fParams.CRTSimT0Offset();
+
   if (crthits_handle.isValid()) {
     const std::vector<sbn::crt::CRTHit> &crthits = *crthits_handle;
     for (unsigned i = 0; i < crthits.size(); i++) {
@@ -1311,6 +1379,23 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       srcrttracks.emplace_back();
       FillCRTTrack(crttracks[i], fParams.CRTUseTS0(), srcrttracks.back());
     }
+  }
+
+  // Get all of the CRTPMT Matches .. 
+  std::vector<caf::SRCRTPMTMatch> srcrtpmtmatches;
+  std::cout << "srcrtpmtmatches.size = " << srcrtpmtmatches.size() << "\n";
+  art::Handle<std::vector<sbn::crt::CRTPMTMatching>> crtpmtmatch_handle;
+  GetByLabelStrict(evt, fParams.CRTPMTLabel(), crtpmtmatch_handle);
+  if(crtpmtmatch_handle.isValid()){
+    std::cout << "valid handle! label: " << fParams.CRTPMTLabel() << "\n";
+    const std::vector<sbn::crt::CRTPMTMatching> &crtpmtmatches = *crtpmtmatch_handle;
+    for (unsigned i = 0; i < crtpmtmatches.size(); i++) {
+      srcrtpmtmatches.emplace_back();
+      FillCRTPMTMatch(crtpmtmatches[i],srcrtpmtmatches.back());
+    }
+  }
+  else{
+    std::cout << "crtpmtmatch_handle.isNOTValid!\n";
   }
 
   // Get all of the OpFlashes
@@ -1402,6 +1487,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::FindManyP<sbn::SimpleFlashMatch> fm_sFM =
       FindManyPStrict<sbn::SimpleFlashMatch>(fmPFPart, evt,
                                              fParams.FlashMatchLabel() + slice_tag_suff);
+
+    art::FindOneP<sbn::TPCPMTBarycenterMatch> foTPCPMTBarycenterMatch =
+      FindOnePStrict<sbn::TPCPMTBarycenterMatch>(sliceList, evt,
+          fParams.TPCPMTBarycenterMatchLabel() + slice_tag_suff);
+    const sbn::TPCPMTBarycenterMatch *barycenterMatch
+      = foTPCPMTBarycenterMatch.isValid()? foTPCPMTBarycenterMatch.at(0).get(): nullptr;
 
     art::FindManyP<larpandoraobj::PFParticleMetadata> fmPFPMeta =
       FindManyPStrict<larpandoraobj::PFParticleMetadata>(fmPFPart, evt,
@@ -1593,6 +1684,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceFlashMatchA(fmatch, recslc);
     FillSliceVertex(vertex, recslc);
     FillSliceCRUMBS(slcCRUMBS, recslc);
+    FillSliceBarycenter(slcHits, slcSpacePoints, recslc);
+    FillTPCPMTBarycenterMatch(barycenterMatch, recslc);
 
     // select slice
     if (!SelectSlice(recslc, fParams.CutClearCosmic())) continue;
@@ -1832,6 +1925,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     rec.true_particles  = true_particles;
   }
   rec.ntrue_particles = true_particles.size();
+  rec.crtpmt_matches = srcrtpmtmatches;
+  rec.ncrtpmt_matches = srcrtpmtmatches.size();
 
   // Fix the Reference time
   //
@@ -1882,18 +1977,22 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.hdr.ismc    = !isRealData;
   rec.hdr.det     = fDet;
   rec.hdr.fno     = fFileNumber;
-  if(fFirstInFile)
+  if(fFirstInSubRun)
   {
     rec.hdr.nbnbinfo = fBNBInfo.size();
     rec.hdr.bnbinfo = fBNBInfo;
     rec.hdr.nnumiinfo = fNuMIInfo.size();
     rec.hdr.numiinfo = fNuMIInfo;
+    rec.hdr.noffbeambnb = fOffbeamBNBGates;
+    rec.hdr.noffbeamnumi = fOffbeamNuMIGates;
     rec.hdr.pot   = fSubRunPOT;
   }
   
   rec.hdr.ngenevt = n_gen_evt;
   rec.hdr.mctype  = mctype;
-  rec.hdr.first_in_file = fFirstInFile;
+  rec.hdr.sourceName = fSourceFile;
+  rec.hdr.sourceIndex = fIndexInFile;
+  rec.hdr.first_in_file = firstInFile;
   rec.hdr.first_in_subrun = fFirstInSubRun;
   rec.hdr.triggerinfo = srtrigger;
   // rec.hdr.cycle = fCycle;
@@ -1920,60 +2019,64 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       rec.hdr.evt = 0;
       rec.hdr.isblind = true;
       if (keepprescale) {
-      	StandardRecord* precp = new StandardRecord (*prec);
-	if (fFirstPrescaleInFile) {
-	  precp->hdr.pot = fSubRunPOT*(1/fParams.PrescaleFactor());
-	  precp->hdr.first_in_file = true;
-	  precp->hdr.first_in_subrun = true;
-	  precp->hdr.nbnbinfo = fBNBInfo.size()*(1/fParams.PrescaleFactor());
-	  precp->hdr.nnumiinfo = fNuMIInfo.size()*(1/fParams.PrescaleFactor());
-	}
-	precp->hdr.ngenevt = n_gen_evt*(1/fParams.PrescaleFactor());
-	precp->hdr.evt = evtID;
-	fRecTreep->SetBranchAddress("rec", &precp);
-      	fRecTreep->Fill();
-	fPrescaleEvents += 1;
-	if (fFlatTreep) {
-	  fFlatRecordp->Clear();
-	  fFlatRecordp->Fill(*precp);
-	  fFlatTreep->Fill();
-	}
-	fFirstPrescaleInFile = false;
+        StandardRecord* precp = new StandardRecord (*prec);
+        if (fFirstPrescaleInSubRun) {
+          precp->hdr.pot = fSubRunPOT*(1/fParams.PrescaleFactor());
+          precp->hdr.first_in_file = fFirstPrescaleInFile;
+          precp->hdr.first_in_subrun = true;
+          precp->hdr.nbnbinfo = fBNBInfo.size()*(1/fParams.PrescaleFactor());
+          precp->hdr.nnumiinfo = fNuMIInfo.size()*(1/fParams.PrescaleFactor());
+        }
+        precp->hdr.ngenevt = n_gen_evt*(1/fParams.PrescaleFactor());
+        precp->hdr.evt = evtID;
+        fRecTreep->SetBranchAddress("rec", &precp);
+        fRecTreep->Fill();
+        fPrescaleEvents += 1;
+        if (fFlatTreep) {
+          fFlatRecordp->Clear();
+          fFlatRecordp->Fill(*precp);
+          fFlatTreep->Fill();
+        }
+        fFirstPrescaleInFile = false;
+        fFirstPrescaleInSubRun = false;
       }
       else {
-	StandardRecord* precb = new StandardRecord (*prec);
-	BlindEnergyParameters(precb);
-	if (fFirstBlindInFile) {
-	  precb->hdr.pot = fSubRunPOT*(1-(1/fParams.PrescaleFactor()))*GetBlindPOTScale();
-	  precb->hdr.first_in_file = true;
-	  precb->hdr.first_in_subrun = true;
-	  precb->hdr.nbnbinfo = fBNBInfo.size()*(1 - (1/fParams.PrescaleFactor()));
-	  precb->hdr.nnumiinfo = fNuMIInfo.size()*(1-(1/fParams.PrescaleFactor()));
-	}
-	precb->hdr.ngenevt = n_gen_evt*(1 - (1/fParams.PrescaleFactor()));
-	precb->hdr.evt = evtID;
-	fRecTreeb->SetBranchAddress("rec", &precb);
-	fRecTreeb->Fill();
-	fBlindEvents += 1;
-	if (fFlatTreeb) {
-	  fFlatRecordb->Clear();
-	  fFlatRecordb->Fill(*precb);
-	  fFlatTreeb->Fill();
-	}
-	fFirstBlindInFile = false;
+        StandardRecord* precb = new StandardRecord (*prec);
+        BlindEnergyParameters(precb);
+        if (fFirstBlindInSubRun) {
+          precb->hdr.pot = fSubRunPOT*(1-(1/fParams.PrescaleFactor()))*GetBlindPOTScale();
+          precb->hdr.first_in_file = fFirstBlindInFile;
+          precb->hdr.first_in_subrun = true;
+          precb->hdr.nbnbinfo = fBNBInfo.size()*(1 - (1/fParams.PrescaleFactor()));
+          precb->hdr.nnumiinfo = fNuMIInfo.size()*(1-(1/fParams.PrescaleFactor()));
+        }
+        precb->hdr.ngenevt = n_gen_evt*(1 - (1/fParams.PrescaleFactor()));
+        precb->hdr.evt = evtID;
+        fRecTreeb->SetBranchAddress("rec", &precb);
+        fRecTreeb->Fill();
+        fBlindEvents += 1;
+        if (fFlatTreeb) {
+          fFlatRecordb->Clear();
+          fFlatRecordb->Fill(*precb);
+          fFlatTreeb->Fill();
+        }
+        fFirstBlindInFile = false;
+        fFirstBlindInSubRun = false;
       }
     }
   }
 
 // reset
-  fFirstInFile = false;
   fFirstInSubRun = false;
   srcol->push_back(rec);
   evt.put(std::move(srcol));
 
-  fBNBInfo.clear();
-  fNuMIInfo.clear();
-  rec.hdr.pot = 0;
+  // Only clear these if we've filled into all file types
+  if(!fFirstInSubRun && (!fParams.CreateBlindedCAF() || (!fFirstBlindInSubRun && !fFirstPrescaleInSubRun))) {
+    fBNBInfo.clear();
+    fNuMIInfo.clear();
+    rec.hdr.pot = 0;
+  }
 }
 
 void CAFMaker::endSubRun(art::SubRun& sr) {

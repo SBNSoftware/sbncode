@@ -1,0 +1,32 @@
+#include "bnbextcountinfo.fcl"
+
+process_name: BNBEXTInfoGen
+
+services:{
+  IFBeam:{}
+}
+
+
+source: {
+
+}
+
+physics: {
+ producers: {
+   bnbextinfo: @local::bnbextcountinfo
+ }
+
+ simulate: [bnbextinfo ]
+ stream1: [ out1 ]
+
+}
+
+outputs: {
+ out1: {
+   module_type: RootOutput
+   fileName: "%ifb_%tc_bnbextinfo.root"
+   dataTier: "raw"
+   compressionLevel: 1
+ }
+}
+

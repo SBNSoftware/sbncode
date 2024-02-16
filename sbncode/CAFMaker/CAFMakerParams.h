@@ -95,6 +95,18 @@ namespace caf
       "numiinfo"
     };
 
+    Atom<string> OffbeamBNBCountDataLabel {
+      Name("OffbeamBNBCountDataLabel"),
+      Comment("Label of BNB EXT module"),
+      "bnbextinfo"
+    };
+
+    Atom<string> OffbeamNuMICountDataLabel {
+      Name("OffbeamNuMICountDataLabel"),
+      Comment("Label of NuMI EXT module"),
+      "numiextinfo"
+    };
+
     Atom<string> G4Label {
       Name("G4Label"),
       Comment("Label of G4 module."),
@@ -249,6 +261,18 @@ namespace caf
       Name("CRTTrackLabel"),
       Comment("Label of sbn CRT tracks."),
       "crttrack" // same for icarus and sbnd
+    };
+    
+    Atom<string> CRTPMTLabel {
+      Name("CRTPMTLabel"),
+      Comment("Label for the CRTPMT Matched variables from the crtpmt data product"),
+      "crtpmt" // this variable exists in icaruscode, pretty sure it does not yet exist in sbnd
+    };
+
+    Atom<string> TPCPMTBarycenterMatchLabel {
+      Name("TPCPMTBarycenterMatchLabel"),
+      Comment("Label of Slice-OpFlash matching via barycenters."),
+      "" //Empty by default, configured in icaruscode cafmaker_defs
     };
 
     Atom<string> OpFlashLabel {

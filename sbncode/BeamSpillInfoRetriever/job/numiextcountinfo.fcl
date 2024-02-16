@@ -1,0 +1,10 @@
+
+BEGIN_PROLOG
+
+numiextcountinfo: {
+
+    module_type: "NuMIEXTRetriever"    
+    raw_data_label: "daq"
+
+}
+END_PROLOG

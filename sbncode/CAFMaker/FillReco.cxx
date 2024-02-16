@@ -68,7 +68,7 @@ namespace caf
                   bool allowEmpty) {
 
     srhit.t0 = ( (long long)(hit.ts0()) /*u_int64_t to int64_t*/ + CRT_T0_reference_time )/1000.;
-    srhit.t1 = hit.ts1()/1000.-CRT_T1_reference_time; // ns -> us
+    srhit.t1 = hit.ts1()/1000.+CRT_T1_reference_time; // ns -> us
     srhit.time = use_ts0 ? srhit.t0 : srhit.t1;
 
     srhit.position.x = hit.x_pos;
@@ -111,6 +111,36 @@ namespace caf
 
     srtrack.hitb.plane = track.plane2;
   }
+
+  void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,
+		       caf::SRCRTPMTMatch &srmatch,
+		       bool allowEmpty){
+    // allowEmpty does not (yet) matter here                                                           
+    (void) allowEmpty;
+    //srmatch.setDefault();
+    srmatch.flashID = match.flashID;
+    srmatch.flashTime = match.flashTime;
+    srmatch.flashGateTime = match.flashGateTime; 
+    srmatch.firstOpHitPeakTime = match.firstOpHitPeakTime;
+    srmatch.firstOpHitStartTime = match.firstOpHitStartTime;
+    srmatch.flashInGate = match.flashInGate;
+    srmatch.flashInBeam = match.flashInBeam;
+    srmatch.flashPE = match.flashPE;
+    srmatch.flashPosition = SRVector3D (match.flashPosition.X(), match.flashPosition.Y(), match.flashPosition.Z());
+    srmatch.flashYWidth = match.flashYWidth;
+    srmatch.flashZWidth = match.flashZWidth;
+    srmatch.flashClassification = static_cast<int>(match.flashClassification);
+    for(const auto& matchedCRTHit : match.matchedCRTHits){
+      caf::SRMatchedCRT matchedCRT;
+      matchedCRT.PMTTimeDiff = matchedCRTHit.PMTTimeDiff; 
+      matchedCRT.time = matchedCRTHit.time;
+      matchedCRT.sys = matchedCRTHit.sys;
+      matchedCRT.region = matchedCRTHit.region;
+      matchedCRT.position = SRVector3D(matchedCRTHit.position.X(), matchedCRTHit.position.Y(), matchedCRTHit.position.Z());
+      srmatch.matchedCRTHits.push_back(matchedCRT);
+    }
+  }
+
 
   void FillOpFlash(const recob::OpFlash &flash,
                   std::vector<recob::OpHit const*> const& hits,
@@ -384,6 +414,48 @@ namespace caf
     }
   }
 
+  void FillSliceBarycenter(const std::vector<art::Ptr<recob::Hit>> &inputHits,
+                           const std::vector<art::Ptr<recob::SpacePoint>> &inputPoints,
+                           caf::SRSlice &slice)
+  {
+    unsigned int nHits = inputHits.size();
+    double sumCharge = 0.;
+    double sumX = 0.; double sumY = 0.; double sumZ = 0.;
+    double sumXX = 0.; double sumYY = 0.; double sumZZ = 0.;
+    double thisHitCharge, thisPointXYZ[3], chargeCenter[3], chargeWidth[3];
+
+    for ( unsigned int i = 0; i < nHits; i++ ) {
+      const recob::Hit &thisHit = *inputHits[i];
+      if ( thisHit.SignalType() != geo::kCollection ) continue;
+      art::Ptr<recob::SpacePoint> const& thisPoint = inputPoints.at(i);
+      if ( !thisPoint ) continue;
+
+      thisHitCharge = thisHit.Integral();
+      thisPointXYZ[0] = thisPoint->XYZ()[0];
+      thisPointXYZ[1] = thisPoint->XYZ()[1];
+      thisPointXYZ[2] = thisPoint->XYZ()[2];
+
+      sumCharge += thisHitCharge;
+      sumX += thisPointXYZ[0] * thisHitCharge;
+      sumY += thisPointXYZ[1] * thisHitCharge;
+      sumZ += thisPointXYZ[2] * thisHitCharge;
+      sumXX += thisPointXYZ[0] * thisPointXYZ[0] * thisHitCharge;
+      sumYY += thisPointXYZ[1] * thisPointXYZ[1] * thisHitCharge;
+      sumZZ += thisPointXYZ[2] * thisPointXYZ[2] * thisHitCharge;
+    }
+
+    if( sumCharge != 0 ) {
+      chargeCenter[0] = sumX / sumCharge;
+      chargeCenter[1] = sumY / sumCharge;
+      chargeCenter[2] = sumZ / sumCharge;
+      chargeWidth[0] = pow( (sumXX/sumCharge - pow(sumX/sumCharge, 2)), .5);
+      chargeWidth[1] = pow( (sumYY/sumCharge - pow(sumY/sumCharge, 2)), .5);
+      chargeWidth[2] = pow( (sumZZ/sumCharge - pow(sumZ/sumCharge, 2)), .5);
+
+      slice.charge_center.SetXYZ( chargeCenter[0], chargeCenter[1], chargeCenter[2] ); 
+      slice.charge_width.SetXYZ( chargeWidth[0], chargeWidth[1], chargeWidth[2] );
+    }
+  }
 
   //......................................................................
 
@@ -779,6 +851,35 @@ namespace caf
     srhit.spacepoint.pfpID = particle.Self();
     srhit.spacepoint.ID = spacepoint.ID();
   }
+
+
+  void FillTPCPMTBarycenterMatch(const sbn::TPCPMTBarycenterMatch *matchInfo,
+                           caf::SRSlice& slice)
+  { 
+    slice.barycenterFM.setDefault();
+
+    if ( matchInfo != nullptr ) {
+      slice.barycenterFM.chargeTotal  = matchInfo->chargeTotal;
+      slice.barycenterFM.chargeCenterXLocal  = matchInfo->chargeCenterXLocal;
+      slice.barycenterFM.chargeCenter  = SRVector3D (matchInfo->chargeCenter.x(), matchInfo->chargeCenter.y(), matchInfo->chargeCenter.z());
+      slice.barycenterFM.chargeWidth  = SRVector3D (matchInfo->chargeWidth.x(), matchInfo->chargeWidth.y(), matchInfo->chargeWidth.z());
+      slice.barycenterFM.flashFirstHit  = matchInfo->flashFirstHit;
+      slice.barycenterFM.flashTime  = matchInfo->flashTime;
+      slice.barycenterFM.flashPEs  = matchInfo->flashPEs;
+      slice.barycenterFM.flashCenter  = SRVector3D (matchInfo->flashCenter.x(), matchInfo->flashCenter.y(), matchInfo->flashCenter.z());
+      slice.barycenterFM.flashWidth  = SRVector3D (matchInfo->flashWidth.x(), matchInfo->flashWidth.y(), matchInfo->flashWidth.z());
+      slice.barycenterFM.deltaT  = matchInfo->deltaT;
+      slice.barycenterFM.deltaY  = matchInfo->deltaY;
+      slice.barycenterFM.deltaZ  = matchInfo->deltaZ;
+      slice.barycenterFM.radius  = matchInfo->radius;
+      slice.barycenterFM.overlapY  = matchInfo->overlapY;
+      slice.barycenterFM.overlapZ  = matchInfo->overlapZ;
+      slice.barycenterFM.deltaZ_Trigger  = matchInfo->deltaZ_Trigger;
+      slice.barycenterFM.deltaY_Trigger  = matchInfo->deltaY_Trigger;
+      slice.barycenterFM.radius_Trigger  = matchInfo->radius_Trigger;
+    }
+  }
+
   //......................................................................
 
   void SetNuMuCCPrimary(std::vector<caf::StandardRecord> &recs,
