@@ -130,7 +130,8 @@ namespace sbn {
 
     bool recoPrimary, trackContained, showerContained, unambiguousSlice, goodTrack, goodShower;
     int recoPDG, chi2PDG;
-    float trackStartX, trackStartY, trackStartZ, trackEndX, trackEndY, trackEndZ, trackChi2PIDPion, trackChi2PIDKaon,
+    float trueStartX, trueStartY, trueStartZ, trueEndX, trueEndY, trueEndZ,
+      trackStartX, trackStartY, trackStartZ, trackEndX, trackEndY, trackEndZ, trackChi2PIDPion, trackChi2PIDKaon,
       showerStartX, showerStartY, showerStartZ, showerEndX, showerEndY, showerEndZ,
       showerEnergy;
 
@@ -275,6 +276,12 @@ namespace sbn {
         pfpTree->Branch("trueEndMomentum", &trueEndMomentum);
         pfpTree->Branch("energyComp", &energyComp);
         pfpTree->Branch("energyPurity", &energyPurity);
+        pfpTree->Branch("trueStartX", &trueStartX);
+        pfpTree->Branch("trueStartY", &trueStartY);
+        pfpTree->Branch("trueStartZ", &trueStartZ);
+        pfpTree->Branch("trueEndX", &trueEndX);
+        pfpTree->Branch("trueEndY", &trueEndY);
+        pfpTree->Branch("trueEndZ", &trueEndZ);
 
         pfpTree->Branch("recoPrimary", &recoPrimary);
         pfpTree->Branch("unambiguousSlice", &unambiguousSlice);
@@ -499,8 +506,11 @@ namespace sbn {
     protonScore = -5.f; bestScore     = -5.f;
     bestPDG     = -5;
 
-    truePDG = -5; trueMotherPDG = -5; trueType = ""; trueEndProcess = ""; trueEndMomentum = -5.f;
-    energyComp = -5.f; energyPurity = -5.f;
+    truePDG         = -5;   trueMotherPDG = -5;   trueType      = "";   trueEndProcess = "";
+    trueEndMomentum = -5.f; energyComp    = -5.f; energyPurity  = -5.f;
+
+    trueStartX = -999.f; trueStartY = -999.f; trueStartZ = -999.f;
+    trueEndX   = -999.f; trueEndY   = -999.f; trueEndZ   = -999.f;
 
     recoPrimary = false; unambiguousSlice = false; recoPDG = -5;
 
@@ -578,6 +588,12 @@ namespace sbn {
     trueType        = this->PDGString(truePDG);
     trueEndProcess  = trueParticle->EndProcess();
     trueEndMomentum = trueParticle->EndMomentum().Vect().Mag();
+    trueStartX      = trueParticle->Vx();
+    trueStartY      = trueParticle->Vy();
+    trueStartZ      = trueParticle->Vz();
+    trueEndX        = trueParticle->EndX();
+    trueEndY        = trueParticle->EndY();
+    trueEndZ        = trueParticle->EndZ();
 
     if(trueParticle->Process() == "primary")
       return;
