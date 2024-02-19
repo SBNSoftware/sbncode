@@ -1,0 +1,13 @@
+BEGIN_PROLOG
+mcs_sbn: {
+  module_type: MCSFitAllPID
+  MCS: {
+    eLossMode: 2
+    angResol: 10.0
+    fiducialVolumeInsets: [10.0, 10.0, 10.0, 10.0, 10.0, 10.0] 
+    excludeVolumes: [190.0, 240.0, -9999.0, 9999.0, -9999.0, 9999.0] 
+  }
+  TrackLabel: pandoraTrack
+}
+
+END_PROLOG
