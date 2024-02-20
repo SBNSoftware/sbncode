@@ -4,18 +4,6 @@ empty_kaon: {
   tool_type: EmptyKaonGen
 }
 
-sbnd_bnb_beam2detector_rotation: [ 1, 0, 0,
-                                   0, 1, 0,
-                                   0, 0, 1] #bnb to sbnd is in z-direction, only need a translation.
-
-#sbnd_bnb_beam_origin: [-73.78, 0, -11000] # cm in beam in deterctor frame
-sbnd_bnb_beam_origin: [0, 0, 0, 73.78, 0, 11000] # cm in detector in beam frame
-
-#sbnd detector in det frame
-sbnd_detector_box: [-200, 200, -200, 200, 0, 500] #cm
-sbnd_bnb_solid_angle_box: 1.3223e-3 #front face / detector distance ^2 = 4*4/110^2
-
-sbnd_bnb_solid_angle_cryostat: 0.0133 
 
 bnb_kaon: {
   tool_type: "BNBKaonGen" # BooNe Ntuples
@@ -29,43 +17,5 @@ bnb_kaon: {
   Verbose: false
 }
 
-kaon_energy: 8 #GeV Max energy from kaon 
-kaon_pdg: 321 #K+
-
-ray_trace_box: {
-  tool_type: RayTraceBox
-  Box: @local::sbnd_detector_box
-  Verbose: false
-}
-
-rethrow_ray_trace_box: {
-  tool_type: ReThrowRayTraceBox
-  Box: @local::sbnd_detector_box
-  ReferenceLabSolidAngle: @local::sbnd_bnb_solid_angle_box
-  ReferencePrimaryEnergy: @local::kaon_energy
-  ReferencePrimPDG: @local::kaon_pdg
-  Verbose: false
-}
-
-weighted_ray_trace_box: {
-  tool_type: WeightedRayTraceBox
-  Box: @local::sbnd_detector_box
-  ReferenceLabSolidAngle: @local::sbnd_bnb_solid_angle_box
-  ReferencePrimaryEnergy: @local::kaon_energy 
-  ReferencePrimPDG: @local::kaon_pdg
-  Verbose: false
-}
-
-mixedweight_ray_trace_box: {
-  tool_type: MixedWeightRayTraceBox
-  Box: @local::sbnd_detector_box
-  ReferenceLabSolidAngle: @local::sbnd_bnb_solid_angle_box
-  ReferencePrimaryEnergy: @local::kaon_energy
-  ReferencePrimPDG: @local::kaon_pdg
-  MaxWeightFudge: 2.
-  NThrow: 250
-  FixNSuccess: false
-  Verbose: false
-}
 
 END_PROLOG
