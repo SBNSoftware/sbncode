@@ -104,6 +104,18 @@ namespace caf
       "numiinfo"
     };
 
+    Atom<string> OffbeamBNBCountDataLabel {
+      Name("OffbeamBNBCountDataLabel"),
+      Comment("Label of BNB EXT module"),
+      "bnbextinfo"
+    };
+
+    Atom<string> OffbeamNuMICountDataLabel {
+      Name("OffbeamNuMICountDataLabel"),
+      Comment("Label of NuMI EXT module"),
+      "numiextinfo"
+    };
+
     Atom<string> G4Label {
       Name("G4Label"),
       Comment("Label of G4 module."),
@@ -132,6 +144,12 @@ namespace caf
       Name("PFParticleLabel"),
       Comment("Base label of PFParticle producer."),
       "pandora"
+    };
+
+    Atom<string> CNNScoreLabel {
+      Name("CNNScoreLabel"),
+      Comment("Base label of CNN score producer."),
+      "cnnid"
     };
 
     Atom<string> StubLabel {
@@ -198,6 +216,12 @@ namespace caf
       "pandoraShowerRazzle"
     };
 
+    Atom<string> PFPRazzledLabel {
+      Name("PFPRazzledLabel"),
+      Comment("Base label of pfp mva particle-id producer."),
+      "pandoraRazzled"
+    };
+
     Atom<string> RecoShowerSelectionLabel {
       Name("RecoShowerSelectionLabel"),
       Comment("Base label of shower selection vars producer."),
@@ -252,6 +276,18 @@ namespace caf
       "pandoraTrackCRTTrack"
     };
 
+    Atom<string> CRTSpacePointMatchLabel {
+      Name("CRTSpacePointMatchLabel"),
+      Comment("Base label of track to CRT spacepoint matching producer."),
+      "crtspacepointmatching"
+    };
+
+    Atom<string> SBNDCRTTrackMatchLabel {
+      Name("SBNDCRTTrackMatchLabel"),
+      Comment("Base label of track to SBND CRT track matching producer."),
+      "crttrackmatching"
+    };
+
     Atom<string> TrackMCSLabel {
       Name("TrackMCSLabel"),
       Comment("Base label of track MCS momentum calculation producer."),
@@ -267,15 +303,27 @@ namespace caf
     Atom<string> CRTHitLabel {
       Name("CRTHitLabel"),
       Comment("Label of sbn CRT hits."),
-      "crthit" // same for icarus and sbnd
+      "crthit" // icarus
     };
 
     Atom<string> CRTTrackLabel {
       Name("CRTTrackLabel"),
       Comment("Label of sbn CRT tracks."),
-      "crttrack" // same for icarus and sbnd
+      "crttrack" // icarus
     };
-    
+
+    Atom<string> CRTSpacePointLabel {
+      Name("CRTSpacePointLabel"),
+      Comment("Label of sbnd CRT spacepoints."),
+      "crtspacepoints" // sbnd
+    };
+
+    Atom<string> SBNDCRTTrackLabel {
+      Name("SBNDCRTTrackLabel"),
+      Comment("Label of sbnd CRT tracks."),
+      "crttracks" // sbnd
+    };
+
     Atom<string> CRTPMTLabel {
       Name("CRTPMTLabel"),
       Comment("Label for the CRTPMT Matched variables from the crtpmt data product"),

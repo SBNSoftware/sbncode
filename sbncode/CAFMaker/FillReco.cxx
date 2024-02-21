@@ -112,6 +112,31 @@ namespace caf
     srtrack.hitb.plane = track.plane2;
   }
 
+  void FillCRTSpacePoint(const sbnd::crt::CRTSpacePoint &spacepoint,
+                         caf::SRCRTSpacePoint &srspacepoint,
+                         bool allowEmpty)
+  {
+    srspacepoint.position     = SRVector3D(spacepoint.X(), spacepoint.Y(), spacepoint.Z());
+    srspacepoint.position_err = SRVector3D(spacepoint.XErr(), spacepoint.YErr(), spacepoint.ZErr());
+    srspacepoint.pe           = spacepoint.PE();
+    srspacepoint.time         = spacepoint.Time();
+    srspacepoint.time_err     = spacepoint.TimeErr();
+    srspacepoint.complete     = spacepoint.Complete();
+  }
+
+  void FillSBNDCRTTrack(const sbnd::crt::CRTTrack &track,
+                        caf::SRSBNDCRTTrack &srsbndcrttrack,
+                        bool allowEmpty)
+  {
+    for(auto const& point : track.Points())
+      srsbndcrttrack.points.emplace_back(point.X(), point.Y(), point.Z());
+
+    srsbndcrttrack.time    = track.Time();
+    srsbndcrttrack.time_err = track.TimeErr();
+    srsbndcrttrack.pe       = track.PE();
+    srsbndcrttrack.tof      = track.ToF();
+  }
+
   void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,
 		       caf::SRCRTPMTMatch &srmatch,
 		       bool allowEmpty){
@@ -408,10 +433,12 @@ namespace caf
       slice.crumbs_result.pds.fmtotalscore = crumbs->pds_FMTotalScore;
       slice.crumbs_result.pds.fmpe = crumbs->pds_FMPE;
       slice.crumbs_result.pds.fmtime = crumbs->pds_FMTime;
+      slice.crumbs_result.pds.opt0score = crumbs->pds_OpT0Score;
+      slice.crumbs_result.pds.opt0measuredpe = crumbs->pds_OpT0MeasuredPE;
       slice.crumbs_result.crt.trackscore = crumbs->crt_TrackScore;
-      slice.crumbs_result.crt.hitscore = crumbs->crt_HitScore;
+      slice.crumbs_result.crt.spscore = crumbs->crt_SPScore;
       slice.crumbs_result.crt.tracktime = crumbs->crt_TrackTime;
-      slice.crumbs_result.crt.hittime = crumbs->crt_HitTime;
+      slice.crumbs_result.crt.sptime = crumbs->crt_SPTime;
     }
   }
 
@@ -540,6 +567,24 @@ namespace caf
     }
   }
 
+  void FillTrackCRTSpacePoint(const anab::T0 &t0match,
+                              const art::Ptr<sbnd::crt::CRTSpacePoint> &spacepointmatch,
+                              caf::SRTrack &srtrack,
+                              bool allowEmpty)
+  {
+    srtrack.crtspacepoint.score = t0match.fTriggerConfidence;
+    FillCRTSpacePoint(*spacepointmatch, srtrack.crtspacepoint.spacepoint);
+  }
+
+  void FillTrackSBNDCRTTrack(const anab::T0 &t0match,
+                             const art::Ptr<sbnd::crt::CRTTrack> &trackmatch,
+                             caf::SRTrack &srtrack,
+                             bool allowEmpty)
+  {
+    srtrack.crtsbndtrack.score = t0match.fTriggerConfidence;
+    FillSBNDCRTTrack(*trackmatch, srtrack.crtsbndtrack.track);
+  }
+
   void FillTrackMCS(const recob::Track& track,
                     const std::array<std::vector<art::Ptr<recob::MCSFitResult>>, 4> &mcs_results,
                     caf::SRTrack& srtrack,
@@ -553,6 +598,10 @@ namespace caf
       srtrack.mcsP.fwdP_err_muon = mcs_fit_muon.fwdMomUncertainty();
       srtrack.mcsP.bwdP_muon     = mcs_fit_muon.bwdMomentum();
       srtrack.mcsP.bwdP_err_muon = mcs_fit_muon.bwdMomUncertainty();
+
+      // Use the 0th result to also get the input values
+      srtrack.mcsP.seg_scatter_angles = mcs_fit_muon.scatterAngles();
+      srtrack.mcsP.seg_length = mcs_fit_muon.segmentRadLengths();
     }
 
     if (mcs_results[1].size()) {
@@ -869,10 +918,31 @@ namespace caf
       CopyPropertyIfSet(propertiesMap, "LArThreeDPCAFeatureTool_SecondaryPCARatio",          srpfp.pfochar.pca2ratio);
       CopyPropertyIfSet(propertiesMap, "LArThreeDPCAFeatureTool_TertiaryPCARatio",           srpfp.pfochar.pca3ratio);
       CopyPropertyIfSet(propertiesMap, "LArThreeDVertexDistanceFeatureTool_VertexDistance",  srpfp.pfochar.vtxdist);
+      CopyPropertyIfSet(propertiesMap, "LArConeChargeFeatureTool_HaloTotalRatio",            srpfp.pfochar.halototratio);
+      CopyPropertyIfSet(propertiesMap, "LArConeChargeFeatureTool_Concentration",             srpfp.pfochar.concentration);
+      CopyPropertyIfSet(propertiesMap, "LArConeChargeFeatureTool_Conicalness",               srpfp.pfochar.conicalness);
     }
     if (t0) {
       srpfp.t0 = t0->Time() / 1e3; /* ns -> us */
     }
+  }
+
+  void FillCNNScores(const recob::PFParticle &particle,
+                     const sbn::PFPCNNScore *cnnscore,
+                     caf::SRPFP& srpfp,
+                     bool allowEmpty)
+  {
+    // std::cout << "pfpTrackScore: " << cnnscore->pfpTrackScore << std::endl;
+    // std::cout << "pfpShowerScore: " << cnnscore->pfpShowerScore << std::endl;
+    // std::cout << "pfpNoiseScore: " << cnnscore->pfpNoiseScore << std::endl;
+    // std::cout << "pfpMichelScore: " << cnnscore->pfpMichelScore << std::endl;
+
+    srpfp.cnnscore.track = cnnscore->pfpTrackScore;
+    srpfp.cnnscore.shower = cnnscore->pfpShowerScore;
+    srpfp.cnnscore.noise = cnnscore->pfpNoiseScore;
+    srpfp.cnnscore.michel = cnnscore->pfpMichelScore;
+    srpfp.cnnscore.endmichel = cnnscore->pfpEndMichelScore;
+    srpfp.cnnscore.nclusters = cnnscore->nClusters;
   }
 
   void FillHitVars(const recob::Hit& hit,
@@ -926,6 +996,22 @@ namespace caf
       slice.barycenterFM.deltaY_Trigger  = matchInfo->deltaY_Trigger;
       slice.barycenterFM.radius_Trigger  = matchInfo->radius_Trigger;
     }
+  }
+
+  //......................................................................
+
+  void FillPFPRazzled(const art::Ptr<sbn::MVAPID> razzled,
+                      caf::SRPFP& srpfp,
+                      bool allowEmpty)
+  {
+    srpfp.razzled.electronScore = razzled->mvaScoreMap.at(11);
+    srpfp.razzled.muonScore = razzled->mvaScoreMap.at(13);
+    srpfp.razzled.photonScore = razzled->mvaScoreMap.at(22);
+    srpfp.razzled.pionScore = razzled->mvaScoreMap.at(211);
+    srpfp.razzled.protonScore = razzled->mvaScoreMap.at(2212);
+
+    srpfp.razzled.pdg = razzled->BestPDG();
+    srpfp.razzled.bestScore = razzled->BestScore();
   }
 
   //......................................................................
