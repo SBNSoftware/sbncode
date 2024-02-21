@@ -243,7 +243,7 @@ namespace sbn {
           reader->AddVariable("shw_convGap", &shw_convGap);
           reader->AddVariable("shw_openAngle", &shw_openAngle);
           reader->AddVariable("shw_modHitDensity", &shw_modHitDensity);
-          reader->AddVariable("shw_sqrtEnergyDensity", &shw_sqrtEnergyDensity);
+          reader->AddVariable("shw_sqrtEnergyDensity>2.5?2.5:shw_sqrtEnergyDensity", &shw_sqrtEnergyDensity);
 
           reader->BookMVA(fMethodName, fWeightFileFullPath);
         }
@@ -828,10 +828,14 @@ namespace sbn {
         showerPlanePitches[plane.ID().Plane] = plane.WirePitch() / cosgamma;
       }
 
-    const int bestPlane = shower->best_plane();
+    int bestPlane = -1;
 
-    if(bestPlane < 0 || bestPlane > 3)
-      throw cet::exception("Razzled") << "Best plane: " << bestPlane;
+    if(showerPlaneHits[2] >= showerPlaneHits[1] && showerPlaneHits[2] >= showerPlaneHits[0])
+      bestPlane = 2;
+    else if(showerPlaneHits[0] >= showerPlaneHits[1])
+      bestPlane = 0;
+    else
+      bestPlane = 1;
 
     shw_bestdEdx = shower->dEdx()[bestPlane];
     shw_bestdEdx = std::min(shw_bestdEdx, 20.f);

@@ -23,9 +23,9 @@ int CRUMBSTMVADriver()
   std::cout << "==> Start CRUMBS TMVA Training" << std::endl;
 
   TChain *inputTree = new TChain("crumbs/SliceTree");
-  inputTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv2/NCPiZeroAv2_rockbox.root");
-  inputTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv2/NCPiZeroAv2_intrnue.root");
-  inputTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv2/NCPiZeroAv2_intime.root");
+  inputTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv12/NCPiZeroAv12_rockbox.root");
+  inputTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv12/NCPiZeroAv12_intrnue.root");
+  inputTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv12/NCPiZeroAv12_intime.root");
 
   if (!inputTree) {
     std::cout << "ERROR: could not access tree" << std::endl;
@@ -78,13 +78,12 @@ void TrainCRUMBSInstance(const TString outDirName, TTree *inputTree,
   dataloader->AddVariable("tpc_NuWeightedDirZ","Weighted Z Direction (Nu Reco)","",'F');
   dataloader->AddVariable("tpc_StoppingChi2CosmicRatio","Stopping Fits Chi2 Ratio","",'F');
 
-  dataloader->AddVariable("pds_FMTotalScore","Total FM Score","",'F');
-  dataloader->AddVariable("pds_FMPE","nPE in flash","",'F');
-  dataloader->AddVariable("pds_FMTime","FM Time","#mu s",'F');
+  //  dataloader->AddVariable("pds_FMTotalScore","Total FM Score","",'F');
+  //  dataloader->AddVariable("pds_FMPE","nPE in flash","",'F');
+  //  dataloader->AddVariable("pds_FMTime","FM Time","#mu s",'F');
 
-  //dataloader->AddVariable("pds_OpT0Score","OpT0 Score","",'F');
-  //dataloader->AddVariable("isinf(pds_OpT0MeasuredPE) ? -10000 : pds_OpT0MeasuredPE",
-  //                      "OpT0 Measured PE","",'F');
+  dataloader->AddVariable("pds_OpT0Score","OpT0 Score","",'F');
+  dataloader->AddVariable("isinf(pds_OpT0MeasuredPE) ? -10000 : pds_OpT0MeasuredPE", "OpT0 Measured PE","",'F');
 
   dataloader->AddVariable("crt_TrackScore","CRT Track Match Score","",'F');
   dataloader->AddVariable("crt_SPScore","CRT SpacePoint Match Score","",'F');

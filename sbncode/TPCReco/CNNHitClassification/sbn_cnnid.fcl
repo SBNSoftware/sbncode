@@ -22,7 +22,7 @@ cnnid_sbnd: {
 
 cnnid_sbnd_sce: {
   module_type: CNNID
-  BatchSize:                    256
+  BatchSize:                    256 
   WireLabel:                    "simtpc2d:gauss"
   HitModuleLabel:               "gaushit"
   ClusterModuleLabel:           "pandoraSCE"

@@ -21,9 +21,9 @@ void ShowerPIDMVA()
   TMVA::DataLoader *dataloader = new TMVA::DataLoader("dataset");
 
   TChain *showerTree = new TChain("razzle/showerTree");
-  showerTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv2/NCPiZeroAv2_rockbox.root");
-  showerTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv2/NCPiZeroAv2_intrnue.root");
-  showerTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv2/NCPiZeroAv2_intime.root");
+  showerTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv12/NCPiZeroAv12_rockbox.root");
+  showerTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv12/NCPiZeroAv12_intrnue.root");
+  showerTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv12/NCPiZeroAv12_intime.root");
 
   TTree *electronTree = showerTree->CopyTree("std::abs(truePdg)==11");
   TTree *photonTree   = showerTree->CopyTree("std::abs(truePdg)==22");

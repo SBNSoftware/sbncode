@@ -479,12 +479,12 @@ void Razzle::FillShowerMetrics(const recob::Shower& shower, const std::vector<ar
     showerPlanePitches[plane.ID().Plane] = plane.WirePitch() / cosgamma;
   }
 
-  // Fill only for the best plane, defined as the one with the most hits
-  // Prefer collection plane > 1st induction > 2nd induction
-  bestPlane = shower.best_plane();
-
-  if (bestPlane < 0 || bestPlane > 3)
-    throw cet::exception("Razzle") << "Best plane: " << bestPlane;
+  if(showerPlaneHits[2] >= showerPlaneHits[1] && showerPlaneHits[2] >= showerPlaneHits[0])
+    bestPlane = 2;
+  else if(showerPlaneHits[0] >= showerPlaneHits[1])
+    bestPlane = 0;
+  else
+    bestPlane = 1;
 
   bestdEdx = shower.dEdx()[bestPlane];
   bestdEdx = std::min(bestdEdx, 20.f);

@@ -15,7 +15,7 @@ vertex_charge_sbnd: {
 
 vertex_charge_sbnd_sce: @local::vertex_charge_sbnd
 vertex_charge_sbnd_sce.PFParticleLabel: pandoraSCE
-vertex_charge_sbnd_sce.TrackLabel: pandoraSCETrack
+#vertex_charge_sbnd_sce.TrackLabel: pandoraSCETrack
 vertex_charge_sbnd_sce.CorrectSCE: true
 vertex_charge_sbnd_sce.PositionsAreSCECorrected: true
 
@@ -34,7 +34,7 @@ vertex_stub_sbnd: {
 
 vertex_stub_sbnd_sce: @local::vertex_stub_sbnd
 vertex_stub_sbnd_sce.PFPLabel: pandoraSCE
-vertex_stub_sbnd_sce.TrackLabel: pandoraSCETrack
+#vertex_stub_sbnd_sce.TrackLabel: pandoraSCETrack
 vertex_stub_sbnd_sce.CorrectSCE: true
 vertex_stub_sbnd_sce.PositionsAreSCECorrected: true
 

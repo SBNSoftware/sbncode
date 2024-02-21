@@ -23,9 +23,9 @@ void PFPPIDMVA()
   TMVA::DataLoader *dataloader = new TMVA::DataLoader("Razzled" + instance);
 
   TChain *pfpTree = new TChain("razzled/pfpTree");
-  pfpTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv2/NCPiZeroAv2_rockbox.root");
-  pfpTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv2/NCPiZeroAv2_intrnue.root");
-  pfpTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv2/NCPiZeroAv2_intime.root");
+  pfpTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv12/NCPiZeroAv12_rockbox.root");
+  pfpTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv12/NCPiZeroAv12_intrnue.root");
+  pfpTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv12/NCPiZeroAv12_intime.root");
 
   TCut generic_cuts = "!unambiguousSlice && (trk_length > 3 || showerEnergy > 10)";
 
@@ -60,7 +60,7 @@ void PFPPIDMVA()
   dataloader->AddVariable("shw_convGap", "Shower Conversion Gap", "cm", 'F', 0, 10);
   dataloader->AddVariable("shw_openAngle", "Shower Opening Angle", "rad", 'F', 0, 10);
   dataloader->AddVariable("shw_modHitDensity", "Shower Modified Hit Density", "", 'F', 0, 10);
-  dataloader->AddVariable("shw_sqrtEnergyDensity", "Shower Sqrt Energy Density", "", 'F', 0, 10);
+  dataloader->AddVariable("shw_sqrtEnergyDensity > 2.5 ? 2.5 : shw_sqrtEnergyDensity", "Shower Sqrt Energy Density", "", 'F', 0, 10);
 
   const TCut baseCut("(abs(trackStartX) < 180 && abs(trackStartY) < 180 && trackStartZ > 10"
                      " && trackStartZ < 450 && abs(showerStartX) < 180 && abs(showerStartY) < 180"
