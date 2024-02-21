@@ -906,7 +906,7 @@ bool HNLMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
     }
   }
 
-  std::cout << flux.C3 << std::endl;
+  // std::cout << flux.C3 << std::endl;
   if (!has_allowed_decay) {
     throw cet::exception("HNLMakeDecay Tool: BAD MASS. Configured mass (" + std::to_string(flux.mass) +
          ") is smaller than any configured decay.");
