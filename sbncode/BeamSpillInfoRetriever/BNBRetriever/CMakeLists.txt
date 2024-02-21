@@ -18,6 +18,7 @@ cet_build_plugin(BNBRetriever art::module
         messagefacility::MF_MessageLogger
         ifbeam::ifbeam
         ifdh_art::IFBeam_service
+	SQLite::SQLite3
         sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
         sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays
         sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS

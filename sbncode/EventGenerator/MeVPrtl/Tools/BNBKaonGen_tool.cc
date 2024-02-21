@@ -113,6 +113,9 @@ BNBKaonGen::BNBKaonGen(fhicl::ParameterSet const &pset):
 {
   configure(pset);
 
+  // copy the flux files locally
+  fFluxFiles = LoadFluxFiles();
+
   // setup indices
   fFileIndex = 0;
   fEntry = 0;
@@ -156,7 +159,6 @@ void BNBKaonGen::configure(fhicl::ParameterSet const &pset)
     std::cout << "With copy method: " << fFluxCopyMethod << std::endl;
   }
 
-  fFluxFiles = pset.get<std::vector<std::string>>("FluxFilesFullPath");
 }
 
 std::vector<std::string> BNBKaonGen::LoadFluxFiles() {
@@ -456,8 +458,8 @@ simb::MCFlux BNBKaonGen::MakeMCFlux(const bsim::BooNe &boone) {
   flux.fevtno    = fBooneNtp.eventn;
   flux.ftgptype  = evgen::GeantToPdg(fBooneNtp.id[npart-2]);
 
-  // flux.fnenergyn = flux.fnenergyf = enu;
-  // flux.fnwtnear  = flux.fnwtfar = wgt; 
+  //flux.fnenergyn = flux.fnenergyf = enu;
+  //flux.fnwtnear  = flux.fnwtfar = wgt; 
   // ignore variables dealing with the neutrino
   flux.fnenergyn = -1;
   flux.fnwtnear = flux.fnwtfar = -1;

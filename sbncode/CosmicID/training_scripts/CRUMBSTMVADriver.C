@@ -14,15 +14,31 @@
 
 void TrainCRUMBSInstance(const TString outDirName, TTree *inputTree, 
                          const TCut sigCut, const TCut backCut,
+                         const bool useOpT0Finder = true, const bool useSimpleFlash = false,
                          const double signalWeight = 1.0, const double backgroundWeight = 1.0);
-int CRUMBSTMVADriver()
+
+int CRUMBSTMVADriver(const bool useOpT0Finder = true, const bool useSimpleFlash = false)
 {
+  if(useOpT0Finder && useSimpleFlash)
+    {
+      std::cout << "Cannot use both flash matchers, please chose one..." << std::endl;
+      return 0;
+    }
+  else if(!useOpT0Finder && !useSimpleFlash)
+    {
+      std::cout << "Would recommend using one of the flash matchers..." << std::endl;
+      return 0;
+    }
+
   TMVA::Tools::Instance();
 
   std::cout << std::endl;
   std::cout << "==> Start CRUMBS TMVA Training" << std::endl;
 
   TChain *inputTree = new TChain("crumbs/SliceTree");
+  //  inputTree->Add("/ADD/WHATEVER/SAMPLES/YOU'RE/USING/HERE");
+  // Recommend using a combination of a rockbox sample, an intrinsic electron neutrino sample
+  // and an intime cosmics sample in roughly a 2:2:1 ratio
   inputTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv12/NCPiZeroAv12_rockbox.root");
   inputTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv12/NCPiZeroAv12_intrnue.root");
   inputTree->Add("/pnfs/sbnd/persistent/users/hlay/ncpizero/NCPiZeroAv12/NCPiZeroAv12_intime.root");
@@ -39,10 +55,10 @@ int CRUMBSTMVADriver()
   TCut ccnueSignal     = inclusiveSignal + "ccnc == 0 && abs(nutype) == 12";
   TCut ncSignal        = inclusiveSignal + "ccnc == 1";
 
-  TrainCRUMBSInstance("CRUMBS_Inclusive", inputTree, inclusiveSignal, background);
-  TrainCRUMBSInstance("CRUMBS_CCNuMu", inputTree, ccnumuSignal, background);
-  TrainCRUMBSInstance("CRUMBS_CCNuE", inputTree, ccnueSignal, background);
-  TrainCRUMBSInstance("CRUMBS_NC", inputTree, ncSignal, background);
+  TrainCRUMBSInstance("CRUMBS_Inclusive", inputTree, inclusiveSignal, background, useOpT0Finder, useSimpleFlash);
+  TrainCRUMBSInstance("CRUMBS_CCNuMu", inputTree, ccnumuSignal, background, useOpT0Finder, useSimpleFlash);
+  TrainCRUMBSInstance("CRUMBS_CCNuE", inputTree, ccnueSignal, background, useOpT0Finder, useSimpleFlash);
+  TrainCRUMBSInstance("CRUMBS_NC", inputTree, ncSignal, background, useOpT0Finder, useSimpleFlash);
 
   std::cout << std::endl;
   std::cout << "==> Finish CRUMBS TMVA Training" << std::endl;
@@ -52,6 +68,7 @@ int CRUMBSTMVADriver()
 
 void TrainCRUMBSInstance(const TString outDirName, TTree *inputTree, 
                          const TCut sigCut, const TCut backCut,
+                         const bool useOpT0Finder, const bool useSimpleFlash,
                          const double signalWeight, const double backgroundWeight)
 {
   std::cout << std::endl;
@@ -78,12 +95,18 @@ void TrainCRUMBSInstance(const TString outDirName, TTree *inputTree,
   dataloader->AddVariable("tpc_NuWeightedDirZ","Weighted Z Direction (Nu Reco)","",'F');
   dataloader->AddVariable("tpc_StoppingChi2CosmicRatio","Stopping Fits Chi2 Ratio","",'F');
 
-  //  dataloader->AddVariable("pds_FMTotalScore","Total FM Score","",'F');
-  //  dataloader->AddVariable("pds_FMPE","nPE in flash","",'F');
-  //  dataloader->AddVariable("pds_FMTime","FM Time","#mu s",'F');
+  if(useOpT0Finder)
+    {
+      dataloader->AddVariable("pds_OpT0Score","OpT0 Score","",'F');
+      dataloader->AddVariable("isinf(pds_OpT0MeasuredPE) ? -10000 : pds_OpT0MeasuredPE", "OpT0 Measured PE","",'F');
+    }
 
-  dataloader->AddVariable("pds_OpT0Score","OpT0 Score","",'F');
-  dataloader->AddVariable("isinf(pds_OpT0MeasuredPE) ? -10000 : pds_OpT0MeasuredPE", "OpT0 Measured PE","",'F');
+  if(useSimpleFlash)
+    {
+      dataloader->AddVariable("pds_FMTotalScore","Total FM Score","",'F');
+      dataloader->AddVariable("pds_FMPE","nPE in flash","",'F');
+      dataloader->AddVariable("pds_FMTime","FM Time","#mu s",'F');
+    }
 
   dataloader->AddVariable("crt_TrackScore","CRT Track Match Score","",'F');
   dataloader->AddVariable("crt_SPScore","CRT SpacePoint Match Score","",'F');

@@ -209,14 +209,15 @@ namespace sbn {
 
 
     std::vector<float> FluxWeightCalc::GetWeight(art::Event& e, size_t inu) {
-      bool count_weights = false;
-//      std::cout<<"SBNEventWeight : getweight for the "<<inu<<" th particles of an event"<< std::endl;
+      bool count_weights = true;
+      //bool count_weights = false;
+      std::cout<<"SBNEventWeight "<< GetName() << " getweight for the "<<inu<<" th particles of an event"<< std::endl;
       //MCFlux & MCTruth
       art::Handle< std::vector<simb::MCFlux> > mcFluxHandle;
       e.getByLabel(fGeneratorModuleLabel,mcFluxHandle);
       std::vector<simb::MCFlux> const& fluxlist = *mcFluxHandle;
       //or do the above 3 lines in one line
-//      auto const& mclist = *e.getValidHandle<std::vector<simb::MCTruth>>(fGeneratorModuleLabel);
+      auto const& mclist = *e.getValidHandle<std::vector<simb::MCTruth>>(fGeneratorModuleLabel);
 
       // If no neutrinos in this event, gives 0 weight;
       int NUni = fParameterSet.fNuniverses;
@@ -227,7 +228,7 @@ namespace sbn {
       }
 
       //Iterate through each neutrino in the event
-      //    std::cout<<"SBNEventWeight Flux: Get calculator "<<CalcType<<std::endl;
+          std::cout<<"SBNEventWeight Flux: Get calculator "<<CalcType<<std::endl;
       if( CalcType == "Unisim"){//Unisim Calculator
         weights.resize(NUni);
         //Unisim specific
@@ -256,9 +257,12 @@ namespace sbn {
         }
 
         // Collect neutrino energy; mclist is replaced with fluxlist.
-//        double enu= mclist[inu].GetNeutrino().Nu().E();
-        double enu= fluxlist[inu].fnenergyn;
+        double enu= mclist[inu].GetNeutrino().Nu().E();
+//        double enu= fluxlist[inu].fnenergyn;
 
+	std::cout << "enu = " << enu << " ptype = " << ptype << " ntype = " << ntype << std::endl;
+	std::cout << "enu from mcflux = " << fluxlist[inu].fnenergyn  << std::endl;
+	std::cout << "enu from mct = " << mclist[inu].GetNeutrino().Nu().E()  << std::endl;
         //Let's make a weights based on the calculator you have requested 
 
         if(fParameterSet.fRWType == EventWeightParameterSet::kMultisim){
@@ -345,7 +349,7 @@ namespace sbn {
         std::cout<<"SBNEventWeight Flux: Weights counter: (normal, <0, ==0, 1, 30)= ";
         std::cout<<wc<<", "<<wcn<<", "<<wc0<<", "<<wc1<<", "<<wc30<<std::endl;
       }
-//      std::cout<<"Next partile/event\n"<<std::endl;
+      std::cout<<"Next partile/event\n"<<std::endl;
 
       return weights;
     }//GetWeight()

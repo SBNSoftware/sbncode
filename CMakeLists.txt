@@ -16,7 +16,7 @@
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
 find_package(cetmodules 3.20.00 REQUIRED)
-project(sbncode VERSION 09.78.04 LANGUAGES CXX)
+project(sbncode VERSION 09.82.02.01 LANGUAGES CXX)
 
 message(STATUS "\n\n  ==========================   ${PROJECT_NAME}   ==========================")
 
@@ -66,7 +66,6 @@ find_package( artdaq_core EXPORT REQUIRED )
 find_package( sbnobj REQUIRED )
 find_package( sbnanaobj REQUIRED )
 find_package( sbndaq_artdaq_core EXPORT REQUIRED )
-find_package( ifdhc REQUIRED )
 find_package( ifdh_art REQUIRED )
 find_package( ifbeam REQUIRED )
 find_package( libwda REQUIRED )
@@ -78,6 +77,7 @@ find_package( CLHEP REQUIRED )
 find_package( ROOT REQUIRED )
 find_package( Geant4 REQUIRED )
 find_package( Boost COMPONENTS system filesystem REQUIRED )
+find_package( geant4reweight REQUIRED )
 
 # macros for dictionary and simple_plugin
 include(ArtDictionary)

@@ -13,7 +13,6 @@
 // - Photon (22)
 // - Pion (211)
 // - Proton (2212)
-// - Other (0)
 //
 // If a PFP is not classified it will be assigned a pdg of -5
 ////////////////////////////////////////////////////////////////////////
@@ -119,7 +118,7 @@ namespace sbn {
     float shw_sqrtEnergyDensity; // Sqrt of the energy divided by the length [cm^-1]
 
 
-    float electronScore, muonScore, photonScore, pionScore, protonScore, otherScore, bestScore;
+    float electronScore, muonScore, photonScore, pionScore, protonScore, bestScore;
     int bestPDG;
 
     TMVA::Reader* reader;
@@ -265,7 +264,6 @@ namespace sbn {
             pfpTree->Branch("photonScore", &photonScore);
             pfpTree->Branch("pionScore", &pionScore);
             pfpTree->Branch("protonScore", &protonScore);
-            pfpTree->Branch("otherScore", &otherScore);
             pfpTree->Branch("bestScore", &bestScore);
             pfpTree->Branch("bestPDG", &bestPDG);
           }
@@ -498,7 +496,7 @@ namespace sbn {
   void Razzled::ClearTreeValues()
   {
     muonScore   = -5.f; electronScore = -5.f; photonScore = -5.f; pionScore = -5.f;
-    protonScore = -5.f; otherScore    = -5.f; bestScore   = -5.f;
+    protonScore = -5.f; bestScore     = -5.f;
     bestPDG     = -5;
 
     truePDG = -5; trueMotherPDG = -5; trueType = ""; trueEndProcess = ""; trueEndMomentum = -5.f;
