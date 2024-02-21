@@ -1,0 +1,20 @@
+MiscInteractionSysts_Tool_Config: {
+  tool_type: "MiscInteractionSysts"
+  instance_name: "ICARUS_v1"
+
+  C12ToAr40_2p2hScaling_nu_central_value: 0
+  C12ToAr40_2p2hScaling_nu_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+  C12ToAr40_2p2hScaling_nubar_central_value: 0
+  C12ToAr40_2p2hScaling_nubar_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+  nuenuebar_xsec_ratio_central_value: 1
+  nuenuebar_xsec_ratio_variation_descriptor: "[0, 1]"
+  nuenumu_xsec_ratio_central_value: 1
+  nuenumu_xsec_ratio_variation_descriptor: "[0, 1]"
+
+  SPPLowQ2Suppression_central_value: 0
+  SPPLowQ2Suppression_variation_descriptor: "[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]"
+
+}
+
+syst_providers: [MiscInteractionSysts_Tool_Config]

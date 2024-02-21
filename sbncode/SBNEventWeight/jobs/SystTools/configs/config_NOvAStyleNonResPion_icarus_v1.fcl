@@ -1,0 +1,77 @@
+NOvAStyleNonResPionNorm_Tool_Config: {
+  tool_type: "NOvAStyleNonResPionNorm"
+  instance_name: "ICARUS_v1"
+
+  # The lowest W (GeV) affected
+  WBegin: 0
+  # The W (GeV) where transition from low W to high W response begins
+  WTransition: 3
+  # The end of the transition region, where the flat high W response begins
+  WEnd: 5
+  # The low W response, weight = 1 + OneSigmaResponse (50%)
+  OneSigmaResponse: 0.5
+  # The high W response (5%)
+  HighWResponse: 0.05
+
+  # Tie NR_nu_p_CC_1Pi_central_value and NR_nu_n_CC_1Pi_central_value together as in arxiv:1601.01888
+  NR_nu_np_CC_1Pi_central_value: -1.14
+  NR_nu_np_CC_1Pi_variation_descriptor: "(-1.2,-1.08,0.02)"
+
+  NR_nu_p_NC_1Pi_central_value: 0
+  NR_nu_p_NC_1Pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+  NR_nu_n_NC_1Pi_central_value: 0
+  NR_nu_n_NC_1Pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+  NR_nubar_p_CC_1Pi_central_value: 0
+  NR_nubar_p_CC_1Pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+  NR_nubar_n_CC_1Pi_central_value: 0
+  NR_nubar_n_CC_1Pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+  NR_nubar_p_NC_1Pi_central_value: 0
+  NR_nubar_p_NC_1Pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+  NR_nubar_n_NC_1Pi_central_value: 0
+  NR_nubar_n_NC_1Pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+  NR_nu_p_CC_2Pi_central_value: 0
+  NR_nu_p_CC_2Pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+  NR_nu_n_CC_2Pi_central_value: 0
+  NR_nu_n_CC_2Pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+  NR_nu_p_NC_2Pi_central_value: 0
+  NR_nu_p_NC_2Pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+  NR_nu_n_NC_2Pi_central_value: 0
+  NR_nu_n_NC_2Pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+  NR_nubar_p_CC_2Pi_central_value: 0
+  NR_nubar_p_CC_2Pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+  NR_nubar_n_CC_2Pi_central_value: 0
+  NR_nubar_n_CC_2Pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+  NR_nubar_p_NC_2Pi_central_value: 0
+  NR_nubar_p_NC_2Pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+  NR_nubar_n_NC_2Pi_central_value: 0
+  NR_nubar_n_NC_2Pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+  NR_nu_p_CC_3Pi_central_value: 0
+  NR_nu_p_CC_3Pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+  NR_nu_n_CC_3Pi_central_value: 0
+  NR_nu_n_CC_3Pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+  NR_nu_p_NC_3Pi_central_value: 0
+  NR_nu_p_NC_3Pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+  NR_nu_n_NC_3Pi_central_value: 0
+  NR_nu_n_NC_3Pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+  NR_nubar_p_CC_3Pi_central_value: 0
+  NR_nubar_p_CC_3Pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+  NR_nubar_n_CC_3Pi_central_value: 0
+  NR_nubar_n_CC_3Pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+  NR_nubar_p_NC_3Pi_central_value: 0
+  NR_nubar_p_NC_3Pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+  NR_nubar_n_NC_3Pi_central_value: 0
+  NR_nubar_n_NC_3Pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+}
+
+syst_providers: [NOvAStyleNonResPionNorm_Tool_Config]

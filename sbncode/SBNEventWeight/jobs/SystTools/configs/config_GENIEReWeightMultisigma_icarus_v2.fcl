@@ -1,0 +1,348 @@
+GENIEReWeight_Multisigma_Tool_Config: {
+
+    tool_type: "GENIEReWeight"
+
+    # Updated 25 July 2023 by S. Gardiner
+    instance_name: "ICARUS_v2_multisigma"
+
+    # Keep one GENIEReWeight instance per discrete dial tweak in memory
+    # Requires no reconfigures within the event loop
+    UseFullHERG: true
+
+    ignore_parameter_dependence: true
+
+    ################################## CCQE Parameters
+
+    # Adjust coefficients in the z-expansion parameterization
+    # of the CCQE axial-vector form factor
+
+    ZExpA1CCQE_central_value: 0
+    ZExpA1CCQE_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    ZExpA2CCQE_central_value: 0
+    ZExpA2CCQE_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    ZExpA3CCQE_central_value: 0
+    ZExpA3CCQE_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    ZExpA4CCQE_central_value: 0
+    ZExpA4CCQE_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    # This dial provides the ability to scale the CCQE cross section
+    # normalization by a constant factor while using the z-expansion
+    # for the axial-vector form factor. However, since varying the
+    # coefficients for the individual terms (as is done above) also
+    # impacts the normalization, this one is left out for now.
+    #
+    #ZNormCCQE_central_value: 0
+    #ZNormCCQE_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    # Assesses a shape-only variation of the CCQE cross section by
+    # switching the parameterization of the vector form factors
+    # from BBBA07 (default for the AR23_20i_00_000 model set) to
+    # a dipole (VecFFCCQEshape = 1).
+    #
+    VecFFCCQEshape_central_value: 0
+    VecFFCCQEshape_variation_descriptor: "[1.0]"
+
+    # GENIE Reweight provides a similar dial for doing a shape-only
+    # systematic variation that switches from a dipole axial-vector
+    # form factor (AxFFCCQEshape = 0) to the z-expansion parameterization
+    # (AxFFCCQEshape = 1). However, the weight calculator does not yet
+    # support going in the other direction (z-exp to dipole). This dial
+    # is thus currently excluded as incompatible with our AR23_20i_00_000
+    # base model set.
+    #AxFFCCQEshape_central_value : 0
+    #AxFFCCQEshape_variation_descriptor: "[1.0]"
+
+    # The weight calculator for adjusting the Fermi momentum kF has always
+    # been a bit of a hack. You can zero out some events by increasing
+    # kF, but you can't create new ones by reducing kF. I'd recommend
+    # revisiting these nuclear model uncertainties in light of the
+    # spectral-function-like version of the correlated Fermi gas model
+    # that we're using in AR23_20i_00_000. I will therefore exclude this
+    # dial for now.
+    #CCQEPauliSupViaKF_central_value: 0
+    #CCQEPauliSupViaKF_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    # This weight calculator assumes use of the Bodek-Ritchie global Fermi gas
+    # (in, e.g., the G18_02a_00_000 model set) and reweights the nucleon
+    # momentum distribution to a spectral function (as implemented in
+    # genie::SpectralFunc) as a variation (CCQEMomDistroFGtoSF = 1). This dial
+    # has multiple issues for us. First, we use a modified version of GENIE's
+    # correlated Fermi gas model, which differs substantially from the
+    # Bodek-Ritchie global Fermi gas. Second, genie::SpectralFunc does not yet
+    # support an argon target nucleus. Rather than try to hack this dial to be
+    # compatible with our model set, I will exclude it and recommend that we
+    # use a different strategy for assessing systematics on the GENIE model of
+    # the nuclear ground state.
+    #CCQEMomDistroFGtoSF_central_value: 0
+    #CCQEMomDistroFGtoSF_variation_descriptor: "[1.0]"
+
+    # This dial varies the strength of the RPA corrections that are applied in
+    # the Valencia CCQE model. The implementation was contributed to GENIE by
+    # MicroBooNE and is documented in Phys. Rev. D 105, 072001 (2022).
+    RPA_CCQE_central_value: 0
+    RPA_CCQE_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    # This dial varies the strength of the electromagnetic potential used by
+    # the Valencia CCQE model to apply Coulomb corrections to the cross
+    # section. The implementation was contributed to GENIE by MicroBooNE and is
+    # documented in Phys. Rev. D 105, 072001 (2022).
+    CoulombCCQE_central_value: 0
+    CoulombCCQE_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    ################################## NCEl Parameters
+
+    MaNCEL_central_value: 0
+    MaNCEL_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    EtaNCEL_central_value: 0
+    EtaNCEL_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    ################################## MEC Parameters
+
+    # Constant scaling factor for the CCMEC total cross section
+    NormCCMEC_central_value: 0
+    NormCCMEC_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    # Constant scaling factor for the NCMEC total cross section
+    NormNCMEC_central_value: 0
+    NormNCMEC_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    # This dial performs a shape-only transformation of the differential cross
+    # section in lepton kinematics between the Valencia model (XSecShape_CCMEC
+    # = 0) and the GENIE Empirical model (XSecShape_CCMEC = 1). The GENIE
+    # weight calculator could be adapted to be compatible with the SuSAv2 CCMEC
+    # model used in AR23_20i_00_000, but GENIE code changes are required that
+    # are not finished yet. For now, I disable this weight calculator. Further
+    # details are given in Phys. Rev. D 105, 072001 (2022).
+    #XSecShape_CCMEC_central_value: 0
+    #XSecShape_CCMEC_variation_descriptor: "[1.0]"
+
+    # Adjusts the angular distribution when decaying a two-nucleon cluster
+    # into two final-state nucleons.
+    # DecayAngMEC = 0 gives the default isotropic angular distribution
+    # DecayAngMEC = 1 gives an alternative distribution proportional to
+    # cos^2(theta). See also Phys. Rev. D 105, 072001 (2022).
+    DecayAngMEC_central_value: 0
+    DecayAngMEC_variation_descriptor: "[1.0]"
+
+    # Adjusts the fractional contribution of initial-state pn pairs to the
+    # total CCMEC cross section. This weight calculator is not yet compatible
+    # with the SuSAv2 CCMEC model used in AR23_20i_00_000, so I disable
+    # it for now.
+    #FracPN_CCMEC_central_value: 0
+    #FracPN_CCMEC_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    # Adjusts the fractional contribution of diagrams involving an internal
+    # Delta line to the total CCMEC cross section. The Valencia CCMEC model
+    # includes information to calculate this contribution, but SuSAv2 does not.
+    # Since we use SuSAv2 as the CCMEC model in AR23_20i_00_000, I disable this
+    # dial for now.
+    #FracDelta_CCMEC_central_value: 0
+    #FracDelta_CCMEC_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    ################################## RES Parameters
+    ################# CCRES
+
+    CCRESIsShapeOnly: false
+
+    MaCCRES_central_value: 0
+    MaCCRES_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    MvCCRES_central_value: 0
+    MvCCRES_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    ################# NCRES
+
+    NCRESIsShapeOnly: false
+
+    MaNCRES_central_value: 0
+    MaNCRES_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    MvNCRES_central_value: 0
+    MvNCRES_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    ################# Non-RES
+
+    # nu+p, CC
+
+    NonRESBGvpCC1pi_central_value: 0
+    NonRESBGvpCC1pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    NonRESBGvpCC2pi_central_value: 0
+    NonRESBGvpCC2pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    # nu+p, NC
+
+    NonRESBGvpNC1pi_central_value: 0
+    NonRESBGvpNC1pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    NonRESBGvpNC2pi_central_value: 0
+    NonRESBGvpNC2pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    # nu+n, CC
+
+    NonRESBGvnCC1pi_central_value: 0
+    NonRESBGvnCC1pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    NonRESBGvnCC2pi_central_value: 0
+    NonRESBGvnCC2pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    # nu+n, NC
+
+    NonRESBGvnNC1pi_central_value: 0
+    NonRESBGvnNC1pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    NonRESBGvnNC2pi_central_value: 0
+    NonRESBGvnNC2pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    # nubar+p, CC
+
+    NonRESBGvbarpCC1pi_central_value: 0
+    NonRESBGvbarpCC1pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    NonRESBGvbarpCC2pi_central_value: 0
+    NonRESBGvbarpCC2pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    # nubar+p, NC
+
+    NonRESBGvbarpNC1pi_central_value: 0
+    NonRESBGvbarpNC1pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    NonRESBGvbarpNC2pi_central_value: 0
+    NonRESBGvbarpNC2pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    # nubar+n, CC
+
+    NonRESBGvbarnCC1pi_central_value: 0
+    NonRESBGvbarnCC1pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    NonRESBGvbarnCC2pi_central_value: 0
+    NonRESBGvbarnCC2pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    # nubar+n, NC
+
+    NonRESBGvbarnNC1pi_central_value: 0
+    NonRESBGvbarnNC1pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    NonRESBGvbarnNC2pi_central_value: 0
+    NonRESBGvbarnNC2pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    ################# Other
+
+    RDecBR1gamma_central_value: 0
+    RDecBR1gamma_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    RDecBR1eta_central_value: 0
+    RDecBR1eta_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    # Pion angular distibution in Delta -> pi N decays
+    # Theta_Delta2Npi = 0 gives the Rein-Sehgal angular distribution
+    # Theta_Delta2Npi = 1 gives an isotropic angular distribution
+    Theta_Delta2Npi_central_value: 0
+    Theta_Delta2Npi_variation_descriptor: "[1.0]"
+
+    # Photon angular distribution in Delta -> photon N decays
+    # ThetaDelta2NRad = 0 gives the default isotropic angular distribution
+    # ThetaDelta2NRad = 1 gives an alternative distribution proportional to
+    # cos^2(theta). See also Phys. Rev. D 105, 072001 (2022).
+    ThetaDelta2NRad_central_value: 0
+    ThetaDelta2NRad_variation_descriptor: "[1.0]"
+
+    ################################## COH Parameters
+
+    # The MaCOHpi and R0COHpi weight calculators are not compatible with the
+    # Berger-Sehgal coherent pion production model used in our AR23_20i_00_000
+    # GENIE model set. I disable them here and add simple normalization scaling
+    # factors used by MicroBooNE. Systematics on this channel are likely worth
+    # revisiting at some point.
+
+    # MaCOHpi_central_value: 0
+    # MaCOHpi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    # R0COHpi_central_value: 0
+    # R0COHpi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    NormCCCOH_central_value: 0
+    NormCCCOH_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    NormNCCOH_central_value: 0
+    NormNCCOH_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    ################################## DIS BY Parameters
+
+    AhtBY_central_value: 0
+    AhtBY_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    BhtBY_central_value: 0
+    BhtBY_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    CV1uBY_central_value: 0
+    CV1uBY_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    CV2uBY_central_value: 0
+    CV2uBY_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    ################################## AGKY Hadronization Parameters
+
+    ## Disabled as they are very slow, will hopefully re-enable in the future
+    # AGKYxF1pi_central_value: 0
+    # AGKYxF1pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+    #
+    # AGKYpT1pi_central_value: 0
+    # AGKYpT1pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    ################################## FZone Parameters
+
+    # The formation zone weight calculator is broken in GENIE v3 and
+    # still needs to be fixed. I exclude it for now.
+    #FormZone_central_value: 0
+    #FormZone_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    ################################## FSI Parameters
+
+    MFP_pi_central_value: 0
+    MFP_pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    FrCEx_pi_central_value: 0
+    FrCEx_pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    # The elastic FSI fate was removed in hA2018, so I disable the
+    # associated weight calculators
+    #FrElas_pi_central_value: 0
+    #FrElas_pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    FrInel_pi_central_value: 0
+    FrInel_pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    FrAbs_pi_central_value: 0
+    FrAbs_pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    FrPiProd_pi_central_value: 0
+    FrPiProd_pi_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    MFP_N_central_value: 0
+    MFP_N_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    FrCEx_N_central_value: 0
+    FrCEx_N_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    # The elastic FSI fate was removed in hA2018, so I disable the
+    # associated weight calculators
+    #FrElas_N_central_value: 0
+    #FrElas_N_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    FrInel_N_central_value: 0
+    FrInel_N_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    FrAbs_N_central_value: 0
+    FrAbs_N_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+    FrPiProd_N_central_value: 0
+    FrPiProd_N_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+}
+
+syst_providers: [GENIEReWeight_Multisigma_Tool_Config]
