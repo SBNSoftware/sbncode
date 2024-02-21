@@ -1,0 +1,41 @@
+MINERvAq0q3Tune_Tool_Config: {
+    tool_type: "MINERvAq0q3Weighting"
+    instance_name: "ICARUS_v1"
+
+    # use_MINERvA_RPA_tunes: false
+    # MINERvATune_RPA_input_manifest: {
+    #   InputTemplates: [
+    #     {
+    #       parameter_name: MINERvATune_RPA
+    #       input_file: "MINERvAInputs/NievesRPAratio-nu12C-20GeV-2017-0202.root"
+    #       inputs: [
+    #         { value: 0
+    #           hist_name: "hrelratio"
+    #         }
+    #       ]
+    #     }
+    #   ]
+    # }
+
+    use_MINERvA_2p2h_tunes: true
+
+    ## If true, each universe is a separate parameter, controlled as below
+    parameter_per_2p2h_universe: false
+    # Mnv2p2hGaussEnhancement_CV_central_value: 1
+    # Mnv2p2hGaussEnhancement_CV_variation_descriptor: "[0,0,0,1,0,0,0]"
+    # Mnv2p2hGaussEnhancement_NN_central_value: 0
+    # Mnv2p2hGaussEnhancement_NN_variation_descriptor: "[1,1,1,0,1,1,1]"
+    # Mnv2p2hGaussEnhancement_np_central_value: 0
+    # Mnv2p2hGaussEnhancement_np_variation_descriptor: "[1,1,1,0,1,1,1]"
+    # Mnv2p2hGaussEnhancement_QE_central_value: 0
+    # Mnv2p2hGaussEnhancement_QE_variation_descriptor: "[1,1,1,0,1,1,1]"
+
+    ## If not, we put the response into a single parameter where the 'knots' correspond to the different universes. Here we want to approximate the linear response from QE -> CV -> NN where:
+    # [ 1 == CV, 2 == NN, 3 == np, 4 == 1p1h ]
+    Mnv2p2hGaussEnhancement_central_value: 1
+    Mnv2p2hGaussEnhancement_variation_descriptor: "[1,2,3,4]"
+
+    Mnv2p2hGaussEnhancement_LimitWeights: [0,5]
+}
+
+syst_providers: [MINERvAq0q3Tune_Tool_Config]
