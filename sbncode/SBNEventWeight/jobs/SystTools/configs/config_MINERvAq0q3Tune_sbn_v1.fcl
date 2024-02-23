@@ -1,6 +1,6 @@
 MINERvAq0q3Tune_Tool_Config: {
     tool_type: "MINERvAq0q3Weighting"
-    instance_name: "ICARUS_v1"
+    instance_name: "SBN_v1"
 
     # use_MINERvA_RPA_tunes: false
     # MINERvATune_RPA_input_manifest: {
