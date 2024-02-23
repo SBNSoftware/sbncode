@@ -1,6 +1,6 @@
 MINERvA_E2p2h_Tool_Config: {
   tool_type: "MINERvAE2p2h"
-  instance_name: "ICARUS_v1"
+  instance_name: "SBN_v1"
 
   E2p2h_A_nu_central_value: 0
   E2p2h_A_nu_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"

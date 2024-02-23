@@ -1,4 +1,4 @@
-#include "syst_params_icarus_v2.fcl"
+#include "syst_params_sbn_v1.fcl"
 
 BEGIN_PROLOG
 

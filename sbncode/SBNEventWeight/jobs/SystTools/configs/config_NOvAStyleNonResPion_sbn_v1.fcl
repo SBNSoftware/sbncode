@@ -1,6 +1,6 @@
 NOvAStyleNonResPionNorm_Tool_Config: {
   tool_type: "NOvAStyleNonResPionNorm"
-  instance_name: "ICARUS_v1"
+  instance_name: "SBN_v1"
 
   # The lowest W (GeV) affected
   WBegin: 0

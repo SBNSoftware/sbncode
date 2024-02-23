@@ -1,6 +1,6 @@
 MiscInteractionSysts_Tool_Config: {
   tool_type: "MiscInteractionSysts"
-  instance_name: "ICARUS_v1"
+  instance_name: "SBN_v1"
 
   C12ToAr40_2p2hScaling_nu_central_value: 0
   C12ToAr40_2p2hScaling_nu_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"

@@ -2,8 +2,8 @@ GENIEReWeight_Multisim_Tool_Config: {
 
     tool_type: "GENIEReWeight"
 
-    # Updated 25 July 2023 by S. Gardiner
-    instance_name: "ICARUS_v2_multisim"
+    # 23 Feb 2024: Copied from ICARUS_v2
+    instance_name: "SBN_v1_multisim"
 
     # Keep one GENIEReWeight instance per discrete dial tweak in memory
     # Requires no reconfigures within the event loop
