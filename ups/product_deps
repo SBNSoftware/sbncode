@@ -255,7 +255,7 @@ product			version		qual	flags		<table_format=2>
 genie_xsec		v3_04_00	-
 larcv2			v2_1_3		-
 larsoft			v09_83_01	-
-sbnanaobj		v09_22_00	-
+sbnanaobj		v09_22_01	-
 sbndaq_artdaq_core	v1_08_00of3	-
 sbndata			v01_06		-
 sbnobj			v09_18_00	-
