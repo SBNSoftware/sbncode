@@ -113,6 +113,9 @@ BNBKaonGen::BNBKaonGen(fhicl::ParameterSet const &pset):
 {
   configure(pset);
 
+  // copy the flux files locally
+  fFluxFiles = LoadFluxFiles();
+
   // setup indices
   fFileIndex = 0;
   fEntry = 0;
@@ -156,7 +159,6 @@ void BNBKaonGen::configure(fhicl::ParameterSet const &pset)
     std::cout << "With copy method: " << fFluxCopyMethod << std::endl;
   }
 
-  fFluxFiles = pset.get<std::vector<std::string>>("FluxFilesFullPath");
 }
 
 std::vector<std::string> BNBKaonGen::LoadFluxFiles() {
