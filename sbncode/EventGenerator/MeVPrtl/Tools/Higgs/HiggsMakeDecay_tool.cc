@@ -82,6 +82,7 @@ private:
   bool fAllowMuonDecay;
   bool fAllowPionDecay;
   bool fAllowPi0Decay;
+  bool fAddTimeOfFlight;
   
 };
 
@@ -172,6 +173,7 @@ void HiggsMakeDecay::configure(fhicl::ParameterSet const &pset)
   fAllowMuonDecay = pset.get<bool>("AllowMuonDecay", true);
   fAllowPionDecay = pset.get<bool>("AllowPionDecay", true);
   fAllowPi0Decay = pset.get<bool>("AllowPi0Decay", true);
+  fAddTimeOfFlight = pset.get<bool>("AddTimeOfFlight", true);
 
   if (fReferenceHiggsEnergy < 0. && fReferenceHiggsKaonEnergy > 0.) {
     fReferenceHiggsEnergy = std::min(forwardPrtlEnergy(Constants::Instance().kplus_mass, Constants::Instance().piplus_mass, fReferenceHiggsMass, fReferenceHiggsKaonEnergy),
@@ -272,7 +274,7 @@ bool HiggsMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TV
   TVector3 decay_pos3 = flux.pos.Vect() + decay_rand * (in - flux.pos.Vect()).Unit();
 
   // decay time
-  double decay_time = TimeOfFlight(flux, decay_pos3);
+  double decay_time = fAddTimeOfFlight ? TimeOfFlight(flux, decay_pos3) : flux.pos.T() /* no TOF: set time equal to parent */;
   TLorentzVector decay_pos(decay_pos3, decay_time);
 
   // get the decay type

@@ -16,7 +16,7 @@ icarus_detector_box: [-368.49, 368.49, -191.86, 144.96, -904.950652270838, 904.9
 
 numi_kaon: {
   tool_type: NuMiKaonGen
-  SearchPath: "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics-gputnam/numiflux/"
+  SearchPath: "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/beam/GENIE/NuMI/standard/v02_00/"
   FluxFiles: ["*.root"]
   TreeName: "dk2nuTree"
   MetaTreeName: "dkmetaTree"

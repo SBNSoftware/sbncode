@@ -7,7 +7,7 @@ higgsM: 0.240 # GeV/c^2
 kaon2higgs: {
   tool_type: Kaon2HiggsFlux
   M: @local::higgsM
-  MixingAngle: 5e-5
+  MixingAngle: 1e-5
   KDAROnly: false #as written this only includes KDAR from absorber (not all KDAR)
   KDIFOnly: false #includes KDIF (from absorber or beamline)
   KDIFandBeamline: false #inlcudes KDIF from beamline, KDIF from absorber, and KDAR from beamline (this option orthogonal to "KDAROnly")
@@ -25,7 +25,7 @@ mono_energy_flux: {
   tool_type: MonoEnergyHiggsFlux
   E: 0.3 # GeV
   M: @local::higgsM
-  MixingAngle: 5e-5
+  MixingAngle: 1e-5
 
   X: 0 # cm
   Y: 0
@@ -40,9 +40,10 @@ decay_higgs: {
   tool_type: HiggsMakeDecay
   ReferenceRayLength: 2100 # 21m
   ReferenceHiggsMass: @local::higgsM
-  ReferenceHiggsMixing: 5e-5
+  ReferenceHiggsMixing: 1e-5
   ReferenceRayDistance: 80000 # 800m
   ReferenceHiggsEnergyFromKaonEnergy: 15. # GeV
+  AddTimeOfFlight: true
 }
 
 # RayTrace configs
