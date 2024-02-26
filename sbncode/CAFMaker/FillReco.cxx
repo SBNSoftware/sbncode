@@ -504,6 +504,10 @@ namespace caf
       srtrack.mcsP.fwdP_err_muon = mcs_fit_muon.fwdMomUncertainty();
       srtrack.mcsP.bwdP_muon     = mcs_fit_muon.bwdMomentum();
       srtrack.mcsP.bwdP_err_muon = mcs_fit_muon.bwdMomUncertainty();
+
+      // Use the 0th result to also get the input values
+      srtrack.mcsP.seg_scatter_angles = mcs_fit_muon.scatterAngles();
+      srtrack.mcsP.seg_length = mcs_fit_muon.segmentRadLengths();
     }
 
     if (mcs_results[1].size()) {
