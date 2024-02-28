@@ -1,0 +1,18 @@
+#include "syst_params_sbn_v1.fcl"
+
+BEGIN_PROLOG
+
+sbn_systtools: {
+
+  module_type: SystToolsEventWeight
+
+  GeneratorModuleLabel: "generator"
+  AllowMissingTruth: false
+  DebugMode: false
+
+  ## systool
+  generated_systematic_provider_configuration: @local::generated_systematic_provider_configuration
+
+}
+
+END_PROLOG
