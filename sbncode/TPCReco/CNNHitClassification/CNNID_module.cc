@@ -203,20 +203,31 @@ namespace sbn {
 
     auto pfpScores = std::make_unique<std::vector<PFPCNNScore>>();
     auto pfpAssns = std::make_unique<art::Assns<recob::PFParticle, PFPCNNScore>>();
+    std::vector<float> pfpTrackScore; 
+    std::vector<float> pfpShowerScore; 
+    std::vector<float> pfpNoiseScore;
+    std::vector<float> pfpMichelScore;
+    std::vector<float> pfpEndMichelScore;
+    float pfpAvgTrackScore;
+    float pfpAvgShowerScore;
+    float pfpAvgNoiseScore;
+    float pfpAvgMichelScore;
+    float pfpAvgEndMichelScore;
+    int nClusters; 
 
     // loop over PFPs
     for (const art::Ptr<recob::PFParticle> &pfp : pfpList){
-      int nClusters = 0; 
-      std::vector<float> pfpTrackScore; 
-      std::vector<float> pfpShowerScore; 
-      std::vector<float> pfpNoiseScore;
-      std::vector<float> pfpMichelScore;
-      std::vector<float> pfpEndMichelScore;
-      float pfpAvgTrackScore;
-      float pfpAvgShowerScore;
-      float pfpAvgNoiseScore;
-      float pfpAvgMichelScore;
-      float pfpAvgEndMichelScore;
+      pfpTrackScore.clear();
+      pfpShowerScore.clear();
+      pfpNoiseScore.clear();
+      pfpMichelScore.clear();
+      pfpEndMichelScore.clear();
+      pfpAvgTrackScore = std::numeric_limits<float>::signaling_NaN();
+      pfpAvgShowerScore = std::numeric_limits<float>::signaling_NaN();
+      pfpAvgNoiseScore = std::numeric_limits<float>::signaling_NaN();
+      pfpAvgMichelScore = std::numeric_limits<float>::signaling_NaN();
+      pfpAvgEndMichelScore = std::numeric_limits<float>::signaling_NaN();
+      nClusters = 0; 
 
       if (fSkipClearCosmics) {
         std::vector<art::Ptr<larpandoraobj::PFParticleMetadata>> metas = metaFMpfp.at(pfp.key());
@@ -375,6 +386,10 @@ namespace sbn {
               }
             }
           } // run CNN end
+          cluTrackScore = cluTrackScore/nCluApplyHits;
+          cluShowerScore = cluShowerScore/nCluApplyHits;
+          cluNoiseScore = cluNoiseScore/nCluApplyHits;
+          cluMichelScore = cluMichelScore/nCluApplyHits;
           pfpTrackScore.push_back(cluTrackScore);
           pfpShowerScore.push_back(cluShowerScore);
           pfpNoiseScore.push_back(cluNoiseScore);
@@ -387,7 +402,11 @@ namespace sbn {
       pfpAvgNoiseScore = getAvgScore(pfpNoiseScore);
       pfpAvgMichelScore = getAvgScore(pfpMichelScore);
       pfpAvgEndMichelScore = getAvgScore(pfpEndMichelScore);
-      pfpScores->emplace_back(pfpAvgTrackScore, pfpAvgShowerScore, pfpAvgNoiseScore, pfpAvgMichelScore, pfpAvgEndMichelScore, nClusters); //
+      pfpScores->emplace_back(pfpAvgTrackScore, pfpAvgShowerScore, pfpAvgNoiseScore, pfpAvgMichelScore, pfpAvgEndMichelScore, nClusters);
+      //std::cout << "PFP " << pfp.key() << " has " << nClusters << " clusters" << std::endl;
+      //std::cout << "track score: " << pfpAvgTrackScore << ", shower score: " << pfpAvgShowerScore << ", noise score: " << pfpAvgNoiseScore << ", Michel score: " << pfpAvgMichelScore << ", end Michel score: " << pfpAvgEndMichelScore << std::endl;
+      //std::cout << "score sum = " << pfpAvgTrackScore+pfpAvgShowerScore+pfpAvgNoiseScore << std::endl;
+      //std::cout << "---------------------------------" << std::endl;
       util::CreateAssn(*this, evt, *pfpScores, pfp, *pfpAssns);
     }  // pfp score end
     fMVAWriter.saveOutputs(evt);
