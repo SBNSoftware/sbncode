@@ -74,8 +74,8 @@ void sbn::SimpleMerge::produce(art::Event& e)
 {
   auto partCol = std::make_unique<std::vector<simb::MCParticle>>();
   for (auto const& [i_source,input_label] : util::enumerate(fInputSourcesLabels)) {
-    auto parts = e.getValidHandle<std::vector<simb::MCParticle>>(input_label);
-    for (auto part : *parts) {
+    auto const& parts = e.getProduct<std::vector<simb::MCParticle>>(input_label);
+    for (auto part : parts) {
       if (fResetMotherID){
         for (auto const& offset : fResetMotherIDs) {
           if (part.Mother() == offset) {
