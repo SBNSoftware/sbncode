@@ -53,3 +53,6 @@ Thumbs.db
 *~
 *.bak
 *.backup
+.cache/
+compile_commands.json
+.clang-format
