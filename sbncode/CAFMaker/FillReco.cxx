@@ -904,6 +904,7 @@ namespace caf
       auto const &propertiesMap (pfpMeta->GetPropertiesMap());
       auto const &pfpTrackScoreIter(propertiesMap.find("TrackScore"));
       srpfp.trackScore = (pfpTrackScoreIter == propertiesMap.end()) ? -5.f : pfpTrackScoreIter->second;
+      std::cout << "pfp ID: " << particle.Self() << " pandora TrackScore: " << srpfp.trackScore << std::endl;
 
       // Pfo Characterisation features
       srpfp.pfochar.setDefault();
@@ -932,6 +933,8 @@ namespace caf
                      caf::SRPFP& srpfp,
                      bool allowEmpty)
   {
+    std::cout << "pfp ID: " << particle.Self() << " nClusters: " << cnnscore->nClusters << std::endl;
+    std::cout << "pfp ID: " << particle.Self() << " CNNID track score: " << cnnscore->pfpTrackScore << std::endl;
     srpfp.cnnscore.track = cnnscore->pfpTrackScore;
     srpfp.cnnscore.shower = cnnscore->pfpShowerScore;
     srpfp.cnnscore.noise = cnnscore->pfpNoiseScore;
