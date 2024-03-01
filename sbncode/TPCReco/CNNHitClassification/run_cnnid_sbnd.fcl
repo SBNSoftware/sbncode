@@ -56,8 +56,7 @@ outputs:
  out1:
  {
    module_type: RootOutput
-   fileName:    "/pnfs/sbnd/scratch/users/munjung/cnnid_job/eval/run_cnn/Michelloss10/%ifb_cnn.root"
- #  fileName:    "%ifb_cnn.root"
+   fileName:    "%ifb_cnn.root"
    dataTier:    "full-reconstructed"
    fastCloning: true
  }
