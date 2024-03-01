@@ -188,7 +188,7 @@ class CAFMaker : public art::EDProducer {
   std::string fFlatCafFilename;
   std::string fFlatCafBlindFilename;
   std::string fFlatCafPrescaleFilename;
-  
+
   std::string fSourceFile;
 
   bool fFirstInSubRun;
@@ -387,7 +387,7 @@ class CAFMaker : public art::EDProducer {
      rat = -1 * (abs(rat) - 1);
    }
    return 1 + rat*0.3;
-   
+
   }
 //......................................................................
 void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
@@ -402,7 +402,7 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
 	 (start.z  > -895.95 + 30 && start.z < 895.95 - 50)) {
 
       if (pfp.trk.mcsP.fwdP_muon > 0.6) {
-	pfp.trk.mcsP.fwdP_muon = TMath::QuietNaN();    
+	pfp.trk.mcsP.fwdP_muon = TMath::QuietNaN();
       }
       if (pfp.trk.rangeP.p_muon > 0.6) {
 	pfp.trk.rangeP.p_muon = TMath::QuietNaN();
@@ -436,7 +436,7 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
 
       for (caf::SRPFP& pfp: slc.reco.pfp) {
 	if (pfp.trk.mcsP.fwdP_muon > 0.6) {
-	  pfp.trk.mcsP.fwdP_muon = TMath::QuietNaN();    
+	  pfp.trk.mcsP.fwdP_muon = TMath::QuietNaN();
 	}
 	if (pfp.trk.rangeP.p_muon > 0.6) {
 	  pfp.trk.rangeP.p_muon = TMath::QuietNaN();
@@ -491,7 +491,7 @@ void CAFMaker::FixCRTReferenceTimes(StandardRecord &rec, double CRTT0_reference_
   // Fix the hit matches
   for (SRSlice &s: rec.slc) {
     for (SRPFP &pfp: s.reco.pfp) {
-      pfp.trk.crthit.hit.t0 += CRTT0_reference_time; 
+      pfp.trk.crthit.hit.t0 += CRTT0_reference_time;
       pfp.trk.crthit.hit.t1 += CRTT1_reference_time;
       pfp.trk.crthit.hit.time += crttime_to_shift;
     }
@@ -584,9 +584,9 @@ std::string CAFMaker::DeriveFilename(const std::string& inname,
 
 //......................................................................
 void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
-  
+
   std::string const inputBasename = Basename(fb.fileName()); // includes suffix
-  
+
   if ((fParams.CreateCAF() && !fFile) ||
       (fParams.CreateFlatCAF() && !fFlatFile) ||
       (fParams.CreateBlindedCAF() && (!fFileb || !fFilep))) {
@@ -953,7 +953,7 @@ void CAFMaker::InitializeOutfiles()
     mf::LogInfo("CAFMaker") << "Output filename is " << fCafFilename;
 
     fFile = new TFile(fCafFilename.c_str(), "RECREATE");
-    
+
     fRecTree = new TTree("recTree", "records");
 
     // Tell the tree it's expecting StandardRecord objects
@@ -961,7 +961,7 @@ void CAFMaker::InitializeOutfiles()
     fRecTree->Branch("rec", "caf::StandardRecord", &rec);
 
     AddEnvToFile(fFile);
- 
+
     if (fParams.CreateBlindedCAF()) {
       mf::LogInfo("CAFMaker") << "Blinded output filenames are " << fCafBlindFilename << ", and " << fCafPrescaleFilename;
       fFileb = new TFile(fCafBlindFilename.c_str(), "RECREATE");
@@ -976,7 +976,7 @@ void CAFMaker::InitializeOutfiles()
       AddEnvToFile(fFilep);
     }
 
-  }     
+  }
 
   if(fParams.CreateFlatCAF()){
     mf::LogInfo("CAFMaker") << "Output flat filename is " << fFlatCafFilename;
@@ -1167,7 +1167,7 @@ bool CAFMaker::GetPsetParameter(const fhicl::ParameterSet& pset,
 void CAFMaker::produce(art::Event& evt) noexcept {
 
   bool const firstInFile = (fIndexInFile++ == 0);
-  
+
   // is this event real data?
   bool isRealData = evt.isRealData();
 
@@ -1379,7 +1379,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     srtruthbranch.prtl.emplace_back();
     FillMeVPrtlTruth(*mevprtl_truths[i_prtl], fActiveVolumes, srtruthbranch.prtl.back());
     srtruthbranch.nprtl = srtruthbranch.prtl.size();
-  } 
+  }
 
   //#######################################################
   // Fill detector & reco
@@ -1392,15 +1392,16 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   art::Handle<std::vector<raw::Trigger>> trig_handle;
   GetByLabelStrict(evt, fParams.TriggerLabel().encode(), trig_handle);
 
-  caf::SRTrigger srtrigger; 
+  caf::SRTrigger srtrigger;
   if (extratrig_handle.isValid() && trig_handle.isValid() && trig_handle->size() == 1) {
     FillTrigger(*extratrig_handle, trig_handle->at(0), srtrigger);
   }
-  // If not real data, fill in enough of the SRTrigger to make (e.g.) the CRT 
+  // If not real data, fill in enough of the SRTrigger to make (e.g.) the CRT
   // time referencing work. TODO: add more stuff to a "MC"-Trigger?
-  else if(!isRealData) {
-    FillTriggerMC(fParams.CRTSimT0Offset(), srtrigger);
-  }
+  // No longer needed with incorporation of trigger emulation in the MC.
+  // else if(!isRealData) {
+  //   FillTriggerMC(fParams.CRTSimT0Offset(), srtrigger);
+  // }
 
   // try to find the result of the Flash trigger if it was run
   bool pass_flash_trig = false;
@@ -1470,7 +1471,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       }
     }
 
-  // Get all of the CRTPMT Matches .. 
+  // Get all of the CRTPMT Matches ..
   std::vector<caf::SRCRTPMTMatch> srcrtpmtmatches;
   std::cout << "srcrtpmtmatches.size = " << srcrtpmtmatches.size() << "\n";
   art::Handle<std::vector<sbn::crt::CRTPMTMatching>> crtpmtmatch_handle;
@@ -1587,10 +1588,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       }
     }
 
-    art::FindManyP<sbn::OpT0Finder> fmOpT0 = 
+    art::FindManyP<sbn::OpT0Finder> fmOpT0 =
       FindManyPStrict<sbn::OpT0Finder>(sliceList, evt, fParams.OpT0Label() + slice_tag_suff);
     std::vector<art::Ptr<sbn::OpT0Finder>> slcOpT0;
-    if (fmOpT0.isValid())  
+    if (fmOpT0.isValid())
       slcOpT0 = fmOpT0.at(0);
 
     art::FindManyP<sbn::SimpleFlashMatch> fm_sFM =
@@ -1688,7 +1689,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     std::vector<art::Ptr<sbn::Stub>> fmStubs;
     if (fmSlcStubs.isValid()) {
       fmStubs = fmSlcStubs.at(0);
-    } 
+    }
 
     // Lookup stubs to overlaid PFP
     art::FindManyP<recob::PFParticle> fmStubPFPs =
@@ -1743,7 +1744,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<recob::Hit>(slcShowers, evt,
           fParams.RecoShowerLabel() + slice_tag_suff);
 
-    // NOTE: The sbn::crt::CRTHit is associated to the T0. It's a bit awkward to 
+    // NOTE: The sbn::crt::CRTHit is associated to the T0. It's a bit awkward to
     // access that here, so we do it per-track (see code where fmCRTHitMatch is accessed below)
     art::FindManyP<anab::T0> fmCRTHitMatch =
       FindManyPStrict<anab::T0>(slcTracks, evt,
@@ -1846,7 +1847,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 		     *pi_serv, clock_data, recslc);
 
       FillSliceFakeReco(slcHits, mctruths, srtruthbranch,
-			*pi_serv, clock_data, recslc, true_particles, mctracks, 
+			*pi_serv, clock_data, recslc, true_particles, mctracks,
                         fActiveVolumes, fFakeRecoRandomEngine);
     }
 
@@ -1876,18 +1877,18 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       recslc.reco.stub.push_back(rec.reco.stub.back());
       recslc.reco.nstub = recslc.reco.stub.size();
     }
- 
+
     if (fParams.FillHits()) {
       for ( size_t iHit = 0; iHit < slcHits.size(); ++iHit ) {
         const recob::Hit &thisHit = *slcHits[iHit];
-      
+
         std::vector<art::Ptr<recob::PFParticle>> thisParticle;
         if (fmSpacePointPFPs.isValid()) {
           thisParticle = fmSpacePointPFPs.at(iHit);
         }
         std::vector<art::Ptr<recob::SpacePoint>> thisPoint;
         if (fmSpacePoint.isValid()) {
-          thisPoint = fmSpacePoint.at(iHit); 
+          thisPoint = fmSpacePoint.at(iHit);
         }
         if (!thisParticle.empty() && !thisPoint.empty()) {
           assert(thisParticle.size() == 1);
@@ -1917,7 +1918,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       if (fmShower.isValid()) {
         thisShower = fmShower.at(iPart);
       }
-     
+
       SRPFP pfp;
 
       art::Ptr<anab::T0> thisPFPT0;
@@ -1981,14 +1982,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         }
         if (fmCalo.isValid()) {
           FillTrackCalo(fmCalo.at(iPart), fmTrackHit.at(iPart),
-              (fParams.FillHitsNeutrinoSlices() && NeutrinoSlice) || fParams.FillHitsAllSlices(), 
+              (fParams.FillHitsNeutrinoSlices() && NeutrinoSlice) || fParams.FillHitsAllSlices(),
               fParams.TrackHitFillRRStartCut(), fParams.TrackHitFillRREndCut(),
               lar::providerFrom<geo::Geometry>(), dprop, trk);
         }
         if (fmCRTHitMatch.isValid() && fDet == kICARUS) {
           art::FindManyP<sbn::crt::CRTHit> CRTT02Hit = FindManyPStrict<sbn::crt::CRTHit>
               (fmCRTHitMatch.at(iPart), evt, fParams.CRTHitMatchLabel() + slice_tag_suff);
-         
+
           std::vector<art::Ptr<sbn::crt::CRTHit>> crthitmatch;
           if (CRTT02Hit.isValid() && CRTT02Hit.size() == 1) crthitmatch = CRTT02Hit.at(0);
 
@@ -2028,7 +2029,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
       if (!thisShower.empty()) { // it has shower!
         assert(thisShower.size() == 1);
-	
+
         SRShower& shw = pfp.shw;
         FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, shw);
 
@@ -2053,7 +2054,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         }
 
       } // thisShower exists
-      
+
       recslc.reco.pfp.push_back(std::move(pfp));
       recslc.reco.npfp = recslc.reco.pfp.size();
     }// end for pfparts
@@ -2105,7 +2106,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // In MC/LArSoft the "reference time" is canonically defined
   // as the time when the start of the beam spill reaches the detector.
   //
-  // In data it may be defined differently for different subsystems. In 
+  // In data it may be defined differently for different subsystems. In
   // particular, some sub-systems define the reference time as the time
   // of the trigger. We want to correct those to the universal reference
   // time from MC.
@@ -2158,7 +2159,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     rec.hdr.noffbeamnumi = fOffbeamNuMIGates;
     rec.hdr.pot   = fSubRunPOT;
   }
-  
+
   rec.hdr.ngenevt = n_gen_evt;
   rec.hdr.mctype  = mctype;
   rec.hdr.sourceName = fSourceFile;

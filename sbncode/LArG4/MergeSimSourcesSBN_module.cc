@@ -206,6 +206,10 @@ sbn::MergeSimSourcesSBN::MergeSimSourcesSBN(Parameters const& params)
   , fFillAuxDetHits(params().FillAuxDetHits())
   , fAuxDetHitsInstanceLabels(params().AuxDetHitsInstanceLabels())
 {
+  if (fFillMCParticlesAssociated && !fFillMCParticles) {
+    throw art::Exception{ art::errors::Configuration }
+      << "To save particle associations (`FillMCParticlesAssociated`) particles must be saved too (`FillMCParticles`).";
+  }
 
   if (fInputSourcesLabels.size() != fTrackIDOffsets.size()) {
     throw art::Exception(art::errors::Configuration)

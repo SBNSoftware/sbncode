@@ -1,0 +1,9 @@
+BEGIN_PROLOG
+
+simplemerge : {
+  module_type: "SimpleMerge"
+  InputSourcesLabels: ["largeant", "largeantdropped"]
+  ResetMotherIDs: [ 10000000, 20000000 ]
+}
+
+END_PROLOG

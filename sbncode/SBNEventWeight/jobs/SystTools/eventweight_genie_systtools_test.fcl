@@ -1,0 +1,25 @@
+# This fcl runs a 'test' version of the systtools GENIE congfiguration
+# in which the multisim parameters are only varied in 5 universes not 100
+#
+# This is for quick testing purposes such as the CI or during development, not physics use.
+#
+# J. Kim and H. Lay - February 2024
+
+#include "syst_params_sbn_v1_test.fcl"
+
+BEGIN_PROLOG
+
+sbn_systtools_test: {
+
+  module_type: SystToolsEventWeight
+
+  GeneratorModuleLabel: "generator"
+  AllowMissingTruth: false
+  DebugMode: false
+
+  ## systool
+  generated_systematic_provider_configuration: @local::generated_systematic_provider_configuration
+
+}
+
+END_PROLOG
