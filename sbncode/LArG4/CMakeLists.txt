@@ -60,6 +60,13 @@ cet_build_plugin(MergeSimSourcesSBN art::EDProducer
   BASENAME_ONLY
 )
 
+cet_build_plugin(SimpleMerge art::EDProducer
+  LIBRARIES
+  lardataobj::MCBase
+  larcorealg::headers
+  messagefacility::MF_MessageLogger
+)
+
 install_headers()
 install_fhicl()
 install_source()
