@@ -44,7 +44,8 @@ physics:
       module_type: "FluxReaderAna"
       Baseline: 11000 # cm, distance from detector to target position
       XShift: -73.78 # cm, detector shift along X w.r.t. beamline coordinate system
-      NuOtherIntersectionZ: 10 # cm distance from start of detector to start of FV
+#      NuOtherIntersectionZ: 10 # cm distance from start of detector to start of FV
+      NuOtherIntersectionZ: 500 # cm distance from start of detector to centre of FV
       ApplyPositionCuts: true
       XCut: 200 # cm
       YCut: 200 # cm
