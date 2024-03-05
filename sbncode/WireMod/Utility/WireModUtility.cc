@@ -46,27 +46,8 @@ std::vector<std::pair<unsigned int, unsigned int>> sys::WireModUtility::GetTarge
   std::vector<std::pair<unsigned int, unsigned int>> target_roi_vec;
 
   // reconstruct the wire numbers from the positions
-  //int edep_plane0_wire = std::round(wiresPercm*(shifted_edep.Z() * std::cos(angle_plane0) + shifted_edep.Y() * std::sin(angle_plane0)) + originWire_plane0);
-  //int edep_plane1_wire = std::round(wiresPercm*(shifted_edep.Z() * std::cos(angle_plane1) + shifted_edep.Y() * std::sin(angle_plane1)) + originWire_plane1);
-  //int edep_plane2_wire = std::round(wiresPercm*(shifted_edep.Z() * std::cos(angle_plane2) + shifted_edep.Y() * std::sin(angle_plane2)) + originWire_plane2);
-  //int edep_tick        = std::round(ticksPercm*shifted_edep.X() + zeroTick + offset + tickOffset);
-
-  //if (edep_tick < tickOffset || edep_tick >= readoutWindowTicks + tickOffset)
-  //  return target_roi_vec;
-  //
-  //if (edep_plane0_wire >= 0               && edep_plane0_wire < plane0_boundary)
-  //  target_roi_vec.emplace_back((unsigned int) edep_plane0_wire, (unsigned int) edep_tick);
-  //
-  //if (edep_plane1_wire >= plane0_boundary && edep_plane1_wire < plane1_boundary)
-  //  target_roi_vec.emplace_back((unsigned int) edep_plane1_wire, (unsigned int) edep_tick);
-  //
-  //if (edep_plane2_wire >= plane1_boundary && edep_plane2_wire < plane2_boundary)
-  //  target_roi_vec.emplace_back((unsigned int) edep_plane2_wire, (unsigned int) edep_tick);
-  
-  // try using services for these
   // b/c NearestWireID thows exceptions it helps debugging to check wire number before calling it
   const geo::TPCGeo& curTPCGeom = geometry->PositionToTPC(shifted_edep.MidPoint());
-  //std::cout << "sys::WireModUtility::GetTargetROIs | Comparing tick " << planeXToTick(shifted_edep.X(), 0, curTPCGeom, offset + tickOffset) << " to Window from 0 to " << detPropData.ReadOutWindowSize() << std::endl;
   geo::WireID edep_plane0_wireID;
   geo::WireID edep_plane1_wireID;
   geo::WireID edep_plane2_wireID;
@@ -146,16 +127,12 @@ void sys::WireModUtility::FillROIMatchedEdepMap(std::vector<sim::SimEnergyDeposi
     // loop over ROI and match the energy deposits with wires
     for (auto const& target_roi : target_rois)
     {
-      //std::cout << "sys::WireModUtility::FillROIMatchedEdepMap | looking for target ROI " << target_roi.first << std::endl;
       // if we can't find the wire, skip it
       if (wireChannelMap.find(target_roi.first) == wireChannelMap.end())
         continue;
-      //std::cout << "sys::WireModUtility::FillROIMatchedEdepMap | fount ROI!" << std::endl;
 
       // get the wire
       auto const& target_wire = wireVec.at(wireChannelMap[target_roi.first]);
-
-      //std::cout << "sys::WireModUtility::FillROIMatchedEdepMap | Checking if wire is valid" << std::endl;
 
       // if there are no ticks in in the wire skip it
       // likewise if there's nothing in the region of interst
@@ -165,8 +142,6 @@ void sys::WireModUtility::FillROIMatchedEdepMap(std::vector<sim::SimEnergyDeposi
           target_wire.SignalROI().size() <= target_roi.second ||
           target_wire.SignalROI().is_void(target_roi.second)   )
         continue;
-
-      //std::cout << "sys::WireModUtility::FillROIMatchedEdepMap | Wire is Valid!" << std::endl;
 
       // how far into the range is the ROI?
       auto range_number = target_wire.SignalROI().find_range_iterator(target_roi.second) - target_wire.SignalROI().begin_range();
@@ -258,8 +233,6 @@ std::vector<sys::WireModUtility::SubROIProperties_t> sys::WireModUtility::CalcSu
 std::map<sys::WireModUtility::SubROI_Key_t, std::vector<const sim::SimEnergyDeposit*>> sys::WireModUtility::MatchEdepsToSubROIs(std::vector<sys::WireModUtility::SubROIProperties_t> const& subROIPropVec, 
                                                                                                                   std::vector<const sim::SimEnergyDeposit*> const& edepPtrVec, double offset)
 {
-  //std::cout << "sys::WireModUtility::MatchEdepsToSubROIs | looking for matching sub ROIs" << std::endl;
-
   // for each TrackID, which EDeps are associated with it? keys are TrackIDs
   std::map<int, std::vector<const sim::SimEnergyDeposit*>> TrackIDMatchedEDepMap;
 
@@ -290,13 +263,10 @@ std::map<sys::WireModUtility::SubROI_Key_t, std::vector<const sim::SimEnergyDepo
     // get EDep properties
     auto edep_ptr  = edepPtrVec[i_e];
     const geo::TPCGeo& curTPCGeom = geometry->PositionToTPC(edep_ptr->MidPoint());
-    //double ticksPercm = detPropData.GetXTicksCoefficient(curTPCGeom.ID());
     double ticksPercm = detPropData.GetXTicksCoefficient(); // this should be by TPCID, but isn't building right now
     double zeroTick = detPropData.ConvertXToTicks(0, curTPCGeom.Plane(0).ID());
     auto edep_tick = ticksPercm * edep_ptr->X() + (zeroTick + offset) + tickOffset;
-    //std::cout << "sys::WireModUtility::MatchEdepsToSubROIs | checking EDep " << i_e << " at tick " << edep_tick << " = " << ticksPercm << " * " << edep_ptr->X() << " + (" << zeroTick << " + " << offset << ") + " << tickOffset << std::endl;
     edep_tick = detPropData.ConvertXToTicks(edep_ptr->X(), curTPCGeom.Plane(0).ID()) + offset + tickOffset;
-    //std::cout << "sys::WireModUtility::MatchEdepsToSubROIs | ... actually EDep tick is " << edep_tick << std::endl;
 
     // loop over subROIs
     unsigned int closest_hit = std::numeric_limits<unsigned int>::max();
@@ -304,10 +274,8 @@ std::map<sys::WireModUtility::SubROI_Key_t, std::vector<const sim::SimEnergyDepo
     for (unsigned int i_h = 0; i_h < subROIPropVec.size(); ++i_h)
     {
       auto subroi_prop = subROIPropVec[i_h];
-      //std::cout << "sys::WireModUtility::MatchEdepsToSubROIs | comparing EDep " << i_e << " to subROI " << i_h << " (" << subroi_prop.center-subroi_prop.sigma << " to " << subroi_prop.center+subroi_prop.sigma << ")" <<std::endl;
       if (edep_tick > subroi_prop.center-subroi_prop.sigma && edep_tick < subroi_prop.center+subroi_prop.sigma)
       {
-        //std::cout << "sys::WireModUtility::MatchEdepsToSubROIs | found subROI containing EDep" << std::endl;
         EDepMatchedSubROIMap[i_e].push_back(i_h);
         TrackIDMatchedSubROIMap[edep_ptr->TrackID()].emplace(i_h);
       }
@@ -318,7 +286,6 @@ std::map<sys::WireModUtility::SubROI_Key_t, std::vector<const sim::SimEnergyDepo
         min_dist = hit_dist;
       }
     }
-    //std::cout << "sys::WireModUtility::MatchEdepsToSubROIs | closest hit is " << closest_hit << " with dist " << min_dist << std::endl;
 
     // if EDep is less than 2.5 units away from closest subROI, assign it to that subROI
     if (min_dist < 5) // try 5 for testing purposes
@@ -478,22 +445,8 @@ sys::WireModUtility::TruthProperties_t sys::WireModUtility::CalcPropertiesFromEd
   if (total_energy > 0)
     edep_col_properties.x_rms = std::sqrt(edep_col_properties.x_rms/total_energy);
 
-  //edep_col_properties.tick              = wiresPercm*edep_col_properties.x     + (zeroTick + offset) + tickOffset;
-  //edep_col_properties.tick_rms          = wiresPercm*edep_col_properties.x_rms;
-  //edep_col_properties.tick_rms_noWeight = wiresPercm*edep_col_properties.x_rms_noWeight;
-  //edep_col_properties.tick_min          = wiresPercm*edep_col_properties.x_min + (zeroTick + offset) + tickOffset;
-  //edep_col_properties.tick_max          = wiresPercm*edep_col_properties.x_max + (zeroTick + offset) + tickOffset;
-  // I think this should be ticks per cm, try using that
   const geo::TPCGeo& tpcGeom = geometry->PositionToTPC({edep_col_properties.x, edep_col_properties.y, edep_col_properties.z});
-  //double ticksPercm = detPropData.GetXTicksCoefficient(tpcGeom.ID());
   double ticksPercm = detPropData.GetXTicksCoefficient(); // this should be by TPCID, but isn't building right now
-  //double zeroTick = detPropData.ConvertXToTicks(0, tpcGeom.Plane(0).ID()); // this assumes the time for the different planes is negligible. That's probably right...
-  //edep_col_properties.tick              = ticksPercm*edep_col_properties.x     + (zeroTick + offset) + tickOffset;
-  //edep_col_properties.tick_rms          = ticksPercm*edep_col_properties.x_rms;
-  //edep_col_properties.tick_rms_noWeight = ticksPercm*edep_col_properties.x_rms_noWeight;
-  //edep_col_properties.tick_min          = ticksPercm*edep_col_properties.x_min + (zeroTick + offset) + tickOffset;
-  //edep_col_properties.tick_max          = ticksPercm*edep_col_properties.x_max + (zeroTick + offset) + tickOffset;
-  //edep_col_properties.total_energy      = total_energy;
   edep_col_properties.tick              = detPropData.ConvertXToTicks(edep_col_properties.x    , tpcGeom.Plane(0).ID()) + offset + tickOffset;
   edep_col_properties.tick_rms          = ticksPercm*edep_col_properties.x_rms;
   edep_col_properties.tick_rms_noWeight = ticksPercm*edep_col_properties.x_rms_noWeight;
@@ -549,48 +502,6 @@ sys::WireModUtility::ScaleValues_t sys::WireModUtility::GetScaleValues(sys::Wire
     scales.r_Q     *= splines_Charge_YZAngle[plane]->Eval(ThetaYZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, curTPCGeom.Plane(plane).ThetaZ()));
     scales.r_sigma *= splines_Sigma_YZAngle [plane]->Eval(ThetaYZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, curTPCGeom.Plane(plane).ThetaZ()));
   }
-
-
-  //switch (plane)
-  //{
-  //  case 0:
-  //    if (applyXZAngleScale)
-  //    {
-  //      scales.r_Q     *= splines_Charge_XZAngle[plane]->Eval(ThetaXZ_Plane0(truth_props.dxdr, truth_props.dydr, truth_props.dzdr));
-  //      scales.r_sigma *= splines_Sigma_XZAngle [plane]->Eval(ThetaXZ_Plane0(truth_props.dxdr, truth_props.dydr, truth_props.dzdr));
-  //    }
-  //    if (applyYZAngleScale)
-  //    {
-  //      scales.r_Q     *= splines_Charge_YZAngle[plane]->Eval(ThetaYZ_Plane0(truth_props.dxdr, truth_props.dydr, truth_props.dzdr));
-  //      scales.r_sigma *= splines_Sigma_YZAngle [plane]->Eval(ThetaYZ_Plane0(truth_props.dxdr, truth_props.dydr, truth_props.dzdr));
-  //    }
-  //    break;
-
-  //  case 1:
-  //    if (applyXZAngleScale)
-  //    {
-  //      scales.r_Q     *= splines_Charge_XZAngle[plane]->Eval(ThetaXZ_Plane0(truth_props.dxdr, truth_props.dydr, truth_props.dzdr));
-  //      scales.r_sigma *= splines_Sigma_XZAngle [plane]->Eval(ThetaXZ_Plane0(truth_props.dxdr, truth_props.dydr, truth_props.dzdr));
-  //    }
-  //    if (applyYZAngleScale)
-  //    {
-  //      scales.r_Q     *= splines_Charge_YZAngle[plane]->Eval(ThetaYZ_Plane1(truth_props.dxdr, truth_props.dydr, truth_props.dzdr));
-  //      scales.r_sigma *= splines_Sigma_YZAngle [plane]->Eval(ThetaYZ_Plane1(truth_props.dxdr, truth_props.dydr, truth_props.dzdr));
-  //    }
-  //    break;
-  //  case 2:
-  //    if (applyXZAngleScale)
-  //    {
-  //      scales.r_Q     *= splines_Charge_XZAngle[plane]->Eval(ThetaXZ_Plane2(truth_props.dxdr, truth_props.dydr, truth_props.dzdr));
-  //      scales.r_sigma *= splines_Sigma_XZAngle [plane]->Eval(ThetaXZ_Plane2(truth_props.dxdr, truth_props.dydr, truth_props.dzdr));
-  //    }
-  //    if (applyYZAngleScale)
-  //    {
-  //      scales.r_Q     *= splines_Charge_YZAngle[plane]->Eval(ThetaYZ_Plane2(truth_props.dxdr, truth_props.dydr, truth_props.dzdr));
-  //      scales.r_sigma *= splines_Sigma_YZAngle [plane]->Eval(ThetaYZ_Plane2(truth_props.dxdr, truth_props.dydr, truth_props.dzdr));
-  //    }
-  //    break;
-  //}
 
   if(applydEdXScale)
   {
