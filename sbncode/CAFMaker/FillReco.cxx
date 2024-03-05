@@ -157,7 +157,6 @@ namespace caf
     srmatch.flashZWidth = match.flashZWidth;
     srmatch.flashClassification = static_cast<int>(match.flashClassification);
     for(const auto& matchedCRTHit : match.matchedCRTHits){
-      std::cout << "CRTPMTTimeDiff = "<< matchedCRTHit.PMTTimeDiff << "\n";
       caf::SRMatchedCRT matchedCRT;
       matchedCRT.PMTTimeDiff = matchedCRTHit.PMTTimeDiff; 
       matchedCRT.time = matchedCRTHit.time+CRT_T1_reference_time; // CRTHit time wrt beamgate timestamp
