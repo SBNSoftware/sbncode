@@ -138,6 +138,7 @@ namespace caf
   }
 
   void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,
+		       double CRT_T1_reference_time, // us 
 		       caf::SRCRTPMTMatch &srmatch,
 		       bool allowEmpty){
     // allowEmpty does not (yet) matter here                                                           
@@ -159,7 +160,7 @@ namespace caf
       std::cout << "CRTPMTTimeDiff = "<< matchedCRTHit.PMTTimeDiff << "\n";
       caf::SRMatchedCRT matchedCRT;
       matchedCRT.PMTTimeDiff = matchedCRTHit.PMTTimeDiff; 
-      matchedCRT.time = matchedCRTHit.time;
+      matchedCRT.time = matchedCRTHit.time+CRT_T1_reference_time; // CRTHit time wrt beamgate timestamp
       matchedCRT.sys = matchedCRTHit.sys;
       matchedCRT.region = matchedCRTHit.region;
       matchedCRT.position = SRVector3D(matchedCRTHit.position.X(), matchedCRTHit.position.Y(), matchedCRTHit.position.Z());
