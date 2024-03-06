@@ -4,7 +4,7 @@ namespace sbn{
 
 // Constructor - get values from the auxdet geometry service
 CRTGeoAlg::CRTGeoAlg():
-  CRTGeoAlg::CRTGeoAlg(lar::providerFrom<geo::Geometry>(), ((const geo::AuxDetGeometry*)&(*art::ServiceHandle<geo::AuxDetGeometry>()))->GetProviderPtr())
+  CRTGeoAlg::CRTGeoAlg(lar::providerFrom<geo::Geometry>(), art::ServiceHandle<geo::AuxDetGeometry>()->GetProviderPtr())
 {}
 
 CRTGeoAlg::CRTGeoAlg(geo::GeometryCore const *geometry, geo::AuxDetGeometryCore const *auxdet_geometry) {
@@ -449,7 +449,7 @@ std::string CRTGeoAlg::ChannelToStripName(size_t channel) const{
 // Recalculate strip limits including charge sharing
 std::vector<double> CRTGeoAlg::StripLimitsWithChargeSharing(std::string stripName, double x, double ex){
   int module = fModules.at(fStrips.at(stripName).module).auxDetID;
-  std::string moduleName = fGeometryService->AuxDet(module).TotalVolume()->GetName();
+  std::string moduleName = fAuxDetGeoCore->AuxDet(module).TotalVolume()->GetName();
   auto const& sensitiveGeo = fAuxDetGeoCore->ChannelToAuxDetSensitive(moduleName,
                                                                       2*fStrips.at(stripName).sensitiveVolumeID);
 

@@ -87,6 +87,8 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 // LArSoft includes
+#include "larcore/Geometry/WireReadout.h"
+#include "larcore/Geometry/Geometry.h"
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Slice.h"
 #include "lardataobj/RecoBase/Track.h"
@@ -98,8 +100,6 @@
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCNeutrino.h"
 #include "nusimdata/SimulationBase/GTruth.h"
-
-#include "fhiclcpp/ParameterSetRegistry.h"
 
 #include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlTruth.h"
 #include "sbnobj/Common/Reco/RangeP.h"
@@ -1256,7 +1256,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
   auto const dprop =
     art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clock_data);
-  const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
+  geo::GeometryCore const& geom = *art::ServiceHandle<geo::Geometry const>();
+  const geo::WireReadoutGeom &wireReadoutGeom =
+    art::ServiceHandle<geo::WireReadout>()->Get();
 
   auto const *sce = lar::providerFrom<spacecharge::SpaceChargeService>();
 
@@ -1284,7 +1286,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   if ( !isRealData ) {
     art::ServiceHandle<cheat::BackTrackerService> bt_serv;
 
-    id_to_ide_map = PrepSimChannels(simchannels, *geometry);
+    id_to_ide_map = PrepSimChannels(simchannels, wireReadoutGeom);
     id_to_truehit_map = PrepTrueHits(hits, clock_data, *bt_serv);
     id_to_hit_energy_map = SetupIDHitEnergyMap(hits, clock_data, *bt_serv);
   }
@@ -1969,7 +1971,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         FillTrackRangeP(*thisTrack[0], rangePs, trk);
 
         if (fmChi2PID.isValid()) {
-           FillTrackChi2PID(fmChi2PID.at(iPart), lar::providerFrom<geo::Geometry>(), trk);
+           FillTrackChi2PID(fmChi2PID.at(iPart), trk);
         }
         if (fmScatterClosestApproach.isValid() && fmScatterClosestApproach.at(iPart).size()==1) {
            FillTrackScatterClosestApproach(fmScatterClosestApproach.at(iPart).front(), trk);
@@ -1984,7 +1986,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           FillTrackCalo(fmCalo.at(iPart), fmTrackHit.at(iPart),
               (fParams.FillHitsNeutrinoSlices() && NeutrinoSlice) || fParams.FillHitsAllSlices(),
               fParams.TrackHitFillRRStartCut(), fParams.TrackHitFillRREndCut(),
-              lar::providerFrom<geo::Geometry>(), dprop, trk);
+              dprop, trk);
         }
         if (fmCRTHitMatch.isValid() && fDet == kICARUS) {
           art::FindManyP<sbn::crt::CRTHit> CRTT02Hit = FindManyPStrict<sbn::crt::CRTHit>
@@ -2022,7 +2024,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
             FillTrackTruth(fmTrackHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, trk);
             // Hit truth information corresponding to Calo-Points
             // Assumes truth matching and calo-points are filled
-            if (mc_particles.isValid() && fParams.FillTrackCaloTruth()) FillTrackCaloTruth(id_to_ide_map, *mc_particles, geometry, clock_data, sce, trk);
+            if (mc_particles.isValid() && fParams.FillTrackCaloTruth()) FillTrackCaloTruth(id_to_ide_map, *mc_particles, geom, wireReadoutGeom, clock_data, sce, trk);
           }
         }
       } // thisTrack exists
@@ -2031,7 +2033,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         assert(thisShower.size() == 1);
 
         SRShower& shw = pfp.shw;
-        FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, shw);
+        FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), wireReadoutGeom, producer, shw);
 
         // We may have many residuals per shower depending on how many showers ar in the slice
         if (fmShowerRazzle.isValid() && fmShowerRazzle.at(iPart).size()==1) {

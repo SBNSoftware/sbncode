@@ -50,6 +50,7 @@ cet_build_plugin(MergeSimSourcesSBN art::EDProducer
   larsim::MergeSimSources
   lardataobj::MCBase
   larcorealg::headers
+  larcorealg::CoreUtils
   art::Framework_Principal
   art::Framework_Services_Registry
   art::Persistency_Common

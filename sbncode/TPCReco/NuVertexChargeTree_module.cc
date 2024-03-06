@@ -25,6 +25,7 @@
 #include "lardataobj/RecoBase/Slice.h"
 #include "lardataobj/RecoBase/Shower.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "larcorealg/Geometry/GeometryCore.h"
@@ -87,6 +88,7 @@ private:
    const std::vector<art::Ptr<simb::MCParticle>> &g4_mcparticles, 
    const std::vector<const sim::GeneratedParticleInfo *> &infos,
    const geo::GeometryCore &geo,
+   const geo::WireReadoutGeom &channelMap,
    const detinfo::DetectorPropertiesData &dprop);
 
   void FillVertexHits(
@@ -99,7 +101,8 @@ private:
   void FillStubs(
     const std::vector<sbn::StubInfo> &stubs,
     const std::vector<unsigned> &stub_hit_inds,
-    const geo::GeometryCore *geo,
+    const geo::GeometryCore& geom,
+    const geo::WireReadoutGeom &channelMap,
     const detinfo::DetectorPropertiesData &dprop,
     const detinfo::DetectorClocksData &clock_data,
     const std::vector<art::Ptr<simb::MCParticle>> &trueParticles);
@@ -634,7 +637,8 @@ void sbn::NuVertexChargeTree::FillStubPFPs(
 void sbn::NuVertexChargeTree::FillStubs(
     const std::vector<sbn::StubInfo> &stubs,
     const std::vector<unsigned> &stub_hit_inds,
-    const geo::GeometryCore *geo,
+    const geo::GeometryCore& geom,
+    const geo::WireReadoutGeom &channelMap,
     const detinfo::DetectorPropertiesData &dprop,
     const detinfo::DetectorClocksData &clock_data,
     const std::vector<art::Ptr<simb::MCParticle>> &trueParticles) {
@@ -728,7 +732,7 @@ void sbn::NuVertexChargeTree::FillStubs(
         if (stubs[i_stub].stub.plane.front() == stubs[j_stub].stub.plane.front()) {
           fStubMatch.push_back(j_stub);
           fStubMatchOverlaps.push_back(sbn::StubContains(stubs[i_stub], stubs[j_stub]));
-          fStubMatchDot.push_back(sbn::StubDirectionDot(stubs[i_stub], stubs[j_stub], geo, dprop)); 
+          fStubMatchDot.push_back(sbn::StubDirectionDot(stubs[i_stub], stubs[j_stub], channelMap, dprop));
         }
       }
       fStubMatchLength.push_back(fStubMatch.size() - start_size);
@@ -746,7 +750,7 @@ void sbn::NuVertexChargeTree::FillStubs(
           fStubXPlaneMatchQOff.push_back(sbn::StubChargeOffset(stubs[i_stub], stubs[j_stub]));
           fStubXPlaneMatchPeakQOff.push_back(sbn::StubPeakChargeOffset(stubs[i_stub], stubs[j_stub]));
           fStubXPlaneMatchdQdxOff.push_back((stubs[i_stub].stub.plane.front().TPC == stubs[j_stub].stub.plane.front().TPC) ?
-            sbn::StubPeakdQdxOffset(stubs[i_stub], stubs[j_stub], geo, sce, dprop) : std::numeric_limits<float>::signaling_NaN());
+            sbn::StubPeakdQdxOffset(stubs[i_stub], stubs[j_stub], geom, channelMap, sce, dprop) : std::numeric_limits<float>::signaling_NaN());
         }
       }
       fStubXPlaneMatchLength.push_back(fStubXPlaneMatch.size() - start_size);
@@ -828,6 +832,7 @@ void sbn::NuVertexChargeTree::FillNeutrino(const simb::MCTruth &nu,
    const std::vector<art::Ptr<simb::MCParticle>> &g4_mcparticles, 
    const std::vector<const sim::GeneratedParticleInfo *> &infos,
    const geo::GeometryCore &geo,
+   const geo::WireReadoutGeom &channelMap,
    const detinfo::DetectorPropertiesData &dprop) {
 
   art::ServiceHandle<cheat::BackTrackerService> backtracker;
@@ -901,19 +906,19 @@ void sbn::NuVertexChargeTree::FillNeutrino(const simb::MCTruth &nu,
     float thisQ = 0.;
 
     std::map<geo::WireID, float> chargemap;
-    for (geo::View_t view: geo.Views()) {
+    for (geo::View_t view: channelMap.Views()) {
       std::vector<const sim::IDE*> particle_ides(backtracker->TrackIdToSimIDEs_Ps(G4->TrackId(), view));
       for (const sim::IDE *ide: particle_ides) {
         thisVisE += ide->energy;
 
         // Correct for electron lifetime 
         geo::Point_t p {ide->x, ide->y, ide->z};
-        geo::TPCGeo const* tpc = geo.PositionToTPCptr(p);
-        if (tpc) {
-          float driftT = tpc->FirstPlane().DistanceFromPlane(p) / dprop.DriftVelocity();
+        geo::TPCID const tpcid = geo.FindTPCAtPosition(p);
+        if (tpcid != geo::TPCID{}) {
+          float driftT = channelMap.Plane({tpcid, 0}).DistanceFromPlane(p) / dprop.DriftVelocity();
           thisQ += ide->numElectrons * exp(driftT / dprop.ElectronLifetime());
 
-          geo::PlaneGeo const& plane = tpc->Plane(view);
+          geo::PlaneGeo const& plane = channelMap.Plane({tpcid, view});
           try {
             geo::WireID w = plane.NearestWireID(p);
             chargemap[w] += ide->numElectrons * exp(driftT / dprop.ElectronLifetime());
@@ -943,9 +948,9 @@ void sbn::NuVertexChargeTree::FillNeutrino(const simb::MCTruth &nu,
     geo::Vector_t start_dir(particle.Momentum().Vect().Unit());
     geo::TPCID firstTPC = geo.FindTPCAtPosition(start_loc);
     if (firstTPC) {
-      fFSPPitch0.push_back(sbn::GetPitch(&geo, sce, start_loc, start_dir, geo.View(geo::PlaneID(firstTPC, 0)), firstTPC, true, true));
-      fFSPPitch1.push_back(sbn::GetPitch(&geo, sce, start_loc, start_dir, geo.View(geo::PlaneID(firstTPC, 1)), firstTPC, true, true));
-      fFSPPitch2.push_back(sbn::GetPitch(&geo, sce, start_loc, start_dir, geo.View(geo::PlaneID(firstTPC, 2)), firstTPC, true, true));
+      fFSPPitch0.push_back(sbn::GetPitch(geo, channelMap, sce, start_loc, start_dir, channelMap.Plane(geo::PlaneID(firstTPC, 0)).View(), firstTPC, true, true));
+      fFSPPitch1.push_back(sbn::GetPitch(geo, channelMap, sce, start_loc, start_dir, channelMap.Plane(geo::PlaneID(firstTPC, 1)).View(), firstTPC, true, true));
+      fFSPPitch2.push_back(sbn::GetPitch(geo, channelMap, sce, start_loc, start_dir, channelMap.Plane(geo::PlaneID(firstTPC, 2)).View(), firstTPC, true, true));
     }
     else {
       fFSPPitch0.push_back(-1);
@@ -1152,6 +1157,8 @@ void sbn::NuVertexChargeTree::analyze(art::Event const& evt) {
   // }
 
   // iterate over each neutrino
+
+  auto const& channelMap = art::ServiceHandle<geo::WireReadout>()->Get();
   for (unsigned i_nu = 0; i_nu < trueNus.size(); i_nu++) {
     const simb::MCTruth &nu = *trueNus[i_nu];
     // require inside fiducial volume
@@ -1277,12 +1284,12 @@ void sbn::NuVertexChargeTree::analyze(art::Event const& evt) {
     FillMeta(evt);
 
     // save the true-neutrino info
-    FillNeutrino(nu, nu_vert, thisSliceParticles, thisSlicePFPMatches, truth_to_particles.at(i_nu), truth_to_particles.data(i_nu), *geo, dprop);
+    FillNeutrino(nu, nu_vert, thisSliceParticles, thisSlicePFPMatches, truth_to_particles.at(i_nu), truth_to_particles.data(i_nu), *geo, channelMap, dprop);
 
     // The vertex hits!
     FillVertexHits(thisVertexHits, thisVertexHitHits, dprop, clock_data, trueParticles);
 
-    FillStubs(thisStubInfos, thisStubHitInds, geo, dprop, clock_data, trueParticles);
+    FillStubs(thisStubInfos, thisStubHitInds, *geo, channelMap, dprop, clock_data, trueParticles);
 
     FillStubPFPs(thisStubPFPs, thisStubPFPHits, clock_data, trueParticles);
 

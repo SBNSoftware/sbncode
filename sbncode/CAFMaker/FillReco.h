@@ -1,4 +1,3 @@
-
 #ifndef CAF_FILLRECO_H
 #define CAF_FILLRECO_H
 
@@ -9,8 +8,7 @@
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 
 // LArSoft includes
-#include "larcore/Geometry/Geometry.h"
-#include "larcorealg/Geometry/GeometryCore.h"
+#include "larcorealg/Geometry/fwd.h"
 
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Shower.h"
@@ -59,7 +57,7 @@ namespace caf
   void FillShowerVars(const recob::Shower& shower,
                       const recob::Vertex* vertex,
                       const std::vector<art::Ptr<recob::Hit>> &hits,
-                      const geo::GeometryCore *geom,
+                      const geo::WireReadoutGeom& channelMap,
                       unsigned producer,
                       caf::SRShower& srshower,
                       bool allowEmpty = false);
@@ -165,7 +163,6 @@ namespace caf
 
   void FillPlaneChi2PID(const anab::ParticleID &particle_id, caf::SRTrkChi2PID &srpid);
   void FillTrackChi2PID(const std::vector<art::Ptr<anab::ParticleID>> particleIDs,
-                        const geo::GeometryCore *geom,
                         caf::SRTrack& srtrack,
                         bool allowEmpty = false);
 
@@ -190,7 +187,7 @@ namespace caf
   void FillTrackCalo(const std::vector<art::Ptr<anab::Calorimetry>> &calos,
                      const std::vector<art::Ptr<recob::Hit>> &hits,
                      bool fill_calo_points, float fillhit_rrstart, float fillhit_rrend,
-                     const geo::GeometryCore *geom, const detinfo::DetectorPropertiesData &dprop,
+                     const detinfo::DetectorPropertiesData &dprop,
                      caf::SRTrack& srtrack,
                      bool allowEmpty = false);
 
