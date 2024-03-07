@@ -668,7 +668,6 @@ size_t SnippetHit3DBuilderSBN::BuildHitPairMap(PlaneToSnippetHitMap& planeToSnip
     size_t hitPairCntr(0);
 
     size_t nTriplets(0);
-    size_t nDeadChanHits(0);
 
     // Set up to loop over cryostats and tpcs...
     for(size_t cryoIdx = 0; cryoIdx < m_geometry->Ncryostats(); cryoIdx++)
