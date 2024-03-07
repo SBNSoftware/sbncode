@@ -707,7 +707,7 @@ size_t SnippetHit3DBuilderSBN::BuildHitPairMap(PlaneToSnippetHitMap& planeToSnip
     // Where are we?
     mf::LogDebug("SnippetHit3D") << "Total number hits: " << totalNumHits << std::endl;
     mf::LogDebug("SnippetHit3D") << "Created a total of " << hitPairList.size() << " hit pairs, counted: " << hitPairCntr << std::endl;
-    mf::LogDebug("SnippetHit3D") << "-- Triplets: " << nTriplets << ", dead channel pairs: " << nDeadChanHits << std::endl;
+    mf::LogDebug("SnippetHit3D") << "-- Triplets: " << nTriplets << std::endl;
 
     return hitPairList.size();
 }
@@ -746,7 +746,6 @@ size_t SnippetHit3DBuilderSBN::BuildHitPairMapByTPC(PlaneSnippetHitMapItrPairVec
     };
 
     size_t nTriplets(0);
-    size_t nDeadChanHits(0);
     size_t nOrphanPairs(0);
 
     // Structure to keep track of hit associations
@@ -787,7 +786,6 @@ size_t SnippetHit3DBuilderSBN::BuildHitPairMapByTPC(PlaneSnippetHitMapItrPairVec
         size_t n12Pairs = findGoodHitPairs(firstSnippetItr, snippetHitMapItr1Start, snippetHitMapItr1End, pair12Map);
         size_t n13Pairs = findGoodHitPairs(firstSnippetItr, snippetHitMapItr2Start, snippetHitMapItr2End, pair13Map);
 
-        nDeadChanHits  += hitPairList.size() - curHitListSize;
         curHitListSize  = hitPairList.size();
 
         if (n12Pairs > n13Pairs) findGoodTriplets(pair12Map, pair13Map, matchedHitMap, hitPairList);
