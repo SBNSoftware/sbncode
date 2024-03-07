@@ -12,7 +12,6 @@
 
 //Framework includes
 #include "larcorealg/Geometry/GeometryCore.h"
-#include "lardataalg/DetectorInfo/DetectorClocksData.h"
 #include "lardataalg/DetectorInfo/DetectorPropertiesData.h"
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/TrackHitMeta.h"
@@ -34,7 +33,6 @@ namespace sys {
       // the notes at the end refer to their old names in the MircoBooNE code which preceded this
       // TODO: how best to initialize the splines/graphs?
       const geo::GeometryCore* geometry;                  // save the TPC geometry
-      const detinfo::DetectorClocksData& detClockData;    // save the detector clock data
       const detinfo::DetectorPropertiesData& detPropData; // save the detector property data
       bool   applyXScale;                                 // do we scale with X? (fApplyXScale)
       bool   applyYZScale;                                // do we scale with YZ? (fApplyYZScale)
@@ -59,11 +57,10 @@ namespace sys {
       // assume we can get a geometry service, a detector clcok, and a detector properties
       // pass the CryoStat and TPC IDs because it's IDs all the way down
       // set some optional args fpr the booleans, the readout window, and the offset
-      WireModUtility(const geo::GeometryCore* geom, const detinfo::DetectorClocksData& detClock, const detinfo::DetectorPropertiesData& detProp,
+      WireModUtility(const geo::GeometryCore* geom, const detinfo::DetectorPropertiesData& detProp,
                      const bool& arg_ApplyXScale = true, const bool& arg_ApplyYZScale = true, const bool& arg_ApplyXZAngleScale = true, const bool& arg_ApplyYZAngleScale = true, const bool& arg_ApplydEdXScale = true,
                      const double& arg_TickOffset = 0)
       : geometry(geom),
-        detClockData(detClock),
         detPropData(detProp),
         applyXScale(arg_ApplyXScale),
         applyYZScale(arg_ApplyYZScale),
