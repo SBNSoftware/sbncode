@@ -29,6 +29,8 @@
 #include "canvas/Persistency/Common/TriggerResults.h"
 
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/CoreUtils/ServiceUtil.h"
+#include "larcorealg/Geometry/GeometryCore.h"
 #include "TGeoManager.h"
 #include "TVector3.h"
 #include "TTree.h"
@@ -60,6 +62,9 @@ public:
   virtual void beginSubRun(art::SubRun const& sr) override;
 
 private:
+
+  typedef std::pair<bool, double> Intersect;
+  typedef std::vector<Intersect>  Intersects;
 
   std::string _flux_label; ///< Label for flux dataproduct (to be set via fcl)
   std::string _flux_eventweight_multisim_producer; ///< Label for flux weights (to be set via fcl)
@@ -95,6 +100,18 @@ private:
   /// Returns the intersection point with the front face of the TPC
   TVector3 GetIntersection(TVector3 nu_pos, TVector3 nu_dir, float z_location=0);
 
+  double IntersectsTPC(const TVector3 &vtx, const TVector3 &mom);
+  double IntersectsFV(const TVector3 &vtx, const TVector3 &mom);
+  double CalculatePathLength(const TVector3 &vtx, const TVector3 &mom, const Intersects &sides);
+  Intersects IntersectsSides(const TVector3 &vtx, const TVector3 &mom, const std::vector<double> &limits);
+  Intersect IntersectsXPlane(const TVector3 &vtx, const TVector3 &mom, const double &planeLoc,
+                             const std::vector<double> &limits);
+  Intersect IntersectsYPlane(const TVector3 &vtx, const TVector3 &mom, const double &planeLoc,
+                             const std::vector<double> &limits);
+  Intersect IntersectsZPlane(const TVector3 &vtx, const TVector3 &mom, const double &planeLoc,
+                             const std::vector<double> &limits);
+  bool IsInside(const double &intersect, const double &lower, const double &upper);
+
   TTree* _tree;
   bool _nu_hit; /// True if the neutrino hit the requested volumes
   int _nu_pdg; /// PDG of neutrino
@@ -126,6 +143,9 @@ private:
   float _nu_other_z; /// Z poisition of neutrino at the front face of the TPC (other)
   float _nu_other_t; /// Time of the neutrino (other)
 
+  double _ray_length;    /// Length of the neutrino ray's path within the TPC
+  double _ray_fv_length; /// Length of the neutrino ray's path within the FV
+
   std::vector<float> _evtwgt_flux_oneweight; ///< Weights for FLUX reweighting (multisim) (combines all variations)
   std::vector<std::vector<float>> _evtwgt_flux_weights = std::vector<std::vector<float>>(weight_names.size(), std::vector<float>()); ///< Weights for FLUX reweighting (multisim)
 
@@ -133,6 +153,11 @@ private:
   int _sr_run, _sr_subrun;
   double _sr_begintime, _sr_endtime;
   double _sr_pot; ///< Number of POTs per subrun
+
+  geo::GeometryCore const* fGeometryService;
+
+  std::vector<double> fTPCLimits;
+  std::vector<std::vector<double>> fFVLimits;
 };
 
 
@@ -190,6 +215,9 @@ FluxReaderAna::FluxReaderAna(fhicl::ParameterSet const& p)
   _tree->Branch("nu_other_z", &_nu_other_z, "nu_other_z/F");
   _tree->Branch("nu_other_t", &_nu_other_t, "nu_other_t/F");
 
+  _tree->Branch("ray_length", &_ray_length, "ray_length/D");
+  _tree->Branch("ray_fv_length", &_ray_fv_length, "ray_fv_length/D");
+
   _tree->Branch("evtwgt_flux_oneweight", "std::vector<float>", &_evtwgt_flux_oneweight);
 
   int weight_i = 0;
@@ -206,6 +234,27 @@ FluxReaderAna::FluxReaderAna(fhicl::ParameterSet const& p)
   _sr_tree->Branch("begintime", &_sr_begintime, "begintime/D");
   _sr_tree->Branch("endtime", &_sr_endtime, "endtime/D");
   _sr_tree->Branch("pot", &_sr_pot, "pot/D");
+
+  fGeometryService = lar::providerFrom<geo::Geometry>();
+
+  fTPCLimits = { std::numeric_limits<double>::max(),
+                 std::numeric_limits<double>::max(),
+                 std::numeric_limits<double>::max(),
+                 std::numeric_limits<double>::lowest(),
+                 std::numeric_limits<double>::lowest(),
+                 std::numeric_limits<double>::lowest()
+  };
+
+  for(auto const& tpcg : fGeometryService->Iterate<geo::TPCGeo>()) {
+    if (tpcg.MinX() < fTPCLimits[0]) fTPCLimits[0] = tpcg.MinX();
+    if (tpcg.MaxX() > fTPCLimits[3]) fTPCLimits[3] = tpcg.MaxX();
+    if (tpcg.MinY() < fTPCLimits[1]) fTPCLimits[1] = tpcg.MinY();
+    if (tpcg.MaxY() > fTPCLimits[4]) fTPCLimits[4] = tpcg.MaxY();
+    if (tpcg.MinZ() < fTPCLimits[2]) fTPCLimits[2] = tpcg.MinZ();
+    if (tpcg.MaxZ() > fTPCLimits[5]) fTPCLimits[5] = tpcg.MaxZ();
+  }
+
+  fFVLimits = p.get<std::vector<std::vector<double>>>("FVLimits", {});
 }
 
 void FluxReaderAna::analyze(art::Event const& e)
@@ -291,9 +340,14 @@ void FluxReaderAna::analyze(art::Event const& e)
     _nu_other_t = nu.T() + other_dist / light_speed;
 
     if (_apply_position_cuts) {
-      if (_nu_x < -_x_cut || _nu_x > _x_cut || _nu_y < -_y_cut || _nu_y > _y_cut) {
+      const TVector3 vtx = nu.Position().Vect();
+      const TVector3 mom = nu.Momentum().Vect();
+
+      _ray_length    = IntersectsTPC(vtx, mom);
+      _ray_fv_length = IntersectsFV(vtx, mom);
+
+      if(_ray_length < 0)
         continue;
-      }
     }
 
     // Flux weights
@@ -371,6 +425,106 @@ void FluxReaderAna::beginSubRun(art::SubRun const& sr) {
 
   _sr_tree->Fill();
 
+}
+
+// Function to assess whether a neutrino ray intersects the TPC in any way?
+// Returns -1 if not.
+// If it does then it returns the length of the neutrino ray's path within
+// the TPC boundaries in cm.
+double FluxReaderAna::IntersectsTPC(const TVector3 &vtx, const TVector3 &mom)
+{
+  const Intersects sides = IntersectsSides(vtx, mom, fTPCLimits);
+
+  return CalculatePathLength(vtx, mom, sides);
+}
+
+double FluxReaderAna::IntersectsFV(const TVector3 &vtx, const TVector3 &mom)
+{
+  double total_length = 0.;
+
+  for(auto const &limits : fFVLimits)
+    {
+      const Intersects sides = IntersectsSides(vtx, mom, limits);
+      double length = CalculatePathLength(vtx, mom, sides);
+
+      if(length > -1.)
+        total_length += length;
+    }
+
+  return total_length;
+}
+
+double FluxReaderAna::CalculatePathLength(const TVector3 &vtx, const TVector3 &mom,
+                                          const Intersects &sides)
+{
+  std::vector<TVector3> intersects;
+
+  for(const Intersect &side : sides)
+    {
+      if(side.first)
+        intersects.push_back(vtx + side.second * mom);
+    }
+
+  if(intersects.size() > 2)
+    throw std::runtime_error("How can an infinite straight line intersect more than two sides of a cuboid?");
+
+  if(intersects.size() == 1)
+    throw std::runtime_error("How can an infinite straight line intersect just one sides of a cuboid?");
+
+  if(intersects.size() == 0)
+    return -1.;
+
+  return (intersects[0] - intersects[1]).Mag();
+}
+
+// Convention: lower x, lower y, lower z, higher x, higher y, higher z
+FluxReaderAna::Intersects FluxReaderAna::IntersectsSides(const TVector3 &vtx, const TVector3 &mom,
+                                                         const std::vector<double> &limits)
+{
+  Intersects sides = { IntersectsXPlane(vtx, mom, limits[0], limits),
+                       IntersectsYPlane(vtx, mom, limits[1], limits),
+                       IntersectsZPlane(vtx, mom, limits[2], limits),
+                       IntersectsXPlane(vtx, mom, limits[3], limits),
+                       IntersectsYPlane(vtx, mom, limits[4], limits),
+                       IntersectsZPlane(vtx, mom, limits[5], limits)
+  };
+
+  return sides;
+}
+
+FluxReaderAna::Intersect FluxReaderAna::IntersectsXPlane(const TVector3 &vtx, const TVector3 &mom, const double &planeLoc,
+                                                         const std::vector<double> &limits)
+{
+  const double k = (planeLoc - vtx.X()) / mom.X();
+
+  const TVector3 intersect = vtx + k * mom;
+
+  return { IsInside(intersect.Y(), limits[1], limits[4]) && IsInside(intersect.Z(), limits[2], limits[5]), k };
+}
+
+FluxReaderAna::Intersect FluxReaderAna::IntersectsYPlane(const TVector3 &vtx, const TVector3 &mom, const double &planeLoc,
+                                                         const std::vector<double> &limits)
+{
+  const double k = (planeLoc - vtx.Y()) / mom.Y();
+
+  const TVector3 intersect = vtx + k * mom;
+
+  return { IsInside(intersect.X(), limits[0], limits[3]) && IsInside(intersect.Z(), limits[2], limits[5]), k };
+}
+
+FluxReaderAna::Intersect FluxReaderAna::IntersectsZPlane(const TVector3 &vtx, const TVector3 &mom, const double &planeLoc,
+                                                         const std::vector<double> &limits)
+{
+  const double k = (planeLoc - vtx.Z()) / mom.Z();
+
+  const TVector3 intersect = vtx + k * mom;
+
+  return { IsInside(intersect.X(), limits[0], limits[3]) && IsInside(intersect.Y(), limits[1], limits[4]), k };
+}
+
+bool FluxReaderAna::IsInside(const double &intersect, const double &lower, const double &upper)
+{
+  return intersect > lower && intersect < upper;
 }
 
 DEFINE_ART_MODULE(FluxReaderAna)
