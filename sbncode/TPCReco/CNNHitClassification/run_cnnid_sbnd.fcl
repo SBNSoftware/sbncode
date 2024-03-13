@@ -30,14 +30,14 @@ physics:
     cnnid: {
       module_type: CNNID
       BatchSize:                    256 
-      WireLabel:                    "caldata"
+      WireLabel:                    "simtpc2d:gauss"
       HitModuleLabel:               "gaushit"
       ClusterModuleLabel:           "pandora"
       PFParticleModuleLabel:        "pandora"
       SkipClearCosmics:             true
       DoMichel:                     true
       MichelRegionSize:             [30, 120]
-      SparseLengthCut:              150
+      SparseLengthCut:              9999
       DoPFP:                        true
       SparseRate:                   5
       Views:                        []
@@ -56,7 +56,6 @@ outputs:
  out1:
  {
    module_type: RootOutput
-  #  fileName:    "/pnfs/sbnd/scratch/users/munjung/cnnid_job/%ifb_cnn.root"
    fileName:    "%ifb_cnn.root"
    dataTier:    "full-reconstructed"
    fastCloning: true
