@@ -36,7 +36,7 @@ public:
     virtual ~IStubMerge() noexcept = default;
 
     virtual std::vector<sbn::StubInfo> Merge(const std::vector<sbn::StubInfo> &stubs,
-       const geo::GeometryCore *geo, 
+       const geo::WireReadoutGeom &wireReadout,
        const spacecharge::SpaceCharge *sce, 
        const detinfo::DetectorClocksData &dclock,
        const detinfo::DetectorPropertiesData &dprop) = 0;
@@ -44,4 +44,3 @@ public:
 
 } // namespace sbn
 #endif
-

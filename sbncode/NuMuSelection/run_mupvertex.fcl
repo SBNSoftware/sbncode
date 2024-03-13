@@ -26,8 +26,7 @@ services:
   }
   message:      { debugModules: ["*"] destinations: { debugmsg:{type: "cout" threshold: "INFO"} } }
   TimeTracker:  { printSummary: true }
-  AuxDetExptGeoHelperInterface: { service_provider: "sbndcode/CRT/CRTGeometryHelper" }
-  ExptGeoHelperInterface:    @local::sbnd_geometry_helper
+  WireReadout:               @local::sbnd_wire_readout
   Geometry:                  @local::sbnd_geo
   AuxDetGeometry:            @local::sbnd_auxdetgeo
   LArPropertiesService:      @local::standard_properties
