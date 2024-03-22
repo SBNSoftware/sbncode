@@ -17,9 +17,9 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
-// #include "lardataalg/DetectorInfo/DetectorClocksData.h"
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "lardataobj/RawData/TriggerData.h"
+#include "lardataobj/Simulation/AuxDetSimChannel.h"
 #include "lardataobj/Simulation/BeamGateInfo.h"
 #include "lardataobj/Simulation/SimEnergyDeposit.h"
 #include "lardataobj/Simulation/SimPhotons.h"
@@ -49,11 +49,13 @@ private:
   art::InputTag fInputSimPhotonsLabel;
   art::InputTag fInputTriggerLabel;
   art::InputTag fInputWaveformLabel;
+  art::InputTag fInputAuxDetSimChannelLabel;
   art::InputTag fInputBeamGateInfoLabel;
   double fAdditionalOffset;
   bool fShiftSimEnergyDeposits;
   bool fShiftSimPhotons;
   bool fShiftWaveforms;
+  bool fShiftAuxDetIDEs;
   bool fShiftBeamGateInfo;
 };
 
@@ -63,25 +65,29 @@ AdjustSimForTrigger::AdjustSimForTrigger(fhicl::ParameterSet const& p)
   , fInputSimPhotonsLabel{p.get<art::InputTag>("InputSimPhotonsLabel", "")}
   , fInputTriggerLabel{p.get<art::InputTag>("InputTriggerLabel", "")}
   , fInputWaveformLabel(p.get<art::InputTag>("InputWaveformLabel", ""))
+  , fInputAuxDetSimChannelLabel(p.get<art::InputTag>("InputAuxDetSimChannelLabel", ""))
   , fInputBeamGateInfoLabel{p.get<art::InputTag>("InputBeamGateInfoLabel", "")}
   , fAdditionalOffset{p.get<double>("AdditionalOffset")}
   , fShiftSimEnergyDeposits{p.get<bool>("ShiftSimEnergyDeposits", false)}
   , fShiftSimPhotons{p.get<bool>("ShiftSimPhotons", false)}
   , fShiftWaveforms{p.get<bool>("ShiftWaveforms", false)}
+  , fShiftAuxDetIDEs{p.get<bool>("ShiftAuxDetIDEs", false)}
   , fShiftBeamGateInfo{p.get<bool>("ShiftBeamGateInfo", false)}
 {
-  if (!(fShiftSimEnergyDeposits | fShiftSimPhotons | fShiftWaveforms | fShiftBeamGateInfo)) {
+  if (!(fShiftSimEnergyDeposits | fShiftSimPhotons | fShiftWaveforms | fShiftAuxDetIDEs | fShiftBeamGateInfo)) {
     throw art::Exception(art::errors::EventProcessorFailure)
       << "NO SHIFTS ENABLED!\n"
       << "SHIFTING SIMENERGYDEPOSITS? " << fShiftSimEnergyDeposits << '\n'
       << "SHIFTING SIMPHOTONS? " << fShiftSimPhotons << '\n'
       << "SHIFTING OPDETWAVEFORMS? " << fShiftWaveforms << '\n'
+      << "SHIFTING AUXDETIDES? " << fShiftAuxDetIDEs << '\n'
       << "SHIFTING BEAMGATEINFO? " << fShiftBeamGateInfo << '\n';
   }
 
   if (fShiftSimEnergyDeposits) { produces<std::vector<sim::SimEnergyDeposit>>(); }
   if (fShiftSimPhotons) { produces<std::vector<sim::SimPhotons>>(); }
   if (fShiftWaveforms) { produces<std::vector<raw::OpDetWaveform>>(); }
+  if (fShiftAuxDetIDEs) { produces<std::vector<sim::AuxDetSimChannel>>(); }
   if (fShiftBeamGateInfo) { produces<std::vector<sim::BeamGateInfo>>(); }
 }
 
@@ -136,7 +142,7 @@ void AdjustSimForTrigger::produce(art::Event& e)
       const int thisPDG = inSimEDep.PdgCode();
       const int origID = inSimEDep.OrigTrackID();
 
-      pSimEDeps->push_back(sim::SimEnergyDeposit(numphotons,
+      pSimEDeps->emplace_back(sim::SimEnergyDeposit(numphotons,
                                                  numelectrons,
                                                  syratio,
                                                  energy,
@@ -173,6 +179,26 @@ void AdjustSimForTrigger::produce(art::Event& e)
       waveform.SetTimeStamp(waveform.TimeStamp() + timeShiftForTrigger_us);
     }
     e.put(std::move(pWaveforms));
+  }
+
+  // Repeat for sim::AuxDetIDE
+  if (fShiftAuxDetIDEs) {
+    auto const& simChannels = e.getProduct<std::vector<sim::AuxDetSimChannel>>(fInputAuxDetSimChannelLabel);
+    auto pSimChannels = std::make_unique<std::vector<sim::AuxDetSimChannel>>();
+
+    pSimChannels->reserve(simChannels.size());
+
+    for (auto const& simChannel : simChannels) {
+      std::vector<sim::AuxDetIDE> shiftedAuxDetIDEs = simChannel.AuxDetIDEs();
+      for (auto& auxDetIDE : shiftedAuxDetIDEs) {
+        auxDetIDE.entryT += timeShiftForTrigger_ns;
+        auxDetIDE.exitT += timeShiftForTrigger_ns;
+      }
+      pSimChannels->emplace_back(sim::AuxDetSimChannel(simChannel.AuxDetID(),
+                                 shiftedAuxDetIDEs,
+                                 simChannel.AuxDetSensitiveID()));
+    }
+    e.put(std::move(pSimChannels));
   }
 
   // Repeat for sim::BeamGateInfo
