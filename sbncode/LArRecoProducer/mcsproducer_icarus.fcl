@@ -1,13 +1,21 @@
 BEGIN_PROLOG
-mcs_sbn: {
+mcs_icarus_data: {
   module_type: MCSFitAllPID
   MCS: {
     eLossMode: 2
-    angResol: 10.0
+    angResol: 10.0 # tuned to data
     fiducialVolumeInsets: [10.0, 10.0, 10.0, 10.0, 10.0, 10.0] 
-    excludeVolumes: [190.0, 240.0, -9999.0, 9999.0, -9999.0, 9999.0] 
+    excludeVolumes: [
+                      200.0, 221.0, -9999.0, 9999.0, -9999.0, 9999.0, # exclude 10cm around cathode in Cryo W
+                      -221.0, -200.0, -9999.0, 9999.0, -9999.0, 9999.0, # exclude 10cm around cathode in Cryo E
+                      210.29, 358.49, 70, 9999.0, 0, 9999.0, # exclude dangling cable in TPC WW -- cut 65cm from top
+                      -358.49, -210.29, 115, 9999.0, -9999.0, 9999.0 # exclude field cage failure in TPC EE -- cut 20cm from top
+                    ] 
   }
   TrackLabel: pandoraTrack
 }
+
+mcs_icarus_mc: @local::mcs_icarus_data
+mcs_icarus_mc.MCS.angResol: 3.0 # tuned to MC
 
 END_PROLOG

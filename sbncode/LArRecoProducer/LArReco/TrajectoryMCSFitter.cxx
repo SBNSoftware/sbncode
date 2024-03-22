@@ -33,7 +33,7 @@ recob::MCSFitResult TrajectoryMCSFitter::fitMcs(const recob::TrackTrajectory& tr
       if (segradlengths[p]<-100. || segradlengths[p-1]<-100.) {
         dtheta.push_back(-999.);
       } 
-      if (!breakpointsgood[p] || !breakpointsgood[p-1]) {
+      else if (!breakpointsgood[p] || !breakpointsgood[p-1]) {
         dtheta.push_back(-999.);
       }
       else { 
