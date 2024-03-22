@@ -74,7 +74,7 @@ AdjustSimForTrigger::AdjustSimForTrigger(fhicl::ParameterSet const& p)
   , fShiftAuxDetIDEs{p.get<bool>("ShiftAuxDetIDEs", false)}
   , fShiftBeamGateInfo{p.get<bool>("ShiftBeamGateInfo", false)}
 {
-  if (!(fShiftSimEnergyDeposits | fShiftSimPhotons | fShiftWaveforms | fShiftAuxDetIDEs | fShiftBeamGateInfo)) {
+  if (!(fShiftSimEnergyDeposits || fShiftSimPhotons || fShiftWaveforms || fShiftAuxDetIDEs || fShiftBeamGateInfo)) {
     throw art::Exception(art::errors::EventProcessorFailure)
       << "NO SHIFTS ENABLED!\n"
       << "SHIFTING SIMENERGYDEPOSITS? " << fShiftSimEnergyDeposits << '\n'
