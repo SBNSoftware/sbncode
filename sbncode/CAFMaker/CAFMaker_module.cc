@@ -1728,8 +1728,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<sbn::MVAPID>(fmPFPart, evt,
           fParams.PFPRazzledLabel() + slice_tag_suff);
 
-    art::FindOneP<sbn::PFPCNNScore> foCNNScores = 
-      FindOnePStrict<sbn::PFPCNNScore>(fmPFPart, evt,
+    art::FindManyP<sbn::PFPCNNScore> fmCNNScores = 
+      FindManyPStrict<sbn::PFPCNNScore>(fmPFPart, evt,
           fParams.CNNScoreLabel() + slice_tag_suff);
 
     art::FindManyP<recob::Vertex> fmVertex =
@@ -1929,8 +1929,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       const larpandoraobj::PFParticleMetadata *pfpMeta = (fmPFPMeta.at(iPart).empty()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
       FillPFPVars(thisParticle, primary, pfpMeta, thisPFPT0, pfp);
 
-      if (foCNNScores.isValid()) {
-        const sbn::PFPCNNScore *cnnScores = foCNNScores.at(iPart).get();
+      if (fmCNNScores.isValid()) {
+        const sbn::PFPCNNScore *cnnScores = fmCNNScores.at(iPart).at(0).get();
         FillCNNScores(thisParticle, cnnScores, pfp);
       }
     
