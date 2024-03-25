@@ -183,6 +183,7 @@ class CAFMaker : public art::EDProducer {
   std::string fFlatCafPrescaleFilename;
   
   std::string fSourceFile;
+  size_t fSourceFileHash;
 
   bool fFirstInSubRun;
   unsigned int fIndexInFile = SRHeader::NoSourceIndex();
@@ -639,6 +640,7 @@ void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
   fFirstBlindInFile = true;
   fFirstPrescaleInFile = true;
   fSourceFile = inputBasename;
+  fSourceFileHash = std::hash<std::string>{}(fSourceFile);
 
 }
 
@@ -951,6 +953,8 @@ void CAFMaker::InitializeOutfiles()
     if (fSaveGENIEEventRecord) {
       fGenieTree = new TTree( "GenieEvtRecTree", "GenieEvtRecTree" );
       fGenieTree->Branch("GenieEvtRec", &fGenieEvtRec);
+      fGenieTree->Branch("GENIEEntry", &fGenieEventCounter, "GENIEEntry/l");
+      fGenieTree->Branch("SourceFileHash", &fSourceFileHash, "SourceFileHash/l");
     }
 
   }     
@@ -991,6 +995,8 @@ void CAFMaker::InitializeOutfiles()
     if (fSaveGENIEEventRecord){
       fFlatGenieTree = new TTree( "GenieEvtRecTree", "GenieEvtRecTree" );
       fFlatGenieTree->Branch("GenieEvtRec", &fFlatGenieEvtRec);
+      fFlatGenieTree->Branch("GENIEEntry", &fGenieEventCounter, "GENIE/l");
+      fFlatGenieTree->Branch("SourceFileHash", &fSourceFileHash, "SourceFileHash/l");
     }
 
   }
@@ -2045,6 +2051,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.hdr.ngenevt = n_gen_evt;
   rec.hdr.mctype  = mctype;
   rec.hdr.sourceName = fSourceFile;
+  rec.hdr.sourceNameHash = fSourceFileHash;
+
   rec.hdr.sourceIndex = fIndexInFile;
   rec.hdr.first_in_file = firstInFile;
   rec.hdr.first_in_subrun = fFirstInSubRun;
@@ -2189,6 +2197,7 @@ void CAFMaker::endJob() {
     AddHistogramsToFile(fFile);
     fRecTree->SetDirectory(fFile);
     if(fGenieTree){
+      fGenieTree->BuildIndex("SourceFileHash", "GENIEEntry");
       fGenieTree->SetDirectory(fFile);
     }
     if (fParams.CreateBlindedCAF()) {
@@ -2213,6 +2222,7 @@ void CAFMaker::endJob() {
     AddHistogramsToFile(fFlatFile);
     fFlatTree->SetDirectory(fFlatFile);
     if(fFlatGenieTree){
+      fFlatGenieTree->BuildIndex("SourceFileHash", "GENIEEntry");
       fFlatGenieTree->SetDirectory(fFlatFile);
     }
     if (fParams.CreateBlindedCAF() && fFlatFileb) {
