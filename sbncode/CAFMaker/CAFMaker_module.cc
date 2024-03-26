@@ -183,7 +183,7 @@ class CAFMaker : public art::EDProducer {
   std::string fFlatCafPrescaleFilename;
   
   std::string fSourceFile;
-  size_t fSourceFileHash;
+  std::uint32_t fSourceFileHash;
 
   bool fFirstInSubRun;
   unsigned int fIndexInFile = SRHeader::NoSourceIndex();
@@ -228,7 +228,7 @@ class CAFMaker : public art::EDProducer {
   genie::NtpMCEventRecord * fFlatGenieEvtRec = 0;
   TTree                   * fFlatGenieTree = 0;
   bool fSaveGENIEEventRecord;
-  size_t fGenieEventCounter;
+  unsigned int fGenieEventCounter;
 
   flat::Flat<caf::StandardRecord>* fFlatRecord = 0;
   flat::Flat<caf::StandardRecord>* fFlatRecordb = 0;
@@ -640,7 +640,13 @@ void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
   fFirstBlindInFile = true;
   fFirstPrescaleInFile = true;
   fSourceFile = inputBasename;
-  fSourceFileHash = std::hash<std::string>{}(fSourceFile);
+  // Getting full hash
+  size_t fSourceFileHashFull = std::hash<std::string>{}(fSourceFile);
+  // truncate the full hash into a 32-bit integer
+  // This is required to be used as one of the ingredient of TTree::BuildIndex();
+  // it shifts the "major" value by 32-bit (https://root.cern/doc/master/classTTreeIndex.html#a08aac749ab22fd5c8ab792a0061a4b0f),
+  // so should be less than or equal to 32-bit
+  fSourceFileHash = static_cast<std::uint32_t>(fSourceFileHashFull);
 
 }
 
@@ -953,8 +959,8 @@ void CAFMaker::InitializeOutfiles()
     if (fSaveGENIEEventRecord) {
       fGenieTree = new TTree( "GenieEvtRecTree", "GenieEvtRecTree" );
       fGenieTree->Branch("GenieEvtRec", &fGenieEvtRec);
-      fGenieTree->Branch("GENIEEntry", &fGenieEventCounter, "GENIEEntry/l");
-      fGenieTree->Branch("SourceFileHash", &fSourceFileHash, "SourceFileHash/l");
+      fGenieTree->Branch("GENIEEntry", &fGenieEventCounter, "GENIEEntry/i");
+      fGenieTree->Branch("SourceFileHash", &fSourceFileHash, "SourceFileHash/i");
     }
 
   }     
@@ -995,8 +1001,8 @@ void CAFMaker::InitializeOutfiles()
     if (fSaveGENIEEventRecord){
       fFlatGenieTree = new TTree( "GenieEvtRecTree", "GenieEvtRecTree" );
       fFlatGenieTree->Branch("GenieEvtRec", &fFlatGenieEvtRec);
-      fFlatGenieTree->Branch("GENIEEntry", &fGenieEventCounter, "GENIE/l");
-      fFlatGenieTree->Branch("SourceFileHash", &fSourceFileHash, "SourceFileHash/l");
+      fFlatGenieTree->Branch("GENIEEntry", &fGenieEventCounter, "GENIE/i");
+      fFlatGenieTree->Branch("SourceFileHash", &fSourceFileHash, "SourceFileHash/i");
     }
 
   }
