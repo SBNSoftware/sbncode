@@ -2,10 +2,15 @@
 #include "lardataalg/DetectorInfo/DetectorPropertiesData.h"
 
 //--- CalcROIProperties ---
-sys::WireModUtility::ROIProperties_t sys::WireModUtility::CalcROIProperties(recob::Wire::RegionsOfInterest_t::datarange_t const& roi)
+sys::WireModUtility::ROIProperties_t sys::WireModUtility::CalcROIProperties(recob::Wire const& wire, size_t const& roi_idx)
 {
+  // get the ROI
+  recob::Wire::RegionsOfInterest_t::datarange_t const& roi = wire.SignalROI().get_ranges()[roi_idx];
+
   // initialize the return value
   ROIProperties_t roi_vals;
+  roi_vals.channel = wire.Channel();
+  roi_vals.view    = wire.View();
   roi_vals.begin   = roi.begin_index();
   roi_vals.end     = roi.end_index();
   roi_vals.center  = 0;
@@ -45,44 +50,26 @@ std::vector<std::pair<unsigned int, unsigned int>> sys::WireModUtility::GetTarge
   // the pairs are <channel number, tick time>
   std::vector<std::pair<unsigned int, unsigned int>> target_roi_vec;
 
-  // reconstruct the wire numbers from the positions
-  // b/c NearestWireID thows exceptions it helps debugging to check wire number before calling it
-  const geo::TPCGeo& curTPCGeom = geometry->PositionToTPC(shifted_edep.MidPoint());
-  geo::WireID edep_plane0_wireID;
-  geo::WireID edep_plane1_wireID;
-  geo::WireID edep_plane2_wireID;
-  bool plane0_wireGood = false;
-  bool plane1_wireGood = false;
-  bool plane2_wireGood = false;
-  int plane0_wireNumber = 0.5 + curTPCGeom.Plane(0).WireCoordinate(shifted_edep.MidPoint());
-  int plane1_wireNumber = 0.5 + curTPCGeom.Plane(1).WireCoordinate(shifted_edep.MidPoint());
-  int plane2_wireNumber = 0.5 + curTPCGeom.Plane(2).WireCoordinate(shifted_edep.MidPoint());
+  // if the SimEnergyDeposit isn't inside the TPC then it's not going to match a wire
+  geo::TPCGeo const* curTPCGeomPtr = geometry->PositionToTPCptr(shifted_edep.MidPoint());
+  if (curTPCGeomPtr == nullptr)
+    return target_roi_vec;
 
-  // try getting the wires...
-  if (plane0_wireNumber > 0 && plane0_wireNumber < (int) curTPCGeom.Plane(0).Nwires())
+  // iterate over planes
+  for (size_t i_p = 0; i_p < curTPCGeomPtr->Nplanes(); ++i_p)
   {
-    edep_plane0_wireID = curTPCGeom.Plane(0).NearestWireID(shifted_edep.MidPoint());
-    plane0_wireGood = true;
+    // check the wire exists in this plane
+    int wireNumber = 0.5 + curTPCGeomPtr->Plane(i_p).WireCoordinate(shifted_edep.MidPoint());
+    if (wireNumber < 0 || wireNumber > (int) curTPCGeomPtr->Plane(i_p).Nwires())
+      continue;
+    
+    // reconstruct the wireID from the position
+    geo::WireID edep_wireID = curTPCGeomPtr->Plane(i_p).NearestWireID(shifted_edep.MidPoint());
+ 
+    // if the deposition is inside the range where it would leave a signal on the wire, look for the ROI there
+    if (planeXInWindow(shifted_edep.X(), i_p, *curTPCGeomPtr, offset + tickOffset))
+      target_roi_vec.emplace_back(geometry->PlaneWireToChannel(edep_wireID), std::round(planeXToTick(shifted_edep.X(), i_p, *curTPCGeomPtr, offset + tickOffset)));
   }
-  if (plane1_wireNumber > 0 && plane1_wireNumber < (int) curTPCGeom.Plane(1).Nwires())
-  {
-    edep_plane1_wireID = curTPCGeom.Plane(1).NearestWireID(shifted_edep.MidPoint());
-    plane1_wireGood = true;
-  }
-  if (plane2_wireNumber > 0 && plane2_wireNumber < (int) curTPCGeom.Plane(2).Nwires())
-  {
-    edep_plane2_wireID = curTPCGeom.Plane(2).NearestWireID(shifted_edep.MidPoint());
-    plane2_wireGood = true;
-  }
-
-  if (plane0_wireGood && planeXInWindow(shifted_edep.X(), 0, curTPCGeom, offset + tickOffset))
-    target_roi_vec.emplace_back(geometry->PlaneWireToChannel(edep_plane0_wireID), std::round(planeXToTick(shifted_edep.X(), 0, curTPCGeom, offset + tickOffset)));
-  
-  if (plane1_wireGood && planeXInWindow(shifted_edep.X(), 1, curTPCGeom, offset + tickOffset))
-    target_roi_vec.emplace_back(geometry->PlaneWireToChannel(edep_plane1_wireID), std::round(planeXToTick(shifted_edep.X(), 1, curTPCGeom, offset + tickOffset)));
-  
-  if (plane2_wireGood && planeXInWindow(shifted_edep.X(), 2, curTPCGeom, offset + tickOffset))
-    target_roi_vec.emplace_back(geometry->PlaneWireToChannel(edep_plane2_wireID), std::round(planeXToTick(shifted_edep.X(), 2, curTPCGeom, offset + tickOffset)));
 
   return target_roi_vec;
 }
@@ -146,7 +133,7 @@ void sys::WireModUtility::FillROIMatchedEdepMap(std::vector<sim::SimEnergyDeposi
       // how far into the range is the ROI?
       auto range_number = target_wire.SignalROI().find_range_iterator(target_roi.second) - target_wire.SignalROI().begin_range();
 
-      // pupluate the map
+      // popluate the map
       ROIMatchedEdepMap[std::make_pair(target_wire.Channel(),range_number)].push_back(i_e);
     }
   }
@@ -202,7 +189,8 @@ std::vector<sys::WireModUtility::SubROIProperties_t> sys::WireModUtility::CalcSu
 {
   std::vector<sys::WireModUtility::SubROIProperties_t> subroi_properties_vec;
   sys::WireModUtility::SubROIProperties_t subroi_properties;
-  subroi_properties.plane = roi_properties.plane;
+  subroi_properties.channel = roi_properties.channel;
+  subroi_properties.view    = roi_properties.view;
 
   // if this ROI doesn't contain any hits, define subROI based on ROI properities
   // otherwise, define subROIs based on hits
@@ -361,9 +349,11 @@ sys::WireModUtility::TruthProperties_t sys::WireModUtility::CalcPropertiesFromEd
 
     total_energy_all += edep_ptr->E();
 
+    const geo::TPCGeo& curTPCGeom = geometry->PositionToTPC(edep_ptr->MidPoint());
+
     for (size_t i_p = 0; i_p < 3; ++i_p)
     {
-      auto scales = GetScaleValues(edep_props, i_p);
+      auto scales = GetViewScaleValues(edep_props, curTPCGeom.Plane(i_p).View());
       scales_e_weighted[i_p].r_Q     += edep_ptr->E()*scales.r_Q;
       scales_e_weighted[i_p].r_sigma += edep_ptr->E()*scales.r_sigma; 
     }
@@ -458,33 +448,81 @@ sys::WireModUtility::TruthProperties_t sys::WireModUtility::CalcPropertiesFromEd
   return edep_col_properties; 
 }
 
-//--- GetScaleValues (ver 1) ---
+//--- GetScaleValues ---
 sys::WireModUtility::ScaleValues_t sys::WireModUtility::GetScaleValues(sys::WireModUtility::TruthProperties_t const& truth_props, sys::WireModUtility::ROIProperties_t const& roi_vals)
 {
-  return GetScaleValues(truth_props,roi_vals.plane);
+  sys::WireModUtility::ScaleValues_t scales;
+  sys::WireModUtility::ScaleValues_t channelScales = GetChannelScaleValues(truth_props, roi_vals.channel);
+  sys::WireModUtility::ScaleValues_t viewScales    = GetViewScaleValues(truth_props, roi_vals.view);
+  scales.r_Q     = channelScales.r_Q     * viewScales.r_Q;
+  scales.r_sigma = channelScales.r_sigma * viewScales.r_sigma;
+  return scales;
 }
 
-//--- GetScaleValues (ver 2) ---
-sys::WireModUtility::ScaleValues_t sys::WireModUtility::GetScaleValues(sys::WireModUtility::TruthProperties_t const& truth_props, unsigned int const& plane)
+//--- GetChannelScaleValues ---
+sys::WireModUtility::ScaleValues_t sys::WireModUtility::GetChannelScaleValues(sys::WireModUtility::TruthProperties_t const& truth_props, raw::ChannelID_t const& channel)
 {
-  // get geo
-  const geo::TPCGeo& curTPCGeom = geometry->PositionToTPC({truth_props.x, truth_props.y, truth_props.z});
-
   // initialize return
   sys::WireModUtility::ScaleValues_t scales;
   scales.r_Q     = 1.0;
   scales.r_sigma = 1.0;
+  
+  // try to get geo
+  // if not in a TPC return default values
+  double const truth_coords[3] = {truth_props.x, truth_props.y, truth_props.z};
+  geo::TPCGeo const* curTPCGeomPtr = geometry->PositionToTPCptr(geo::vect::makePointFromCoords(truth_coords));
+  if (curTPCGeomPtr == nullptr)
+    return scales;
 
+  if (applyChannelScale)
+  {
+    if (spline_Charge_Channel == nullptr ||
+        spline_Sigma_Channel  == nullptr  )
+      throw cet::exception("WireModUtility")
+        << "Tried to apply channel scale factor, but could not find splines. Check that you have set those in the utility.";
+    scales.r_Q     *= spline_Charge_Channel->Eval(channel);
+    scales.r_sigma *= spline_Sigma_Channel ->Eval(channel);
+  }
+
+  return scales;
+}
+
+//--- GetViewScaleValues ---
+sys::WireModUtility::ScaleValues_t sys::WireModUtility::GetViewScaleValues(sys::WireModUtility::TruthProperties_t const& truth_props, geo::View_t const& view)
+{
+  // initialize return
+  sys::WireModUtility::ScaleValues_t scales;
+  scales.r_Q     = 1.0;
+  scales.r_sigma = 1.0;
+  
   double temp_scale=1.0;
+  
+  // try to get geo
+  // if not in a TPC return default values
+  double const truth_coords[3] = {truth_props.x, truth_props.y, truth_props.z};
+  geo::TPCGeo const* curTPCGeomPtr = geometry->PositionToTPCptr(geo::vect::makePointFromCoords(truth_coords));
+  if (curTPCGeomPtr == nullptr)
+    return scales;
+
+  // get the plane number by the view
+  size_t plane = curTPCGeomPtr->Plane(view).ID().Plane;
 
   if (applyXScale)
-  { 
+  {
+    if (splines_Charge_X[plane] == nullptr || 
+        splines_Sigma_X [plane] == nullptr  )
+      throw cet::exception("WireModUtility")
+        << "Tried to apply X scale factor, but could not find splines. Check that you have set those in the utility.";
     scales.r_Q     *= splines_Charge_X[plane]->Eval(truth_props.x);
     scales.r_sigma *= splines_Sigma_X [plane]->Eval(truth_props.x);
   }
   
   if (applyYZScale)
   {
+    if (graph2Ds_Charge_YZ[plane] == nullptr || 
+        graph2Ds_Sigma_YZ [plane] == nullptr  )
+      throw cet::exception("WireModUtility")
+        << "Tried to apply YZ scale factor, but could not find graphs. Check that you have set those in the utility.";
     temp_scale = graph2Ds_Charge_YZ[plane]->Interpolate(truth_props.z, truth_props.y);
     if(temp_scale>0.001) scales.r_Q *= temp_scale;
 
@@ -494,17 +532,29 @@ sys::WireModUtility::ScaleValues_t sys::WireModUtility::GetScaleValues(sys::Wire
 
   if (applyXZAngleScale)
   {
-    scales.r_Q     *= splines_Charge_XZAngle[plane]->Eval(ThetaXZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, curTPCGeom.Plane(plane).ThetaZ()));
-    scales.r_sigma *= splines_Sigma_XZAngle [plane]->Eval(ThetaXZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, curTPCGeom.Plane(plane).ThetaZ()));
+    if (splines_Charge_XZAngle[plane] == nullptr || 
+        splines_Sigma_XZAngle [plane] == nullptr  )
+      throw cet::exception("WireModUtility")
+        << "Tried to apply XZ-angle scale factor, but could not find splines. Check that you have set those in the utility.";
+    scales.r_Q     *= splines_Charge_XZAngle[plane]->Eval(ThetaXZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, curTPCGeomPtr->Plane(plane).ThetaZ()));
+    scales.r_sigma *= splines_Sigma_XZAngle [plane]->Eval(ThetaXZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, curTPCGeomPtr->Plane(plane).ThetaZ()));
   }
   if (applyYZAngleScale)
   {
-    scales.r_Q     *= splines_Charge_YZAngle[plane]->Eval(ThetaYZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, curTPCGeom.Plane(plane).ThetaZ()));
-    scales.r_sigma *= splines_Sigma_YZAngle [plane]->Eval(ThetaYZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, curTPCGeom.Plane(plane).ThetaZ()));
+    if (splines_Charge_YZAngle[plane] == nullptr || 
+        splines_Sigma_YZAngle [plane] == nullptr  )
+      throw cet::exception("WireModUtility")
+        << "Tried to apply YZ-angle scale factor, but could not find splines. Check that you have set those in the utility.";
+    scales.r_Q     *= splines_Charge_YZAngle[plane]->Eval(ThetaYZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, curTPCGeomPtr->Plane(plane).ThetaZ()));
+    scales.r_sigma *= splines_Sigma_YZAngle [plane]->Eval(ThetaYZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, curTPCGeomPtr->Plane(plane).ThetaZ()));
   }
 
   if(applydEdXScale)
   {
+    if (splines_Charge_dEdX[plane] == nullptr || 
+        splines_Sigma_dEdX [plane] == nullptr  )
+      throw cet::exception("WireModUtility")
+        << "Tried to apply dEdX scale factor, but could not find splines. Check that you have set those in the utility.";
     scales.r_Q     *= splines_Charge_dEdX[plane]->Eval(truth_props.dedr);
     scales.r_sigma *= splines_Sigma_dEdX [plane]->Eval(truth_props.dedr);
   }
