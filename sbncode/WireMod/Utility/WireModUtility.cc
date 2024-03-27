@@ -59,8 +59,8 @@ std::vector<std::pair<unsigned int, unsigned int>> sys::WireModUtility::GetTarge
   for (size_t i_p = 0; i_p < curTPCGeomPtr->Nplanes(); ++i_p)
   {
     // check the wire exists in this plane
-    int wireNumber = 0.5 + curTPCGeomPtr->Plane(i_p).WireCoordinate(shifted_edep.MidPoint());
-    if (wireNumber < 0 || wireNumber > (int) curTPCGeomPtr->Plane(i_p).Nwires())
+    int wireNumber = int(0.5 + curTPCGeomPtr->Plane(i_p).WireCoordinate(shifted_edep.MidPoint()));
+    if ((wireNumber < 0) || (wireNumber >= (int) curTPCGeomPtr->Plane(i_p).Nwires()))
       continue;
     
     // reconstruct the wireID from the position
