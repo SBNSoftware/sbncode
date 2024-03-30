@@ -1728,7 +1728,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<sbn::MVAPID>(fmPFPart, evt,
           fParams.PFPRazzledLabel() + slice_tag_suff);
 
-    art::FindOneP<sbn::PFPCNNScore> foCNNScores = 
+    art::FindOneP<sbn::PFPCNNScore> foCNNScores =
       FindOnePStrict<sbn::PFPCNNScore>(fmPFPart, evt,
           fParams.CNNScoreLabel() + slice_tag_suff);
 
@@ -1933,7 +1933,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         const sbn::PFPCNNScore *cnnScores = foCNNScores.at(iPart).get();
         FillCNNScores(thisParticle, cnnScores, pfp);
       }
-    
+
       if (!thisTrack.empty())  { // it has a track!
         assert(thisTrack.size() == 1);
 
@@ -2112,7 +2112,23 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // time from MC.
   //
   // PMT's:
-  double PMT_reference_time = fParams.ReferencePMTFromTriggerToBeam() ? srtrigger.trigger_within_gate : 0.;
+
+  // TW (2024-03-29): In MC, when an event doesn't fire the trigger, the raw::Trigger will be
+  // filled with the default values, which are set to the numerical limits of double.
+  // In this case, we should set the PMT_reference_time to 0.
+
+  const bool hasValidTriggerTime =
+    srtrigger.global_trigger_det_time >
+      (std::numeric_limits<double>::min() + std::numeric_limits<double>::epsilon()) &&
+    srtrigger.global_trigger_det_time <
+      (std::numeric_limits<double>::max() - std::numeric_limits<double>::epsilon());
+
+  double PMT_reference_time = fParams.ReferencePMTFromTriggerToBeam() && hasValidTriggerTime ? srtrigger.trigger_within_gate : 0.;
+
+  mf::LogInfo("CAFMaker") << "Setting PMT reference time to " << PMT_reference_time << " us\n"
+			  << "    Trigger Time   = " << srtrigger.global_trigger_det_time << " us\n"
+			  << "    Beam Gate Time =  " << srtrigger.beam_gate_det_time << " us";
+
   FixPMTReferenceTimes(rec, PMT_reference_time);
 
   // TODO: TPC?
