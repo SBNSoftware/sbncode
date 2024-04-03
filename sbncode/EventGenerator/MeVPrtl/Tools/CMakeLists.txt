@@ -32,9 +32,6 @@ cet_build_plugin( EmptyKaonGen art::tool
                             sbnobj::Common_EventGen_MeVPrtl
 )
 
-# these can be removed once icaruscode moves to cetmodules
-cet_find_library( IFDH NAMES ifdh PATHS ENV IFDHC_LIB NO_DEFAULT_PATH )
-cet_find_library( IFDH_SERVICE NAMES IFDH_service PATHS ENV IFDH_ART_LIB )
 
 cet_build_plugin( NuMiKaonGen art::tool
                        LIBRARIES
