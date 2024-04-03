@@ -1392,9 +1392,18 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   art::Handle<std::vector<raw::Trigger>> trig_handle;
   GetByLabelStrict(evt, fParams.TriggerLabel().encode(), trig_handle);
 
+  art::Handle<std::vector<raw::Trigger>> unshifted_trig_handle;
+  GetByLabelStrict(evt, fParams.UnshiftedTriggerLabel().encode(), unshifted_trig_handle);
+
+  const bool isValidTrigger = extratrig_handle.isValid() && trig_handle.isValid() && trig_handle->size() == 1;
+  const bool isValidUnshiftedTrigger = !isRealData && unshifted_trig_handle.isValid() && unshifted_trig_handle->size() == 1;
+
+  const double triggerShift = isValidUnshiftedTrigger ?
+    unshifted_trig_handle->at(0).TriggerTime() - trig_handle->at(0).TriggerTime() : 0.;
+
   caf::SRTrigger srtrigger;
-  if (extratrig_handle.isValid() && trig_handle.isValid() && trig_handle->size() == 1) {
-    FillTrigger(*extratrig_handle, trig_handle->at(0), srtrigger);
+  if (isValidTrigger) {
+      FillTrigger(*extratrig_handle, trig_handle->at(0), srtrigger, triggerShift);
   }
   // If not real data, fill in enough of the SRTrigger to make (e.g.) the CRT
   // time referencing work. TODO: add more stuff to a "MC"-Trigger?
@@ -2112,7 +2121,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // time from MC.
   //
   // PMT's:
-
+  //
   // TW (2024-03-29): In MC, when an event doesn't fire the trigger, the raw::Trigger will be
   // filled with the default values, which are set to the numerical limits of double.
   // In this case, we should set the PMT_reference_time to 0.
@@ -2123,7 +2132,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     srtrigger.global_trigger_det_time <
       (std::numeric_limits<double>::max() - std::numeric_limits<double>::epsilon());
 
-  double PMT_reference_time = fParams.ReferencePMTFromTriggerToBeam() && hasValidTriggerTime ? srtrigger.trigger_within_gate : 0.;
+  double PMT_reference_time = fParams.ReferencePMTFromTriggerToBeam() && hasValidTriggerTime ? triggerShift : 0.;
 
   mf::LogInfo("CAFMaker") << "Setting PMT reference time to " << PMT_reference_time << " us\n"
 			  << "    Trigger Time   = " << srtrigger.global_trigger_det_time << " us\n"

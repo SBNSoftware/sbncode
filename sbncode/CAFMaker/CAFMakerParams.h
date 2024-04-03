@@ -52,11 +52,11 @@ namespace caf
     rndm::SeedAtom FakeRecoRandomSeed { Name("FakeRecoRandomSeed"),
       Comment("fix the random seed for the truth-based reconstruction")
       };
-    
+
     rndm::SeedAtom BlindingRandomSeed { Name("BlindingRandomSeed"),
       Comment("fix the random seed for the blinding")
       };
-    
+
     Atom<std::string> DetectorOverride { Name("DetectorOverride"),
       Comment("Override the automatically detectected detector using 'sbnd' or 'icarus'. This parameter should usually be unset - ''"),
       ""
@@ -180,7 +180,7 @@ namespace caf
       "crumbs"
     };
 
-    Atom<string> OpT0Label { 
+    Atom<string> OpT0Label {
       Name("OpT0Label"),
       Comment("Base label of OpT0Finder producer"),
       "opt0finder"
@@ -352,6 +352,12 @@ namespace caf
       Name("TriggerLabel"),
       Comment("Label of trigger."),
       "daqTrigger"
+    };
+
+    Atom<art::InputTag> UnshiftedTriggerLabel {
+      Name("UnshiftedTriggerLabel"),
+      Comment("Label of emuTrigger before applying shifts."),
+      "emuTriggerUnshifted"
     };
 
     Atom<string> FlashTrigLabel {
