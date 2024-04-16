@@ -559,8 +559,10 @@ CAFMaker::~CAFMaker()
   delete fFlatTree;
   delete fFlatFile;
 
-  //delete fGenieEvtRec;
-  //delete fGenieTree;
+  delete fGenieEvtRec;
+  //delete fGenieTree; // <- deleted when fGenieEvtRec is deleted
+  delete fFlatGenieEvtRec;
+  //delete fFlatGenieTree; <- deleted when fFlatGenieEvtRec is deleted
 
   if (fParams.CreateBlindedCAF()) {
     delete fRecTreeb;
