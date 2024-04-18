@@ -1393,12 +1393,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   GetByLabelStrict(evt, fParams.TriggerLabel().encode(), trig_handle);
 
   art::Handle<std::vector<raw::Trigger>> unshifted_trig_handle;
-  GetByLabelStrict(evt, fParams.UnshiftedTriggerLabel().encode(), unshifted_trig_handle);
+  if (!isRealData)
+    GetByLabelStrict(evt, fParams.UnshiftedTriggerLabel().encode(), unshifted_trig_handle);
 
   const bool isValidTrigger = extratrig_handle.isValid() && trig_handle.isValid() && trig_handle->size() == 1;
-  const bool isValidUnshiftedTrigger = !isRealData && unshifted_trig_handle.isValid() && unshifted_trig_handle->size() == 1;
+  const bool isValidUnshiftedTrigger = unshifted_trig_handle.isValid() && unshifted_trig_handle->size() == 1;
 
-  const double triggerShift = isValidUnshiftedTrigger ?
+  const double triggerShift = (isValidUnshiftedTrigger && isValidTrigger)?
     unshifted_trig_handle->at(0).TriggerTime() - trig_handle->at(0).TriggerTime() : 0.;
 
   caf::SRTrigger srtrigger;
