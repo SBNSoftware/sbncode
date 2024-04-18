@@ -356,7 +356,7 @@ namespace caf
 
     Atom<art::InputTag> UnshiftedTriggerLabel {
       Name("UnshiftedTriggerLabel"),
-      Comment("Label of emuTrigger before applying shifts."),
+      Comment("Label of trigger emulation before applying trigger time shifts."),
       "emuTriggerUnshifted"
     };
 
