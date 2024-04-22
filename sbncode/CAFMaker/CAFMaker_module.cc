@@ -530,17 +530,17 @@ void CAFMaker::InitVolumes() {
 //......................................................................
 CAFMaker::~CAFMaker()
 {
+
+  delete fGenieEvtRec;
+  delete fGenieTree;
   delete fRecTree;
   delete fFile;
 
+  delete fFlatGenieEvtRec;
+  delete fFlatGenieTree;
   delete fFlatRecord;
   delete fFlatTree;
   delete fFlatFile;
-
-  delete fGenieEvtRec;
-  //delete fGenieTree; // <- deleted when fGenieEvtRec is deleted
-  delete fFlatGenieEvtRec;
-  //delete fFlatGenieTree; <- deleted when fFlatGenieEvtRec is deleted
 
   if (fParams.CreateBlindedCAF()) {
     delete fRecTreeb;
