@@ -12,7 +12,8 @@ namespace caf
 
   void FillTrigger(const sbn::ExtraTriggerInfo& addltrig_info,
                    const raw::Trigger& trig_info,
-                   caf::SRTrigger& triggerInfo);
+                   caf::SRTrigger& triggerInfo,
+                   const double time_offset);
 
   void FillTriggerMC(double absolute_time, caf::SRTrigger& triggerInfo);
 
