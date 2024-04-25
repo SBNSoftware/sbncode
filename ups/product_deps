@@ -248,7 +248,7 @@ libdir	fq_dir		lib
 #   cetmodules), an entry for cetmodules is required.
 #
 # * It is an error for more than one non-(<qual-trigger> == "-default-")
-   entry to match for a given product.
+#   entry to match for a given product.
 #
 ####################################
 product			version		qual	flags		<table_format=2>
@@ -259,9 +259,9 @@ sbnanaobj		v09_20_06_03	-
 sbndaq_artdaq_core	v1_06_00of0	-
 sbndata			v01_05		-
 sbnobj			v09_16_00_02	-
-systematicstools        v01_02_01       -
-nusystematics           v01_02_11       -
-geant4reweight		v01_00_03e      -
+systematicstools	v01_02_00	-
+nusystematics		v01_02_10	-
+geant4reweight          v01_14_04       -
 cetmodules		v3_20_00	-	only_for_build
 end_product_list
 ####################################

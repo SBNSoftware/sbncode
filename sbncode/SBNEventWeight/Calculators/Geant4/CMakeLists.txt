@@ -14,7 +14,6 @@ art_make_library(
     cetlib_except::cetlib_except
     ReweightBaseLib
     PropBaseLib
-    ROOT::Tree
 )
 
 install_headers()
