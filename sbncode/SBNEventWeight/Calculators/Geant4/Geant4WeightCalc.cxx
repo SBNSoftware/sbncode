@@ -165,8 +165,6 @@ void Geant4WeightCalc::Configure(fhicl::ParameterSet const& p,
   std::vector<double> FitParSigmas;
   std::map<std::string, double> theNominals;
 
-  fParameterSet.Configure(GetFullName(), mode, fNsims);
-
   for (size_t i_parset=0; i_parset<n_parsets; ++i_parset){
     fhicl::ParameterSet theSet = FitParSets.at(i_parset);
     std::string theName = theSet.get<std::string>("Name");
@@ -178,8 +176,6 @@ void Geant4WeightCalc::Configure(fhicl::ParameterSet const& p,
     FitParSigmas.push_back(theSigma);
 
     theNominals[theName] = theNominal;
-
-    fParameterSet.AddParameter(theName, theSigma);
   }
 
   if (mode=="pm1sigma"){
@@ -244,7 +240,7 @@ std::vector<float> Geant4WeightCalc::GetWeight(art::Event& e, size_t itruth ) {
 
   // Initialize weight vector for this MCTruth
   weight.clear();
-  weight.resize(fNsims, 1.0);
+  weight.resize(1.0);
 
   // Loop over MCParticles in the event
   auto const& mcparticles = truthParticles.at(itruth);
@@ -435,6 +431,7 @@ std::vector<float> Geant4WeightCalc::GetWeight(art::Event& e, size_t itruth ) {
         ParMaker->SetNewVals(UniverseVals.at(j));
         theReweighter->SetNewHists(ParMaker->GetFSHists());
         theReweighter->SetNewElasticHists(ParMaker->GetElasticHist());
+
         //Get the weight from the G4ReweightTraj
         w = theReweighter->GetWeight( &theTraj );
         // Total weight is the product of track weights in the event

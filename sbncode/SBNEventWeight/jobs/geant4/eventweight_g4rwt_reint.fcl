@@ -15,9 +15,7 @@
 #include "piminus_reweight_parameters.fcl"
 #include "proton_reweight_parameters.fcl"
 
-BEGIN_PROLOG
-
-sbn_eventweight_geant4: {
+geant4weight_sbn: {
   module_type: "SBNEventWeight"
   AllowMissingTruth: true
   min_weight: 0.0
@@ -98,6 +96,4 @@ sbn_eventweight_geant4: {
 # - Name can be anything you like (but should uniquely identify that parameter/
 #   variation)
 ###
-
-END_PROLOG
 
