@@ -1,6 +1,5 @@
 include_directories ( $ENV{GEANT4_FQ_DIR}/include )
 include_directories ( $ENV{GEANT4REWEIGHT_INC} )
-link_directories ( $ENV{GEANT4REWEIGHT_LIB} )
 
 art_make_library(
   LIBRARY_NAME sbncode_SBNEventWeight_Calculators_Geant4
