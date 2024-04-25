@@ -93,8 +93,11 @@ private:
   DECLARE_WEIGHTCALC(Geant4WeightCalc)
 };
 
+}  // namespace evwgh
 
-void Geant4WeightCalc::Configure(fhicl::ParameterSet const& p,
+}  // namespace sbn
+
+void sbn::evwgh::Geant4WeightCalc::Configure(fhicl::ParameterSet const& p,
   CLHEP::HepRandomEngine& engine)
 {
   std::cout << "Using Geant4WeightCalc for reinteraction weights" << std::endl;
@@ -222,7 +225,8 @@ void Geant4WeightCalc::Configure(fhicl::ParameterSet const& p,
 }
 
 
-std::vector<float> Geant4WeightCalc::GetWeight(art::Event& e, size_t itruth ) {
+std::vector<float>
+sbn::evwgh::Geant4WeightCalc::GetWeight(art::Event& e, size_t itruth ) {
 
   // Get event/run/subrun numbers for output
   run_num = e.run();
@@ -482,8 +486,4 @@ return weight;
 
 }
 
-REGISTER_WEIGHTCALC(Geant4WeightCalc)
-
-}  // namespace evwgh
-
-}  // namespace sbn
+REGISTER_WEIGHTCALC(sbn::evwgh::Geant4WeightCalc)
