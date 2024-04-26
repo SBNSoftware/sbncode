@@ -6,14 +6,14 @@ BEGIN_PROLOG
 cnnid_sbnd: {
   module_type: CNNID
   BatchSize:                    256 
-  WireLabel:                    "caldata"
+  WireLabel:                    "simtpc2d:gauss"
   HitModuleLabel:               "gaushit"
   ClusterModuleLabel:           "pandora"
   PFParticleModuleLabel:        "pandora"
   SkipClearCosmics:             true
   DoMichel:                     true
   MichelRegionSize:             [30, 120]
-  SparseLengthCut:              150
+  SparseLengthCut:              9999
   DoPFP:                        true
   SparseRate:                   5
   Views:                        []

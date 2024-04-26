@@ -1,0 +1,23 @@
+MINERvA_E2p2h_Tool_Config: {
+  tool_type: "MINERvAE2p2h"
+  instance_name: "SBN_v1"
+
+  E2p2h_A_nu_central_value: 0
+  E2p2h_A_nu_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+  E2p2h_B_nu_central_value: 0
+  E2p2h_B_nu_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+  E2p2h_A_nubar_central_value: 0
+  E2p2h_A_nubar_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+  E2p2h_B_nubar_central_value: 0
+  E2p2h_B_nubar_variation_descriptor: "[-1,+1,-2,+2,-3,+3]"
+
+  ignore_parameter_dependence: true
+
+  LimitWeights: [0.1, 10]
+
+}
+
+syst_providers: [MINERvA_E2p2h_Tool_Config]
