@@ -106,7 +106,7 @@ void TrajectoryMCSFitter::breakTrajInSegments(const recob::TrackTrajectory& traj
   }
   //then add last segment
   if (thislen>0.) {
-    auto endpointpos = traj.LocationAtPoint(nextValid);
+    auto endpointpos = traj.LocationAtPoint(traj.LastValidPoint());
     bool endpointposgood = isInVolume(fiducialVolumes, endpointpos) && !isInVolume(excludeVolumes, endpointpos);
     breakpoints.push_back(traj.LastValidPoint()+1);
     breakpointsgood.push_back(endpointposgood);
