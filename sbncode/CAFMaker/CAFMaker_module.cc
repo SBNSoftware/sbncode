@@ -111,6 +111,10 @@
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
 
+// GENIE
+#include "Framework/EventGen/EventRecord.h"
+#include "Framework/Ntuple/NtpMCEventRecord.h"
+#include "nugen/EventGeneratorBase/GENIE/GENIE2ART.h"
 
 #include "canvas/Persistency/Provenance/ProcessConfiguration.h"
 #include "larcoreobj/SummaryData/POTSummary.h"
@@ -179,6 +183,7 @@ class CAFMaker : public art::EDProducer {
   std::string fFlatCafPrescaleFilename;
   
   std::string fSourceFile;
+  std::uint32_t fSourceFileHash;
 
   bool fFirstInSubRun;
   unsigned int fIndexInFile = SRHeader::NoSourceIndex();
@@ -216,6 +221,14 @@ class CAFMaker : public art::EDProducer {
   TTree* fFlatTree = 0;
   TTree* fFlatTreeb = 0;
   TTree* fFlatTreep = 0;
+
+  // GENIE EventRecord
+  genie::NtpMCEventRecord * fGenieEvtRec = 0;
+  TTree                   * fGenieTree = 0;
+  genie::NtpMCEventRecord * fFlatGenieEvtRec = 0;
+  TTree                   * fFlatGenieTree = 0;
+  bool fSaveGENIEEventRecord;
+  unsigned int fGenieEventCounter;
 
   flat::Flat<caf::StandardRecord>* fFlatRecord = 0;
   flat::Flat<caf::StandardRecord>* fFlatRecordb = 0;
@@ -350,6 +363,9 @@ class CAFMaker : public art::EDProducer {
   if (fParams.CreateBlindedCAF()) {
     fBlindTRandom = new TRandomMT64(art::ServiceHandle<rndm::NuRandomService>()->getSeed());
   }
+
+  fSaveGENIEEventRecord = fParams.SaveGENIEEventRecord();
+
 }
 
 //......................................................................
@@ -514,9 +530,14 @@ void CAFMaker::InitVolumes() {
 //......................................................................
 CAFMaker::~CAFMaker()
 {
+
+  delete fGenieEvtRec;
+  delete fGenieTree;
   delete fRecTree;
   delete fFile;
 
+  delete fFlatGenieEvtRec;
+  delete fFlatGenieTree;
   delete fFlatRecord;
   delete fFlatTree;
   delete fFlatFile;
@@ -621,6 +642,13 @@ void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
   fFirstBlindInFile = true;
   fFirstPrescaleInFile = true;
   fSourceFile = inputBasename;
+  // Getting full hash
+  size_t fSourceFileHashFull = std::hash<std::string>{}(fSourceFile);
+  // truncate the full hash into a 32-bit integer
+  // This is required to be used as one of the ingredient of TTree::BuildIndex();
+  // it shifts the "major" value by 32-bit (https://root.cern/doc/master/classTTreeIndex.html#a08aac749ab22fd5c8ab792a0061a4b0f),
+  // so should be less than or equal to 32-bit
+  fSourceFileHash = static_cast<std::uint32_t>(fSourceFileHashFull);
 
 }
 
@@ -901,6 +929,7 @@ void CAFMaker::AddMetadataToFile(TFile* outfile, const std::map<std::string, std
 //......................................................................
 void CAFMaker::InitializeOutfiles()
 {
+
   if(fParams.CreateCAF()){
 
     mf::LogInfo("CAFMaker") << "Output filename is " << fCafFilename;
@@ -927,6 +956,13 @@ void CAFMaker::InitializeOutfiles()
 
       AddEnvToFile(fFileb);
       AddEnvToFile(fFilep);
+    }
+
+    if (fSaveGENIEEventRecord) {
+      fGenieTree = new TTree( "GenieEvtRecTree", "GenieEvtRecTree" );
+      fGenieTree->Branch("GenieEvtRec", &fGenieEvtRec);
+      fGenieTree->Branch("GENIEEntry", &fGenieEventCounter, "GENIEEntry/i");
+      fGenieTree->Branch("SourceFileHash", &fSourceFileHash, "SourceFileHash/i");
     }
 
   }     
@@ -964,7 +1000,16 @@ void CAFMaker::InitializeOutfiles()
       AddEnvToFile(fFlatFilep);
     }
 
+    if (fSaveGENIEEventRecord){
+      fFlatGenieTree = new TTree( "GenieEvtRecTree", "GenieEvtRecTree" );
+      fFlatGenieTree->Branch("GenieEvtRec", &fFlatGenieEvtRec);
+      fFlatGenieTree->Branch("GENIEEntry", &fGenieEventCounter, "GENIE/i");
+      fFlatGenieTree->Branch("SourceFileHash", &fSourceFileHash, "SourceFileHash/i");
+    }
+
   }
+
+  fGenieEventCounter = 0;
 
   fFileNumber = -1;
   fTotalPOT = 0;
@@ -1263,10 +1308,33 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       std::cout << "Failed to get GTruth object!" << std::endl;
     }
 
+    //GENIE EventRecord
+
     srtruthbranch.nu.push_back(SRTrueInteraction());
     srtruthbranch.nnu ++;
 
-    if ( !isRealData ) FillTrueNeutrino(mctruth, mcflux, gtruth, true_particles, id_to_truehit_map, srtruthbranch.nu.back(), i, fActiveVolumes);
+    if ( !isRealData ){
+
+      FillTrueNeutrino(mctruth, mcflux, gtruth, true_particles, id_to_truehit_map, srtruthbranch.nu.back(), i, fActiveVolumes);
+
+      srtruthbranch.nu.back().genie_evtrec_idx = fGenieEventCounter;
+
+      // GENIE event record
+      if(fSaveGENIEEventRecord){
+        genie::EventRecord* genie_rec = evgb::RetrieveGHEP(*mctruth, gtruth);
+        if(fGenieTree){
+          fGenieEvtRec->Fill(fGenieEventCounter, genie_rec);
+          fGenieTree->Fill();
+        }
+        if(fFlatGenieTree){
+          fFlatGenieEvtRec->Fill(fGenieEventCounter, genie_rec);
+          fFlatGenieTree->Fill();
+        }
+      }
+
+      fGenieEventCounter++;
+
+    }
 
     // Don't check for syst weight assocations until we have something (MCTruth
     // corresponding to a neutrino) that could plausibly be reweighted. This
@@ -1991,6 +2059,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.hdr.ngenevt = n_gen_evt;
   rec.hdr.mctype  = mctype;
   rec.hdr.sourceName = fSourceFile;
+  rec.hdr.sourceNameHash = fSourceFileHash;
+
   rec.hdr.sourceIndex = fIndexInFile;
   rec.hdr.first_in_file = firstInFile;
   rec.hdr.first_in_subrun = fFirstInSubRun;
@@ -2134,6 +2204,10 @@ void CAFMaker::endJob() {
 
     AddHistogramsToFile(fFile);
     fRecTree->SetDirectory(fFile);
+    if(fGenieTree){
+      fGenieTree->BuildIndex("SourceFileHash", "GENIEEntry");
+      fGenieTree->SetDirectory(fFile);
+    }
     if (fParams.CreateBlindedCAF()) {
       fRecTreeb->SetDirectory(fFileb);
       fRecTreep->SetDirectory(fFilep);
@@ -2155,6 +2229,10 @@ void CAFMaker::endJob() {
 
     AddHistogramsToFile(fFlatFile);
     fFlatTree->SetDirectory(fFlatFile);
+    if(fFlatGenieTree){
+      fFlatGenieTree->BuildIndex("SourceFileHash", "GENIEEntry");
+      fFlatGenieTree->SetDirectory(fFlatFile);
+    }
     if (fParams.CreateBlindedCAF() && fFlatFileb) {
       fFlatTreeb->SetDirectory(fFlatFileb);
       fFlatTreep->SetDirectory(fFlatFilep);
@@ -2169,6 +2247,7 @@ void CAFMaker::endJob() {
       fFlatFilep->cd();
       fFlatFilep->Write();
     }
+
   }
 
   std::map<std::string, std::string> metamap;
