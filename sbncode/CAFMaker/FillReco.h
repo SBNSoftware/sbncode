@@ -225,6 +225,7 @@ namespace caf
                   caf::SROpFlash &srflash,
                   bool allowEmpty = false);
   void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,
+		  double CRT_T1_reference_time, // us
 		  caf::SRCRTPMTMatch &srmatch,
 		  bool allowEmpty = false);
 
