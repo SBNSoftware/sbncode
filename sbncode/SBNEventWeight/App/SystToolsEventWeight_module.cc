@@ -147,9 +147,8 @@ void SystToolsEventWeight::produce(art::Event& e) {
 
           // responses.size() is the number of universes
           systtools::SystParamHeader const &sph = fParamHeaderHelper.GetHeader( r.pid );
-          std::string prettyName = sph.prettyName;
-
           if(sph.isResponselessParam) continue;
+          std::string prettyName = sph.prettyName;
 
           if(fDebugMode){
             std::cout << "[SystToolsEventWeight::produce]       pid of this resp = " << r.pid << "\n"
@@ -161,7 +160,7 @@ void SystToolsEventWeight::produce(art::Event& e) {
           if(sph.isCorrection && (r.responses.size()!=1)){
             throw cet::exception{ "SystToolsEventWeight" }
               << "prettyName of this resp = " << prettyName << "\n"
-              << "We expect to have 1 universes as it is a correction, but "
+              << "We expect to have 1 universe as it is a correction, but "
                       << r.responses.size() << " are produced\n";
           }
           if(!sph.isCorrection && sph.paramVariations.size()!=r.responses.size()){
@@ -211,14 +210,7 @@ void SystToolsEventWeight::beginRun(art::Run& run) {
     std::map<systtools::paramId_t, std::vector<systtools::paramId_t>> map_resp_to_respless;
     for( auto &sph : smd ){
       if(sph.isResponselessParam){
-        auto it = map_resp_to_respless.find( sph.responseParamId );
-        if( it != map_resp_to_respless.end() ){
-          it->second.push_back( sph.systParamId );
-        }
-        else{
-          map_resp_to_respless[sph.responseParamId] = {};
-          map_resp_to_respless[sph.responseParamId].push_back( sph.systParamId );
-        }
+        map_resp_to_respless[sph.responseParamId].push_back( sph.systParamId );
       }
     }
     if (fDebugMode) {
@@ -245,14 +237,14 @@ void SystToolsEventWeight::beginRun(art::Run& run) {
       sbn::evwgh::EventWeightParameterSet fParameterSet;
       std::string rwmode = "";
 
-      std::vector<double> paramVars = sph.isCorrection ? std::vector<double>(1, sph.centralParamValue) : sph.paramVariations;
+      std::vector<double> paramVars = sph.isCorrection ? std::vector{ sph.centralParamValue } : sph.paramVariations;
 
       auto it = map_resp_to_respless.find( sph.systParamId );
       if(it!=map_resp_to_respless.end()){
 
         for(const auto depdialid: it->second){
           const auto& sph_dep = systtools::GetParam(smd, depdialid);
-          std::vector<double> paramVars_dep = sph_dep.isCorrection ? std::vector<double>(1, sph_dep.centralParamValue) : sph_dep.paramVariations;
+          std::vector<double> paramVars_dep = sph_dep.isCorrection ? std::vector{ sph_dep.centralParamValue } : sph_dep.paramVariations;
 
           if(rwmode=="") rwmode = sph_dep.isRandomlyThrown ? "multisim" : "multisigma";
           else{
