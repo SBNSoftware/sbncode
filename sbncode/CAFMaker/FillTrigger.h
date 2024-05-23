@@ -2,6 +2,7 @@
 #define CAF_FILLTRIGGER_H
 
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
+#include "sbnobj/Common/Trigger/BeamBits.h"
 #include "sbnanaobj/StandardRecord/SRTrigger.h"
 #include "lardataobj/RawData/TriggerData.h"
 
