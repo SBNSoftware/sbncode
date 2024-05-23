@@ -16,13 +16,13 @@ namespace caf
     triggerInfo.trigger_within_gate = diff_ts;
 
     triggerInfo.prev_global_trigger_time = addltrig_info.previousTriggerTimestamp;
-    triggerInfo.source_type = value(addltrig_info.sourceType);
-    triggerInfo.trigger_type = value(addltrig_info.triggerType);
+    triggerInfo.source_type = sbn::bits::value(addltrig_info.sourceType);
+    triggerInfo.trigger_type = sbn::bits::value(addltrig_info.triggerType);
     triggerInfo.trigger_id = addltrig_info.triggerID;
     triggerInfo.gate_id = addltrig_info.gateID;
     triggerInfo.trigger_count = addltrig_info.triggerCount;
     triggerInfo.gate_count = addltrig_info.gateCount;
-    triggerInfo.gate_delta = value(addltrig_info.gateCountFromPreviousTrigger);
+    triggerInfo.gate_delta = addltrig_info.gateCountFromPreviousTrigger;
   }
 
   void FillTriggerMC(double absolute_time, caf::SRTrigger& triggerInfo) {
