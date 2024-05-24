@@ -7,7 +7,7 @@
 //ROOT includes
 #include "TFile.h"
 #include "TSpline.h"
-#include "TGraph2DErrors.h"
+#include "TGraph2D.h"
 #include "TNtuple.h"
 
 //Framework includes
@@ -53,8 +53,8 @@ namespace sys {
       std::vector<TSpline3*> splines_Sigma_YZAngle;       // the splines for the width correction in YZ angle
       std::vector<TSpline3*> splines_Charge_dEdX;         // the splines for the charge correction in dEdX
       std::vector<TSpline3*> splines_Sigma_dEdX;          // the splines for the width correction in dEdX
-      std::vector<TGraph2DErrors*> graph2Ds_Charge_YZ;    // the graphs for the charge correction in YZ
-      std::vector<TGraph2DErrors*> graph2Ds_Sigma_YZ;     // the graphs for the width correction in YZ
+      std::vector<TGraph2D*> graph2Ds_Charge_YZ;          // the graphs for the charge correction in YZ
+      std::vector<TGraph2D*> graph2Ds_Sigma_YZ;           // the graphs for the width correction in YZ
 
       // lets try making a constructor here
       // assume we can get a geometry service, a detector clcok, and a detector properties
