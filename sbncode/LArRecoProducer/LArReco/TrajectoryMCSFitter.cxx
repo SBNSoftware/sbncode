@@ -1,6 +1,9 @@
 #include "TrajectoryMCSFitter.h"
 #include "lardataobj/RecoBase/Track.h"
 #include "larcorealg/Geometry/geo_vectors_utils.h"
+#include "larcore/Geometry/Geometry.h"
+#include "larcore/CoreUtils/ServiceUtil.h"
+#include "larcorealg/Geometry/GeometryCore.h"
 #include "TMatrixDSym.h"
 #include "TMatrixDSymEigen.h"
 
@@ -15,7 +18,8 @@ recob::MCSFitResult TrajectoryMCSFitter::fitMcs(const recob::TrackTrajectory& tr
   vector<size_t> breakpoints;
   vector<float> segradlengths;
   vector<float> cumseglens;
-  breakTrajInSegments(traj, breakpoints, segradlengths, cumseglens);
+  vector<bool> breakpointsgood;
+  breakTrajInSegments(traj, breakpoints, segradlengths, cumseglens, breakpointsgood);
   //
   // Fit segment directions, and get 3D angles between them
   //
@@ -28,7 +32,11 @@ recob::MCSFitResult TrajectoryMCSFitter::fitMcs(const recob::TrackTrajectory& tr
     if (p>0) {
       if (segradlengths[p]<-100. || segradlengths[p-1]<-100.) {
         dtheta.push_back(-999.);
-            } else { 
+      } 
+      if (!breakpointsgood[p] || !breakpointsgood[p-1]) {
+        dtheta.push_back(-999.);
+      }
+      else { 
         const double cosval = pcdir0.X()*pcdir1.X()+pcdir0.Y()*pcdir1.Y()+pcdir0.Z()*pcdir1.Z();
         //assert(std::abs(cosval)<=1);
         //units are mrad
@@ -49,15 +57,21 @@ recob::MCSFitResult TrajectoryMCSFitter::fitMcs(const recob::TrackTrajectory& tr
   }
   const ScanResult fwdResult = doLikelihoodScan(dtheta, segradlengths, cumLenFwd, true,  momDepConst, pid);
   const ScanResult bwdResult = doLikelihoodScan(dtheta, segradlengths, cumLenBwd, false, momDepConst, pid);
-  //
+  // std::cout << "fwdResult.p=" << fwdResult.p << " fwdResult.pUnc=" << fwdResult.pUnc << " fwdResult.logL=" << fwdResult.logL << std::endl;
   return recob::MCSFitResult(pid,
                             fwdResult.p,fwdResult.pUnc,fwdResult.logL,
                             bwdResult.p,bwdResult.pUnc,bwdResult.logL,
                             segradlengths,dtheta);
 }
 
-void TrajectoryMCSFitter::breakTrajInSegments(const recob::TrackTrajectory& traj, vector<size_t>& breakpoints, vector<float>& segradlengths, vector<float>& cumseglens) const {
-  //
+void TrajectoryMCSFitter::breakTrajInSegments(const recob::TrackTrajectory& traj, vector<size_t>& breakpoints, vector<float>& segradlengths, vector<float>& cumseglens, vector<bool>& breakpointsgood) const {
+  // set fiducial volume
+  std::vector<geo::BoxBoundedGeo> fiducialVolumes;
+  fiducialVolumes = setFiducialVolumes();
+  // set excluded volumes
+  std::vector<geo::BoxBoundedGeo> excludeVolumes;
+  excludeVolumes = setExcludeVolumes();
+
   const double trajlen = traj.Length();
   const int nseg = std::max(minNSegs_,int(trajlen/segLen_));
   const double thisSegLen = trajlen/double(nseg);
@@ -69,6 +83,8 @@ void TrajectoryMCSFitter::breakTrajInSegments(const recob::TrackTrajectory& traj
   auto nextValid=traj.FirstValidPoint();
   breakpoints.push_back(nextValid);
   auto pos0 = traj.LocationAtPoint(nextValid);
+  bool pos0good = isInVolume(fiducialVolumes, pos0) && !isInVolume(excludeVolumes, pos0);
+  breakpointsgood.push_back(pos0good);
   nextValid = traj.NextValidPoint(nextValid+1);
   int npoints = 0;
   while (nextValid!=recob::TrackTrajectory::InvalidIndex) {
@@ -77,7 +93,9 @@ void TrajectoryMCSFitter::breakTrajInSegments(const recob::TrackTrajectory& traj
     pos0=pos1;
     npoints++;
     if (thislen>=thisSegLen) {
+      bool pos1good = isInVolume(fiducialVolumes, pos1) && !isInVolume(excludeVolumes, pos1);
       breakpoints.push_back(nextValid);
+      breakpointsgood.push_back(pos1good);
       if (npoints>=minHitsPerSegment_) segradlengths.push_back(thislen*lar_radl_inv);
       else segradlengths.push_back(-999.);
       cumseglens.push_back(cumseglens.back()+thislen);
@@ -88,7 +106,10 @@ void TrajectoryMCSFitter::breakTrajInSegments(const recob::TrackTrajectory& traj
   }
   //then add last segment
   if (thislen>0.) {
+    auto endpointpos = traj.LocationAtPoint(traj.LastValidPoint());
+    bool endpointposgood = isInVolume(fiducialVolumes, endpointpos) && !isInVolume(excludeVolumes, endpointpos);
     breakpoints.push_back(traj.LastValidPoint()+1);
+    breakpointsgood.push_back(endpointposgood);
     segradlengths.push_back(thislen*lar_radl_inv);
     cumseglens.push_back(cumseglens.back()+thislen);
   }
@@ -202,7 +223,6 @@ double TrajectoryMCSFitter::mcsLikelihood(double p, double theta0x, std::vector<
   double result = 0;
   for (int i = beg; i != end; i+=incr ) {
     if (dthetaij[i]<0) {
-      //cout << "skip segment with too few points" << endl;
       continue;
     }
     //
@@ -301,4 +321,76 @@ double TrajectoryMCSFitter::GetE(const double initial_E, const double length_tra
     }
   }
   return current_E;
+}
+
+std::vector<geo::BoxBoundedGeo> TrajectoryMCSFitter::setFiducialVolumes() const {
+  std::vector<geo::BoxBoundedGeo> fiducialVolumes;
+  std::vector<std::vector<geo::BoxBoundedGeo>> TPCVolumes;
+  std::vector<geo::BoxBoundedGeo> ActiveVolumes;
+  
+  const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
+  for (auto const &cryoID: geometry->Iterate<geo::CryostatID>()) {
+    std::vector<geo::BoxBoundedGeo> thisTPCVolumes;
+    for (auto const& tpc: geometry->Iterate<geo::TPCGeo>(cryoID)) {
+      thisTPCVolumes.push_back(tpc.ActiveBoundingBox());
+    }
+    TPCVolumes.push_back(std::move(thisTPCVolumes));
+  }
+  for (const std::vector<geo::BoxBoundedGeo> &tpcs: TPCVolumes) {
+    double xMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinX() < rhs.MinX(); })->MinX();
+    double xMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxX() < rhs.MaxX(); })->MaxX();
+    double yMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinY() < rhs.MinY(); })->MinY();
+    double yMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxY() < rhs.MaxY(); })->MaxY();
+    double zMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinZ() < rhs.MinZ(); })->MinZ();
+    double zMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxZ() < rhs.MaxZ(); })->MaxZ();
+    ActiveVolumes.emplace_back(xMin, xMax, yMin, yMax, zMin, zMax);
+  }
+  double fidInsetMinX = 0;
+  double fidInsetMaxX = 0;
+  double fidInsetMinY = 0;
+  double fidInsetMaxY = 0;
+  double fidInsetMinZ = 0;
+  double fidInsetMaxZ = 0;
+
+  if (fiducialVolumeInsets_.size() == 6) {
+    fidInsetMinX = fiducialVolumeInsets_[0];
+    fidInsetMaxX = fiducialVolumeInsets_[1];
+    fidInsetMinY = fiducialVolumeInsets_[2];
+    fidInsetMaxY = fiducialVolumeInsets_[3];
+    fidInsetMinZ = fiducialVolumeInsets_[4];
+    fidInsetMaxZ = fiducialVolumeInsets_[5];
+  }
+  else if (!fiducialVolumeInsets_.empty()) {
+    std::cout << "Error: fiducialVolumeInsets vector must have length of 6, not fiducializing" << std::endl;
+  }
+  for (const geo::BoxBoundedGeo &AV: ActiveVolumes) {
+    fiducialVolumes.emplace_back(AV.MinX() + fidInsetMinX, AV.MaxX() - fidInsetMaxX,
+                                 AV.MinY() + fidInsetMinY, AV.MaxY() - fidInsetMaxY,
+                                 AV.MinZ() + fidInsetMinZ, AV.MaxZ() - fidInsetMaxZ);
+  }
+  return fiducialVolumes;
+}
+
+std::vector<geo::BoxBoundedGeo> TrajectoryMCSFitter::setExcludeVolumes() const {
+  std::vector<geo::BoxBoundedGeo> excludeVolumes;
+  if (excludeVolumes_.size()%6 != 0) {
+    std::cout << "Error: excludeVolumes vector must have length multiple of 6, not excluding any regions" << std::endl;
+    excludeVolumes.emplace_back(-9999.0, -9999.0, -9999.0, -9999.0, -9999.0, -9999.0);
+    return excludeVolumes;
+  }
+  for (unsigned int i=0; i<excludeVolumes_.size()/6; i++) {
+    excludeVolumes.emplace_back(excludeVolumes_[6*i+0], excludeVolumes_[6*i+1], excludeVolumes_[6*i+2], excludeVolumes_[6*i+3], excludeVolumes_[6*i+4], excludeVolumes_[6*i+5]);
+  }
+  return excludeVolumes;
+}
+
+bool TrajectoryMCSFitter::isInVolume(const std::vector<geo::BoxBoundedGeo> &volumes, const geo::Point_t &point) const {
+  for (const geo::BoxBoundedGeo &volume: volumes) {
+    if (point.X()>=volume.MinX() && point.X()<=volume.MaxX() &&
+        point.Y()>=volume.MinY() && point.Y()<=volume.MaxY() &&
+        point.Z()>=volume.MinZ() && point.Z()<=volume.MaxZ()) {
+      return true;
+    }
+  }
+  return false;
 }
