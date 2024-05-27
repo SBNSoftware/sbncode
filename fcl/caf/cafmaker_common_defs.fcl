@@ -1,4 +1,3 @@
-#include "eventweight_geant4_sbn.fcl"
 #include "eventweight_genie_sbn.fcl"
 #include "eventweight_flux_sbn.fcl"
 
@@ -16,7 +15,6 @@ cafmaker_common_producers: {
   rns: { module_type: "RandomNumberSaver" }
   genieweight: @local::sbn_eventweight_genie
   fluxweight: @local::sbn_eventweight_flux  
-  geant4weight: @local::sbn_eventweight_geant4
 }
 
 END_PROLOG
