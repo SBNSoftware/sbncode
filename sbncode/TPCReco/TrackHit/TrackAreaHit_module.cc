@@ -29,6 +29,7 @@
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/TrackHitMeta.h"
 #include "lardataobj/AnalysisBase/T0.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "larcorealg/Geometry/GeometryCore.h"
@@ -59,8 +60,8 @@ public:
   // Required functions.
   void produce(art::Event& e) override;
 
-  recob::Hit MakeHit(const recob::Wire &wire, const geo::WireID &wireID, const geo::GeometryCore *geo, raw::TDCtick_t startTick, raw::TDCtick_t endTick) const;
-  recob::Hit MakeHit(const raw::RawDigit &digit, const geo::WireID &wireID, const geo::GeometryCore *geo, raw::TDCtick_t startTick, raw::TDCtick_t endTick) const;
+  recob::Hit MakeHit(const recob::Wire &wire, const geo::WireID &wireID, const geo::GeometryCore *geo, const geo::WireReadoutGeom* wireReadout, raw::TDCtick_t startTick, raw::TDCtick_t endTick) const;
+  recob::Hit MakeHit(const raw::RawDigit &digit, const geo::WireID &wireID, const geo::GeometryCore *geo, const geo::WireReadoutGeom* wireReadout, raw::TDCtick_t startTick, raw::TDCtick_t endTick) const;
 
 private:
 
@@ -97,9 +98,9 @@ sbn::TrackAreaHit::TrackAreaHit(fhicl::ParameterSet const& p)
   // produces<art::Assns<recob::Hit, recob::Wire>>();
 }
 
-recob::Hit sbn::TrackAreaHit::MakeHit(const recob::Wire &wire, const geo::WireID &wireID, const geo::GeometryCore *geo, raw::TDCtick_t startTick, raw::TDCtick_t endTick) const {
+recob::Hit sbn::TrackAreaHit::MakeHit(const recob::Wire &wire, const geo::WireID &wireID, const geo::GeometryCore *geo, const geo::WireReadoutGeom *wireReadout, raw::TDCtick_t startTick, raw::TDCtick_t endTick) const {
   // garbage values for some fields which are not applicable
-  raw::ChannelID_t hitChannel = geo->PlaneWireToChannel(wireID);
+  raw::ChannelID_t hitChannel = wireReadout->PlaneWireToChannel(wireID);
   raw::TDCtick_t hitStartTick = -1000;
   bool setstartTick = false;
   raw::TDCtick_t hitEndTick = -1000;
@@ -116,8 +117,8 @@ recob::Hit sbn::TrackAreaHit::MakeHit(const recob::Wire &wire, const geo::WireID
   short int hitLocalIndex = 0;
   float hitGoodnessOfFit = -999999;
   short int hitNDF = 0;
-  geo::View_t hitView = geo->View(wireID);
-  geo::SigType_t hitSignalType = geo->SignalType(wireID);
+  geo::View_t hitView = wireReadout->Plane(wireID).View();
+  geo::SigType_t hitSignalType = wireReadout->SignalType(wireID);
   geo::WireID hitWire = wireID;
   
   //std::cout << "Hit view: " << hitView << " " << " sigType: " << hitSignalType << " wireID: " << wireID << std::endl;
@@ -187,14 +188,14 @@ recob::Hit sbn::TrackAreaHit::MakeHit(const recob::Wire &wire, const geo::WireID
   return thisHit;
 }
 
-recob::Hit sbn::TrackAreaHit::MakeHit(const raw::RawDigit &digit, const geo::WireID &wireID, const geo::GeometryCore *geo, raw::TDCtick_t startTick, raw::TDCtick_t endTick) const {
+recob::Hit sbn::TrackAreaHit::MakeHit(const raw::RawDigit &digit, const geo::WireID &wireID, const geo::GeometryCore *geo, const geo::WireReadoutGeom* wireReadout, raw::TDCtick_t startTick, raw::TDCtick_t endTick) const {
 
   // clamp the tick range inside the digits
   startTick = std::max(0, startTick);
   endTick = std::min((int)digit.NADC()-1, endTick);
 
   // garbage values for some fields which are not applicable
-  raw::ChannelID_t hitChannel = geo->PlaneWireToChannel(wireID);
+  raw::ChannelID_t hitChannel = wireReadout->PlaneWireToChannel(wireID);
   raw::TDCtick_t hitStartTick = startTick;
   raw::TDCtick_t hitEndTick = endTick;
   float hitPeakTime = (startTick + endTick) / 2.; // recob::Hit time unit is also [ticks] 
@@ -209,8 +210,8 @@ recob::Hit sbn::TrackAreaHit::MakeHit(const raw::RawDigit &digit, const geo::Wir
   short int hitLocalIndex = 0;
   float hitGoodnessOfFit = -999999;
   short int hitNDF = 0;
-  geo::View_t hitView = geo->View(wireID);
-  geo::SigType_t hitSignalType = geo->SignalType(wireID);
+  geo::View_t hitView = wireReadout->Plane(wireID).View();
+  geo::SigType_t hitSignalType = wireReadout->SignalType(wireID);
   geo::WireID hitWire = wireID;
   
   for (int i_adc = startTick; i_adc <= endTick; i_adc++) {
@@ -281,6 +282,8 @@ void sbn::TrackAreaHit::produce(art::Event& e)
   art::FindManyP<anab::T0> fmT0(tracks, e, fT0Label);
 
   const geo::GeometryCore *geo = lar::providerFrom<geo::Geometry>();
+  const geo::WireReadoutGeom *wireReadout =
+    &art::ServiceHandle<geo::WireReadout const>()->Get();
   auto const dclock = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
   auto const dprop =
     art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(e, dclock);
@@ -305,7 +308,8 @@ void sbn::TrackAreaHit::produce(art::Event& e)
 
     // get the cryostat
     geo::CryostatID cid(fCryostat);
-    for (auto const &planeID: geo->Iterate<geo::PlaneID>(cid)) {
+    for (auto const &plane: wireReadout->Iterate<geo::PlaneGeo>(cid)) {
+      geo::TPCGeo const& tpc = geo->TPC(plane.ID());
       int lastWire = -100000;
       for (size_t j = 0; j < track.NumberTrajectoryPoints()-1; j++) {
         // go to the next valid point
@@ -328,11 +332,11 @@ void sbn::TrackAreaHit::produce(art::Event& e)
         TVector3 nextpoint (nextpoint_p.X(), nextpoint_p.Y(), nextpoint_p.Z());
 
         // if we're not in the TPC cooresponding to this plane, continue
-        if (!geo->TPC(planeID).ContainsPosition(thispoint)) continue;
+        if (!tpc.ContainsPosition(thispoint)) continue;
 
         // calculate overlap with wires
-        double thiswirecoord = geo->WireCoordinate(thispoint_p, planeID);         
-        double nextwirecoord = geo->WireCoordinate(nextpoint_p, planeID);         
+        double thiswirecoord = plane.WireCoordinate(thispoint_p);
+        double nextwirecoord = plane.WireCoordinate(nextpoint_p);
 
         int wireStart = std::nearbyint((thiswirecoord >= nextwirecoord) ? std::floor(thiswirecoord) : std::ceil(thiswirecoord));
         int wireEnd   = std::nearbyint((thiswirecoord >= nextwirecoord) ? std::floor(nextwirecoord) : std::ceil(nextwirecoord));
@@ -341,18 +345,18 @@ void sbn::TrackAreaHit::produce(art::Event& e)
         if (wireStart == wireEnd) continue;
 
         // check the validity of the range of wires
-        if (!(wireStart >= 0 && wireStart < (int)geo->Plane(planeID).Nwires())) {
+        if (!(wireStart >= 0 && wireStart < (int)plane.Nwires())) {
           std::cout << "At end of trajectory: " <<
             "Can't find wire for track trajectory position at: " << 
             thispoint.X() << " " << thispoint.Y() << " " << thispoint.Z() <<
-            ". Returned start wire is " << wireStart << " (max: " << geo->Plane(planeID).Nwires() << ")" << std::endl;
+            ". Returned start wire is " << wireStart << " (max: " << plane.Nwires() << ")" << std::endl;
           break;
         } 
-        if (!(wireEnd >= 0 && wireEnd <= (int)geo->Plane(planeID).Nwires())) {
+        if (!(wireEnd >= 0 && wireEnd <= (int)plane.Nwires())) {
           std::cout << "At end of trajectory: " << 
             "Can't find wire for track trajectory position at: " << 
             nextpoint.X() << " " << nextpoint.Y() << " " << nextpoint.Z() << 
-            ". Returned end wire is " << wireEnd << " (max: " << geo->Plane(planeID).Nwires() << ")" << std::endl;
+            ". Returned end wire is " << wireEnd << " (max: " << plane.Nwires() << ")" << std::endl;
           break;
         } 
 
@@ -373,19 +377,22 @@ void sbn::TrackAreaHit::produce(art::Event& e)
         // Get time from X [ticks]
         //
         // Undo any T0 correction to the track to get back to the hits
-        float time = dprop.ConvertXToTicks(x, planeID) + track_t0 * geo->TPC(planeID).DriftDir().X() / dclock.TPCClock().TickPeriod();
+        float time = dprop.ConvertXToTicks(x, plane.ID()) +
+          track_t0 * tpc.DriftDir().X() / dclock.TPCClock().TickPeriod();
 
         // get the geometric time window [ticks]
         //
         // First get the projected length in the direction towards the wireplane
         //
         // Effective pitch as in the Calorimetry module
-        double angleToVert = geo->WireAngleToVertical(geo->View(planeID), planeID) - 0.5*::util::pi<>();
+        double angleToVert = wireReadout->WireAngleToVertical(plane.View(), plane.ID()) - 0.5*::util::pi<>();
         double cosgamma = std::abs(std::sin(angleToVert)*dir.Y() + std::cos(angleToVert)*dir.Z()); 
-        double effpitch = geo->WirePitch() / cosgamma;
+
+        geo::PlaneGeo const& first_plane = wireReadout->Plane({tpc.ID(), 0});
+        double effpitch = first_plane.WirePitch() / cosgamma;
 
         // Add in the contribution from diffusion
-        float xdrift = abs(x - geo->TPC(planeID).Plane(0).GetCenter().X()); // Copied from G4 / DriftIonizationElectrons
+        float xdrift = abs(x - first_plane.GetCenter().X()); // Copied from G4 / DriftIonizationElectrons
         float tdrift = xdrift / dprop.DriftVelocity();
         effpitch += fTransverseDiffusionScale * sqrt(2*tdrift*g4param->TransverseDiffusion());
 
@@ -408,11 +415,11 @@ void sbn::TrackAreaHit::produce(art::Event& e)
         int incl = wireStart < wireEnd ? 1 : -1; 
         for (int wire = wireStart; wire != wireEnd; wire += incl) {
           //std::cout << "Got wire: " << wire << std::endl;
-          geo::WireID wireID {planeID, (geo::WireID::WireID_t) wire};
+          geo::WireID wireID {plane.ID(), (geo::WireID::WireID_t) wire};
           lastWire = wire;
 
           // Get the channel of this wire
-          unsigned channel = geo->PlaneWireToChannel(wireID);
+          unsigned channel = wireReadout->PlaneWireToChannel(wireID);
 
           // If we have already seen this channel, ignore it.
           //
@@ -439,7 +446,7 @@ void sbn::TrackAreaHit::produce(art::Event& e)
             assoc_ind = wire_ind;
 
             // make the hit
-            thisHit = MakeHit(*wires.at(wire_ind), wireID, geo, startTick, endTick);
+            thisHit = MakeHit(*wires.at(wire_ind), wireID, geo, wireReadout, startTick, endTick);
           }
           else {
             // Find the digits
@@ -453,7 +460,7 @@ void sbn::TrackAreaHit::produce(art::Event& e)
             assoc_ind = digit_ind;
 
             // Make the hit
-            thisHit = MakeHit(*digits.at(digit_ind), wireID, geo, startTick, endTick);
+            thisHit = MakeHit(*digits.at(digit_ind), wireID, geo, wireReadout, startTick, endTick);
           }
 
           // if invalid hit, ignore it

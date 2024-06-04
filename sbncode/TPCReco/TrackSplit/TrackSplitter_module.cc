@@ -28,9 +28,7 @@
 #include "lardataobj/RecoBase/Wire.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/TrackHitMeta.h"
-#include "larcore/Geometry/Geometry.h"
-#include "larcore/CoreUtils/ServiceUtil.h"
-#include "larcorealg/Geometry/GeometryCore.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
@@ -65,7 +63,7 @@ private:
   art::InputTag fMergedPFPLabel;
 
   // service holders
-  const geo::GeometryCore *fGeo;
+  const geo::WireReadoutGeom& fWireReadoutGeom;
   std::optional<detinfo::DetectorPropertiesData> fDetProp;
   std::optional<detinfo::DetectorClocksData> fDetClock;
 
@@ -119,7 +117,8 @@ private:
 sbn::TrackSplitter::TrackSplitter(fhicl::ParameterSet const& p)
   : EDProducer{p},
     fTrackLabel(p.get<art::InputTag>("TrackLabel", "pandoraTrack")),
-    fMergedPFPLabel(p.get<art::InputTag>("MergedPFPLabel", "mergeIdent"))
+    fMergedPFPLabel(p.get<art::InputTag>("MergedPFPLabel", "mergeIdent")),
+    fWireReadoutGeom(art::ServiceHandle<geo::WireReadout>()->Get())
 {
   produces<std::vector<recob::Track>>();
   produces<std::vector<recob::Hit>>();
@@ -129,7 +128,8 @@ sbn::TrackSplitter::TrackSplitter(fhicl::ParameterSet const& p)
 
 std::pair<int, float> sbn::TrackSplitter::ClosestTrajectoryPoint(const detinfo::DetectorPropertiesData &dprop, const recob::Track &trk, const recob::Hit &hit) {
   float hit_x = dprop.ConvertTicksToX(hit.PeakTime(), hit.WireID()); 
-  float hit_w = hit.WireID().Wire * fGeo->WirePitch();
+  auto const wirePitch = fWireReadoutGeom.Plane(geo::PlaneID{0,0,0}).WirePitch();
+  float hit_w = hit.WireID().Wire * wirePitch;
 
   // std::cout << "Hit time: " << hit.PeakTime() << std::endl;
   // std::cout << "Hit X: " << hit_x << std::endl;
@@ -141,7 +141,7 @@ std::pair<int, float> sbn::TrackSplitter::ClosestTrajectoryPoint(const detinfo::
   for (unsigned i_tp = trk.FirstValidPoint(); i_tp < trk.NumberTrajectoryPoints(); i_tp = trk.NextValidPoint(i_tp+1)) {
     TVector3 pos = trk.LocationAtPoint<TVector3>(i_tp);
     float pos_x = pos.X();           
-    float pos_w = fGeo->WireCoordinate(trk.LocationAtPoint<geo::Point_t>(i_tp), hit.WireID()) * fGeo->WirePitch();
+    float pos_w = fWireReadoutGeom.Plane(hit.WireID()).WireCoordinate(trk.LocationAtPoint<geo::Point_t>(i_tp)) * wirePitch;
     float this_dist = sqrt((pos_x - hit_x) *(pos_x - hit_x) + (pos_w - hit_w) *(pos_w - hit_w));
     if (ret < 0 || this_dist < dist) {
       dist = this_dist;
@@ -436,9 +436,9 @@ std::pair<std::vector<art::Ptr<recob::Hit>>, std::vector<const recob::TrackHitMe
     TVector3 start = trk.Start<TVector3>();
     TVector3 start_p1 = trk.LocationAtPoint<TVector3>(trk.NextValidPoint(trk.FirstValidPoint()+1));
 
-    geo::PlaneID thisplane(0, 0, plane);
-    bool trk_is_ascending = fGeo->WireCoordinate(trk.Start<geo::Point_t>(), thisplane) < 
-                           fGeo->WireCoordinate(trk.LocationAtPoint<geo::Point_t>(trk.NextValidPoint(trk.FirstValidPoint()+1)), thisplane);
+    geo::PlaneGeo const& thisplane = fWireReadoutGeom.Plane(geo::PlaneID{0, 0, plane});
+    bool trk_is_ascending = thisplane.WireCoordinate(trk.Start<geo::Point_t>()) <
+      thisplane.WireCoordinate(trk.LocationAtPoint<geo::Point_t>(trk.NextValidPoint(trk.FirstValidPoint()+1)));
     int wire0 = ret.first[0]->WireID().Wire;
     int wire1 = -1;
     for (unsigned i_hit = 1; i_hit < ret.first.size(); i_hit++) {
@@ -574,9 +574,6 @@ recob::Track sbn::TrackSplitter::DeMergeTrack(const recob::Track &trunk, const r
 
 void sbn::TrackSplitter::produce(art::Event& e)
 {
-  // update services
-  fGeo = lar::providerFrom<geo::Geometry>();
-
   auto const &dclock = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e); 
   auto const &dprop = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(e, dclock);
 
