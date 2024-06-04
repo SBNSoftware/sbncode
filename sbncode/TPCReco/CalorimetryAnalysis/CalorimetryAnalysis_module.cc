@@ -46,8 +46,10 @@
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 
-#include "larcorealg/GeoAlgo/GeoAlgo.h"
+#include "larcore/Geometry/WireReadout.h"
+#include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
+#include "larcorealg/GeoAlgo/GeoAlgo.h"
 
 #include "larevt/SpaceCharge/SpaceCharge.h"
 #include "larevt/SpaceChargeServices/SpaceChargeService.h"
@@ -608,8 +610,6 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
   bool fData = e.isRealData();
   (void) fData;
 
-  const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
-
   _evt = e.event();
   _sub = e.subRun();
   _run = e.run();
@@ -676,6 +676,8 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
 
   // service data
   auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
+  const geo::WireReadoutGeom &wireReadout =
+    art::ServiceHandle<geo::WireReadout const>()->Get();
 
   for (art::Ptr<recob::PFParticle> p_pfp: PFParticleList) {
     const recob::PFParticle &pfp = *p_pfp;
@@ -770,7 +772,7 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
       for (const auto &pair: sc->TDCIDEMap()) {
         for (const sim::IDE &ide: pair.second) {
           if (ide.trackID == true_particle->TrackId() || fAllTrueEnergyDeposits) {
-            unsigned plane_id = geometry->ChannelToWire(sc->Channel()).at(0).Plane;
+            unsigned plane_id = wireReadout.ChannelToWire(sc->Channel()).at(0).Plane;
             particle_ide_map[plane_id][sc->Channel()].push_back(&ide);
           }
         }
@@ -782,8 +784,8 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
       int G4ID = particleList[i]->TrackId();
       for (unsigned plane = 0; plane < 3; plane++) {
         // build the plane ID
-        geo::PlaneID plane_id(0, 0, plane);
-        std::vector<const sim::IDE*> this_ides = bt_serv->TrackIdToSimIDEs_Ps(G4ID, geometry->View(plane_id));
+        geo::PlaneGeo const& planeGeo = wireReadout.Plane(geo::PlaneID(0, 0, plane));
+        std::vector<const sim::IDE*> this_ides = bt_serv->TrackIdToSimIDEs_Ps(G4ID, planeGeo.View());
         allIDEs[plane].insert(allIDEs[plane].end(), this_ides.begin(), this_ides.end());
       }
     }
@@ -1536,8 +1538,9 @@ std::vector<unsigned> FinddEdxHits(const anab::Calorimetry &calo, const std::vec
   return ret;
 }
 
-float calcPitch(const geo::GeometryCore *geo, const geo::PlaneID &plane, TVector3 location, TVector3 direction, const spacecharge::SpaceCharge *SCEService=NULL) {
-  float angletovert = geo->WireAngleToVertical(geo->View(plane), plane) - 0.5*::util::pi<>();
+float calcPitch(const geo::WireReadoutGeom& wireReadout, const geo::PlaneID &plane, TVector3 location, TVector3 direction, const spacecharge::SpaceCharge *SCEService=NULL) {
+  geo::PlaneGeo const& planeGeo = wireReadout.Plane(plane);
+  float angletovert = wireReadout.WireAngleToVertical(planeGeo.View(), plane) - 0.5*::util::pi<>();
 
   // apply space charge change to dir
   if (SCEService) {
@@ -1548,7 +1551,7 @@ float calcPitch(const geo::GeometryCore *geo, const geo::PlaneID &plane, TVector
     if (location.X() < 0.) offset.SetX(-offset.X());
 
     // location a ~wire's distance along the track 
-    TVector3 location_dx = location + geo->WirePitch(plane) * direction;
+    TVector3 location_dx = location + planeGeo.WirePitch() * direction;
 
     // Apply space charge to the offset location
     geo::Point_t location_dx_p(location_dx);
@@ -1563,7 +1566,7 @@ float calcPitch(const geo::GeometryCore *geo, const geo::PlaneID &plane, TVector
 
   // get the pitch
   float cosgamma = abs(cos(angletovert) * direction.Z() + sin(angletovert) * direction.Y());
-  float pitch = geo->WirePitch(plane) / cosgamma;
+  float pitch = planeGeo.WirePitch() / cosgamma;
 
   // map pitch back onto particle trajectory
   if (SCEService) {
@@ -1615,7 +1618,8 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
 {
 
   art::ServiceHandle<cheat::BackTrackerService> bt_serv;
-  const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
+  const geo::WireReadoutGeom &wireReadout =
+    art::ServiceHandle<geo::WireReadout const>()->Get();
   const spacecharge::SpaceCharge *spacecharge = lar::providerFrom<spacecharge::SpaceChargeService>();
   auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
   auto const dprop = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(e, clock_data);
@@ -1638,7 +1642,7 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
   }
 
   for (const auto &wire: allWires) {
-    unsigned plane_id = geometry->ChannelToWire(wire->Channel()).at(0).Plane;
+    unsigned plane_id = wireReadout.ChannelToWire(wire->Channel()).at(0).Plane;
 
     if (plane_id == 0) {
       _integrated_charge_u.push_back(0);
@@ -1925,9 +1929,9 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
     _backtracked_pitch_c_y.insert(_backtracked_pitch_c_y.end(), _backtracked_c_y.size(), 0.);
     _backtracked_scepitch_c_y.insert(_backtracked_scepitch_c_y.end(), _backtracked_c_y.size(), 0.);
 
-    for (geo::PlaneID planeID: geometry->Iterate<geo::PlaneID>()) {
-        auto const &plane = planeID.Plane;
-        if (plane > 2) continue; // protect against bad plane ID
+    for (auto const& planeGeo: wireReadout.Iterate<geo::PlaneGeo>()) {
+        auto const &planeID = planeGeo.ID();
+        if (planeID.Plane > 2) continue; // protect against bad plane ID
 
         int lastWire = -1000000;
         int last_traj = 0;
@@ -1938,16 +1942,16 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
           geo::Point_t thispoint_p(thispoint.X(), thispoint.Y(), thispoint.Z());
           geo::Point_t nextpoint_p(nextpoint.X(), nextpoint.Y(), nextpoint.Z());
 
-          double thiswirecoord = geometry->WireCoordinate(thispoint_p, planeID);
-          double nextwirecoord = geometry->WireCoordinate(nextpoint_p, planeID);
+          double thiswirecoord = planeGeo.WireCoordinate(thispoint_p);
+          double nextwirecoord = planeGeo.WireCoordinate(nextpoint_p);
           int wireStart = std::nearbyint((thiswirecoord >= nextwirecoord) ? std::floor(thiswirecoord) : std::ceil(thiswirecoord));
           int wireEnd   = std::nearbyint((thiswirecoord >= nextwirecoord) ? std::floor(nextwirecoord) : std::ceil(nextwirecoord));
           // if we're not crossing a wire continue
           if (wireStart == wireEnd) continue;
 
           // check the validity of the range of wires
-          if (!(wireStart >= 0 && wireStart < (int)geometry->Plane(planeID).Nwires())) continue;
-          if (!(wireEnd >= 0 && wireEnd <= (int)geometry->Plane(planeID).Nwires())) continue;
+          if (!(wireStart >= 0 && wireStart < (int)planeGeo.Nwires())) continue;
+          if (!(wireEnd >= 0 && wireEnd <= (int)planeGeo.Nwires())) continue;
 
           // if this wire is the same as the last skip it
           if (wireStart == lastWire) {
@@ -1966,16 +1970,16 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
           double dirZ = trueParticle->Momentum(i_traj).Vect().Unit().Z();
           double deltaE = (trueParticle->Momentum(last_traj).E() - trueParticle->Momentum(i_traj+1).E()) / abs(wireEnd - wireStart); // average dE over wires
 
-          double pitch = calcPitch(geometry, planeID, trueParticle->Position(i_traj).Vect(), trueParticle->Momentum(i_traj).Vect().Unit());
-          double pitchSCE = calcPitch(geometry, planeID, trueParticle->Position(i_traj).Vect(), trueParticle->Momentum(i_traj).Vect().Unit(), spacecharge);
+          double pitch = calcPitch(wireReadout, planeID, trueParticle->Position(i_traj).Vect(), trueParticle->Momentum(i_traj).Vect().Unit());
+          double pitchSCE = calcPitch(wireReadout, planeID, trueParticle->Position(i_traj).Vect(), trueParticle->Momentum(i_traj).Vect().Unit(), spacecharge);
 
           // save
           int incl = wireStart < wireEnd ? 1: -1;
           for (int wire = wireStart; wire != wireEnd; wire += incl) {
             lastWire = wire;
-          unsigned channel = geometry->PlaneWireToChannel(geo::WireID(planeID, wire));
+          unsigned channel = wireReadout.PlaneWireToChannel(geo::WireID(planeID, wire));
 
-            if (plane == 0) {
+            if (planeID.Plane == 0) {
               int index = -1;
               for (unsigned i_test = 0; i_test < _backtracked_c_u.size(); i_test++) {
                 if (_backtracked_c_u[i_test] == channel) {
@@ -1996,7 +2000,7 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
               _backtracked_pitch_c_u[index] = pitch;
               _backtracked_scepitch_c_u[index] = pitchSCE;
             }
-            else if (plane == 1) {
+            else if (planeID.Plane == 1) {
               int index = -1;
               for (unsigned i_test = 0; i_test < _backtracked_c_v.size(); i_test++) {
                 if (_backtracked_c_v[i_test] == channel) {
@@ -2017,7 +2021,7 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
               _backtracked_pitch_c_v[index] = pitch;
               _backtracked_scepitch_c_v[index] = pitchSCE;
             }
-            else if (plane == 2) {
+            else if (planeID.Plane == 2) {
               int index = -1;
               for (unsigned i_test = 0; i_test < _backtracked_c_y.size(); i_test++) {
                 if (_backtracked_c_y[i_test] == channel) {
@@ -2230,13 +2234,13 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
   for (const art::Ptr<anab::Calorimetry> calo : calos)
   {
     // TODO: will this work for ICARUS?
-    auto const& plane = calo->PlaneID().Plane;
+    auto const& planeGeo = wireReadout.Plane(calo->PlaneID());
+    auto const plane = calo->PlaneID().Plane;
     if (plane>2)
     {
       continue;
     }
     auto const& xyz_v = calo->XYZ();
-
     if (plane == 0)
     {
       _trk_calo_range_u = calo->Range();
@@ -2245,7 +2249,7 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
       _pitch_u = calo->TrkPitchVec();
       for (auto xyz : xyz_v)
       {
-        _w_u.push_back(geometry->WireCoordinate(xyz, calo->PlaneID()));
+        _w_u.push_back(planeGeo.WireCoordinate(xyz));
         _t_u.push_back(dprop.ConvertXToTicks(xyz.X(), calo->PlaneID()));
         _x_u.push_back(xyz.X());
         _y_u.push_back(xyz.Y());
@@ -2271,7 +2275,7 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
       _pitch_v = calo->TrkPitchVec();
       for (auto xyz : xyz_v)
       {
-        _w_v.push_back(geometry->WireCoordinate(xyz, calo->PlaneID()));
+        _w_v.push_back(planeGeo.WireCoordinate(xyz));
         _t_v.push_back(dprop.ConvertXToTicks(xyz.X(), calo->PlaneID()));
         _x_v.push_back(xyz.X());
         _y_v.push_back(xyz.Y());
@@ -2296,7 +2300,7 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
       _pitch_y = calo->TrkPitchVec();
       for (auto xyz : xyz_v)
       {
-        _w_y.push_back(geometry->WireCoordinate(xyz, calo->PlaneID()));
+        _w_y.push_back(planeGeo.WireCoordinate(xyz));
         _t_y.push_back(dprop.ConvertXToTicks(xyz.X(), calo->PlaneID()));
         _x_y.push_back(xyz.X());
         _y_y.push_back(xyz.Y());
@@ -2485,10 +2489,9 @@ void True2RecoMappingXYZ(float t,float x, float y, float z, float out[3]) {
     geo::Point_t p(x,y,z);
     geo::TPCID tpc = geom->FindTPCAtPosition(p);
     if (!tpc) return -1e6;
-    geo::PlaneID planeID(tpc, plane);
-    double _wire2cm = geom->WirePitch(planeID);
+    geo::PlaneGeo const& planeGeo = art::ServiceHandle<geo::WireReadout>()->Get().Plane(geo::PlaneID(tpc, plane));
 
-    return geom->WireCoordinate(p, planeID) * _wire2cm;
+    return planeGeo.WireCoordinate(p) * planeGeo.WirePitch();
   }
 
   float distance3d(const float& x1, const float& y1, const float& z1,
