@@ -23,6 +23,8 @@ add_subdirectory(Cluster3D)
 
 add_subdirectory(WireMod)
 
+add_subdirectory(WireMod)
+
 # Supera
 #
 # Why are we checking explicitly for git submodule initialization?
