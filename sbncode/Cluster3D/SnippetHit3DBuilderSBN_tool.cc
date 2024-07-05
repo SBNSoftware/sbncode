@@ -668,7 +668,6 @@ size_t SnippetHit3DBuilderSBN::BuildHitPairMap(PlaneToSnippetHitMap& planeToSnip
     size_t hitPairCntr(0);
 
     size_t nTriplets(0);
-    size_t nDeadChanHits(0);
 
     // Set up to loop over cryostats and tpcs...
     for(size_t cryoIdx = 0; cryoIdx < m_geometry->Ncryostats(); cryoIdx++)
@@ -707,7 +706,7 @@ size_t SnippetHit3DBuilderSBN::BuildHitPairMap(PlaneToSnippetHitMap& planeToSnip
     // Where are we?
     mf::LogDebug("SnippetHit3D") << "Total number hits: " << totalNumHits << std::endl;
     mf::LogDebug("SnippetHit3D") << "Created a total of " << hitPairList.size() << " hit pairs, counted: " << hitPairCntr << std::endl;
-    mf::LogDebug("SnippetHit3D") << "-- Triplets: " << nTriplets << ", dead channel pairs: " << nDeadChanHits << std::endl;
+    mf::LogDebug("SnippetHit3D") << "-- Triplets: " << nTriplets << std::endl;
 
     return hitPairList.size();
 }
@@ -746,7 +745,6 @@ size_t SnippetHit3DBuilderSBN::BuildHitPairMapByTPC(PlaneSnippetHitMapItrPairVec
     };
 
     size_t nTriplets(0);
-    size_t nDeadChanHits(0);
     size_t nOrphanPairs(0);
 
     // Structure to keep track of hit associations
@@ -787,7 +785,6 @@ size_t SnippetHit3DBuilderSBN::BuildHitPairMapByTPC(PlaneSnippetHitMapItrPairVec
         size_t n12Pairs = findGoodHitPairs(firstSnippetItr, snippetHitMapItr1Start, snippetHitMapItr1End, pair12Map);
         size_t n13Pairs = findGoodHitPairs(firstSnippetItr, snippetHitMapItr2Start, snippetHitMapItr2End, pair13Map);
 
-        nDeadChanHits  += hitPairList.size() - curHitListSize;
         curHitListSize  = hitPairList.size();
 
         if (n12Pairs > n13Pairs) findGoodTriplets(pair12Map, pair13Map, matchedHitMap, hitPairList);
@@ -1716,28 +1713,25 @@ int SnippetHit3DBuilderSBN::FindNumberInRange(const Hit2DSet& hit2DSet, const re
 
 geo::WireID SnippetHit3DBuilderSBN::NearestWireID(const Eigen::Vector3f& position, const geo::WireID& wireIDIn) const
 {
-    geo::WireID wireID = wireIDIn;
+    int wire(0);
 
     // Embed the call to the geometry's services nearest wire id method in a try-catch block
     try
     {
-        // Switch from NearestWireID to this method to avoid the roundoff error issues...
-        //double distanceToWire = m_geometry->Plane(wireIDIn).WireCoordinate(geo::vect::toPoint(position.data()));
-
-        //wireID.Wire = int(distanceToWire);
-
         // Not sure the thinking above but is wrong... switch back to NearestWireID...
-        wireID = m_geometry->NearestWireID(geo::vect::toPoint(position.data()),wireIDIn);
+        wire = (m_geometry->NearestWireID(geo::vect::toPoint(position.data()),wireIDIn)).Wire;
     }
-    catch(std::exception& exc)
+    catch(std::exception& exc) 
     {
         // This can happen, almost always because the coordinates are **just** out of range
         mf::LogWarning("Cluster3D") << "Exception caught finding nearest wire, position - " << exc.what() << std::endl;
 
         // Assume extremum for wire number depending on z coordinate
-        if (position[2] < 0.5 * m_geometry->DetLength()) wireID.Wire = 0;
-        else                                             wireID.Wire = m_geometry->Nwires(wireIDIn.asPlaneID()) - 1;
+        if (position[2] < 0.5 * m_geometry->DetLength()) wire = 0;
+        else                                             wire = m_geometry->Nwires(wireIDIn.asPlaneID()) - 1;
     }
+
+    geo::WireID wireID(wireIDIn.Cryostat,wireIDIn.TPC,wireIDIn.Plane,wire);
 
     return wireID;
 }

@@ -43,10 +43,9 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   systematicstools::interface
                   systematicstools::interpreters
                   systematicstools::utility
+                  ${GENIE_LIB_LIST}
+                  nugen::EventGeneratorBase_GENIE
                   )
-
-# this can be removed once icaruscode moves to cetmodules
-cet_find_library( IFDH_SERVICE NAMES IFDH_service PATHS ENV IFDH_ART_LIB )
 
 cet_build_plugin ( CAFMaker art::module
                LIBRARIES
