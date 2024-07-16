@@ -82,10 +82,13 @@ physics:
       module_type: GnocchiCalorimetry
       TrackModuleLabel: trackSplit
       T0ModuleLabel: ""
+      AssocHitModuleLabel: ""
+      PFPModuleLabel: ""
       ChargeMethod: 1
       FieldDistortionEfield: false
       FieldDistortion: false
       TrackIsFieldDistortionCorrected: false
+      FieldDistortionCorrectionXSign: 1.
       Cryostat: 1
       CaloAlg: @local::icarus_calorimetryalgmc
     }
@@ -104,10 +107,13 @@ physics:
       module_type: GnocchiCalorimetry
       TrackModuleLabel: pandoraTrackGausCryo1
       T0ModuleLabel: ""
+      AssocHitModuleLabel: ""
+      PFPModuleLabel: ""
       ChargeMethod: 1
       FieldDistortionEfield: false
       FieldDistortion: false
       TrackIsFieldDistortionCorrected: false
+      FieldDistortionCorrectionXSign: 1.
       Cryostat: 1
       CaloAlg: @local::icarus_calorimetryalgmc
     }
