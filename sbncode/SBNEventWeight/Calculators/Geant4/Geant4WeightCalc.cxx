@@ -33,6 +33,7 @@
 #include "sbncode/SBNEventWeight/Base/WeightCalcCreator.h"
 #include "sbncode/SBNEventWeight/Base/WeightCalc.h"
 #include "larcore/Geometry/Geometry.h"
+#include "geant4reweight/ReweightBase/G4ReweightManager.hh"
 #include "geant4reweight/ReweightBase/G4ReweighterFactory.hh"
 #include "geant4reweight/ReweightBase/G4Reweighter.hh"
 #include "geant4reweight/ReweightBase/G4ReweightTraj.hh"
@@ -62,7 +63,8 @@ private:
   unsigned fNsims;  //!< Number of multisims
   int fPdg; //!< PDG value for particles that a given weight calculator should apply to. Note that for now this module can only handle weights for one particle species at a time.
   // float fXSUncertainty;  //!< Flat cross section uncertainty
-  G4ReweighterFactory RWFactory; //!< Base class to handle all Geant4Reweighters (right now "all" means pi+, pi-, p)
+  G4ReweightManager *RWManager; //!< "holds the run manager and creates the detector" according to the commit message (?)
+  G4ReweighterFactory RWFactory; //!< Base class to handle all Geant4Reweighters
   G4Reweighter *theReweighter; //!< Geant4Reweighter -- this is what provides the weights
   G4ReweightParameterMaker *ParMaker;
   std::vector<std::map<std::string, double>> UniverseVals; //!< Vector of maps relating parameter name to value (defines parameter values that will be evaluated in universes). Each map should have one entry per parameter we are considering
@@ -85,8 +87,12 @@ private:
   std::vector< double > p_energies_inel; //!< Variables for by-particle output tree
   std::vector< int > p_sliceInts_inel; //!< Variables for by-particle output tree
   int p_nElasticScatters; //!< Variables for by-particle output tree
-  std::vector<double> p_inel_weight; //!< Variables for by-particle output tree
-  std::vector<double> p_elastic_weight; //!< Variables for by-particle output
+  std::vector<double> p_weight; //!< Variables for by-particle output tree
+
+
+  // **IF** I understand correctly, then after commit 11077f2 (el_weight*inel_weight) is returned by GetWeight()
+  //std::vector<double> p_inel_weight; //!< Variables for by-particle output tree
+  //std::vector<double> p_elastic_weight; //!< Variables for by-particle output
 
   bool fDebug; //!< print debug statements
 
@@ -121,10 +127,9 @@ void Geant4WeightCalc::Configure(fhicl::ParameterSet const& p,
   TFile XSecFile( XSecFileName.c_str(), "OPEN" );
 
   // Configure G4Reweighter
-  bool totalonly = false;
-  if (fPdg==2212) totalonly = true;
-  ParMaker = new G4ReweightParameterMaker( FitParSets, totalonly );
-  theReweighter = RWFactory.BuildReweighter(fPdg, &XSecFile, &FracsFile, ParMaker->GetFSHists(), ParMaker->GetElasticHist() );
+  ParMaker = new G4ReweightParameterMaker( FitParSets, true , fPdg ); //TODO:Do we want check_overlap? Maybe a fcl switch?
+  RWManager = new G4ReweightManager( FitParSets );
+  theReweighter = RWFactory.BuildReweighter(fPdg, &FracsFile, ParMaker->GetFSHists(), pset, RWManager, ParMaker->GetElasticHist() );
 
   // Make output trees to save things for quick and easy validation
   art::ServiceHandle<art::TFileService> tfs;
@@ -136,8 +141,10 @@ void Geant4WeightCalc::Configure(fhicl::ParameterSet const& p,
     fOutTree_Particle->Branch("subrun_num",&subrun_num);
     fOutTree_Particle->Branch("UniverseVals", &UniverseVals);
     fOutTree_Particle->Branch("pdg_to_reweight",&fPdg);
-    fOutTree_Particle->Branch("inelastic_weight",&p_inel_weight);
-    fOutTree_Particle->Branch("elastic_weight",&p_elastic_weight);
+
+    fOutTree_Particle->Branch("weight",&p_weight);
+    //fOutTree_Particle->Branch("inelastic_weight",&p_inel_weight);
+    //fOutTree_Particle->Branch("elastic_weight",&p_elastic_weight);
     fOutTree_Particle->Branch("track_length",&p_track_length);
     fOutTree_Particle->Branch("PDG",&p_PDG);
     fOutTree_Particle->Branch("final_proc",&p_final_proc);
@@ -252,10 +259,12 @@ std::vector<float> Geant4WeightCalc::GetWeight(art::Event& e, size_t itruth ) {
   for (size_t i=0; i<mcparticles.size(); i++) {
 
     // Reset things to be saved in the output tree for fast validation
-    p_inel_weight.clear();
-    p_inel_weight.resize(fNsims,1.0);
-    p_elastic_weight.clear();
-    p_elastic_weight.resize(fNsims,1.0);
+    p_weight.clear();
+    p_weight.resize(fNsims,1.0);
+    //p_inel_weight.clear();
+    //p_inel_weight.resize(fNsims,1.0);
+    //p_elastic_weight.clear();
+    //p_elastic_weight.resize(fNsims,1.0);
     p_track_length=-9999;
     p_PDG=-9999;
     p_final_proc="dummy";
@@ -429,7 +438,7 @@ std::vector<float> Geant4WeightCalc::GetWeight(art::Event& e, size_t itruth ) {
 
       // Loop through universes (j)
       for (size_t j=0; j<weight.size(); j++) {
-        float w, el_w;
+        float w/*, el_w*/;
 
         // I think this is the only bit that needs to change for different universes -- all the above is jut about the track, which doesn't change based on universe
         ParMaker->SetNewVals(UniverseVals.at(j));
@@ -440,6 +449,10 @@ std::vector<float> Geant4WeightCalc::GetWeight(art::Event& e, size_t itruth ) {
         // Total weight is the product of track weights in the event
         weight[j] *= std::max((float)0.0, w);
 
+        // just for the output tree
+        p_weight[j] = w;
+
+/*
         // Do the same for elastic weight (should be 1 unless set to non-nominal )
         el_w = theReweighter->GetElasticWeight( &theTraj );
         weight[j] *= std::max((float)0.0,el_w);
@@ -453,12 +466,13 @@ std::vector<float> Geant4WeightCalc::GetWeight(art::Event& e, size_t itruth ) {
           // std::cout << UniverseVals.at(j) << std::endl;
           std::cout << "    w = " << w << ", el_w = " << el_w << std::endl;
         }
-
+*/
 
       } // loop through universes (j)
 
       if (fDebug){
         std::cout << "PDG = " << p_PDG << std::endl;
+/*
         std::cout << "inel weights by particle: ";
         for (unsigned int j=0; j<weight.size(); j++){
           std::cout << p_inel_weight[j] << ", ";
@@ -467,6 +481,11 @@ std::vector<float> Geant4WeightCalc::GetWeight(art::Event& e, size_t itruth ) {
         std::cout << "elastic weights by particle: ";
         for (unsigned int j=0; j<weight.size(); j++){
           std::cout << p_elastic_weight[j] << ", ";
+        }
+*/
+        std::cout << "weights by particle: ";
+        for (unsigned int j=0; j<weight.size(); j++){
+          std::cout << p_weight[j] << ", ";
         }
         std::cout << std::endl;
         std::cout << "overall weight saved by event: ";
