@@ -59,14 +59,15 @@ private:
   std::string fMCParticleProducer;  //!< Label for the MCParticle producer
   std::string fMCTruthProducer;  //!< Label for the MCTruth producer
   CLHEP::RandGaussQ* fGaussRandom;  //!< Random number generator
+  fhicl::ParameterSet fMaterial; //!< Detector material, i.e. LAr
   // std::map<int, ParticleDef> fParticles;  //!< Particles to reweight
   unsigned fNsims;  //!< Number of multisims
   int fPdg; //!< PDG value for particles that a given weight calculator should apply to. Note that for now this module can only handle weights for one particle species at a time.
   // float fXSUncertainty;  //!< Flat cross section uncertainty
-  G4ReweightManager *RWManager; //!< "holds the run manager and creates the detector" according to the commit message (?)
-  G4ReweighterFactory RWFactory; //!< Base class to handle all Geant4Reweighters
-  G4Reweighter *theReweighter; //!< Geant4Reweighter -- this is what provides the weights
-  G4ReweightParameterMaker *ParMaker;
+  G4ReweightManager *fRWManager; //!< "holds the run manager and creates the detector" according to the commit message (?)
+  G4ReweighterFactory fRWFactory; //!< Base class to handle all Geant4Reweighters
+  G4Reweighter *fReweighter; //!< Geant4Reweighter -- this is what provides the weights
+  G4ReweightParameterMaker *fParMaker;
   std::vector<std::map<std::string, double>> UniverseVals; //!< Vector of maps relating parameter name to value (defines parameter values that will be evaluated in universes). Each map should have one entry per parameter we are considering
 
   art::ServiceHandle < geo::Geometry > fGeometryService;
@@ -117,6 +118,7 @@ void Geant4WeightCalc::Configure(fhicl::ParameterSet const& p,
   std::vector< fhicl::ParameterSet > FitParSets = pset.get< std::vector< fhicl::ParameterSet > >("parameters");
   fNsims = pset.get<int> ("number_of_multisims", 0);
   fPdg = pset.get<int> ("pdg_to_reweight");
+  fMaterial = pset.get<fhicl::ParameterSet> ("material");
   fDebug = pset.get<bool> ("debug",false);
 
   // Prepare random generator
@@ -127,9 +129,9 @@ void Geant4WeightCalc::Configure(fhicl::ParameterSet const& p,
   TFile XSecFile( XSecFileName.c_str(), "OPEN" );
 
   // Configure G4Reweighter
-  ParMaker = new G4ReweightParameterMaker( FitParSets, true , fPdg ); //TODO:Do we want check_overlap? Maybe a fcl switch?
-  RWManager = new G4ReweightManager( FitParSets );
-  theReweighter = RWFactory.BuildReweighter(fPdg, &FracsFile, ParMaker->GetFSHists(), pset, RWManager, ParMaker->GetElasticHist() );
+  fParMaker = new G4ReweightParameterMaker( FitParSets, true , fPdg ); //TODO:Do we want check_overlap? Maybe a fcl switch?
+  fRWManager = new G4ReweightManager( {fMaterial} ); //Constructor asks for a vector, but SBN only cares about one material
+  fReweighter = fRWFactory.BuildReweighter(fPdg, &FracsFile, fParMaker->GetFSHists(), fMaterial, fRWManager, fParMaker->GetElasticHist() );
 
   // Make output trees to save things for quick and easy validation
   art::ServiceHandle<art::TFileService> tfs;
@@ -441,11 +443,11 @@ std::vector<float> Geant4WeightCalc::GetWeight(art::Event& e, size_t itruth ) {
         float w/*, el_w*/;
 
         // I think this is the only bit that needs to change for different universes -- all the above is jut about the track, which doesn't change based on universe
-        ParMaker->SetNewVals(UniverseVals.at(j));
-        theReweighter->SetNewHists(ParMaker->GetFSHists());
-        theReweighter->SetNewElasticHists(ParMaker->GetElasticHist());
+        fParMaker->SetNewVals(UniverseVals.at(j));
+        fReweighter->SetNewHists(fParMaker->GetFSHists());
+        fReweighter->SetNewElasticHists(fParMaker->GetElasticHist());
         //Get the weight from the G4ReweightTraj
-        w = theReweighter->GetWeight( &theTraj );
+        w = fReweighter->GetWeight( &theTraj );
         // Total weight is the product of track weights in the event
         weight[j] *= std::max((float)0.0, w);
 
@@ -454,7 +456,7 @@ std::vector<float> Geant4WeightCalc::GetWeight(art::Event& e, size_t itruth ) {
 
 /*
         // Do the same for elastic weight (should be 1 unless set to non-nominal )
-        el_w = theReweighter->GetElasticWeight( &theTraj );
+        el_w = fReweighter->GetElasticWeight( &theTraj );
         weight[j] *= std::max((float)0.0,el_w);
 
         // just for the output tree
