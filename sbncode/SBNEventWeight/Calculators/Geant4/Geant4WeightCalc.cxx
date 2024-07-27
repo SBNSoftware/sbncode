@@ -64,7 +64,6 @@ private:
   unsigned fNsims;  //!< Number of multisims
   int fPdg; //!< PDG value for particles that a given weight calculator should apply to. Note that for now this module can only handle weights for one particle species at a time.
   // float fXSUncertainty;  //!< Flat cross section uncertainty
-  G4ReweightManager *fRWManager; //!< "holds the run manager and creates the detector" according to the commit message (?)
   G4ReweighterFactory fRWFactory; //!< Base class to handle all Geant4Reweighters
   G4Reweighter *fReweighter; //!< Geant4Reweighter -- this is what provides the weights
   G4ReweightParameterMaker *fParMaker;
@@ -130,8 +129,8 @@ void Geant4WeightCalc::Configure(fhicl::ParameterSet const& p,
 
   // Configure G4Reweighter
   fParMaker = new G4ReweightParameterMaker( FitParSets, true , fPdg ); //TODO:Do we want check_overlap? Maybe a fcl switch?
-  fRWManager = new G4ReweightManager( {fMaterial} ); //Constructor asks for a vector, but SBN only cares about one material
-  fReweighter = fRWFactory.BuildReweighter(fPdg, &FracsFile, fParMaker->GetFSHists(), fMaterial, fRWManager, fParMaker->GetElasticHist() );
+  static G4ReweightManager* RWManager = new G4ReweightManager( {fMaterial} ); //Constructor asks for a vector, but SBN only cares about one material
+  fReweighter = fRWFactory.BuildReweighter(fPdg, &FracsFile, fParMaker->GetFSHists(), fMaterial, RWManager, fParMaker->GetElasticHist() );
 
   // Make output trees to save things for quick and easy validation
   art::ServiceHandle<art::TFileService> tfs;

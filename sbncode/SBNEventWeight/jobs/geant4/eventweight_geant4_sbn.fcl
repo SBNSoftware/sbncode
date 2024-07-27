@@ -24,7 +24,7 @@ sbn_eventweight_geant4: {
   min_weight: 0.0
   max_weight: 100
 
-  weight_functions_reint: [ reinteractions_piplus] #, reinteractions_piminus, reinteractions_proton ]
+  weight_functions_reint: [ reinteractions_piplus , reinteractions_piminus, reinteractions_proton ]
 
   reinteractions_piplus: {
     type: Geant4
