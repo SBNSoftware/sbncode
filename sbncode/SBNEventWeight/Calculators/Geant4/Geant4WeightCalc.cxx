@@ -113,7 +113,6 @@ void Geant4WeightCalc::Configure(fhicl::ParameterSet const& p,
   fMakeOutputTrees = pset.get< bool >( "makeoutputtree", false );
   std::string mode = pset.get<std::string>("mode");
   std::string FracsFileName = pset.get< std::string >( "fracsfile" );
-  std::string XSecFileName = pset.get< std::string >( "xsecfile" );
   std::vector< fhicl::ParameterSet > FitParSets = pset.get< std::vector< fhicl::ParameterSet > >("parameters");
   fNsims = pset.get<int> ("number_of_multisims", 0);
   fPdg = pset.get<int> ("pdg_to_reweight");
@@ -123,9 +122,8 @@ void Geant4WeightCalc::Configure(fhicl::ParameterSet const& p,
   // Prepare random generator
   fGaussRandom = new CLHEP::RandGaussQ(engine);
 
-  // Get input files
+  // Get input file
   TFile FracsFile( FracsFileName.c_str(), "OPEN" );
-  TFile XSecFile( XSecFileName.c_str(), "OPEN" );
 
   // Configure G4Reweighter
   fParMaker = new G4ReweightParameterMaker( FitParSets, true , fPdg ); //TODO:Do we want check_overlap? Maybe a fcl switch?
