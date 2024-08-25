@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 // Class:       TrackCaloSkimmer
 // Plugin Type: analyzer (art v3_06_03)
 // File:        TrackCaloSkimmer_module.cc
@@ -67,12 +67,26 @@ sbn::TrackCaloSkimmer::TrackCaloSkimmer(fhicl::ParameterSet const& p)
   fCALOproducer = p.get< art::InputTag > ("CALOproducer");
   fTRKproducer  = p.get< art::InputTag > ("TRKproducer" );
   fTRKHMproducer= p.get< art::InputTag   > ("TRKHMproducer", "");
-  fHITproducer  = p.get< art::InputTag > ("HITproducer" );
+  //  fMCSproducerI = p.get< art::InputTag > ("MCSproducerI"); 
+  // fMCSproducerU = p.get< art::InputTag > ("MCSproducerU"); 
+ fMCSproducerIIC = p.get< art::InputTag > ("MCSproducerIIC"); 
+ fMCSproducerUIC = p.get< art::InputTag > ("MCSproducerUIC"); 
+ std::cout << " label u " << fMCSproducerU << std::endl;
+ std::cout << " label uic " << fMCSproducerUIC << std::endl;
+  fMCSproducerIFC = p.get< art::InputTag > ("MCSproducerIFC"); 
+ fMCSproducerUFC = p.get< art::InputTag > ("MCSproducerUFC"); 
+
+fRangeInputtag = p.get< art::InputTag > ("RangeInputtag"); 
+
+ fHITproducer  = p.get< art::InputTag > ("HITproducer" );
   fG4producer  = p.get< std::string > ("G4producer" );
+  
   fSimChannelproducer  = p.get< std::string > ("SimChannelproducer" );
+
   fRequireT0 = p.get<bool>("RequireT0", false);
   fDoTailFit = p.get<bool>("DoTailFit", true);
   fVerbose = p.get<bool>("Verbose", false);
+//fVerbose=true;
   fSilenceMissingDataProducts = p.get<bool>("SilenceMissingDataProducts", false);
   fHitRawDigitsTickCollectWidth = p.get<double>("HitRawDigitsTickCollectWidth", 50.);
   fHitRawDigitsWireCollectWidth = p.get<int>("HitRawDigitsWireCollectWidth", 5);
@@ -115,9 +129,9 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
   unsigned evt = e.event();
   unsigned sub = e.subRun();
   unsigned run = e.run();
-  if (fVerbose) {
+  //if (fVerbose) {
     std::cout << "[TrackCaloSkimmer::analyzeEvent] Run: " << run << ", SubRun: " << sub << ", Event: "<< evt << ", Is Data: " << e.isRealData() << std::endl;
-  }
+  //}
 
   fMeta.evt = evt;
   fMeta.subrun = sub;
@@ -186,9 +200,11 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
   }
 
   std::vector<art::Ptr<sim::SimChannel>> simchannels;
+  std::cout << " simchannel producer size " << fSimChannelproducer.size() << std::endl;
   if (fSimChannelproducer.size()) {
     art::ValidHandle<std::vector<sim::SimChannel>> simchannel_handle = e.getValidHandle<std::vector<sim::SimChannel>>(fSimChannelproducer);
     art::fill_ptr_vector(simchannels, simchannel_handle);
+      std::cout << " simchannels size " << simchannels.size() << std::endl;
   }
 
   // Reconstructed Information
@@ -220,7 +236,7 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
   art::InputTag thm_label = fTRKHMproducer.empty() ? fTRKproducer : fTRKHMproducer;
   art::FindManyP<recob::Hit, recob::TrackHitMeta> fmtrkHits(tracks, e, thm_label);
   art::FindManyP<anab::Calorimetry> fmCalo(tracks, e, fCALOproducer);
-
+std::cout << " found tracks " << std::endl;
   // Collect raw digits for saving hits
   std::vector<art::Ptr<raw::RawDigit>> rawdigitlist;
   for (const art::InputTag &t: fRawDigitproducers) {
@@ -233,6 +249,41 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
       else {} // Allow Raw Digits to not be present
     }
   }
+
+  // Collect MCS fit
+  /* art::ValidHandle<std::vector<recob::MCSFitResult>> MCS_handleI = e.getValidHandle<std::vector<recob::MCSFitResult>>(fMCSproducerI);
+  std::vector<art::Ptr<recob::MCSFitResult>> MCSresultsI;
+  art::fill_ptr_vector(MCSresultsI, MCS_handleI);*/
+ // Collect MCS fit
+  /*  art::ValidHandle<std::vector<recob::MCSFitResult>> MCS_handleU = e.getValidHandle<std::vector<recob::MCSFitResult>>(fMCSproducerU);
+  std::vector<art::Ptr<recob::MCSFitResult>> MCSresultsU;
+  art::fill_ptr_vector(MCSresultsU, MCS_handleU);*/
+  // Collect MCS fit
+   art::ValidHandle<std::vector<recob::MCSFitResult>> MCS_handleIIC = e.getValidHandle<std::vector<recob::MCSFitResult>>(fMCSproducerIIC);
+   std::vector<art::Ptr<recob::MCSFitResult>> MCSresultsIIC;
+  art::fill_ptr_vector(MCSresultsIIC, MCS_handleIIC);
+ // Collect MCS fit
+  art::ValidHandle<std::vector<recob::MCSFitResult>> MCS_handleUIC = e.getValidHandle<std::vector<recob::MCSFitResult>>(fMCSproducerUIC);
+  std::vector<art::Ptr<recob::MCSFitResult>> MCSresultsUIC;
+  art::fill_ptr_vector(MCSresultsUIC, MCS_handleUIC);
+  std::cout << " before filling vectors FC " << std::endl;
+  // Collect MCS fit
+    art::ValidHandle<std::vector<recob::MCSFitResult>> MCS_handleIFC = e.getValidHandle<std::vector<recob::MCSFitResult>>(fMCSproducerIFC);
+   std::vector<art::Ptr<recob::MCSFitResult>> MCSresultsIFC;
+    art::fill_ptr_vector(MCSresultsIFC, MCS_handleIFC);
+ // Collect MCS fit
+    art::ValidHandle<std::vector<recob::MCSFitResult>> MCS_handleUFC = e.getValidHandle<std::vector<recob::MCSFitResult>>(fMCSproducerUFC);
+    std::vector<art::Ptr<recob::MCSFitResult>> MCSresultsUFC;
+    art::fill_ptr_vector(MCSresultsUFC, MCS_handleUFC);
+  std::cout << " after filling vectors FC " << std::endl;
+  std::cout <<MCSresultsUIC.size() <<  " " <<MCSresultsUIC.size() << std::endl;
+
+// Collect range momentum
+//art::InputTag inputTag(fRangeproducer,fRangeinstance);
+auto const& range_handle = e.getValidHandle<std::vector<sbn::RangeP>>(fRangeInputtag);
+ //e.getByLabel(fRangeproducer,fRangeinstance,range_handle);
+ std::vector<art::Ptr<sbn::RangeP>> rangePs;
+ art::fill_ptr_vector(rangePs, range_handle);
 
   // The raw digit list is not sorted, so make it into a map on the WireID
   std::map<geo::WireID, art::Ptr<raw::RawDigit>> rawdigits;
@@ -255,7 +306,7 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
 
     rawdigits[wids[0]] = d;
   } 
-
+std::cout << " after rawdigits " << std::endl;
   // Collect all hits
   art::ValidHandle<std::vector<recob::Hit>> allhit_handle = e.getValidHandle<std::vector<recob::Hit>>(fHITproducer);
   std::vector<art::Ptr<recob::Hit>> allHits;
@@ -263,7 +314,7 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
 
   // And lookup the SP's
   art::FindManyP<recob::SpacePoint> allHitSPs(allHits, e, fPFPproducer);
-
+std::cout << " after hits " << std::endl;
   // Prep truth-to-reco-matching info
   //
   // Use helper functions from CAFMaker/FillTrue
@@ -277,25 +328,33 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
     id_to_truehit_map = caf::PrepTrueHits(allHits, clock_data, *bt_serv.get());
     bt = bt_serv.get();
   }
-
+std::cout << " after simchannels " << std::endl;
   // service data
 
   // Build global track info
   std::vector<GlobalTrackInfo> track_infos;
-  for (const recob::Track &t: *tracks) {
+std::cout << "tracks size " << tracks->size() << std::endl;
+  for (const recob::Track &t: *tracks) 
     track_infos.push_back({
       t.Start(), t.End(), t.StartDirection(), t.EndDirection(), t.ID()
     });
-  }
 
+//std::cout << " adding track " << std::endl;
+  
+//std::cout << " before looping on pfp " << std::endl;
   for (art::Ptr<recob::PFParticle> p_pfp: PFParticleList) {
+//std::cout << " looping on pfp " << std::endl;
     const recob::PFParticle &pfp = *p_pfp;
 
     const std::vector<art::Ptr<recob::Track>> thisTrack = fmTracks.at(p_pfp.key());
+    std::cout << " this track " << thisTrack.size() << std::endl;
     if (thisTrack.size() != 1)
       continue;
 
+    std::cout << " this track ptr " << thisTrack.size() << std::endl;
+
     art::Ptr<recob::Track> trkPtr = thisTrack.at(0);
+    std::cout << " this track ptr " << thisTrack.size() << std::endl;
 
     std::vector<art::Ptr<anab::Calorimetry>> emptyCaloVector;
     const std::vector<art::Ptr<anab::Calorimetry>> &calo = fmCalo.isValid() ? fmCalo.at(trkPtr.key()) : emptyCaloVector;
@@ -303,13 +362,28 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
     std::vector<art::Ptr<recob::Hit>> emptyHitVector;
     const std::vector<art::Ptr<recob::Hit>> &trkHits  = fmtrkHits.isValid() ? fmtrkHits.at(trkPtr.key()) : emptyHitVector;
 
+    //   art::Ptr<recob::MCSFitResult> mcsResultI=MCSresultsI.at(trkPtr.key());
+    // art::Ptr<recob::MCSFitResult> mcsResultU=MCSresultsU.at(trkPtr.key());
+  std::cout << " before accessing mcs result " << std::endl;
+    art::Ptr<recob::MCSFitResult> mcsResultIIC=MCSresultsIIC.at(trkPtr.key());
+  art::Ptr<recob::MCSFitResult> mcsResultUIC=MCSresultsUIC.at(trkPtr.key());
+  std::cout << " before accessing track ptr " << std::endl;
+   art::Ptr<recob::MCSFitResult> mcsResultIFC=MCSresultsIFC.at(trkPtr.key());
+  art::Ptr<recob::MCSFitResult> mcsResultUFC=MCSresultsUFC.at(trkPtr.key());
+  std::cout << " after accessing track ptr 1" << std::endl;
+
+  art::Ptr<sbn::RangeP> rangeP=rangePs.at(trkPtr.key());
+  std::cout << " after accessing track ptr 2" << std::endl;
     art::FindManyP<recob::SpacePoint> fmtrkHitSPs(trkHits, e, fPFPproducer);
-
+  std::cout << " after accessing track ptr 3" << std::endl;
     std::vector<const recob::TrackHitMeta*> emptyTHMVector;
+  std::cout << " after accessing track ptr 4" << std::endl;
     const std::vector<const recob::TrackHitMeta*> &trkHitMetas = fmtrkHits.isValid() ? fmtrkHits.data(trkPtr.key()) : emptyTHMVector;
-
+  std::cout << " after accessing track ptr 5" << std::endl;
     art::Ptr<recob::SpacePoint> nullSP;
+  std::cout << " after accessing track ptr 6" << std::endl;
     std::vector<art::Ptr<recob::SpacePoint>> trkHitSPs;
+  std::cout << " after accessing track ptr 7" << std::endl;
     if (fmtrkHitSPs.isValid()) {
       for (unsigned i_hit = 0; i_hit < trkHits.size(); i_hit++) {
         const std::vector<art::Ptr<recob::SpacePoint>> &h_sp = fmtrkHitSPs.at(i_hit);
@@ -321,25 +395,27 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
         }
       }
     }
-
+  std::cout << " after accessing track ptr 8" << std::endl;
     int whicht0 = -1;
+  std::cout << " after accessing track ptr 9" << std::endl;
     float t0 = std::numeric_limits<float>::signaling_NaN();
+  std::cout << " after accessing track ptr 10" << std::endl;
     for (unsigned i_t0 = 0; i_t0 < fmT0.size(); i_t0++) {
       if (fmT0[i_t0].isValid() && fmT0[i_t0].at(p_pfp.key()).size()) {
         t0 = fmT0[i_t0].at(p_pfp.key()).at(0)->Time();
         whicht0 = i_t0;
 
-        if (fVerbose) std::cout << "Track: " << trkPtr->ID() << " Has T0 (" << fT0producers[i_t0] << ")\n";
+        std::cout << "Track: " << trkPtr->ID() << " Has T0 (" << fT0producers[i_t0] << ")\n";
 
         break;
       }
     }
-
+    std::cout << " requring t0 " << fRequireT0 << " " << whicht0 << std::endl;
     if (fRequireT0 && whicht0 < 0) {
       continue;
     }
 
-    if (fVerbose) std::cout << "Processing new track! ID: " << trkPtr->ID() << " time: " << t0 << std::endl;
+    std::cout << "Processing new track! ID: " << trkPtr->ID() << " time: " << t0 << std::endl;
 
     // Reset the track object
     *fTrack = sbn::TrackInfo();
@@ -349,16 +425,21 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
     fWiresToSave.clear();
 
     // Fill the track!
-    FillTrack(*trkPtr, pfp, t0, trkHits, trkHitMetas, trkHitSPs, calo, rawdigits, track_infos, geometry, clock_data, bt, det);
+    // FillTrack(*trkPtr, pfp, t0, trkHits, trkHitMetas, trkHitSPs, calo ,mcsResultI, mcsResultU,mcsResultIIC, mcsResultUIC,mcsResultIFC, mcsResultUFC, rangeP, rawdigits, track_infos, geometry, clock_data, bt, det);
+    std::cout << " before filling track " << std::endl;
+      FillTrack(*trkPtr, pfp, t0, trkHits, trkHitMetas, trkHitSPs, calo ,mcsResultIFC, mcsResultUFC,mcsResultIIC, mcsResultUIC, rangeP, rawdigits, track_infos, geometry, clock_data, bt, det);
     fTrack->whicht0 = whicht0;
+ std::cout << " after filltrack " << std::endl;
 
     FillTrackDaughterRays(*trkPtr, pfp, PFParticleList, PFParticleSPs);
 
     if (fFillTrackEndHits) FillTrackEndHits(geometry, dprop, *trkPtr, allHits, allHitSPs);
 
+ std::cout << " before filltracktruth " << std::endl;
+
     // Fill the truth information if configured
     if (simchannels.size()) FillTrackTruth(clock_data, trkHits, mcparticles, AVs, TPCVols, id_to_ide_map, id_to_truehit_map, dprop, geometry); 
-
+    std::cout << " fSelectionTools.size()  "<<  fSelectionTools.size() << std::endl;
     // Save?
     bool select = false;
     if (!fSelectionTools.size()) select = true;
@@ -374,13 +455,17 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
       }
       i_select ++;
     }
-
+    std::cout << " after selection " << select << std::endl;
     // Save!
-    if (select) {
-      if (fVerbose) std::cout << "Track Selected! By tool: " << i_select << std::endl;
+     if (select) {
+      //  if (fVerbose)
+        std::cout << "Track Selected! By tool: " << i_select << std::endl;
       fTree->Fill();
-    }
+      }
+ std::cout << " after filling " << std::endl;
   }
+ std::cout << " after analyze " << std::endl;
+
 }
 
 // helpers
@@ -388,7 +473,7 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
 // Returns the minimum hit time for hits in either TPC E (TPCE==true)
 // or TPC W (TPCE==false)
 float HitMinTime(const std::vector<sbn::TrackHitInfo> &hits, 
-		bool TPCE, 
+				bool TPCE, 
 		sbn::EDet det) {
   double min = -1;
   bool hit_is_TPCE = -1;
@@ -954,7 +1039,7 @@ void sbn::TrackCaloSkimmer::FillTrackTruth(const detinfo::DetectorClocksData &cl
   // Lookup the true-particle match -- use utils in CAF
   std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clock_data, trkHits, true);
   float total_energy = CAFRecoUtils::TotalHitEnergy(clock_data, trkHits);
-
+  std::cout << " truth total energy " << total_energy << std::endl;
   fTrack->truth.depE = total_energy / 1000. /* MeV -> GeV */;
   
   // sort highest energy match to lowest
@@ -972,7 +1057,7 @@ void sbn::TrackCaloSkimmer::FillTrackTruth(const detinfo::DetectorClocksData &cl
 
     for (const art::Ptr<simb::MCParticle> &p_mcp: mcparticles) {
       if (p_mcp->TrackId() == bestmatch.first) {
-        if (fVerbose) std::cout << "Matched! Track ID: " << p_mcp->TrackId() << " pdg: " << p_mcp->PdgCode() << " process: " << p_mcp->EndProcess() << std::endl;
+         std::cout << "Matched! Track ID: " << p_mcp->TrackId() << " pdg: " << p_mcp->PdgCode() << " process: " << p_mcp->EndProcess() << std::endl;
         fTrack->truth.p = TrueParticleInfo(*p_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo);
         fTrack->truth.eff = fTrack->truth.depE / (fTrack->truth.p.plane0VisE + fTrack->truth.p.plane1VisE + fTrack->truth.p.plane2VisE);
 
@@ -1025,6 +1110,14 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
     const std::vector<const recob::TrackHitMeta*> &thms,
     const std::vector<art::Ptr<recob::SpacePoint>> &sps,
     const std::vector<art::Ptr<anab::Calorimetry>> &calo,
+				      const art::Ptr<recob::MCSFitResult> &mcsIFC,
+    const art::Ptr<recob::MCSFitResult> &mcsUFC,
+				        const art::Ptr<recob::MCSFitResult> &mcsIIC,
+    const art::Ptr<recob::MCSFitResult> &mcsUIC, 
+				      //  const art::Ptr<recob::MCSFitResult> &mcsIFC,
+				      //   const art::Ptr<recob::MCSFitResult> &mcsUFC,   std::cout << " after clears " << std::endl;
+
+    const art::Ptr<sbn::RangeP> &rangeP,
     const std::map<geo::WireID, art::Ptr<raw::RawDigit>> &rawdigits,
     const std::vector<GlobalTrackInfo> &tracks,
     const geo::GeometryCore *geo,
@@ -1048,6 +1141,42 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
   fTrack->dir.x = track.StartDirection().X();
   fTrack->dir.y = track.StartDirection().Y();
   fTrack->dir.z = track.StartDirection().Z();
+  std::cout << " filling track before momentum " << std::endl;
+  std::cout << " ufc momentum " <<mcsUFC->fwdMomentum() << std::endl;
+float minLen=40;
+//  fTrack->mcs_momentum_uboone = mcsU->fwdMomentum();
+//  fTrack->mcs_momentum_icarus =mcsI->fwdMomentum();;
+    fTrack->mcs_momentum_ubooneIC = mcsUIC->fwdMomentum();
+    fTrack->mcs_momentum_icarusIC = mcsIIC->fwdMomentum();
+    fTrack->d3p_icarusIC = mcsIIC->bwdLogLikelihood();
+
+    for(size_t ja=0;ja<mcsUIC->scatterAngles().size();ja++)
+      fTrack->MCSangles_uboone.push_back(mcsUIC->scatterAngles().at(ja));
+    for(size_t ja=0;ja<mcsIIC->scatterAngles().size();ja++)
+      fTrack->MCSangles_icarus.push_back(mcsIIC->scatterAngles().at(ja));
+    for(size_t ja=0;ja<mcsUIC->scatterAngles().size();ja++)
+      fTrack->seglens_uboone.push_back(mcsUIC->scatterAngles().at(ja));
+    for(size_t ja=0;ja<mcsIIC->scatterAngles().size();ja++)
+      fTrack->seglens_icarus.push_back(mcsIIC->scatterAngles().at(ja));
+   if( fTrack->length>minLen) {
+     // if(mcsU->fwdMomentum()>0.) std::cout << " mcs momentum uboone " <<  mcsU->fwdMomentum() << std::endl;
+     //if(mcsI->fwdMomentum()>0.)std::cout << " mcs momentum icarus " <<  mcsI->fwdMomentum() << std::endl;
+if(mcsUIC->fwdMomentum()>0.)std::cout << " mcs momentum uboone ic " <<  mcsUIC->fwdMomentum() << std::endl;
+if(mcsIIC->fwdMomentum()>0.)std::cout << " mcs momentum icarus ic " <<  mcsIIC->fwdMomentum() << std::endl;
+   }
+
+  fTrack->mcs_momentum_ubooneFC = mcsUFC->fwdMomentum();
+  std::cout << " ufc momentum after" <<mcsUFC->fwdMomentum() << std::endl;
+
+  //if( fTrack->length>minLen)
+std::cout << " mcs momentum uboone fincut " << fTrack->mcs_momentum_ubooneFC << std::endl;
+   fTrack->mcs_momentum_icarusFC = mcsIFC->fwdMomentum();
+   //if( fTrack->length>minLen)
+std::cout << " mcs momentum icarus fincut " << fTrack->mcs_momentum_icarusFC << std::endl;
+  fTrack->range_p = rangeP->range_p;
+  //if( fTrack->length>minLen)
+std::cout << " range momentum " << fTrack->range_p << std::endl;
+
 
   if (hits.size() > 0) {
     fTrack->cryostat = hits[0]->WireID().Cryostat;
@@ -1145,7 +1274,7 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
           track.StartDirection().Dot(othr.dir) : track.StartDirection().Dot(othr.enddir)); 
     }
   }
-
+  std::cout << " end filltrack " << std::endl;
 }
 
 void sbn::TrackCaloSkimmer::DoTailFit() {
@@ -1191,22 +1320,24 @@ void sbn::TrackCaloSkimmer::DoTailFit() {
     double residuals = -1;
     ExpResiduals(nparam, NULL, residuals, param, 0);
 
-    fTrack->exp_fit_A = A; 
-    fTrack->exp_fit_R = R;
-    fTrack->exp_fit_residuals = residuals;
+   // fTrack->exp_fit_A = A; 
+    //   fTrack->exp_fit_R = R;
+    //   fTrack->exp_fit_residuals = residuals;
 
     // Fit the Constant
     fFitConst.SetFCN(ConstResiduals);
     fFitConst.SetParameter(0, "C", std::accumulate(fit_dqdx.begin(), fit_dqdx.end(), 0.), 200, 0, 5000);
     fFitConst.ExecuteCommand("MIGRAD", 0, 0);
 
-    double C = fFitConst.GetParameter(0);
+  //  double C = fFitConst.GetParameter(0);
 
-    double cresiduals = -1;
-    ConstResiduals(nparam, NULL, cresiduals, &C, 0);
+  //  double cresiduals = -1;
+   // ConstResiduals(nparam, NULL, cresiduals, &C, 0);
 
-    fTrack->const_fit_C = C;    
-    fTrack->const_fit_residuals = cresiduals;
+   // fTrack->const_fit_C = C;    
+  //  fTrack->const_fit_residuals = cresiduals;
+
+
   }
 }
 
