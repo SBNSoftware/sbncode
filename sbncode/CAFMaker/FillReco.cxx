@@ -131,7 +131,7 @@ namespace caf
     for(auto const& point : track.Points())
       srsbndcrttrack.points.emplace_back(point.X(), point.Y(), point.Z());
 
-    srsbndcrttrack.time    = track.Ts1();
+    srsbndcrttrack.time     = track.Ts1();
     srsbndcrttrack.time_err = track.Ts1Err();
     srsbndcrttrack.pe       = track.PE();
     srsbndcrttrack.tof      = track.ToF();
