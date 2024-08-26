@@ -14,7 +14,9 @@ caloskim_calorimetry: {
   FieldDistortion: false
   FieldDistortionEfield: false
   T0ModuleLabel: ""
+  PFPModuleLabel: ""
   TrackIsFieldDistortionCorrected: false
+  FieldDistortionCorrectionXSign: 1.
   TrackModuleLabel: "pandoraTrack"
   NormTools: []
   module_type: "GnocchiCalorimetry"
@@ -25,7 +27,7 @@ caloskim: {
   module_type: TrackCaloSkimmer
   CALOproducer: "caloskimCalorimetry"
   TRKproducer:  "pandoraTrack"
-  T0producers: ["pandora"]
+  T0producers: ["pandora", "crttrackmatching"]
   PFPproducer: "pandora"
   G4producer: "largeant"
   SimChannelproducer: "simdrift"
