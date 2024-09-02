@@ -1158,6 +1158,8 @@ float minLen=40;
       fTrack->seglens_uboone.push_back(mcsUIC->scatterAngles().at(ja));
     for(size_t ja=0;ja<mcsIIC->scatterAngles().size();ja++)
       fTrack->seglens_icarus.push_back(mcsIIC->scatterAngles().at(ja));
+    for(size_t ja=0;ja<mcsIIC->segmentRadLengths().size();ja++)
+      fTrack->tt600_icarus.push_back(mcsIIC->segmentRadLengths().at(ja));
    if( fTrack->length>minLen) {
      // if(mcsU->fwdMomentum()>0.) std::cout << " mcs momentum uboone " <<  mcsU->fwdMomentum() << std::endl;
      //if(mcsI->fwdMomentum()>0.)std::cout << " mcs momentum icarus " <<  mcsI->fwdMomentum() << std::endl;
