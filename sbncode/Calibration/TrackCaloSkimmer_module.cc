@@ -941,7 +941,7 @@ void sbn::TrackCaloSkimmer::FillTrackEndHits(const geo::GeometryCore *geometry,
       
       // information from the hit object
       hinfo.integral = hit->Integral();
-      hinfo.sumadc = hit->SummedADC();
+      hinfo.sumadc = hit->ROISummedADC();
       hinfo.width = hit->RMS();
       hinfo.time = hit->PeakTime();
       hinfo.mult = hit->Multiplicity();
@@ -1269,7 +1269,7 @@ sbn::TrackHitInfo sbn::TrackCaloSkimmer::MakeHit(const recob::Hit &hit,
 
   // information from the hit object
   hinfo.h.integral = hit.Integral();
-  hinfo.h.sumadc = hit.SummedADC();
+  hinfo.h.sumadc = hit.ROISummedADC();
   hinfo.h.width = hit.RMS();
   hinfo.h.time = hit.PeakTime();
   hinfo.h.mult = hit.Multiplicity();
