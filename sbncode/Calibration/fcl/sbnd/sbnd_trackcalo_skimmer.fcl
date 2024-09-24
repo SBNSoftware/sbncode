@@ -30,7 +30,7 @@ caloskim: {
   T0producers: ["pandora", "crttrackmatching"]
   PFPproducer: "pandora"
   G4producer: "largeant"
-  SimChannelproducer: "simdrift"
+  SimChannelproducer: "simtpc2d:simpleSC"
   HITproducer: "gaushit"
   RawDigitproducers: ["daq"]
   RequireT0: true
