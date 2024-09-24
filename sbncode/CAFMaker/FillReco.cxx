@@ -753,7 +753,7 @@ namespace caf
             p.wire = h->WireID().Wire;
             p.tpc = h->WireID().TPC;
             p.channel = h->Channel();
-            p.sumadc = h->SummedADC();
+            p.sumadc = h->ROISummedADC();
             p.integral = h->Integral();
             p.t = h->PeakTime();
             p.width = h->RMS();
