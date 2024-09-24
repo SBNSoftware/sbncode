@@ -40,6 +40,7 @@
 #include <iostream>
 #include <memory>
 #include <numeric> // std::accumulate
+#include <mutex>  // std::mutex
 
 // Ack!
 #include "TH1F.h"
@@ -108,7 +109,6 @@ public:
      *  @brief If monitoring, recover the time to execute a particular function
      */
     virtual float getTimeToExecute(IHit3DBuilder::TimeValues index) const override {return m_timeVector[index];}
-
 private:
 
     /**
@@ -493,7 +493,7 @@ void SnippetHit3DBuilderSBN::BuildChannelStatusVec(PlaneToWireToHitSetMap& plane
         }
         catch(...)
         {
-            mf::LogDebug("SnippetHit3D") << "--> Channel: " << channel << " threw exception so we will skip" << std::endl;
+            //mf::LogDebug("SnippetHit3D") << "--> Channel: " << channel << " threw exception so we will skip" << std::endl;
         }
     }
 
@@ -611,7 +611,7 @@ void SnippetHit3DBuilderSBN::BuildHit3D(reco::HitPairList& hitPairList) const
     // and then to build a list of 3D hits to be used in downstream processing
     BuildChannelStatusVec(m_planeToWireToHitSetMap);
 
-    size_t numHitPairs = BuildHitPairMap(m_planeToSnippetHitMap, hitPairList);
+    //size_t numHitPairs = BuildHitPairMap(m_planeToSnippetHitMap, hitPairList);
 
     if (m_enableMonitoring)
     {
@@ -620,7 +620,7 @@ void SnippetHit3DBuilderSBN::BuildHit3D(reco::HitPairList& hitPairList) const
         m_timeVector[BUILDTHREEDHITS] = theClockMakeHits.accumulated_real_time();
     }
 
-    mf::LogDebug("SnippetHit3D") << ">>>>> 3D hit building done, found " << numHitPairs << " 3D Hits" << std::endl;
+    //mf::LogDebug("SnippetHit3D") << ">>>>> 3D hit building done, found " << numHitPairs << " 3D Hits" << std::endl;
 
     return;
 }
@@ -665,9 +665,9 @@ size_t SnippetHit3DBuilderSBN::BuildHitPairMap(PlaneToSnippetHitMap& planeToSnip
      *         will evaluate the situation and in some instances keep the U-W pairs in order to keep efficiency high.
      */
     size_t totalNumHits(0);
-    size_t hitPairCntr(0);
+    //size_t hitPairCntr(0);
 
-    size_t nTriplets(0);
+    //size_t nTriplets(0);
 
     // Set up to loop over cryostats and tpcs...
     for(size_t cryoIdx = 0; cryoIdx < m_geometry->Ncryostats(); cryoIdx++)
@@ -704,9 +704,9 @@ size_t SnippetHit3DBuilderSBN::BuildHitPairMap(PlaneToSnippetHitMap& planeToSnip
     hitPairList.sort(SetPairStartTimeOrder);
 
     // Where are we?
-    mf::LogDebug("SnippetHit3D") << "Total number hits: " << totalNumHits << std::endl;
-    mf::LogDebug("SnippetHit3D") << "Created a total of " << hitPairList.size() << " hit pairs, counted: " << hitPairCntr << std::endl;
-    mf::LogDebug("SnippetHit3D") << "-- Triplets: " << nTriplets << std::endl;
+    //mf::LogDebug("SnippetHit3D") << "Total number hits: " << totalNumHits << std::endl;
+    //mf::LogDebug("SnippetHit3D") << "Created a total of " << hitPairList.size() << " hit pairs, counted: " << hitPairCntr << std::endl;
+    //mf::LogDebug("SnippetHit3D") << "-- Triplets: " << nTriplets << std::endl;
 
     return hitPairList.size();
 }
@@ -801,7 +801,7 @@ size_t SnippetHit3DBuilderSBN::BuildHitPairMapByTPC(PlaneSnippetHitMapItrPairVec
         snippetHitMapItrVec.front().first++;
     }
 
-    mf::LogDebug("SnippetHit3D") << "--> Created " << nTriplets << " triplets of which " << nOrphanPairs << " are orphans" << std::endl;
+    //mf::LogDebug("SnippetHit3D") << "--> Created " << nTriplets << " triplets of which " << nOrphanPairs << " are orphans" << std::endl;
 
     return hitPairList.size();
 }
@@ -1608,10 +1608,10 @@ bool SnippetHit3DBuilderSBN::makeDeadChannelPair(reco::ClusterHit3D&       pairO
         // Which plane is missing?
         geo::WireID wireID0 = hit0->WireID();
         geo::WireID wireID1 = hit1->WireID();
-
         // Ok, recover the wireID expected in the third plane...
         geo::WireID wireIn(wireID0.Cryostat,wireID0.TPC,missPlane,0);
         geo::WireID wireID = NearestWireID(pair.getPosition(), wireIn);
+
 
         // There can be a round off issue so check the next wire as well
         bool wireStatus    = m_channelStatus[wireID.Plane][wireID.Wire]   < maxChanStatus && m_channelStatus[wireID.Plane][wireID.Wire]   >= minChanStatus;
@@ -1724,7 +1724,7 @@ geo::WireID SnippetHit3DBuilderSBN::NearestWireID(const Eigen::Vector3f& positio
     catch(std::exception& exc) 
     {
         // This can happen, almost always because the coordinates are **just** out of range
-        mf::LogWarning("Cluster3D") << "Exception caught finding nearest wire, position - " << exc.what() << std::endl;
+        //mf::LogWarning("Cluster3D") << "Exception caught finding nearest wire, position - " << exc.what() << std::endl;
 
         // Assume extremum for wire number depending on z coordinate
         if (position[2] < 0.5 * m_geometry->DetLength()) wire = 0;
@@ -1774,7 +1774,7 @@ float SnippetHit3DBuilderSBN::DistanceFromPointToHitWire(const Eigen::Vector3f& 
     catch(std::exception& exc)
     {
         // This can happen, almost always because the coordinates are **just** out of range
-        mf::LogWarning("Cluster3D") << "Exception caught finding nearest wire, position - " << exc.what() << std::endl;
+        //mf::LogWarning("Cluster3D") << "Exception caught finding nearest wire, position - " << exc.what() << std::endl;
 
         // Assume extremum for wire number depending on z coordinate
         distance = 0.;
@@ -1874,7 +1874,7 @@ void SnippetHit3DBuilderSBN::CollectArtHits(const art::Event& evt) const
             debugMessage += outputString.str();
         }
 
-        mf::LogDebug("SnippetHit3D") << debugMessage << std::endl;
+        //mf::LogDebug("SnippetHit3D") << debugMessage << std::endl;
 
         m_weHaveAllBeenHereBefore = true;
     }
@@ -1896,7 +1896,7 @@ void SnippetHit3DBuilderSBN::CollectArtHits(const art::Event& evt) const
         // Can this really happen?
         if (hitStartEndPair.second <= hitStartEndPair.first)
         {
-            mf::LogInfo("SnippetHit3D") << "Yes, found a hit with end time less than start time: " << hitStartEndPair.first << "/" << hitStartEndPair.second << ", mult: " << recobHit->Multiplicity();
+            //mf::LogInfo("SnippetHit3D") << "Yes, found a hit with end time less than start time: " << hitStartEndPair.first << "/" << hitStartEndPair.second << ", mult: " << recobHit->Multiplicity();
             continue;
         }
 
@@ -1932,7 +1932,7 @@ void SnippetHit3DBuilderSBN::CollectArtHits(const art::Event& evt) const
         m_timeVector[COLLECTARTHITS] = theClockMakeHits.accumulated_real_time();
     }
 
-    mf::LogDebug("SnippetHit3D") << ">>>>> Number of ART hits: " << m_clusterHit2DMasterList.size() << std::endl;
+    //mf::LogDebug("SnippetHit3D") << ">>>>> Number of ART hits: " << m_clusterHit2DMasterList.size() << std::endl;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -1991,7 +1991,7 @@ void SnippetHit3DBuilderSBN::CreateNewRecobHitCollection(art::Event&            
         }
     }
 
-    size_t numNewHits = hitPtrVec.size();
+    //size_t numNewHits = hitPtrVec.size();
 
     if (m_enableMonitoring)
     {
@@ -2000,7 +2000,7 @@ void SnippetHit3DBuilderSBN::CreateNewRecobHitCollection(art::Event&            
         m_timeVector[BUILDNEWHITS] = theClockBuildNewHits.accumulated_real_time();
     }
 
-    mf::LogDebug("SnippetHit3D") << ">>>>> New output recob::Hit size: " << numNewHits << " (vs " << m_clusterHit2DMasterList.size() << " input)" << std::endl;
+    //mf::LogDebug("SnippetHit3D") << ">>>>> New output recob::Hit size: " << numNewHits << " (vs " << m_clusterHit2DMasterList.size() << " input)" << std::endl;
 
     return;
 }
@@ -2041,7 +2041,7 @@ void SnippetHit3DBuilderSBN::makeWireAssns(const art::Event& evt, art::Assns<rec
 
         if (!(chanWireItr != channelToWireMap.end()))
         {
-            //mf::LogDebug("SnippetHit3D") << "** Did not find channel to wire match! Skipping..." << std::endl;
+            ////mf::LogDebug("SnippetHit3D") << "** Did not find channel to wire match! Skipping..." << std::endl;
             continue;
         }
 
@@ -2087,7 +2087,7 @@ void SnippetHit3DBuilderSBN::makeRawDigitAssns(const art::Event& evt, art::Assns
 
         if (chanRawDigitItr == channelToRawDigitMap.end())
         {
-            //mf::LogDebug("SnippetHit3D") << "** Did not find channel to wire match! Skipping..." << std::endl;
+            ////mf::LogDebug("SnippetHit3D") << "** Did not find channel to wire match! Skipping..." << std::endl;
            continue;
         }
 
