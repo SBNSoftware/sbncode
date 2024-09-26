@@ -33,6 +33,10 @@ namespace caf
       Comment("Whether to produce output files with one consisting of a fraction of events and the other consisting of the remainder of the events with critical information obscured"), true
     };
 
+    Atom<bool> IsControlSample { Name("IsControlSample"),
+      Comment("If this parameter is true, we should consider it as Control Sample production, so in the unblinded cafs, the pot are not filled properly"), false
+    };
+
     Atom<std::string> CAFFilename { Name("CAFFilename"),
       Comment("Provide a string to override the automatic filename."), ""
     };

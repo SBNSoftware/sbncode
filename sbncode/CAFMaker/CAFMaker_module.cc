@@ -2211,6 +2211,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         StandardRecord* precp = new StandardRecord (*prec);
         if (fFirstPrescaleInSubRun) {
           precp->hdr.pot = fSubRunPOT*(1/fParams.PrescaleFactor());
+	  if(fParams.IsControlSample())precp->hdr.pot = 1;
           precp->hdr.first_in_file = fFirstPrescaleInFile;
           precp->hdr.first_in_subrun = true;
           precp->hdr.nbnbinfo = fBNBInfo.size()*(1/fParams.PrescaleFactor());
@@ -2281,7 +2282,9 @@ void CAFMaker::endSubRun(art::SubRun& sr) {
   TH1* hPOT = new TH1D("TotalPOT", "TotalPOT;; POT", 1, 0, 1);
   TH1* hEvents = new TH1D("TotalEvents", "TotalEvents;; Events", 1, 0, 1);
 
-  if (isBlindPOT) {
+  if (isBlindPOT && isPrescalePOT)hPOT->Fill(1);
+
+  else if (isBlindPOT) {
     hPOT->Fill(0.5,fTotalPOT*(1-(1/fParams.PrescaleFactor()))*GetBlindPOTScale());
   }
   else if (isPrescalePOT) {
@@ -2333,7 +2336,8 @@ void CAFMaker::endJob() {
       AddHistogramsToFile(fFileb,true,false);
       fFileb->cd();
       fFileb->Write();
-      AddHistogramsToFile(fFilep,false,true);
+      if(fParams.IsControlSample())AddHistogramsToFile(fFilep,true,true);
+      else{AddHistogramsToFile(fFilep,false,true);}
       fFilep->cd();
       fFilep->Write();
     }
@@ -2354,7 +2358,8 @@ void CAFMaker::endJob() {
       AddHistogramsToFile(fFlatFileb,true,false);
       fFlatFileb->cd();
       fFlatFileb->Write();
-      AddHistogramsToFile(fFlatFilep,false,true);
+      if(fParams.IsControlSample())AddHistogramsToFile(fFlatFilep,true,true);
+      else{AddHistogramsToFile(fFlatFilep,false,true);}
       fFlatFilep->cd();
       fFlatFilep->Write();
     }
