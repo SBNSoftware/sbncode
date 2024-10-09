@@ -1,0 +1,22 @@
+BEGIN_PROLOG
+
+SBNDBNBDefaults: {
+    module_type: SBNDBNB
+    InputLabel: "bnb"
+    InputContainerInstance: "ContainerBNB"
+    InputNonContainerInstance: "BNB"
+    OutputInstance: ""
+    DebugLevel: 0
+    TimePadding: 0.0333 #unit seconds, Booster Rep Rate is 15 Hz, so the closest spill could be 66ms away
+    URL: "" #https://dbdata3vm.fnal.gov:9443/ifbeam
+    Bundle: "BoosterNeutrinoBeam_read"
+    MultiWireBundle: "BNBMultiWire"
+    TimeWindow: "700" #seconds
+    MWR_TimeWindow: "3601" #seconds
+    RawDataLabel: "ptbdecoder"
+    DeviceUsedForTiming: "E:TOR860"
+    TriggerDatabaseFile: "triggerDatabase/icarus_triggers.db"
+}
+
+END_PROLOG
+

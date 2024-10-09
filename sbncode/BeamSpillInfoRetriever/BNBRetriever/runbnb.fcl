@@ -1,0 +1,31 @@
+#include "SBNDBNBDefaults.fcl"
+
+services:{
+  IFBeam:{}
+}
+
+physics:
+{
+  producers:
+  {
+    bnb: @local::SBNDBNBDefaults
+  }
+
+  analyzers: {}
+
+  my_producer_modules: [bnb]
+  trigger_paths: [my_producer_modules]
+  a: [rootout]
+  end_paths: [a]
+}
+
+source: {}
+
+outputs: {
+  rootout: {
+    module_type: "RootOutput"
+    fileName: "BNB_out.root"
+  }
+}
+
+process_name: BNBTEST
