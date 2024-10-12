@@ -62,6 +62,7 @@ namespace single_photon
       //first: direction of first point, second: direction of the end of track
 
       if(g_is_verbose) std::cout<<"AnalyzeTracks()\t||\t On Track: "<<i_trk<<" with TrackID: "<<m_trkid<<" and length: "<<tem_length<<""<<std::endl;;
+	  if(vars.m_reco_track_calo_energy_plane0.size() <= (size_t)i_trk ){throw cet::exception("SinglePhoton") << "  Track object length is less than the index #.";}
 
       vars.m_reco_track_calo_energy_plane0[i_trk] = CalcEShowerPlane(trk_hits, 0, paras);
       vars.m_reco_track_calo_energy_plane1[i_trk] = CalcEShowerPlane(trk_hits, 1, paras);
@@ -151,7 +152,7 @@ namespace single_photon
       //      vars.m_reco_track_end_to_nearest_dead_wire_plane1[i_trk] = distanceToNearestDeadWire(1, vars.m_reco_track_endy[i_trk], vars.m_reco_track_endz[i_trk],geom,bad_channel_list_fixed_mcc9);
       //      vars.m_reco_track_end_to_nearest_dead_wire_plane2[i_trk] = distanceToNearestDeadWire(2, vars.m_reco_track_endy[i_trk], vars.m_reco_track_endz[i_trk],geom,bad_channel_list_fixed_mcc9);
 
-      vars.m_reco_track_sliceId[i_trk] = ppfp->get_SliceID();//PFPToSliceIdMap[pfp];
+      vars.m_reco_track_sliceId[i_trk] = ppfp->get_SliceID();
       // Guanqun: how do you make sure the sliceId is positive, not -1, as for cosmic tracks?
       // sliceIdToNuScoreMap seems to only have sliceID:nuScore pairs for these with actual nuScores.
       vars.m_reco_track_nuscore[i_trk] = sliceIdToNuScoreMap[ vars.m_reco_track_sliceId[i_trk]] ;
@@ -1250,14 +1251,11 @@ namespace single_photon
 
 
       vars.m_reco_shower_num_daughters[i_shr] = pfp->NumDaughters();  //corresponding PFParticle
-      //      std::cout<<" CHECK numebr "<<vars.m_reco_shower_num_daughters[i_shr]<<std::endl;
       if(vars.m_reco_shower_num_daughters[i_shr]>0){
         //currently just look at 1 daughter
         //vars.m_reco_shower_daughter_trackscore[i_shr] = PFPToTrackScoreMap[pfParticleMap[pfp->Daughters().front()]];
         int pfp_size = all_PPFPs.size();
         for(int index = 0; index < pfp_size; index++){
-          //          std::cout<<"CHECK Compare "<<pfp->Daughters().front()<<
-          //          " "<<all_PPFPs[index].pPFParticle->Self()<<std::endl;
           if( (pfp->Daughters().front()) == all_PPFPs[index].pPFParticle->Self()){
             vars.m_reco_shower_daughter_trackscore[i_shr] = all_PPFPs[index].get_TrackScore();
             break;
@@ -1268,7 +1266,7 @@ namespace single_photon
 
       //------------and finally some slice info-----------------
 
-      vars.m_reco_shower_sliceId[i_shr] = ppfp->get_SliceID();//PFPToSliceIdMap[pfp];
+      vars.m_reco_shower_sliceId[i_shr] = ppfp->get_SliceID();
       vars.m_reco_shower_nuscore[i_shr] = ppfp->get_NuScore();//sliceIdToNuScoreMap[ vars.m_reco_shower_sliceId[i_shr]] ;
       vars.m_reco_shower_isclearcosmic[i_shr] = ppfp->get_IsClearCosmic();//PFPToClearCosmicMap[pfp];
       vars.m_reco_shower_is_nuslice[i_shr] = ppfp->get_IsNuSlice();//PFPToNuSliceMap[pfp];

@@ -259,13 +259,12 @@ namespace single_photon
       para_all& paras){
 
     for(size_t index=0; index< all_PPFPs.size(); ++index){
-      PandoraPFParticle* temp_ppfp = &all_PPFPs[index];
-      if(!temp_ppfp->get_IsNuSlice()) continue;
-      vars.m_reco_slice_num_pfps[temp_ppfp->get_SliceID()]++;//GetPFPsPerSlice(PFPToSliceIdMap); //the total number of PFP's per slice
+		PandoraPFParticle* temp_ppfp = &all_PPFPs[index];
+		if(!temp_ppfp->get_IsNuSlice()) continue;
+		vars.m_reco_slice_num_pfps[temp_ppfp->get_SliceID()]++;
       vars.m_reco_slice_num_showers[temp_ppfp->get_SliceID()]+=temp_ppfp->get_HasShower();
       vars.m_reco_slice_num_tracks [temp_ppfp->get_SliceID()]+=temp_ppfp->get_HasTrack();
     }
-
 
     //first check if in the event there's a match to a given signal
     if(signal_def == "ncdelta"){

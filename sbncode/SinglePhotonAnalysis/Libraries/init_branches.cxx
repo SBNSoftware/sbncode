@@ -2177,6 +2177,8 @@ namespace single_photon
     for(int index = 0; index < pfp_size; index++){
 
       PandoraPFParticle* temp_p = &PPFPs[index];
+	  vars.m_reco_slice_num = std::max(vars.m_reco_slice_num, temp_p->get_SliceID()+1);
+
       if(!(vars.pfp_w_bestnuID == temp_p->get_SliceID() && temp_p->get_IsNeutrino()) ) continue;
       vars.m_vertex_pos_x = temp_p->get_Vertex_pos()[0];
       vars.m_vertex_pos_y = temp_p->get_Vertex_pos()[1];
@@ -2189,9 +2191,7 @@ namespace single_photon
       vars.m_reco_vertex_dist_to_CPA =  distToCPA(tmp, paras);
 
       if(temp_p->get_IsNeutrino() ){ 
-        vars.m_reco_slice_num++;
         vars.m_reco_slice_nuscore.push_back(temp_p->get_NuScore());
-
       }
     }
 

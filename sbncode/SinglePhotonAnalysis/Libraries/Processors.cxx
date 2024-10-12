@@ -307,7 +307,7 @@ namespace single_photon
       energy += E;
     }//for each hit
 
-    return energy;
+   return energy;
 
   }
 
@@ -371,7 +371,7 @@ namespace single_photon
     //CHECK upgradable, see ./Calibration/TrackCaloSkimmer_module.cc line 746
     double pitch = getPitch(shower_dir, paras)[plane];  
 
-    if(g_is_verbose) std::cout<<"AnalyzeShowers() \t||\t The pitch between the shower and plane "<<plane<<" is "<<pitch<<std::endl;
+//    if(g_is_verbose) std::cout<<"AnalyzeShowers() \t||\t The pitch between the shower and plane "<<plane<<" is "<<pitch<<std::endl;
 
     //for all the clusters in the shower
     for (const art::Ptr<recob::Cluster> &thiscluster: clusters){

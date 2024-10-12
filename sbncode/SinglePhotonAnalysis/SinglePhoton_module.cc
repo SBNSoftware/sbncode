@@ -658,7 +658,14 @@ namespace single_photon
       return (paras.s_run_pi0_filter ? false : true);
     }
 
-    art::FindOneP<anab::ParticleID> pid_per_track(trackHandle, evt, paras.s_pidLabel);
+//    art::FindOneP<anab::ParticleID> pid_per_track(trackHandle, evt, paras.s_pidLabel);
+    art::FindOneP<anab::ParticleID>* pid_per_track = nullptr;
+
+	if(paras.s_use_PID_algorithms){
+		std::cout<<"Using PID stuff"<<__LINE__<<std::endl;
+		pid_per_track = new art::FindOneP<anab::ParticleID>(trackHandle, evt, paras.s_pidLabel);
+	}
+
     std::map<art::Ptr<recob::Track>, art::Ptr<anab::ParticleID> > trackToPIDMap;
     //Loop over all tracks we have to fill calorimetry map
     for(size_t i=0; i< tracks.size(); ++i){
@@ -673,7 +680,7 @@ namespace single_photon
 
       if(paras.s_use_PID_algorithms){
         temp_ppfp->set_HasPID(true);
-        temp_ppfp->set_ParticleID(pid_per_track.at(tracks[i].key()));
+        temp_ppfp->set_ParticleID(pid_per_track->at(tracks[i].key()));
       }
     }
 
@@ -682,7 +689,7 @@ namespace single_photon
     // Build a map to get PID from PFParticles, then call PID collection function
     if(paras.s_use_PID_algorithms){//yes, as set in the FHiCL;
       for(size_t i=0; i< tracks.size(); ++i){
-        trackToPIDMap[tracks[i]] = pid_per_track.at(tracks[i].key());
+        trackToPIDMap[tracks[i]] = pid_per_track->at(tracks[i].key());
       }
     }
 
@@ -743,7 +750,6 @@ namespace single_photon
     std::vector<std::pair<art::Ptr<recob::PFParticle>,int>> primaryPFPSliceIdVec; //stores a pair of only the primary PFP's in the event and the slice ind
     std::map<int, double> sliceIdToNuScoreMap; //map between a slice Id and neutrino score
     std::map<art::Ptr<recob::PFParticle>, bool> PFPToClearCosmicMap; //returns true for clear cosmic, false otherwise
-    //        std::map<art::Ptr<recob::PFParticle>, int> PFPToSliceIdMap; //returns the slice id for all PFP's
     std::map<art::Ptr<recob::PFParticle>,bool> PFPToNuSliceMap;
     std::map<art::Ptr<recob::PFParticle>,double> PFPToTrackScoreMap;
     std::map<int, int> sliceIdToNumPFPsMap;
@@ -811,6 +817,8 @@ namespace single_photon
     std::cout<<"\nSinglePhoton::analyze \t||\t Start on Track Analysis "<<std::endl;
 
     //found in analyze_Tracks.h
+    vars.m_reco_asso_tracks=tracks.size();
+    ResizeTracks(vars.m_reco_asso_tracks, vars);
     AnalyzeTracks(
         allPPFParticles, 
         tracks, 
@@ -985,7 +993,6 @@ namespace single_photon
           vars);
 
       //photoNuclearTesting(matchedMCParticleVector);
-
       std::cout<<"\nSinglePhoton\t||\tStarting RecoMCTracks "<<std::endl;
       RecoMCTracks(
           allPPFParticles,
@@ -1060,15 +1067,12 @@ namespace single_photon
       std::cout<<"SinglePhoton::analyze\t||\t finnished loop for this event"<<std::endl;
     }//end MC loop
 
-
-
     //*******************************   Isolation (SSV precursor)  **************************************************************/
     if(!paras.s_run_all_pfps && ! paras.s_run_pi0_filter){ 
       std::cout<<"\nSinglePhoton::analyze \t||\t Start IsolationStudy "<<std::endl;
       IsolationStudy(allPPFParticles, tracks,  showers, theDetector, vars, paras);
       std::cout<<"\nSinglePhoton::analyze \t||\t Finish IsolationStudy "<<std::endl;
     }
-    //        if(!vars.m_run_all_pfps && ! paras.s_run_pi0_filter) this->IsolationStudy(allPPFParticles, tracks,  trackToNuPFParticleMap, showers, showerToNuPFParticleMap, pfParticleToHitsMap, PFPToSliceIdMap, sliceIDToHitsMap, theDetector);
 
 
 
@@ -1089,7 +1093,7 @@ namespace single_photon
       art::Ptr<recob::PFParticle> p_pfp = ppfp->pPFParticle;//showerToNuPFParticleMap[p_shr];
       std::vector<art::Ptr<recob::Hit>> p_hits = pfParticleToHitsMap[p_pfp];
 
-      int p_sliceid = ppfp->get_SliceID();//PFPToSliceIdMap[p_pfp];
+      int p_sliceid = ppfp->get_SliceID();
       auto p_slice_hits =    sliceIDToHitsMap[p_sliceid];
 
       std::string uniq_tag = "HitThres_"+ std::to_string(static_cast<int>(paras.s_SEAviewStubHitThreshold)) + "_" + std::to_string(vars.m_run_number)+"_"+std::to_string(vars.m_subrun_number)+"_"+std::to_string(vars.m_event_number);
@@ -1271,7 +1275,7 @@ namespace single_photon
       std::vector<art::Ptr<recob::Hit>> p_hits = pfParticleToHitsMap[p_pfp];
 
 
-      int p_sliceid = ppfp->get_SliceID();// PFPToSliceIdMap[p_pfp];
+      int p_sliceid = ppfp->get_SliceID();
       auto p_slice_hits =    sliceIDToHitsMap[p_sliceid];
 
       std::string uniq_tag = "HitThres_"+ std::to_string(static_cast<int>(paras.s_SEAviewHitThreshold)) + "_" + std::to_string(vars.m_run_number)+"_"+std::to_string(vars.m_subrun_number)+"_"+std::to_string(vars.m_event_number);

@@ -30,7 +30,7 @@ namespace single_photon
       if(trackToMCParticleMap.count(track)>0){
 
         const art::Ptr<simb::MCParticle> mcparticle = trackToMCParticleMap[track];
-        std::cout<<"count2: "<<MCParticleToMCTruthMap.count(mcparticle)<<std::endl;
+//        std::cout<<"count2: "<<MCParticleToMCTruthMap.count(mcparticle)<<std::endl;
         const art::Ptr<simb::MCTruth> mctruth = MCParticleToMCTruthMap[mcparticle];
 
         PandoraPFParticle* ppfp = PPFP_GetPPFPFromTrack(all_PPFPs, track);
@@ -72,7 +72,7 @@ namespace single_photon
         vars.m_sim_track_trackID[i_trk] = mcparticle->TrackId();
         vars.m_sim_track_overlay_fraction[i_trk] = vfrac[i_trk];
 
-        vars.m_sim_track_sliceId[i_trk] = ppfp->get_SliceID();//PFPToSliceIdMap[pfp];
+        vars.m_sim_track_sliceId[i_trk] = ppfp->get_SliceID();
         vars.m_sim_track_nuscore[i_trk] = ppfp->get_NuScore();//sliceIdToNuScoreMap[ vars.m_sim_track_sliceId[i_trk]] ;
         vars.m_sim_track_isclearcosmic[i_trk] = ppfp->get_IsClearCosmic();//PFPToClearCosmicMap[pfp]; 
 
@@ -158,7 +158,6 @@ namespace single_photon
 
       bool found_a_match = false;
 
-      //std::cout<<"RecoMC()\t||\t On shower: "<<i<<" with pfp "<< pfp->Self() <<"and slice id "<<PFPToSliceIdMap[pfp]<<". This shower has "<<obj_hits_ptrs.size()<<" hits associated with it"<<std::endl;
 
       //loop only over hits associated to this reco PFP
       for(size_t i_h=0; i_h < obj_hits_ptrs.size(); ++i_h){
@@ -475,7 +474,7 @@ namespace single_photon
       mcParticleVector.push_back(match);
       showerToMCParticleMap[shower] = mcParticleVector.back();
 
-      vars.m_sim_shower_sliceId[i] = ppfp->get_SliceID();//PFPToSliceIdMap[pfp];
+      vars.m_sim_shower_sliceId[i] = ppfp->get_SliceID();
       vars.m_sim_shower_nuscore[i] = ppfp->get_NuScore();//sliceIdToNuScoreMap[ vars.m_sim_shower_sliceId[i]] ;
       vars.m_sim_shower_isclearcosmic[i] = ppfp->get_IsClearCosmic();//PFPToClearCosmicMap[pfp];
       vars.m_sim_shower_is_nuslice[i] = ppfp->get_IsNuSlice();//PFPToNuSliceMap[pfp];
@@ -560,7 +559,6 @@ namespace single_photon
         int n_associated_mcparticle_hits = 0;
         int n_not_associated_hits = 0;
 
-        //    std::cout<<"REC: This object with pfp "<< pfp->Self() <<" in slice "<<PFPToSliceIdMap[pfp] <<" has "<<obj_hits_ptrs.size()<<" hits associated with it"<<std::endl;
 
         //loop only over hits associated to this reco PFP
         for(size_t i_h=0; i_h < obj_hits_ptrs.size(); ++i_h){
