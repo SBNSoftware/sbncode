@@ -411,6 +411,8 @@ namespace single_photon
     std::vector<double> m_reco_flash_ycenter_in_beamgate;
     std::vector<double> m_reco_flash_zcenter_in_beamgate;
 
+    double m_reco_flash_time_energetic;
+    double m_reco_flash_pe_peak;
     int m_reco_num_flashes;
     int m_reco_num_flashes_in_beamgate;
     //------------ Vertex Related variables -------------
@@ -894,6 +896,7 @@ namespace single_photon
     double m_mctruth_nu_vertex_x;
     double m_mctruth_nu_vertex_y;
     double m_mctruth_nu_vertex_z;
+    double m_mctruth_nu_vertex_t;
     double m_mctruth_reco_vertex_dist;
     double m_mctruth_lepton_E;
     int m_mctruth_nu_pdg;

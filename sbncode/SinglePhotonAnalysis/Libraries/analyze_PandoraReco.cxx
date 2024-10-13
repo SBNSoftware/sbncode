@@ -750,12 +750,24 @@ namespace single_photon
     if(g_is_verbose) std::cout<<"AnalyzeFlashes()\t||\t Beginning analysis of recob::OpFlash\n";
 
     size_t flash_size = flashes.size();
+
     for(size_t i = 0; i < flash_size; ++i) {
 
       art::Ptr<recob::OpFlash> const & flash = flashes[i];
+      
+	  double PECount = flash->TotalPE();
+	  double FlashTime = flash->Time();
+      
+	  //Flash matching done here, pick the flash time that gives the most energetic PE
+	  if(PECount > vars.m_reco_flash_pe_peak){
+		  vars.m_reco_flash_pe_peak = PECount;
+		  vars.m_reco_flash_time_energetic = FlashTime;
+	  }
 
-      vars.m_reco_flash_total_pe[i]=(flash->TotalPE());
-      vars.m_reco_flash_time[i]=(flash->Time());
+      vars.m_reco_flash_total_pe[i]=PECount;
+      vars.m_reco_flash_time[i]=FlashTime;
+
+
       vars.m_reco_flash_time_width[i]=flash->TimeWidth();
       vars.m_reco_flash_abs_time[i]=flash->AbsTime();
       vars.m_reco_flash_frame[i]=flash->Frame();

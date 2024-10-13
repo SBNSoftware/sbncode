@@ -427,13 +427,16 @@ namespace single_photon
         //                if(g_is_verbose) std::cout<<"Getting lepton E"<<std::endl;
 
         //                if(g_is_verbose) std::cout<<"Getting SC corrected vertex position"<<std::endl;
-        std::vector<double> corrected(3);
+        std::vector<double> corrected(4);
         // get corrected lepton position
+		// NOTE, this correction was disabled by Keng, as the study of space charge effect in SBND is to be determined.
         spacecharge_correction( truth->GetNeutrino().Lepton(),corrected);
+
 
         vars.m_mctruth_nu_vertex_x = corrected[0];
         vars.m_mctruth_nu_vertex_y = corrected[1];
         vars.m_mctruth_nu_vertex_z = corrected[2];
+        vars.m_mctruth_nu_vertex_t = corrected[3];
         vars.m_mctruth_reco_vertex_dist = sqrt(pow (vars.m_mctruth_nu_vertex_x-vars.m_vertex_pos_x,2)+pow (vars.m_mctruth_nu_vertex_y-vars.m_vertex_pos_y,2)+pow (vars.m_mctruth_nu_vertex_z-vars.m_vertex_pos_z,2));
 
         //std::vector<int> spacers = Printer_header({"NuPdg","CC=0","TruthVertex(x,","   y,      ",",      z  )"});

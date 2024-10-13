@@ -77,11 +77,12 @@ namespace single_photon
 
 
   int spacecharge_correction(const simb::MCParticle & mcparticle, std::vector<double> & corrected){
-    corrected.resize(3);
+    corrected.resize(4);
     //Space Charge Effect! functionize this soon.
     double kx = mcparticle.Vx();
     double ky = mcparticle.Vy();
     double kz = mcparticle.Vz();
+    double kt = mcparticle.T();
     //CHECK         auto scecorr = SCE->GetPosOffsets( geo::Point_t(kx,ky,kz));
     //CHECK        double g4Ticks =  detClocks->TPCG4Time2Tick(mcparticle.T())+theDetector->GetXTicksOffset(0,0,0)-theDetector->trigger_offset();
 
@@ -90,6 +91,7 @@ namespace single_photon
     corrected[0]=kx;//CHECK  - scecorr.X() +xtimeoffset+0.6;
     corrected[1]=ky;//CHECK  + scecorr.Y();
     corrected[2]=kz;//CHECK  + scecorr.Z();
+	corrected[3]=kt;
     return 0;
   }
 

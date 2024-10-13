@@ -412,6 +412,8 @@ namespace single_photon
   void ClearFlashes(var_all& vars){
     vars.m_reco_num_flashes =0;
     vars.m_reco_num_flashes_in_beamgate =0;
+	vars.m_reco_flash_time_energetic = 0;
+    vars.m_reco_flash_pe_peak = 0;
     vars.m_reco_flash_total_pe.clear();
     vars.m_reco_flash_time.clear();
     vars.m_reco_flash_time_width.clear();
@@ -448,6 +450,8 @@ namespace single_photon
     vars.vertex_tree->Branch("reco_num_flashes_in_beamgate",&vars.m_reco_num_flashes_in_beamgate,"reco_num_flashes_in_beamgate/I");
     vars.vertex_tree->Branch("reco_flash_total_pe", &vars.m_reco_flash_total_pe);
     vars.vertex_tree->Branch("reco_flash_time", &vars.m_reco_flash_time);
+    vars.vertex_tree->Branch("reco_flash_time_energetic", &vars.m_reco_flash_time_energetic);
+    vars.vertex_tree->Branch("reco_flash_pe_peak", &vars.m_reco_flash_pe_peak);
     vars.vertex_tree->Branch("reco_flash_time_width",&vars.m_reco_flash_time_width);
     vars.vertex_tree->Branch("reco_flash_abs_time",&vars.m_reco_flash_abs_time);
     vars.vertex_tree->Branch("reco_flash_frame",&vars.m_reco_flash_frame);
@@ -1553,6 +1557,7 @@ namespace single_photon
     vars.m_mctruth_nu_vertex_x = -9999;
     vars.m_mctruth_nu_vertex_y = -9999;
     vars.m_mctruth_nu_vertex_z = -9999;
+    vars.m_mctruth_nu_vertex_t = -9999;
     vars.m_mctruth_reco_vertex_dist = -9999;
     vars.m_mctruth_ccnc = -99;
     vars.m_mctruth_qsqr = -99;
@@ -1659,6 +1664,7 @@ namespace single_photon
     vars.vertex_tree->Branch("mctruth_nu_vertex_x",&vars.m_mctruth_nu_vertex_x);
     vars.vertex_tree->Branch("mctruth_nu_vertex_y",&vars.m_mctruth_nu_vertex_y);
     vars.vertex_tree->Branch("mctruth_nu_vertex_z",&vars.m_mctruth_nu_vertex_z);
+    vars.vertex_tree->Branch("mctruth_nu_vertex_t",&vars.m_mctruth_nu_vertex_t);
     vars.vertex_tree->Branch("mctruth_reco_vertex_dist",&vars.m_mctruth_reco_vertex_dist);
 
     vars.vertex_tree->Branch("mctruth_lepton_pdg",&vars.m_mctruth_lepton_pdg);
