@@ -24,6 +24,8 @@
 #include "nusimdata/SimulationBase/MCFlux.h"
 #include "nusimdata/SimulationBase/GTruth.h"
 
+#include "sbnobj/Common/Reco/OpT0FinderResult.h"
+
 #include "TTree.h"
 #include "TRandom3.h"
 
@@ -100,6 +102,7 @@ namespace single_photon
     std::string s_showerLabel;          ///< The label for the shower producer from PFParticles
     std::string s_caloLabel;            ///< The label for calorimetry associations producer
     std::string s_flashLabel;
+    std::string s_flashmatchLabel;
     std::string s_geantModuleLabel;
     //            std::string m_backtrackerLabel;
     std::string s_hitfinderLabel;
@@ -397,6 +400,11 @@ namespace single_photon
 
 
     //-------------- Flash related variables -------------
+    std::vector<double> m_reco_flashmatch_time;
+    std::vector<double> m_reco_flashmatch_meas_pe;
+    std::vector<double> m_reco_flashmatch_hypo_pe;
+    std::vector<double> m_reco_flashmatch_score;
+
     std::vector<double> m_reco_flash_total_pe;
     std::vector<double> m_reco_flash_time;
     std::vector<double> m_reco_flash_time_width;
@@ -411,6 +419,8 @@ namespace single_photon
     std::vector<double> m_reco_flash_ycenter_in_beamgate;
     std::vector<double> m_reco_flash_zcenter_in_beamgate;
 
+    double m_reco_flashmatch_time_bestscore;
+    double m_reco_flashmatch_time_energetic;
     double m_reco_flash_time_energetic;
     double m_reco_flash_pe_peak;
     int m_reco_num_flashes;

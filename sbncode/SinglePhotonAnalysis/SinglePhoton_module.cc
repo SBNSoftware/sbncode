@@ -217,6 +217,9 @@ namespace single_photon
     paras.s_pidLabel = pset.get<std::string>("ParticleIDLabel","pandoracalipidSCE");
     paras.s_caloLabel = pset.get<std::string>("CaloLabel");
     paras.s_flashLabel = pset.get<std::string>("FlashLabel");
+std::cout<<"CHECK "<<__LINE__<<std::endl;
+    paras.s_flashmatchLabel = pset.get<std::string>("FlashMatchLabel");
+std::cout<<"CHECK "<<__LINE__<<std::endl;
     paras.s_potLabel = pset.get<std::string>          ("POTLabel");
     paras.s_hitfinderLabel = pset.get<std::string>      ("HitFinderModule", "gaushit");
     //KENG  no such labels in sbnd?
@@ -791,8 +794,21 @@ namespace single_photon
 
     //Analize the CRT flashes and store them in the vertex_tree.
     //Found in analyze_OpFlashes.h
-    ResizeFlashes(flashVector.size(), vars);
+
+
+//In SBND, flash match is done by the opt0finder: https://github.com/SBNSoftware/sbnobj/blob/develop/sbnobj/Common/Reco/OpT0FinderResult.h
+//    art::FindManyP< std::vector<sbn::OpT0Finder> > FlashMatch_per_flash( flashHandle, evt, paras.s_flashmatchLabel);
+    art::ValidHandle<std::vector<sbn::OpT0Finder>> const & flashMatchHandle = evt.getValidHandle<std::vector<sbn::OpT0Finder>>(paras.s_flashmatchLabel);
+    std::vector<art::Ptr<sbn::OpT0Finder>> matchedFlashes;
+    art::fill_ptr_vector(matchedFlashes,flashMatchHandle);
+
+
+    ResizeFlashes(std::max(flashVector.size(),matchedFlashes.size()), vars);
     AnalyzeFlashes(flashVector, crthit_h, evt_timeGPS_nsec, crtvetoToFlashMap, vars, paras);
+	AnalyzeMatchedFlashes(matchedFlashes, vars, paras);
+
+
+
 
 
     //******************************* Common Optical Filter **************************************************************/

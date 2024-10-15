@@ -412,8 +412,15 @@ namespace single_photon
   void ClearFlashes(var_all& vars){
     vars.m_reco_num_flashes =0;
     vars.m_reco_num_flashes_in_beamgate =0;
+	vars.m_reco_flashmatch_time_bestscore = 0;
+	vars.m_reco_flashmatch_time_energetic = 0;
 	vars.m_reco_flash_time_energetic = 0;
     vars.m_reco_flash_pe_peak = 0;
+    vars.m_reco_flashmatch_time.clear();
+    vars.m_reco_flashmatch_meas_pe.clear();
+    vars.m_reco_flashmatch_hypo_pe.clear();
+    vars.m_reco_flashmatch_score.clear();
+
     vars.m_reco_flash_total_pe.clear();
     vars.m_reco_flash_time.clear();
     vars.m_reco_flash_time_width.clear();
@@ -448,8 +455,13 @@ namespace single_photon
 //    vars.vertex_tree->Branch("beamgate_flash_end",&vars.m_beamgate_flash_end,"beamgate_flash_end/D");
     vars.vertex_tree->Branch("reco_num_flashes",&vars.m_reco_num_flashes,"reco_num_flashes/I");
     vars.vertex_tree->Branch("reco_num_flashes_in_beamgate",&vars.m_reco_num_flashes_in_beamgate,"reco_num_flashes_in_beamgate/I");
+    vars.vertex_tree->Branch("reco_flashmatch_time", &vars.m_reco_flashmatch_time);
+    vars.vertex_tree->Branch("reco_flashmatch_meas_pe", &vars.m_reco_flashmatch_meas_pe);
+    vars.vertex_tree->Branch("reco_flashmatch_hypo_pe", &vars.m_reco_flashmatch_hypo_pe);
     vars.vertex_tree->Branch("reco_flash_total_pe", &vars.m_reco_flash_total_pe);
     vars.vertex_tree->Branch("reco_flash_time", &vars.m_reco_flash_time);
+    vars.vertex_tree->Branch("reco_flashmatch_time_energetic", &vars.m_reco_flashmatch_time_energetic);
+    vars.vertex_tree->Branch("reco_flashmatch_time_bestscore", &vars.m_reco_flashmatch_time_bestscore);
     vars.vertex_tree->Branch("reco_flash_time_energetic", &vars.m_reco_flash_time_energetic);
     vars.vertex_tree->Branch("reco_flash_pe_peak", &vars.m_reco_flash_pe_peak);
     vars.vertex_tree->Branch("reco_flash_time_width",&vars.m_reco_flash_time_width);
@@ -480,6 +492,10 @@ namespace single_photon
   }
 
   void ResizeFlashes(size_t size, var_all& vars){
+    vars.m_reco_flashmatch_time.resize(size);
+    vars.m_reco_flashmatch_meas_pe.resize(size);
+    vars.m_reco_flashmatch_hypo_pe.resize(size);
+    vars.m_reco_flashmatch_score.resize(size);
     vars.m_reco_flash_total_pe.resize(size);
     vars.m_reco_flash_time.resize(size);
     vars.m_reco_flash_time_width.resize(size);

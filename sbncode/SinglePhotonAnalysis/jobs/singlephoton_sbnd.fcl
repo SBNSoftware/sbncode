@@ -10,6 +10,7 @@ singlephoton_analyzer:{
     ParticleIDLabel:"pandoraSCEPid"
     CaloLabel:      "pandoraCalo"
     FlashLabel:     "opflashtpc0"
+	FlashMatchLabel:"opt0finder"
     POTLabel:       "generator"
 
   #ShowerTrackFitter:    "pandoraTrack"

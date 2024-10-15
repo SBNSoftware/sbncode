@@ -26,8 +26,17 @@ namespace single_photon
 
 
   //Analyze falshes
-  void AnalyzeFlashes(const std::vector<art::Ptr<recob::OpFlash>>& flashes, art::Handle<std::vector<sbn::crt::CRTHit>> crthit_h, double evt_timeGPS_nsec,  std::map<art::Ptr<recob::OpFlash>, std::vector< art::Ptr<sbn::crt::CRTHit>>> crtvetoToFlashMap, var_all& vars, para_all& paras);
+  void AnalyzeFlashes(
+      const std::vector<art::Ptr<recob::OpFlash>>& flashes, art::Handle<std::vector<sbn::crt::CRTHit>> crthit_h, 
+      double evt_timeGPS_nsec,  
+      std::map<art::Ptr<recob::OpFlash>, std::vector< art::Ptr<sbn::crt::CRTHit>>> crtvetoToFlashMap, 
+      var_all& vars, 
+      para_all& paras);
 
+  void AnalyzeMatchedFlashes(
+      std::vector<art::Ptr<sbn::OpT0Finder>>&  matchedFlashes,
+      var_all& vars, 
+      para_all& paras);
 
   //Analyze Showers
   void AnalyzeShowers(

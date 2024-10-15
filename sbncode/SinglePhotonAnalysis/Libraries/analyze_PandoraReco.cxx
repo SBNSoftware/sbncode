@@ -62,7 +62,7 @@ namespace single_photon
       //first: direction of first point, second: direction of the end of track
 
       if(g_is_verbose) std::cout<<"AnalyzeTracks()\t||\t On Track: "<<i_trk<<" with TrackID: "<<m_trkid<<" and length: "<<tem_length<<""<<std::endl;;
-	  if(vars.m_reco_track_calo_energy_plane0.size() <= (size_t)i_trk ){throw cet::exception("SinglePhoton") << "  Track object length is less than the index #.";}
+    if(vars.m_reco_track_calo_energy_plane0.size() <= (size_t)i_trk ){throw cet::exception("SinglePhoton") << "  Track object length is less than the index #.";}
 
       vars.m_reco_track_calo_energy_plane0[i_trk] = CalcEShowerPlane(trk_hits, 0, paras);
       vars.m_reco_track_calo_energy_plane1[i_trk] = CalcEShowerPlane(trk_hits, 1, paras);
@@ -730,8 +730,41 @@ namespace single_photon
 
 
   //Analyze falshes
-  void AnalyzeFlashes(const std::vector<art::Ptr<recob::OpFlash>>& flashes, art::Handle<std::vector<sbn::crt::CRTHit>> crthit_h, double evt_timeGPS_nsec,  std::map<art::Ptr<recob::OpFlash>, std::vector< art::Ptr<sbn::crt::CRTHit>>> crtvetoToFlashMap,
-      var_all& vars, para_all& paras){
+  
+
+  void AnalyzeMatchedFlashes(
+      std::vector<art::Ptr<sbn::OpT0Finder>>&  matchedFlashes,
+      var_all& vars, 
+      para_all& paras){
+
+  double pe_peak = -1;
+  double flash_score = -1;
+    for( size_t index = 0; index < matchedFlashes.size(); index++){
+      art::Ptr<sbn::OpT0Finder> flash = matchedFlashes[index];
+      vars.m_reco_flashmatch_time[index ] =  flash->time;
+      vars.m_reco_flashmatch_meas_pe[index ] = flash->measPE;
+      vars.m_reco_flashmatch_hypo_pe[index]=flash->hypoPE;
+	  vars.m_reco_flashmatch_score[index]=flash->score;
+
+      if(pe_peak < flash->hypoPE){
+        pe_peak = flash->hypoPE;
+        vars.m_reco_flashmatch_time_energetic =  flash->time;
+      }
+	  if(flash_score < flash->score){
+		flash_score = flash->score;
+		vars.m_reco_flashmatch_time_bestscore = flash->time;
+	  }
+     }
+
+  }
+
+
+  void AnalyzeFlashes(
+      const std::vector<art::Ptr<recob::OpFlash>>& flashes, art::Handle<std::vector<sbn::crt::CRTHit>> crthit_h, 
+      double evt_timeGPS_nsec,  
+      std::map<art::Ptr<recob::OpFlash>, std::vector< art::Ptr<sbn::crt::CRTHit>>> crtvetoToFlashMap, 
+      var_all& vars, 
+      para_all& paras){
 
 
     for(auto pair: crtvetoToFlashMap){
@@ -755,14 +788,15 @@ namespace single_photon
 
       art::Ptr<recob::OpFlash> const & flash = flashes[i];
       
-	  double PECount = flash->TotalPE();
-	  double FlashTime = flash->Time();
+     
+    double PECount = flash->TotalPE();
+    double FlashTime = flash->Time();
       
-	  //Flash matching done here, pick the flash time that gives the most energetic PE
-	  if(PECount > vars.m_reco_flash_pe_peak){
-		  vars.m_reco_flash_pe_peak = PECount;
-		  vars.m_reco_flash_time_energetic = FlashTime;
-	  }
+    //Flash matching done here, pick the flash time that gives the most energetic PE
+    if(PECount > vars.m_reco_flash_pe_peak){
+      vars.m_reco_flash_pe_peak = PECount;
+      vars.m_reco_flash_time_energetic = FlashTime;
+    }
 
       vars.m_reco_flash_total_pe[i]=PECount;
       vars.m_reco_flash_time[i]=FlashTime;
