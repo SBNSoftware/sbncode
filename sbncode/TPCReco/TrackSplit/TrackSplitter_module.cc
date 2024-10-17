@@ -328,7 +328,8 @@ sbn::TrackSplitter::PairedHits sbn::TrackSplitter::DeMergePlaneHits(
     else {
       recob::Hit halfhit(hit.Channel(), hit.StartTick(), hit.EndTick(), hit.PeakTime(),
         hit.SigmaPeakTime(), hit.RMS(), 
-        hit.PeakAmplitude() / 2., hit.SigmaPeakAmplitude() / 2., hit.SummedADC() / 2.,
+        hit.PeakAmplitude() / 2., hit.SigmaPeakAmplitude() / 2.,
+        hit.ROISummedADC() / 2., hit.HitSummedADC() / 2.,
         hit.Integral() / 2., hit.SigmaIntegral() / 2., 
         hit.Multiplicity(), hit.LocalIndex(), hit.GoodnessOfFit(), hit.DegreesOfFreedom(), hit.View(),
         hit.SignalType(), hit.WireID());
