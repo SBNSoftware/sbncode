@@ -1565,14 +1565,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 	}
       }
       else{
-	sbn::crt::MatchedCRT dummy_CRTmatch;
+	sbn::crt::MatchedCRT nocrthitmatch;
 	srcrtpmtmatches.emplace_back();
-	FillCRTPMTMatch(crtpmtmatches[i], dummy_CRTmatch, srcrtpmtmatches.back());
+	FillCRTPMTMatch(crtpmtmatches[i], nocrthitmatch, srcrtpmtmatches.back());
       }
     }
-    std::cout << "srcrtpmtmatches.size = " << srcrtpmtmatches.size() << "\n";
   }
-  else std::cout << "crtpmtmatch_handle.isNOTValid!\n";
 
   // Get all of the OpFlashes
   std::vector<caf::SROpFlash> srflashes;

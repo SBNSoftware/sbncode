@@ -166,7 +166,6 @@ namespace caf
       matchedCRT.region = crtmatch.region;
       matchedCRT.position = SRVector3D(crtmatch.position.X(), crtmatch.position.Y(), crtmatch.position.Z());
     }
-    std::cout << "CRTPMTTimeDiff = "<< matchedCRT.PMTTimeDiff << "\n";
     srmatch.matchedCRTHits.push_back(matchedCRT);
   }
 
