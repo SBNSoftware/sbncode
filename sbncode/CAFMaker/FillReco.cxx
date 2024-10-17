@@ -138,6 +138,8 @@ namespace caf
   }
 
   void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,
+		       //bool isMatchedCRTHit,
+		       const sbn::crt::MatchedCRT &crtmatch,
 		       caf::SRCRTPMTMatch &srmatch,
 		       bool allowEmpty){
     // allowEmpty does not (yet) matter here                                                           
@@ -155,18 +157,18 @@ namespace caf
     srmatch.flashYWidth = match.flashYWidth;
     srmatch.flashZWidth = match.flashZWidth;
     srmatch.flashClassification = static_cast<int>(match.flashClassification);
-    for(const auto& matchedCRTHit : match.matchedCRTHits){
-      std::cout << "CRTPMTTimeDiff = "<< matchedCRTHit.PMTTimeDiff << "\n";
-      caf::SRMatchedCRT matchedCRT;
-      matchedCRT.PMTTimeDiff = matchedCRTHit.PMTTimeDiff; 
-      matchedCRT.time = matchedCRTHit.time;
-      matchedCRT.sys = matchedCRTHit.sys;
-      matchedCRT.region = matchedCRTHit.region;
-      matchedCRT.position = SRVector3D(matchedCRTHit.position.X(), matchedCRTHit.position.Y(), matchedCRTHit.position.Z());
-      srmatch.matchedCRTHits.push_back(matchedCRT);
+    srmatch.matchedCRTHits.clear();
+    caf::SRMatchedCRT matchedCRT;
+    if(!match.matchedCRTHits.empty()){
+      matchedCRT.PMTTimeDiff = crtmatch.PMTTimeDiff; 
+      matchedCRT.time = crtmatch.time;
+      matchedCRT.sys = crtmatch.sys;
+      matchedCRT.region = crtmatch.region;
+      matchedCRT.position = SRVector3D(crtmatch.position.X(), crtmatch.position.Y(), crtmatch.position.Z());
     }
+    std::cout << "CRTPMTTimeDiff = "<< matchedCRT.PMTTimeDiff << "\n";
+    srmatch.matchedCRTHits.push_back(matchedCRT);
   }
-
 
   void FillOpFlash(const recob::OpFlash &flash,
                   std::vector<recob::OpHit const*> const& hits,
