@@ -388,7 +388,7 @@ sbn::BNBRetriever::MWRdata_t sbn::BNBRetriever::extractSpillTimes(TriggerInfo_t 
   
   // These lines get everything primed within the IFBeamDB
   //   They seem redundant but they are needed
-  //  try{auto cur_vec_temp = bfp->GetNamedVector((triggerInfo.t_previous_event)-fTimePad,"E:THCURR");} catch (WebAPIException &we) {}      
+  //try{auto cur_vec_temp = bfp->GetNamedVector((triggerInfo.t_previous_event)-fTimePad,"E:THCURR");} catch (WebAPIException &we) {}      
   try{auto cur_vec_temp = bfp->GetNamedVector((triggerInfo.t_current_event)+fTimePad,"E:THCURR");} catch (WebAPIException &we) {}      
   try{auto packed_M876BB_temp = bfp_mwr->GetNamedVector((triggerInfo.t_current_event)+fTimePad,"E:M875BB{4440:888}.RAW");} catch (WebAPIException &we) {}
   
