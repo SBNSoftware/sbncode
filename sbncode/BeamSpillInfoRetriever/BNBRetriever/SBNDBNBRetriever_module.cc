@@ -214,9 +214,11 @@ SBNDBNBRetriever::MWRdata_t SBNDBNBRetriever::extractSpillTimes(TriggerInfo_t co
   // These lines get everything primed within the IFBeamDB
   //   They seem redundant but they are needed
   // try{auto cur_vec_temp = bfp->GetNamedVector((triggerInfo.t_previous_event)-fTimePad,"E:THCURR");} catch (WebAPIException &we) {std::cout << "caught 1" << std::endl;}      
-  // try{auto cur_vec_temp = bfp->GetNamedVector((triggerInfo.t_current_event)+fTimePad,"E:THCURR");} catch (WebAPIException &we) {std::cout << "caught 1" << std::endl;}      
-  try{bfp->FillCache((triggerInfo.t_current_event)+fTimePad);} catch (WebAPIException &we) {}      
+  // try{auto cur_vec_temp = bfp->GetNamedVector((triggerInfo.t_current_event)+fTimePad,"E:THCURR");} catch (WebAPIException &we) {std::cout << "caught 1" << std::endl;}     
+  try{bfp->FillCache((triggerInfo.t_current_event)+fTimePad);} catch (WebAPIException &we) {}     
   try{bfp->FillCache((triggerInfo.t_previous_event)-fTimePad);} catch (WebAPIException &we) {}      
+  //std::cout << std::setprecision(19) << "bfp->GetCacheStartTime()" << bfp->GetCacheStartTime() << std::endl; 
+  //std::cout << std::setprecision(19) << "bfp->GetCacheEndTime()" << bfp->GetCacheEndTime()  << std::endl; 
   try{auto packed_M876BB_temp = bfp_mwr->GetNamedVector((triggerInfo.t_current_event)+fTimePad,"E:M875BB{4440:888}.RAW");} catch (WebAPIException &we) {}
   //The multiwire chambers provide their
   // data in a vector format but we'll have 
@@ -519,7 +521,7 @@ sbn::BNBSpillInfo SBNDBNBRetriever::makeBNBSpillInfo
 
   std::cout << std::setprecision(19) << "spill_time: " << TOR860_time << std::endl;
 
-/*
+
   std::cout << std::setprecision(13) << "TOR860: " << TOR860 << std::endl;
   std::cout << std::setprecision(13) << "TOR875: " << TOR875 << std::endl;
   std::cout << std::setprecision(13) << "LM875A: " << LM875A << std::endl;
@@ -533,7 +535,7 @@ sbn::BNBSpillInfo SBNDBNBRetriever::makeBNBSpillInfo
   std::cout << std::setprecision(13) << "VPTG2: " << VPTG2 << std::endl;
   std::cout << std::setprecision(13) << "BTJT2: " << BTJT2 << std::endl;
   std::cout << std::setprecision(13) << "THCURR: " << THCURR << std::endl;
-*/
+
   //crunch the times 
   unsigned long int time_closest_int = (int) TOR860_time;
   double time_closest_ns = (TOR860_time - time_closest_int)*1e9;
