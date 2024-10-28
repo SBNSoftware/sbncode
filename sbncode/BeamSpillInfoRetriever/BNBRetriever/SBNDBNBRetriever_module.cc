@@ -175,37 +175,43 @@ void SBNDBNBRetriever::produce(art::Event & e)
 }
 
 SBNDBNBRetriever::TriggerInfo_t SBNDBNBRetriever::extractTriggerInfo(art::Event const& e) const {
-  //Here we read in the artdaq Fragments and extract three pieces of information:
-  // 1. The time of the current event, t_current_event
-  // 2. the time of the previously triggered event, t_previous_event (NOTE: Events are non-sequential!)
-  // 3. the number of beam spills since the previously triggered event, number_of_gates_since_previous_event
-  auto const & raw_data = e.getProduct< std::vector<artdaq::Fragment> >({ raw_data_label, "ContainerTDCTIMESTAMP" });
+  art::InputTag itag("daq", "ContainerPTB");
+  auto cont_frags = e.getHandle<artdaq::Fragments>(itag);
+  int numcont = 0;
   TriggerInfo_t triggerInfo;
-  /// Correction added to the White Rabbit time to get the trigger time.
-  for(auto raw_datum : raw_data){
-   
-    uint64_t artdaq_ts = raw_datum.timestamp();
-    //icarus::ICARUSTriggerV3Fragment frag(raw_datum);
-    //std::string data = frag.GetDataString();
-    //char *buffer = const_cast<char*>(data.c_str());
-    //icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerV3String(buffer);
-    //triggerInfo.number_of_gates_since_previous_event = frag.getDeltaGatesBNBMaj();
-    triggerInfo.number_of_gates_since_previous_event = 1;
-    
-    /*                                                                                                                  
-       The DAQ trigger time is issued at the Beam Extraction Signal (BES) which is issued                               
-       36 ms *after* the $1D of the BNB, which is what is used in the IFBeam database                                   
-                                                                                                                        
-       We subtract 36ms from the Trigger time to match our triggers to the spills in the                                
-       IFBeam database                                                                                                  
-                                                                                                                        
-    */
 
-    triggerInfo.t_current_event = static_cast<double>(artdaq_ts-3.6e7)/(1000000000.0); //check this offset...
-    triggerInfo.t_previous_event = triggerInfo.t_current_event - 10;//(static_cast<double>(frag.getLastTimestampBNBMaj()-3.6e7))/(1e9);
-  }
-  
-  mf::LogDebug("BNBRetriever") << std::setprecision(19) << "Previous : " << triggerInfo.t_previous_event << ", Current : " << triggerInfo.t_current_event << ", Spill Count " << triggerInfo.number_of_gates_since_previous_event << std::endl;
+  for (auto const& cont : *cont_frags)
+  {
+    artdaq::ContainerFragment cont_frag(cont);
+    numcont++;
+    int numfrag =0;
+    for (size_t fragi = 0; fragi < cont_frag.block_count(); ++fragi)
+    {
+      numfrag++;
+      artdaq::Fragment frag = *cont_frag[fragi];
+      sbndaq::CTBFragment ctb_frag(frag);   // somehow the name CTBFragment stuck
+      for(size_t word_i = 0; word_i < ctb_frag.NWords(); ++word_i)
+      {
+        if(ctb_frag.Trigger(word_i)){
+          uint32_t wt = 0;
+          uint32_t word_type = ctb_frag.Word(word_i)->word_type;
+          wt = word_type;
+	  uint64_t NR_trigger_word = ctb_frag.Trigger(word_i)->trigger_word & 0x1FFFFFFFFFFFFFFF; //& 0x1FFFFFFFFFFF extracts the 61 bit payload
+	  uint64_t NR_timestamp = ctb_frag.Trigger(word_i)->timestamp * 20; 
+	  if (wt == 2)  
+	  {
+	    std::cout << "PTB Word type [" << std::bitset<3>(ctb_frag.Word(word_i)->word_type) << "]  ";
+	    std::cout << std::bitset<32>(NR_trigger_word) << "  HLT Timestamp: "  << std::bitset<64>(NR_timestamp/20) <<std::endl;     
+            triggerInfo.number_of_gates_since_previous_event = 1;
+            triggerInfo.t_current_event = std::bitset<64>(NR_timestamp/20).to_ullong()/50e6; 
+            triggerInfo.t_previous_event = triggerInfo.t_current_event - 10;//(static_cast<double>(ctb_frag.getLastTimestampBNBMaj()-3.6e7))/(1e9);
+            std::cout << std::setprecision(19) << "triggerInfo.t_current_event: " << triggerInfo.t_current_event << std::endl;
+            std::cout << std::setprecision(19) << "triggerInfo.t_previous_event: " << triggerInfo.t_previous_event << std::endl;
+	  }
+        }
+      } //End of loop over the number of trigger words
+    } //End of loop over the number of fragments per container
+  } //End of loop over the number of containers
   return triggerInfo;
 }
 
