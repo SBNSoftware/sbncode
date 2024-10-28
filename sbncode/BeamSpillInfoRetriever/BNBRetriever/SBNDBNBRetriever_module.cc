@@ -75,6 +75,7 @@ private:
   static constexpr double MWRtoroidDelay = -0.035; ///< the same time point is measured _t_ by MWR and _t + MWRtoroidDelay`_ by the toroid [ms]
 
   TriggerInfo_t extractTriggerInfo(art::Event const& e) const;
+  double extractPTBTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const;
   MWRdata_t extractSpillTimes(TriggerInfo_t const& triggerInfo) const; 
   int matchMultiWireData(
     art::EventID const& eventID, 
@@ -174,17 +175,15 @@ void SBNDBNBRetriever::produce(art::Event & e)
     mf::LogDebug("SBNDBNBRetriever")<< "Event Spills : " << spill_count << ", DAQ Spills : " << triggerInfo.number_of_gates_since_previous_event << std::endl;
 }
 
-SBNDBNBRetriever::TriggerInfo_t SBNDBNBRetriever::extractTriggerInfo(art::Event const& e) const {
-  art::InputTag itag("daq", "ContainerPTB");
-  auto cont_frags = e.getHandle<artdaq::Fragments>(itag);
+double SBNDBNBRetriever::extractPTBTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
   int numcont = 0;
-  TriggerInfo_t triggerInfo;
-
+  uint64_t PTBTimeStamp = 0;
+  uint64_t PTBTriggerWord;
   for (auto const& cont : *cont_frags)
-  {
+  { 
     artdaq::ContainerFragment cont_frag(cont);
     numcont++;
-    int numfrag =0;
+    int numfrag = 0;
     for (size_t fragi = 0; fragi < cont_frag.block_count(); ++fragi)
     {
       numfrag++;
@@ -196,22 +195,35 @@ SBNDBNBRetriever::TriggerInfo_t SBNDBNBRetriever::extractTriggerInfo(art::Event 
           uint32_t wt = 0;
           uint32_t word_type = ctb_frag.Word(word_i)->word_type;
           wt = word_type;
-	  uint64_t NR_trigger_word = ctb_frag.Trigger(word_i)->trigger_word & 0x1FFFFFFFFFFFFFFF; //& 0x1FFFFFFFFFFF extracts the 61 bit payload
-	  uint64_t NR_timestamp = ctb_frag.Trigger(word_i)->timestamp * 20; 
-	  if (wt == 2)  
+	  PTBTriggerWord = ctb_frag.Trigger(word_i)->trigger_word & 0x1FFFFFFFFFFFFFFF; //& 0x1FFFFFFFFFFF extracts the 61 bit payload
+          std::bitset<32> desired_word{"00000000000000000000000000000010"};// Only use timestamp from specific HLT trigger word  
+	  if (wt == 2 && std::bitset<32>(PTBTriggerWord) == desired_word)
 	  {
+	    PTBTimeStamp = ctb_frag.Trigger(word_i)->timestamp * 20; 
 	    std::cout << "PTB Word type [" << std::bitset<3>(ctb_frag.Word(word_i)->word_type) << "]  ";
-	    std::cout << std::bitset<32>(NR_trigger_word) << "  HLT Timestamp: "  << std::bitset<64>(NR_timestamp/20) <<std::endl;     
-            triggerInfo.number_of_gates_since_previous_event = 1;
-            triggerInfo.t_current_event = std::bitset<64>(NR_timestamp/20).to_ullong()/50e6; 
-            triggerInfo.t_previous_event = triggerInfo.t_current_event - 10;//(static_cast<double>(ctb_frag.getLastTimestampBNBMaj()-3.6e7))/(1e9);
-            std::cout << std::setprecision(19) << "triggerInfo.t_current_event: " << triggerInfo.t_current_event << std::endl;
-            std::cout << std::setprecision(19) << "triggerInfo.t_previous_event: " << triggerInfo.t_previous_event << std::endl;
+	    std::cout << std::bitset<32>(PTBTriggerWord) << "  HLT Timestamp: "  << std::bitset<64>(PTBTimeStamp/20) <<std::endl;     
 	  }
         }
       } //End of loop over the number of trigger words
     } //End of loop over the number of fragments per container
   } //End of loop over the number of containers
+  return std::bitset<64>(PTBTimeStamp/20).to_ullong()/50e6; 
+}
+
+SBNDBNBRetriever::TriggerInfo_t SBNDBNBRetriever::extractTriggerInfo(art::Event const& e) const {
+  art::InputTag itag("daq", "ContainerPTB");
+  auto cont_frags = e.getHandle<artdaq::Fragments>(itag);
+
+  TriggerInfo_t triggerInfo;
+  double PTBTimeStamp = extractPTBTimeStamp(cont_frags);
+
+  triggerInfo.t_current_event = PTBTimeStamp;
+  triggerInfo.t_previous_event = PTBTimeStamp-10;
+  triggerInfo.number_of_gates_since_previous_event = 1;
+
+  std::cout << std::setprecision(19) << "triggerInfo.t_current_event: " << triggerInfo.t_current_event << std::endl;
+  std::cout << std::setprecision(19) << "triggerInfo.t_previous_event: " << triggerInfo.t_previous_event << std::endl;
+
   return triggerInfo;
 }
 
