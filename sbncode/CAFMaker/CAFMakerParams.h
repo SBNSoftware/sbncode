@@ -41,6 +41,10 @@ namespace caf
       Comment("Provide a string to override the automatic filename."), ""
     };
 
+    Atom<bool> SaveGENIEEventRecord { Name("SaveGENIEEventRecord"),
+      Comment("Whether to produce GENIE event record to the output file"), false
+    };
+
     Atom<float> PrescaleFactor { Name("PrescaleFactor"),
 	Comment("Factor by which to prescale unblind events"), 10
     };

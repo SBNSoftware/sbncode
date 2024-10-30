@@ -43,6 +43,8 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   systematicstools::interface
                   systematicstools::interpreters
                   systematicstools::utility
+                  ${GENIE_LIB_LIST}
+                  nugen::EventGeneratorBase_GENIE
                   )
 
 cet_build_plugin ( CAFMaker art::module
