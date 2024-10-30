@@ -1,0 +1,46 @@
+#include "hitalgorithms.fcl"
+#include "clustermodules.fcl"
+#include "cluster3dalgorithms_sbn.fcl"
+
+BEGIN_PROLOG
+
+# 3D clustering definitions
+sbn_standardhit3dbuilder:                                                @local::standard_standardhit3dbuilder
+sbn_snippethit3dbuilder:                                                 @local::sbn_snippethit3dbuilder
+sbn_spacepointhit3dbuilder:                                              @local::standard_spacepointhit3dbuilder
+sbn_cluster3dMergeAlg:                                                   @local::standard_cluster3dMergeAlg
+sbn_cluster3dPathAlg:                                                    @local::standard_cluster3dPathAlg
+sbn_cluster3ddbscanalg:                                                  @local::standard_cluster3ddbscanalg
+sbn_cluster3dminSpanTreeAlg:                                             @local::standard_cluster3dminSpanTreeAlg
+sbn_cluster3dprincipalcomponentsalg:                                     @local::standard_cluster3dprincipalcomponentsalg
+sbn_cluster3dskeletonalg:                                                @local::standard_cluster3dskeletonalg
+sbn_cluster3dhoughseedfinderalg:                                         @local::standard_cluster3dhoughseedfinderalg
+sbn_cluster3dpcaseedfinderalg:                                           @local::standard_cluster3dpcaseedfinderalg
+sbn_cluster3dparallelhitsseedfinderalg:                                  @local::standard_cluster3dparallelhitsseedfinderalg
+sbn_cluster3dkdtree:                                                     @local::standard_cluster3dkdTree
+
+sbn_cluster3d:                                                           @local::standard_cluster3d
+sbn_cluster3d.module_type:                                               "Cluster3DSBN"
+sbn_cluster3d.Hit3DBuilderAlg:                                           @local::sbn_snippethit3dbuilder
+sbn_cluster3d.ClusterAlg:                                                @local::sbn_cluster3ddbscanalg
+sbn_cluster3d.PrincipalComponentsAlg:                                    @local::sbn_cluster3dprincipalcomponentsalg
+sbn_cluster3d.SkeletonAlg:                                               @local::sbn_cluster3dskeletonalg
+sbn_cluster3d.SeedFinderAlg:                                             @local::sbn_cluster3dhoughseedfinderalg
+sbn_cluster3d.PCASeedFinderAlg:                                          @local::sbn_cluster3dpcaseedfinderalg
+sbn_cluster3d.ParallelHitsAlg:                                           @local::sbn_cluster3dparallelhitsseedfinderalg
+
+sbn_cluster3d.ClusterAlg:                                                @local::standard_cluster3ddbscanalg
+sbn_cluster3d.EnableMonitoring:                                          true
+sbn_cluster3d.ClusterAlg.MinPairPts:                                     1
+sbn_cluster3d.ClusterAlg.kdTree.PairSigmaPeakTime:                       3.0
+sbn_cluster3d.ClusterAlg.kdTree.RefLeafBestDist:                         0.75
+sbn_cluster3d.ClusterMergeAlg.MinEigenToProcess:                         50.
+sbn_cluster3d.ClusterPathAlg:                                            @local::standard_convexhullPathAlg
+sbn_cluster3d.ClusterPathAlg.MinTinyClusterSize:                         2000000  # effectively turn off for now
+sbn_cluster3d.ClusterPathAlg.MinEigen0To1Ratio:                          12.
+sbn_cluster3d.ClusterPathAlg.ClusterAlg.MinPairPts:                      1
+sbn_cluster3d.ClusterPathAlg.ClusterAlg.kdTree.PairSigmaPeakTime:        3.0
+sbn_cluster3d.ClusterPathAlg.ClusterAlg.kdTree.RefLeafBestDist:          0.75
+
+
+END_PROLOG

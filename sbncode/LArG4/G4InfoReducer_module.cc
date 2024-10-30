@@ -139,10 +139,6 @@ void G4InfoReducer::produce(art::Event& e)
 
   for (size_t idx = 0; idx < sed_v.size(); ++idx) {
     auto const& sed = sed_v[idx];
-    // std::cout << "G4info - orig track ID : " << sed.OrigTrackID() 
-    // << " trackID : " << sed.TrackID()
-    // << " useOrigID : " << fUseOrigTrackID
-    // << std::endl;
     // Voxelize coordinates to closest coordinate using fVoxelSize
     double x = sed.X() - std::fmod(sed.X() - fMinX, fVoxelSizeX) + fVoxelSizeX/2.;
     double y = sed.Y() - std::fmod(sed.Y() - fMinY, fVoxelSizeY) + fVoxelSizeY/2.;
