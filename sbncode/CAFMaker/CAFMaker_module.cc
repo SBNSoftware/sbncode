@@ -1558,16 +1558,34 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     std::cout << "valid handle! label: " << fParams.CRTPMTLabel() << "\n";
     const std::vector<sbn::crt::CRTPMTMatching> &crtpmtmatches = *crtpmtmatch_handle;
     for (unsigned i = 0; i < crtpmtmatches.size(); i++) {
+      int topen = 0, topex = 0, sideen = 0, sideex = 0;
+      size_t startIndex = srcrtpmtmatches.size();	    
       if(!crtpmtmatches[i].matchedCRTHits.empty()){
 	for(const auto& crthitmatch :  crtpmtmatches[i].matchedCRTHits){
 	  srcrtpmtmatches.emplace_back();
-	  FillCRTPMTMatch(crtpmtmatches[i], crthitmatch, srcrtpmtmatches.back());
+	  FillCRTPMTMatch(crtpmtmatches[i], crthitmatch, 
+		  	topen, topex, sideen, sideex,
+		  	srcrtpmtmatches.back());
 	}
       }
       else{
 	sbn::crt::MatchedCRT nocrthitmatch;
 	srcrtpmtmatches.emplace_back();
-	FillCRTPMTMatch(crtpmtmatches[i], nocrthitmatch, srcrtpmtmatches.back());
+	FillCRTPMTMatch(crtpmtmatches[i], nocrthitmatch, 
+			topen, topex, sideen, sideex,
+			srcrtpmtmatches.back());
+      }
+      if (crtpmtmatches[i].matchedCRTHits.size()>1){
+        for (size_t j = startIndex; j < srcrtpmtmatches.size(); ++j) {
+          if (topen == 1 && sideen == 0 && topex == 0 && sideex == 1)
+            srcrtpmtmatches[j].flashClassification = 3;
+          else if(topen >= 1 && sideen == 0 && topex == 0 && sideex == 0)
+            srcrtpmtmatches[j].flashClassification = 6;
+          else if (topen >= 1 && sideen == 0 && topex == 0 && sideex >= 1)
+            srcrtpmtmatches[j].flashClassification = 7;
+          else
+            srcrtpmtmatches[j].flashClassification = 9;
+        }
       }
     }
   }
