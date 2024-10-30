@@ -139,6 +139,7 @@ namespace caf
 
   void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,
 		       const sbn::crt::MatchedCRT &crtmatch,
+	               int &topen, int &topex, int &sideen, int &sideex,
 		       caf::SRCRTPMTMatch &srmatch,
 		       bool allowEmpty){
     (void) allowEmpty;
