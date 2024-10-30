@@ -226,7 +226,8 @@ namespace caf
                   bool allowEmpty = false);
   void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,
 		       const sbn::crt::MatchedCRT &crtmatch,
-		       caf::SRCRTPMTMatch &srmatch,
+		       int &topen, int &topex, int &sideen, int &sidex,
+	               caf::SRCRTPMTMatch &srmatch,
 		       bool allowEmpty = false);
 
   void FillTPCPMTBarycenterMatch(const sbn::TPCPMTBarycenterMatch *matchInfo,
