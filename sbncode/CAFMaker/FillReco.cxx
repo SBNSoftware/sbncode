@@ -139,7 +139,8 @@ namespace caf
 
   void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,
 		       const sbn::crt::MatchedCRT &crtmatch,
-		       caf::SRCRTPMTMatch &srmatch,
+		       int &topen, int &topex, int &sideen, int &sideex,
+	               caf::SRCRTPMTMatch &srmatch,
 		       bool allowEmpty){
     (void) allowEmpty;
     srmatch.flashID = match.flashID;
