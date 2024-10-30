@@ -141,9 +141,7 @@ namespace caf
 		       const sbn::crt::MatchedCRT &crtmatch,
 		       caf::SRCRTPMTMatch &srmatch,
 		       bool allowEmpty){
-    // allowEmpty does not (yet) matter here                                                           
     (void) allowEmpty;
-    //srmatch.setDefault();
     srmatch.flashID = match.flashID;
     srmatch.flashTime_us = match.flashTime;
     srmatch.flashGateTime = match.flashGateTime;
@@ -155,7 +153,6 @@ namespace caf
     srmatch.flashPosition = SRVector3D (match.flashPosition.X(), match.flashPosition.Y(), match.flashPosition.Z());
     srmatch.flashYWidth = match.flashYWidth;
     srmatch.flashZWidth = match.flashZWidth;
-    srmatch.flashClassification = static_cast<int>(match.flashClassification);
     srmatch.matchedCRTHits.clear();
     caf::SRMatchedCRT matchedCRT;
     if(!match.matchedCRTHits.empty()){
@@ -164,20 +161,22 @@ namespace caf
       matchedCRT.sys = crtmatch.sys;
       matchedCRT.region = crtmatch.region;
       matchedCRT.position = SRVector3D(crtmatch.position.X(), crtmatch.position.Y(), crtmatch.position.Z());
-      std::cout << "CRTPMTTimeDiff = "<< matchedCRT.PMTTimeDiff << "\n";
+      if(crtmatch.PMTTimeDiff < 0){
+        if(matchedCRT.sys == 0) topen++;
+        else if(matchedCRT.sys == 1) sideen++;
+      }
+      else if(crtmatch.PMTTimeDiff >= 0){
+        if(matchedCRT.sys == 0) topex++;
+        else if(matchedCRT.sys == 1) sideex++;
+      }
     }
-    std::cout << "CRTPMTTimeDiff = "<< matchedCRT.PMTTimeDiff << "\n";
+    if(topen == 0 && sideen == 0 && topex == 0 && sideex == 0) srmatch.flashClassification = 0;
+    else if (topen == 1 && sideen == 0 && topex == 0 && sideex == 0) srmatch.flashClassification = 1;
+    else if (topen == 0 && sideen == 1 && topex == 0 && sideex == 0) srmatch.flashClassification = 2;
+    else if (topen == 0 && sideen == 0 && topex == 1 && sideex == 0) srmatch.flashClassification = 4;
+    else if (topen == 0 && sideen == 0 && topex == 0 && sideex == 1) srmatch.flashClassification = 5;
+    else srmatch.flashClassification = 9;
     srmatch.matchedCRTHits.push_back(matchedCRT);
-    /*for(const auto& matchedCRTHit : match.matchedCRTHits){
-     
-      caf::SRMatchedCRT matchedCRT;
-      matchedCRT.PMTTimeDiff = matchedCRTHit.PMTTimeDiff; 
-      matchedCRT.time = matchedCRTHit.time;
-      matchedCRT.sys = matchedCRTHit.sys;
-      matchedCRT.region = matchedCRTHit.region;
-      matchedCRT.position = SRVector3D(matchedCRTHit.position.X(), matchedCRTHit.position.Y(), matchedCRTHit.position.Z());
-      srmatch.matchedCRTHits.push_back(matchedCRT);
-      }*/
   }
 
 
