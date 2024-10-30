@@ -1555,7 +1555,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   art::Handle<std::vector<sbn::crt::CRTPMTMatching>> crtpmtmatch_handle;
   GetByLabelStrict(evt, fParams.CRTPMTLabel(), crtpmtmatch_handle);
   if(crtpmtmatch_handle.isValid()){
-    std::cout << "valid handle! label: " << fParams.CRTPMTLabel() << "\n";
     const std::vector<sbn::crt::CRTPMTMatching> &crtpmtmatches = *crtpmtmatch_handle;
     for (unsigned i = 0; i < crtpmtmatches.size(); i++) {
       int topen = 0, topex = 0, sideen = 0, sideex = 0;
