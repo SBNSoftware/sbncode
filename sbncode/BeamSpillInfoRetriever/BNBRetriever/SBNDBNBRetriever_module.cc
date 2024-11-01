@@ -21,6 +21,7 @@
 #include <algorithm>
 
 #include "sbndaq-artdaq-core/Overlays/SBND/PTBFragment.hh"
+#include "sbndaq-artdaq-core/Overlays/SBND/TDCTimestampFragment.hh"
 #include "artdaq-core/Data/ContainerFragment.hh"
 //#include "sbndcode/Decoders/PTB/sbndptb.h"
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
@@ -76,6 +77,7 @@ private:
 
   TriggerInfo_t extractTriggerInfo(art::Event const& e) const;
   double extractPTBTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const;
+  double extractTDCTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const;
   MWRdata_t extractSpillTimes(TriggerInfo_t const& triggerInfo) const; 
   int matchMultiWireData(
     art::EventID const& eventID, 
@@ -117,50 +119,6 @@ void SBNDBNBRetriever::produce(art::Event & e)
   // We do not currently have the ability to figure out the first
   // spill that the DAQ was sensitive to, so don't try to save any
   // spill information
-
-/*
-  art::InputTag ptb_tag { "ptbdecoder" };
-  auto const& ptb_handle = e.getValidHandle< std::vector<raw::ptb::sbndptb> >(ptb_tag);
-  auto const& ptb_vec(*ptb_handle);
-  int ptb_size = ptb_vec.size();
-  int NHL_trig;
-  if(ptb_size > 0){
-    for (int j = 0; j < ptb_size; j++){
-      if(ptb_vec.at(j).GetNHLTriggers() > 0){
-        NHL_trig = ptb_vec.at(j).GetNHLTriggers();
-        for(int k = 0; k < NHL_trig; k++){
-          ULong64_t trig_time = ptb_vec.at(j).GetHLTrigger(k).timestamp;
-          if(ptb_vec.at(j).GetHLTrigger(k).trigger_word != 1048576){
-            ULong64_t curr_min = 1e19;
-            //int curr_min_ind;
-            std::cout << "Zero Bias Trigger" << std::endl;
-            try{
-              //auto vec_temp = bfp_mwr->GetNamedVector(trig_time/1e9,"E:M875BB{4440:888}.RAW");
-              auto vec_temp = bfp->GetNamedVector(trig_time/1e9,"E:TOR875");
-              //std::vector<double> times = bfp->GetTimeList("E:M875BB");
-              std::vector<double> times = bfp->GetTimeList("E:TOR875");
-              int times_size = times.size();
-              for (int i = 0; i < times_size; i++) {
-                if(times[i] < trig_time/1e9){
-                  if(trig_time/1e9 - times[i] < curr_min){
-                    curr_min = trig_time - times[i];
-                    std::cout << "trig_time: " << trig_time << std::endl;
-                    //curr_min_ind = i;
-                  } 
-                }
-              }
-            }catch(WebAPIException &we){std::cout << "Failed GetNamedVector" << std::endl;}
-          }
-          else{
-            std::cout << "CRT Reset Trigger" << std::endl;
-          }
-        } 
-      }
-    }
-  }
-*/
-  //sbn::BNBSpillInfo spillInfo = makeBNBSpillInfo(eventID, times_temps[i], MWRdata, matched_MWR);
-  //fOutbeamInfos.push_back(std::move(spillInfo));
 
   TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
 
@@ -210,15 +168,42 @@ double SBNDBNBRetriever::extractPTBTimeStamp(art::Handle<std::vector<artdaq::Fra
   return std::bitset<64>(PTBTimeStamp/20).to_ullong()/50e6; 
 }
 
+double SBNDBNBRetriever::extractTDCTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
+  int numcont = 0;
+  uint64_t TDCTimeStamp = 0;
+  for (auto const& cont : *cont_frags)
+  { 
+    artdaq::ContainerFragment cont_frag(cont);
+    numcont++;
+    int numfrag = 0;
+    for (size_t fragi = 0; fragi < cont_frag.block_count(); ++fragi)
+    {
+      numfrag++;
+      artdaq::Fragment frag = *cont_frag[fragi];
+      sbndaq::TDCTimestampFragment tdc_frag(frag); 
+      TDCTimeStamp = tdc_frag.getTDCTimestamp()->timestamp_ns()/1e9;
+    } //End of loop over the number of fragments per container
+  } //End of loop over the number of containers
+  return TDCTimeStamp;
+}
+
 SBNDBNBRetriever::TriggerInfo_t SBNDBNBRetriever::extractTriggerInfo(art::Event const& e) const {
-  art::InputTag itag("daq", "ContainerPTB");
-  auto cont_frags = e.getHandle<artdaq::Fragments>(itag);
+  // Using TDC for current event, but PTB for previous event
+  art::InputTag PTB_itag("daq", "ContainerPTB");
+  auto PTB_cont_frags = e.getHandle<artdaq::Fragments>(PTB_itag);
+
+  art::InputTag TDC_itag("daq", "ContainerTDCTIMESTAMP");
+  auto TDC_cont_frags = e.getHandle<artdaq::Fragments>(TDC_itag);
 
   TriggerInfo_t triggerInfo;
-  double PTBTimeStamp = extractPTBTimeStamp(cont_frags);
+  double PTBTimeStamp = extractPTBTimeStamp(PTB_cont_frags);
+  double TDCTimeStamp = extractTDCTimeStamp(TDC_cont_frags);
 
-  triggerInfo.t_current_event = PTBTimeStamp;
-  triggerInfo.t_previous_event = PTBTimeStamp-10;
+  std::cout << "PTBTimeStamp: " << PTBTimeStamp << std::endl;
+  std::cout << "TDCTimeStamp: " << TDCTimeStamp << std::endl;
+
+  triggerInfo.t_current_event = TDCTimeStamp;
+  triggerInfo.t_previous_event = TDCTimeStamp-10;
   triggerInfo.number_of_gates_since_previous_event = 1;
 
   std::cout << std::setprecision(19) << "triggerInfo.t_current_event: " << triggerInfo.t_current_event << std::endl;
