@@ -28,10 +28,14 @@ set(	MODULE_LIBRARIES
 		ROOT::Geom
 		ROOT::XMLIO
 		ROOT::Gdml
+		ROOT::Core
 		FFTW3::FFTW3
 		)
 
 cet_build_plugin(AdjustSimForTrigger art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(FilterSimEnergyDeposits art::module LIBRARIES ${MODULE_LIBRARIES})
+
+add_subdirectory(fcl)
 
 #install_headers()
 install_fhicl()
