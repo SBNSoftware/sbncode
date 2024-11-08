@@ -138,6 +138,7 @@ namespace caf
   }
 
   void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,
+		       int &topen, int &topex, int &sideen, int &sideex,
 		       caf::SRCRTPMTMatch &srmatch,
 		       bool allowEmpty){
     // allowEmpty does not (yet) matter here                                                           
@@ -154,17 +155,24 @@ namespace caf
     srmatch.flashPosition = SRVector3D (match.flashPosition.X(), match.flashPosition.Y(), match.flashPosition.Z());
     srmatch.flashYWidth = match.flashYWidth;
     srmatch.flashZWidth = match.flashZWidth;
-    srmatch.flashClassification = static_cast<int>(match.flashClassification);
     for(const auto& matchedCRTHit : match.matchedCRTHits){
-      std::cout << "CRTPMTTimeDiff = "<< matchedCRTHit.PMTTimeDiff << "\n";
       caf::SRMatchedCRT matchedCRT;
       matchedCRT.PMTTimeDiff = matchedCRTHit.PMTTimeDiff; 
       matchedCRT.time = matchedCRTHit.time;
       matchedCRT.sys = matchedCRTHit.sys;
       matchedCRT.region = matchedCRTHit.region;
       matchedCRT.position = SRVector3D(matchedCRTHit.position.X(), matchedCRTHit.position.Y(), matchedCRTHit.position.Z());
+      if(matchedCRTHit.PMTTimeDiff < 0){
+        if(matchedCRTHit.sys == 0) topen++;
+        else if(matchedCRTHit.sys == 1) sideen++;
+      }
+      else if(matchedCRTHit.PMTTimeDiff >= 0){
+        if(matchedCRTHit.sys == 0) topex++;
+        else if(matchedCRTHit.sys == 1) sideex++;
+      }
       srmatch.matchedCRTHits.push_back(matchedCRT);
     }
+    srmatch.flashClassification = static_cast<int>(sbn::crt::assignFlashClassification(topen, topex, sideen, sideex, 0, 0));
   }
 
 

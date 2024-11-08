@@ -1471,21 +1471,19 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       }
     }
 
-  // Get all of the CRTPMT Matches ..
+  // Get all of the CRTPMT Matches
   std::vector<caf::SRCRTPMTMatch> srcrtpmtmatches;
-  std::cout << "srcrtpmtmatches.size = " << srcrtpmtmatches.size() << "\n";
   art::Handle<std::vector<sbn::crt::CRTPMTMatching>> crtpmtmatch_handle;
   GetByLabelStrict(evt, fParams.CRTPMTLabel(), crtpmtmatch_handle);
   if(crtpmtmatch_handle.isValid()){
-    std::cout << "valid handle! label: " << fParams.CRTPMTLabel() << "\n";
     const std::vector<sbn::crt::CRTPMTMatching> &crtpmtmatches = *crtpmtmatch_handle;
     for (unsigned i = 0; i < crtpmtmatches.size(); i++) {
+      int topen = 0, topex = 0, sideen = 0, sideex = 0;
       srcrtpmtmatches.emplace_back();
-      FillCRTPMTMatch(crtpmtmatches[i],srcrtpmtmatches.back());
+      FillCRTPMTMatch(crtpmtmatches[i],
+		      topen, topex, sideen, sideex,
+		      srcrtpmtmatches.back());
     }
-  }
-  else{
-    std::cout << "crtpmtmatch_handle.isNOTValid!\n";
   }
 
   // Get all of the OpFlashes
