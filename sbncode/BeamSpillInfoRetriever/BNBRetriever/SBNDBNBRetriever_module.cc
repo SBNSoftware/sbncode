@@ -157,7 +157,7 @@ double SBNDBNBRetriever::extractPTBTimeStamp(art::Handle<std::vector<artdaq::Fra
           std::bitset<32> desired_word{"00000000000000000000000000000010"};// Only use timestamp from specific HLT trigger word  
 	  if (wt == 2 && std::bitset<32>(PTBTriggerWord) == desired_word)
 	  {
-	    PTBTimeStamp = ctb_frag.Trigger(word_i)->timestamp * 20; 
+	    PTBTimeStamp = ctb_frag.PTBWord(word_i)->prevTS * 20; 
 	    std::cout << "PTB Word type [" << std::bitset<3>(ctb_frag.Word(word_i)->word_type) << "]  ";
 	    std::cout << std::bitset<32>(PTBTriggerWord) << "  HLT Timestamp: "  << std::bitset<64>(PTBTimeStamp/20) <<std::endl;     
 	  }
@@ -192,22 +192,16 @@ SBNDBNBRetriever::TriggerInfo_t SBNDBNBRetriever::extractTriggerInfo(art::Event 
   art::InputTag PTB_itag("daq", "ContainerPTB");
   auto PTB_cont_frags = e.getHandle<artdaq::Fragments>(PTB_itag);
 
-  art::InputTag TDC_itag("daq", "ContainerTDCTIMESTAMP");
-  auto TDC_cont_frags = e.getHandle<artdaq::Fragments>(TDC_itag);
+  // art::InputTag TDC_itag("daq", "ContainerTDCTIMESTAMP");
+  // auto TDC_cont_frags = e.getHandle<artdaq::Fragments>(TDC_itag);
 
   TriggerInfo_t triggerInfo;
   double PTBTimeStamp = extractPTBTimeStamp(PTB_cont_frags);
   double TDCTimeStamp = extractTDCTimeStamp(TDC_cont_frags);
 
-  std::cout << "PTBTimeStamp: " << PTBTimeStamp << std::endl;
-  std::cout << "TDCTimeStamp: " << TDCTimeStamp << std::endl;
-
   triggerInfo.t_current_event = TDCTimeStamp;
-  triggerInfo.t_previous_event = TDCTimeStamp-10;
+  triggerInfo.t_previous_event = PTBTimeStamp-10;
   triggerInfo.number_of_gates_since_previous_event = 1;
-
-  std::cout << std::setprecision(19) << "triggerInfo.t_current_event: " << triggerInfo.t_current_event << std::endl;
-  std::cout << std::setprecision(19) << "triggerInfo.t_previous_event: " << triggerInfo.t_previous_event << std::endl;
 
   return triggerInfo;
 }
