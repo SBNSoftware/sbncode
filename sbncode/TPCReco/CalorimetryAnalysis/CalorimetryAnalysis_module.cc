@@ -2406,7 +2406,7 @@ void FillHits(const detinfo::DetectorClocksData &dclock,
       if (!use_integral && hit_map_u[hit->Channel()].start == hit->StartTick() && hit_map_u[hit->Channel()].end == hit->EndTick()) {
         continue;
       }
-      hit_map_u[hit->Channel()].charge += (use_integral) ? hit->Integral() : hit->SummedADC();
+      hit_map_u[hit->Channel()].charge += (use_integral) ? hit->Integral() : hit->ROISummedADC();
       hit_map_u[hit->Channel()].multiplicity = std::max(hit_map_u[hit->Channel()].multiplicity, (int) hit->Multiplicity());
       hit_map_u[hit->Channel()].start = hit_map_u[hit->Channel()].nhit ? std::min(hit_map_u[hit->Channel()].start, hit->StartTick()) : hit->StartTick();
       hit_map_u[hit->Channel()].end = hit_map_u[hit->Channel()].nhit ? std::max(hit_map_u[hit->Channel()].end, hit->EndTick()) : hit->EndTick();
@@ -2420,7 +2420,7 @@ void FillHits(const detinfo::DetectorClocksData &dclock,
       if (!use_integral && hit_map_v[hit->Channel()].start == hit->StartTick() && hit_map_v[hit->Channel()].end == hit->EndTick()) {
         continue;
       }
-      hit_map_v[hit->Channel()].charge += (use_integral) ? hit->Integral() : hit->SummedADC();
+      hit_map_v[hit->Channel()].charge += (use_integral) ? hit->Integral() : hit->ROISummedADC();
       hit_map_v[hit->Channel()].multiplicity = std::max(hit_map_v[hit->Channel()].multiplicity, (int) hit->Multiplicity());
       hit_map_v[hit->Channel()].start = hit_map_v[hit->Channel()].nhit ? std::min(hit_map_v[hit->Channel()].start, hit->StartTick()) : hit->StartTick();
       hit_map_v[hit->Channel()].end = hit_map_v[hit->Channel()].nhit ? std::max(hit_map_v[hit->Channel()].end, hit->EndTick()) : hit->EndTick();
@@ -2434,7 +2434,7 @@ void FillHits(const detinfo::DetectorClocksData &dclock,
       if (!use_integral && hit_map_y[hit->Channel()].start == hit->StartTick() && hit_map_y[hit->Channel()].end == hit->EndTick()) {
         continue;
       }
-      hit_map_y[hit->Channel()].charge += (use_integral) ? hit->Integral() : hit->SummedADC();
+      hit_map_y[hit->Channel()].charge += (use_integral) ? hit->Integral() : hit->ROISummedADC();
       hit_map_y[hit->Channel()].multiplicity = std::max(hit_map_y[hit->Channel()].multiplicity, (int) hit->Multiplicity());
       hit_map_y[hit->Channel()].start = hit_map_y[hit->Channel()].nhit ? std::min(hit_map_y[hit->Channel()].start, hit->StartTick()) : hit->StartTick();
       hit_map_y[hit->Channel()].end = hit_map_y[hit->Channel()].nhit ? std::max(hit_map_y[hit->Channel()].end, hit->EndTick()) : hit->EndTick();

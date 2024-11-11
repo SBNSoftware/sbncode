@@ -117,7 +117,7 @@ private:
 
   // Fill vars
   void FillTrack(const recob::Track &track, 
-    const recob::PFParticle &pfp, float t0, 
+    const recob::PFParticle &pfp, float t0, float t0CRT,
     const std::vector<art::Ptr<recob::Hit>> &hits,
     const std::vector<const recob::TrackHitMeta*> &thms,
     const std::vector<art::Ptr<recob::SpacePoint>> &sps,
@@ -127,7 +127,8 @@ private:
     const geo::WireReadoutGeom *wireReadout,
     const detinfo::DetectorClocksData &clock_data,
     const cheat::BackTrackerService *bt_serv,
-    const sbn::EDet det);
+    const sbn::EDet det,
+    const detinfo::DetectorPropertiesData &dprop);
 
   void FillTrackDaughterRays(const recob::Track &trk,
     const recob::PFParticle &pfp, 

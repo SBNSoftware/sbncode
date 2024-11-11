@@ -11,6 +11,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "TrackCaloSkimmer.h"
+#include "sbnobj/SBND/CRT/CRTTrack.hh"
 
 #include "art/Utilities/make_tool.h"
 
@@ -213,12 +214,22 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
   // PFP-associated data
   std::vector<art::FindManyP<anab::T0>> fmT0;
   for (unsigned i_label = 0; i_label < fT0producers.size(); i_label++) {
-    fmT0.emplace_back(PFParticleList, e, fT0producers[i_label]);
+    if (fT0producers[i_label] != "crttrackmatching")
+      fmT0.emplace_back(PFParticleList, e, fT0producers[i_label]);
   }
   art::FindManyP<recob::SpacePoint> PFParticleSPs(PFParticleList, e, fPFPproducer);
 
   // Now we don't need to guard access to further data. If this is an empty event it should be caught by PFP's or Hit's
   art::ValidHandle<std::vector<recob::Track>> tracks = e.getValidHandle<std::vector<recob::Track>>(fTRKproducer); 
+
+  std::vector<art::FindOneP<sbnd::crt::CRTTrack, anab::T0>> fmT02;
+  float crtLabel = std::numeric_limits<float>::signaling_NaN();
+  for (unsigned i_label = 0; i_label < fT0producers.size(); i_label++) {
+    if (fT0producers[i_label] == "crttrackmatching"){
+      crtLabel = i_label;
+      fmT02.emplace_back(tracks, e, fT0producers[i_label]);
+    }
+  }
 
   // Track - associated data
   art::FindManyP<recob::Track> fmTracks(PFParticleList, e, fTRKproducer);
@@ -341,11 +352,27 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
       }
     }
 
+    float t0CRT = std::numeric_limits<float>::signaling_NaN();
+    for (unsigned i_t0 = 0; i_t0 < fmT02.size(); i_t0++) {
+      if (fmT02[i_t0].isValid()) {
+        try {
+          t0CRT = fmT02[i_t0].data(trkPtr.key()).ref().Time();
+          whicht0 = i_t0;
+
+         if (fVerbose) std::cout << "Track: " << trkPtr->ID() << " Has CRTT0 (" << fT0producers[crtLabel] << ")\n";
+	}
+	catch(...) {}
+        break;
+      }
+    }
+
     if (fRequireT0 && whicht0 < 0) {
       continue;
     }
 
     if (fVerbose) std::cout << "Processing new track! ID: " << trkPtr->ID() << " time: " << t0 << std::endl;
+    if (fVerbose) std::cout << "Processing new track! ID: " << trkPtr->ID() << " timeCRT: " << t0CRT << std::endl;
+
 
     // Reset the track object
     *fTrack = sbn::TrackInfo();
@@ -355,7 +382,7 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
     fWiresToSave.clear();
 
     // Fill the track!
-    FillTrack(*trkPtr, pfp, t0, trkHits, trkHitMetas, trkHitSPs, calo, rawdigits, track_infos, wireReadout, clock_data, bt, det);
+    FillTrack(*trkPtr, pfp, t0, t0CRT, trkHits, trkHitMetas, trkHitSPs, calo, rawdigits, track_infos, geometry, clock_data, bt, det, dprop);
     fTrack->whicht0 = whicht0;
 
     FillTrackDaughterRays(*trkPtr, pfp, PFParticleList, PFParticleSPs);
@@ -374,6 +401,10 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
     for (const std::unique_ptr<sbn::ITCSSelectionTool> &t: fSelectionTools) {
       if (t->DoSelect(*fTrack)) {
         select = true;
+	if (!isnan(fTrack->t0CRT) && isnan(fTrack->t0))
+	  i_select = i_select + 10;
+        if (!isnan(fTrack->t0CRT) && !isnan(fTrack->t0))
+          i_select = i_select + 100;
         fTrack->selected = i_select;
         fTrack->nprescale = t->GetPrescale();
         break;
@@ -920,7 +951,7 @@ void sbn::TrackCaloSkimmer::FillTrackEndHits(const geo::GeometryCore *geometry,
       
       // information from the hit object
       hinfo.integral = hit->Integral();
-      hinfo.sumadc = hit->SummedADC();
+      hinfo.sumadc = hit->ROISummedADC();
       hinfo.width = hit->RMS();
       hinfo.time = hit->PeakTime();
       hinfo.mult = hit->Multiplicity();
@@ -1031,7 +1062,7 @@ void sbn::TrackCaloSkimmer::FillTrackDaughterRays(const recob::Track &trk,
 }
 
 void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track, 
-    const recob::PFParticle &pfp, float t0, 
+    const recob::PFParticle &pfp, float t0, float t0CRT,
     const std::vector<art::Ptr<recob::Hit>> &hits,
     const std::vector<const recob::TrackHitMeta*> &thms,
     const std::vector<art::Ptr<recob::SpacePoint>> &sps,
@@ -1041,24 +1072,36 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
     const geo::WireReadoutGeom *wireReadout,
     const detinfo::DetectorClocksData &clock_data,
     const cheat::BackTrackerService *bt_serv,
-    const sbn::EDet det) {
+    const sbn::EDet det,
+    const detinfo::DetectorPropertiesData &dprop) {
 
   // Fill top level stuff
   fTrack->meta = fMeta;
   fTrack->t0 = t0;
+  fTrack->t0CRT = t0CRT;
   fTrack->id = track.ID();
   fTrack->clear_cosmic_muon = pfp.Parent() == recob::PFParticle::kPFParticlePrimary;
 
   fTrack->length = track.Length();
-  fTrack->start.x = track.Start().X();
   fTrack->start.y = track.Start().Y();
   fTrack->start.z = track.Start().Z();
-  fTrack->end.x = track.End().X();
   fTrack->end.y = track.End().Y();
   fTrack->end.z = track.End().Z();
   fTrack->dir.x = track.StartDirection().X();
   fTrack->dir.y = track.StartDirection().Y();
   fTrack->dir.z = track.StartDirection().Z();
+
+  //If track is only CRTt0 tagged, undo the assumed trigger correction
+  if (!isnan(fTrack->t0)) {
+    fTrack->start.x = track.Start().X();
+    fTrack->end.x = track.End().X();
+  }
+  else if (isnan(fTrack->t0) && !isnan(fTrack->t0CRT)) {
+    const double driftv(dprop.DriftVelocity(dprop.Efield(), dprop.Temperature()));
+
+    fTrack->start.x = track.Start().X() + driftv*t0CRT*1e-3;
+    fTrack->end.x = track.End().X() + driftv*t0CRT*1e-3;
+  }
 
   if (hits.size() > 0) {
     fTrack->cryostat = hits[0]->WireID().Cryostat;
@@ -1237,7 +1280,7 @@ sbn::TrackHitInfo sbn::TrackCaloSkimmer::MakeHit(const recob::Hit &hit,
 
   // information from the hit object
   hinfo.h.integral = hit.Integral();
-  hinfo.h.sumadc = hit.SummedADC();
+  hinfo.h.sumadc = hit.ROISummedADC();
   hinfo.h.width = hit.RMS();
   hinfo.h.time = hit.PeakTime();
   hinfo.h.mult = hit.Multiplicity();
