@@ -227,6 +227,7 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
     try {
       art::ValidHandle<std::vector<raw::RawDigit>> thisdigits = e.getValidHandle<std::vector<raw::RawDigit>>(t);
       art::fill_ptr_vector(rawdigitlist, thisdigits);
+      std::cout << "Doing something rawdigits" << std::endl;
     }
     catch(...) {
       if (!fSilenceMissingDataProducts) throw;
