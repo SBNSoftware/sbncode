@@ -1147,7 +1147,9 @@ float minLen=40;
 //  fTrack->mcs_momentum_uboone = mcsU->fwdMomentum();
 //  fTrack->mcs_momentum_icarus =mcsI->fwdMomentum();;
     fTrack->mcs_momentum_ubooneIC = mcsUIC->fwdMomentum();
+    fTrack->mcs_uncertainty_ubooneIC = mcsUIC->fwdMomUncertainty();
     fTrack->mcs_momentum_icarusIC = mcsIIC->fwdMomentum();
+    //fTrack->mcs_uncertainty_icarusIC = mcsIIC->fwdMomUncertainty();
     fTrack->d3p_icarusIC = mcsIIC->bwdLogLikelihood();
 
     for(size_t ja=0;ja<mcsUFC->scatterAngles().size();ja++)
@@ -1172,11 +1174,13 @@ if(mcsIIC->fwdMomentum()>0.)std::cout << " mcs momentum icarus ic " <<  mcsIIC->
    }
 
   fTrack->mcs_momentum_ubooneFC = mcsUFC->fwdMomentum();
+  fTrack->mcs_uncertainty_ubooneFC = mcsUFC->fwdMomUncertainty();
   std::cout << " ufc momentum after" <<mcsUFC->fwdMomentum() << std::endl;
 
   //if( fTrack->length>minLen)
 std::cout << " mcs momentum uboone fincut " << fTrack->mcs_momentum_ubooneFC << std::endl;
    fTrack->mcs_momentum_icarusFC = mcsIFC->fwdMomentum();
+   //fTrack->mcs_uncertainty_icarusFC = mcsIFC->fwdMomUncertainty();
    //if( fTrack->length>minLen)
 std::cout << " mcs momentum icarus fincut " << fTrack->mcs_momentum_icarusFC << std::endl;
   fTrack->range_p = rangeP->range_p;
