@@ -75,11 +75,11 @@ namespace seaview{
 
       if( start_to_mid_vec[0]*mid_to_h_vec[0]*pow(wire_con, 2.0) + start_to_mid_vec[1] * mid_to_h_vec[1] *pow(tick_con, 2.0)<= 0 ){
         cl.f_hit_group[i] = 1;
-        cl.f_mean_ADC_first_half += h->SummedADC();
+        cl.f_mean_ADC_first_half += h->ROISummedADC();
       }
       else{
         cl.f_hit_group[i] = 2;
-        cl.f_mean_ADC_second_half += h->SummedADC();
+        cl.f_mean_ADC_second_half += h->ROISummedADC();
       }
     }
     cl.f_track_treated = true;
@@ -239,7 +239,7 @@ namespace seaview{
       auto& h = pair.first;  //type of h: recob::Hit
       if(map_unassociated_hits.count(h) !=0 && map_unassociated_hits[h]){
 
-        if(h->SummedADC() < hit_threshold){
+        if(h->ROISummedADC() < hit_threshold){
           n_below_thresh++;
           continue;
         }
@@ -1249,7 +1249,7 @@ namespace seaview{
     cl.f_ADC_hist.StatOverflows(kTRUE);
 
     for(auto& h : hitz){
-      cl.f_ADC_hist.Fill(h->SummedADC());
+      cl.f_ADC_hist.Fill(h->ROISummedADC());
     }
 
     cl.f_meanADC = cl.f_ADC_hist.GetMean();
