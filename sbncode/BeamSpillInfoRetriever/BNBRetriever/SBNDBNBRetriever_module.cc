@@ -62,6 +62,11 @@ private:
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp;
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp_mwr;
 
+  struct PTBInfo_t {
+    double prevPTBTimeStamp  = 0;
+    unsigned int GateCounter = 0; // FIXME needs to be integral type
+  };
+
   struct TriggerInfo_t {
     double t_current_event  = 0;
     double t_previous_event = 0;
@@ -76,7 +81,7 @@ private:
   static constexpr double MWRtoroidDelay = -0.035; ///< the same time point is measured _t_ by MWR and _t + MWRtoroidDelay`_ by the toroid [ms]
 
   TriggerInfo_t extractTriggerInfo(art::Event const& e) const;
-  double extractPTBTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const;
+  PTBInfo_t extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const;
   double extractTDCTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const;
   MWRdata_t extractSpillTimes(TriggerInfo_t const& triggerInfo) const; 
   int matchMultiWireData(
@@ -85,7 +90,7 @@ private:
     MWRdata_t const& MWRdata, bool isFirstEventInRun,
     std::vector< sbn::BNBSpillInfo >& beamInfos
     ) const;
-
+  unsigned int TotalBeamSpills;
   sbn::BNBSpillInfo makeBNBSpillInfo
     (art::EventID const& eventID, double time, MWRdata_t const& MWRdata, std::vector<int> const& matched_MWR) const;
 };
@@ -104,6 +109,7 @@ SBNDBNBRetriever::SBNDBNBRetriever(fhicl::ParameterSet const & params)
   bfp_mwr = ifbeam_handle->getBeamFolder(params.get<std::string>("MultiWireBundle"), params.get<std::string>("URL"), std::stod(params.get<std::string>("MWR_TimeWindow")));
   bfp_mwr->set_epsilon(0.5);
   bfp_mwr->setValidWindow(3605);
+  TotalBeamSpills = 0;
 }
 
 int eventNum =0;
@@ -120,7 +126,7 @@ void SBNDBNBRetriever::produce(art::Event & e)
   // spill information
 
   TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
-
+  TotalBeamSpills += triggerInfo.number_of_gates_since_previous_event;
   MWRdata_t const MWRdata = extractSpillTimes(triggerInfo);
 
   int const spill_count = matchMultiWireData(e.id(), triggerInfo, MWRdata, e.event() == 1, fOutbeamInfos);
@@ -131,10 +137,9 @@ void SBNDBNBRetriever::produce(art::Event & e)
     mf::LogDebug("SBNDBNBRetriever")<< "Event Spills : " << spill_count << ", DAQ Spills : " << triggerInfo.number_of_gates_since_previous_event << std::endl;
 }
 
-double SBNDBNBRetriever::extractprevPTBTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
+SBNDBNBRetriever::PTBInfo_t SBNDBNBRetriever::extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
   int numcont = 0;
-  uint64_t prevPTBTimeStamp = 0;
-  uint64_t PTBTriggerWord;
+  PTBInfo_t PTBInfo;
   for (auto const& cont : *cont_frags)
   { 
     artdaq::ContainerFragment cont_frag(cont);
@@ -151,17 +156,17 @@ double SBNDBNBRetriever::extractprevPTBTimeStamp(art::Handle<std::vector<artdaq:
           uint32_t wt = 0;
           uint32_t word_type = ctb_frag.Word(word_i)->word_type;
           wt = word_type;
-	  PTBTriggerWord = ctb_frag.Trigger(word_i)->trigger_word & 0x1FFFFFFFFFFFFFFF; //& 0x1FFFFFFFFFFF extracts the 61 bit payload
-          std::bitset<32> desired_word{"00000000000000000000000000000010"};// Only use timestamp from specific HLT trigger word  
-	  if (wt == 2 && std::bitset<32>(PTBTriggerWord) == desired_word)
+	  if (wt == 2 && ctb_frag.Trigger(word_i)->IsTrigger(1))
 	  {
-	    prevPTBTimeStamp = ctb_frag.PTBWord(word_i)->prevTS * 20; 
+            PTBInfo.GateCounter = ctb_frag.Trigger(word_i)->gate_counter;
+	    uint64_t RawprevPTBTimeStamp = ctb_frag.PTBWord(word_i)->prevTS * 20; 
+            PTBInfo.prevPTBTimeStamp = std::bitset<64>(RawprevPTBTimeStamp / 20).to_ullong()/50e6; 
 	  }
         }
       } //End of loop over the number of trigger words
     } //End of loop over the number of fragments per container
   } //End of loop over the number of containers
-  return std::bitset<64>(prevPTBTimeStamp/20).to_ullong()/50e6; 
+  return PTBInfo; 
 }
 
 double SBNDBNBRetriever::extractTDCTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
@@ -191,13 +196,14 @@ SBNDBNBRetriever::TriggerInfo_t SBNDBNBRetriever::extractTriggerInfo(art::Event 
   art::InputTag TDC_itag("daq", "ContainerTDCTIMESTAMP");
   auto TDC_cont_frags = e.getHandle<artdaq::Fragments>(TDC_itag);
 
+  PTBInfo_t PTBInfo;
   TriggerInfo_t triggerInfo;
-  double prevPTBTimeStamp = extractprevPTBTimeStamp(PTB_cont_frags);
+  PTBInfo = extractPTBInfo(PTB_cont_frags);
   double TDCTimeStamp = extractTDCTimeStamp(TDC_cont_frags);
 
   triggerInfo.t_current_event = TDCTimeStamp;
-  triggerInfo.t_previous_event = prevPTBTimeStamp;
-  triggerInfo.number_of_gates_since_previous_event = -999;
+  triggerInfo.t_previous_event = PTBInfo.prevPTBTimeStamp;
+  triggerInfo.number_of_gates_since_previous_event = PTBInfo.GateCounter;
 
   return triggerInfo;
 }
@@ -205,10 +211,10 @@ SBNDBNBRetriever::TriggerInfo_t SBNDBNBRetriever::extractTriggerInfo(art::Event 
 SBNDBNBRetriever::MWRdata_t SBNDBNBRetriever::extractSpillTimes(TriggerInfo_t const& triggerInfo) const {
   
   // These lines get everything primed within the IFBeamDB.
-  try{bfp->FillCache((triggerInfo.t_current_event)+fTimePad);} catch (WebAPIException &we) {}     
-  try{bfp->FillCache((triggerInfo.t_previous_event)-fTimePad);} catch (WebAPIException &we) {}      
-  try{bfp_mwr->FillCache((triggerInfo.t_current_event)+fTimePad)} catch (WebAPIException &we) {}
-  try{bfp_mwr->FillCache((triggerInfo.t_previous_event)-fTimePad)} catch (WebAPIException &we) {}
+  try{bfp->FillCache((triggerInfo.t_current_event)+fTimePad);} catch (WebAPIException &we) {};     
+  try{bfp->FillCache((triggerInfo.t_previous_event)-fTimePad);} catch (WebAPIException &we) {};      
+  try{bfp_mwr->FillCache((triggerInfo.t_current_event)+fTimePad);} catch (WebAPIException &we) {};
+  try{bfp_mwr->FillCache((triggerInfo.t_previous_event)-fTimePad);} catch (WebAPIException &we) {};
 
   // The multiwire chambers provide their
   // data in a vector format but we'll have 

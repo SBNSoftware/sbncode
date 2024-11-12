@@ -1,6 +1,6 @@
 BEGIN_PROLOG
 
-SBNDBNBDefaults: {
+sbndbnbspillinfo: {
     module_type: SBNDBNBRetriever
     InputLabel: "bnb"
     InputContainerInstance: "ContainerBNB"
