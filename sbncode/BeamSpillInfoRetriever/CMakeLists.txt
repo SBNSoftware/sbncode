@@ -1,4 +1,5 @@
-add_subdirectory(BNBRetriever)
+add_subdirectory(ICARUSBNBRetriever)
+add_subdirectory(SBNDBNBRetriever)
 add_subdirectory(NuMIRetriever)
 add_subdirectory(BNBEXTRetriever)
 add_subdirectory(NuMIEXTRetriever)
