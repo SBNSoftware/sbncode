@@ -1,0 +1,46 @@
+#include "icarusbnbspillinfo.fcl"
+
+process_name: ICARUSBNBInfoGen
+
+services:{
+  
+  message: {
+      debugModules: [ "*" ]
+       destinations: {
+           LogDebugFile:{
+               type:       "file"
+               filename:   "debug.log"
+               append:     false
+               threshold:  "DEBUG"
+               categories: {
+                   default: {}
+               }
+           }
+       }
+  }
+  IFBeam:{}
+}
+
+
+source: {
+
+}
+
+physics: {
+ producers: {
+   icarusbnbinfo: @local::icarusbnbspillinfo
+ }
+
+ simulate: [icarusbnbinfo ]
+ stream1: [ out1 ]
+}
+
+outputs: {
+ out1: {
+   module_type: RootOutput
+   fileName: "%ifb_%tc_icarusbnbinfo.root"
+   dataTier: "raw"
+   compressionLevel: 1
+ }
+}
+

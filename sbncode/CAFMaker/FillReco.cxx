@@ -119,8 +119,8 @@ namespace caf
     srspacepoint.position     = SRVector3D(spacepoint.X(), spacepoint.Y(), spacepoint.Z());
     srspacepoint.position_err = SRVector3D(spacepoint.XErr(), spacepoint.YErr(), spacepoint.ZErr());
     srspacepoint.pe           = spacepoint.PE();
-    srspacepoint.time         = spacepoint.Time();
-    srspacepoint.time_err     = spacepoint.TimeErr();
+    srspacepoint.time         = spacepoint.Ts1();
+    srspacepoint.time_err     = spacepoint.Ts1Err();
     srspacepoint.complete     = spacepoint.Complete();
   }
 
@@ -131,8 +131,8 @@ namespace caf
     for(auto const& point : track.Points())
       srsbndcrttrack.points.emplace_back(point.X(), point.Y(), point.Z());
 
-    srsbndcrttrack.time     = track.Time();
-    srsbndcrttrack.time_err = track.TimeErr();
+    srsbndcrttrack.time     = track.Ts1();
+    srsbndcrttrack.time_err = track.Ts1Err();
     srsbndcrttrack.pe       = track.PE();
     srsbndcrttrack.tof      = track.ToF();
   }

@@ -1,0 +1,17 @@
+
+BEGIN_PROLOG
+
+icarusbnbspillinfo: {
+
+    module_type: "ICARUSBNBRetriever"    
+    TimePadding: 0.0333 #unit seconds, Booster Rep Rate is 15 Hz, so the closest spill could be 66ms away
+    URL: "" #keep this blank and we're good
+    Bundle: "BoosterNeutrinoBeam_read"
+    MultiWireBundle: "BNBMultiWire"
+    TimeWindow: "700" #seconds
+    MWR_TimeWindow: "3601" #seconds
+    raw_data_label: "daq"
+    DeviceUsedForTiming: "E:TOR860"
+    TriggerDatabaseFile: "triggerDatabase/icarus_triggers.db"
+}
+END_PROLOG
