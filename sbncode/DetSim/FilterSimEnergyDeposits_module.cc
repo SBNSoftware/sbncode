@@ -16,6 +16,11 @@
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
+#include "larcore/Geometry/Geometry.h"
+#include "larcorealg/Geometry/GeometryCore.h"
+#include "larcore/CoreUtils/ServiceUtil.h"
+#include "lardata/DetectorInfoServices/LArPropertiesService.h"
+#include "lardataalg/DetectorInfo/DetectorPropertiesData.h"
 
 #include "lardataobj/Simulation/SimEnergyDeposit.h"
 
@@ -55,6 +60,7 @@ private:
   static constexpr auto& kModuleName = "FilterSimEnergyDeposit";
 
   bool isWithinVolume(TVector3 p1, TVector3 p2, TVector3 sedep);
+  double ShiftX(double z);
 
 };
 
@@ -87,6 +93,17 @@ bool FilterSimEnergyDeposits::isWithinVolume(TVector3 p_min, TVector3 p_max, TVe
   return ingap;
 }
 
+double FilterSimEnergyDeposits::ShiftX(double z)
+{
+  //known as a "Hill equation" from fitting distribution of angle corrected tracks looking at the deflection as it gets closer to z = 0
+  double a = -0.431172;
+  double b = -2.52724;
+  double c = 0.22043;
+  double num = a*std::pow(z, b);
+  double denom = c + std::pow(z, b);
+  return num/denom;
+}
+
 void FilterSimEnergyDeposits::produce(art::Event& e)
 {
   auto const& simEDeps =
@@ -102,7 +119,45 @@ void FilterSimEnergyDeposits::produce(art::Event& e)
     TVector3 dep(sedep.StartX(), sedep.StartY(), sedep.StartZ());
     if(!(isWithinVolume(p1, p2, dep)))
     {
-      pSimEDeps->emplace_back(sedep);
+      art::ServiceHandle<geo::Geometry const> fGeometry;
+      geo::TPCID tpcid = fGeometry->PositionToTPCID(sedep.MidPoint());
+      short int sign = 1;
+      //if not in TPC, don't do anything to be sure
+      if(bool(tpcid))
+      {
+	const geo::TPCGeo& tpcGeo = fGeometry->TPC(tpcid);
+	sign = -1*tpcGeo.DetectDriftDirection(); //this gives us direction towards the anode, I want to shift towards the cathode so take the inverse of what I get 
+      }
+      else
+      {
+	std::cout << "TPC ID not found! Not performing a shift!" << std::endl;
+	sign = 0;
+      }
+      const int numphotons = sedep.NumPhotons();
+      const int numelectrons = sedep.NumElectrons();
+      const double syratio = sedep.ScintYieldRatio();
+      const double energy = sedep.Energy();
+      //need to shift in -x for x positions > cathode position and +x for x positions < cathode position in each TPC    
+      double shift_start_x = sedep.Start().X() + sign*ShiftX(std::abs(sedep.Start().Z()));
+      const geo::Point_t start = {shift_start_x, sedep.Start().Y(), sedep.Start().Z()};
+      double shift_end_x = sedep.End().X() + sign*ShiftX(std::abs(sedep.End().Z()));
+      const geo::Point_t end = {shift_end_x, sedep.End().Y(), sedep.End().Z()};
+      const double startT = sedep.StartT();
+      const double endT = sedep.EndT();
+      const int thisID = sedep.TrackID();
+      const int thisPDG = sedep.PdgCode();
+      const int origID = sedep.OrigTrackID();
+      pSimEDeps->emplace_back(sim::SimEnergyDeposit(numphotons,
+                                                    numelectrons,
+                                                    syratio,
+                                                    energy,
+                                                    start,
+                                                    end,
+                                                    startT,
+                                                    endT,
+                                                    thisID,
+                                                    thisPDG,
+                                                    origID));
     }
   }
   e.put(std::move(pSimEDeps));
