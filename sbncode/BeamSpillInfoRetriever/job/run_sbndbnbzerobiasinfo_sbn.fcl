@@ -1,6 +1,6 @@
-#include "sbndbnbspillinfo.fcl"
+#include "sbndbnbzerobiasspillinfo.fcl"
 
-process_name: SBNDBNBInfoGen
+process_name: SBNDBNBZEROBIASInfoGen
 
 services:{
   
@@ -23,25 +23,24 @@ services:{
 
 
 source: {
-
 }
 
 physics: {
  producers: {
-   sbndbnbinfo: @local::sbndbnbspillinfo
+   sbndbnbzerobiasinfo: @local::sbndbnbzerobiasspillinfo
  }
 
- simulate: [sbndbnbinfo ]
+ simulate: [sbndbnbzerobiasinfo ]
  stream1: [ out1 ]
 }
 
 outputs: {
  out1: {
    module_type: RootOutput
-   fileName: "%ifb_%tc_sbndbnbinfo.root"
+   fileName: "%ifb_%tc_sbndbnbzerobiasinfo.root"
    dataTier: "raw"
    compressionLevel: 1
  }
 }
 
-physics.producers.sbndbnbinfo.fileNames: @local::outputs.out1.fileName
+physics.producers.sbndbnbzerobiasinfo.fileNames: @local::outputs.out1.fileName

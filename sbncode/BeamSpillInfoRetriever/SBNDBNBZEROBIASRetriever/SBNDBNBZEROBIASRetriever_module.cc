@@ -88,7 +88,7 @@ private:
   PTBInfo_t extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const;
   double extractTDCTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const;
   MWRdata_t extractSpillTimes(TriggerInfo_t const& triggerInfo) const; 
-  int matchMultiWireData(
+  void matchMultiWireData(
     art::EventID const& eventID, 
     TriggerInfo_t const& triggerInfo,
     MWRdata_t const& MWRdata, bool isFirstEventInRun,
@@ -114,6 +114,8 @@ sbn::SBNDBNBRetriever::SBNDBNBRetriever(fhicl::ParameterSet const & params)
   bfp_mwr->set_epsilon(0.5);
   bfp_mwr->setValidWindow(3605);
   TotalBeamSpills = 0;
+
+  produces< std::vector<sbn::BNBSpillInfo> >();
 }
 
 int eventNum =0;
@@ -133,12 +135,11 @@ void sbn::SBNDBNBRetriever::produce(art::Event & e)
   TotalBeamSpills += triggerInfo.number_of_gates_since_previous_event;
   MWRdata_t const MWRdata = extractSpillTimes(triggerInfo);
 
-  int const spill_count = matchMultiWireData(e.id(), triggerInfo, MWRdata, e.event() == 1, fOutbeamInfos);
+  matchMultiWireData(e.id(), triggerInfo, MWRdata, e.event() == 1, fOutbeamInfos);
 
-  if(spill_count > int(triggerInfo.number_of_gates_since_previous_event))
-    mf::LogDebug("SBNDBNBRetriever")<< "Event Spills : " << spill_count << ", DAQ Spills : " << triggerInfo.number_of_gates_since_previous_event << " \t \t ::: WRONG!"<< std::endl;
-  else
-    mf::LogDebug("SBNDBNBRetriever")<< "Event Spills : " << spill_count << ", DAQ Spills : " << triggerInfo.number_of_gates_since_previous_event << std::endl;
+  auto p =  std::make_unique< std::vector< sbn::BNBSpillInfo > >();
+  std::swap(*p, fOutbeamInfos);
+  e.put(std::move(p));
 }
 
 sbn::SBNDBNBRetriever::PTBInfo_t sbn::SBNDBNBRetriever::extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
@@ -160,7 +161,7 @@ sbn::SBNDBNBRetriever::PTBInfo_t sbn::SBNDBNBRetriever::extractPTBInfo(art::Hand
           uint32_t wt = 0;
           uint32_t word_type = ctb_frag.Word(word_i)->word_type;
           wt = word_type;
-	  if (wt == 2 && ctb_frag.Trigger(word_i)->IsTrigger(2))
+	  if (wt == 2 && ctb_frag.Trigger(word_i)->IsTrigger(1))
 	  {
             PTBInfo.GateCounter = ctb_frag.Trigger(word_i)->gate_counter;
 	    uint64_t RawprevPTBTimeStamp = ctb_frag.PTBWord(word_i)->prevTS * 20; 
@@ -215,6 +216,7 @@ sbn::SBNDBNBRetriever::TriggerInfo_t sbn::SBNDBNBRetriever::extractTriggerInfo(a
 sbn::SBNDBNBRetriever::MWRdata_t sbn::SBNDBNBRetriever::extractSpillTimes(TriggerInfo_t const& triggerInfo) const {
   
   // These lines get everything primed within the IFBeamDB.
+  try{bfp->FillCache((triggerInfo.t_current_event)+fTimePad);} catch (WebAPIException &we) {}; 
   try{bfp->FillCache((triggerInfo.t_current_event)+fTimePad);} catch (WebAPIException &we) {};     
   try{bfp->FillCache((triggerInfo.t_previous_event)-fTimePad);} catch (WebAPIException &we) {};      
   try{bfp_mwr->FillCache((triggerInfo.t_current_event)+fTimePad);} catch (WebAPIException &we) {};
@@ -328,7 +330,7 @@ sbn::SBNDBNBRetriever::MWRdata_t sbn::SBNDBNBRetriever::extractSpillTimes(Trigge
   return { std::move(MWR_times), std::move(unpacked_MWR) };
 }
 
-int sbn::SBNDBNBRetriever::matchMultiWireData(
+void sbn::SBNDBNBRetriever::matchMultiWireData(
   art::EventID const& eventID,
   TriggerInfo_t const& triggerInfo,
   MWRdata_t const& MWRdata, bool isFirstEventInRun,
@@ -346,117 +348,69 @@ int sbn::SBNDBNBRetriever::matchMultiWireData(
 
   // We'll keep track of how many of these spills match to our 
   // DAQ trigger times
-  int spill_count = 0;
   int spills_removed = 0;
   std::vector<int> matched_MWR;
   matched_MWR.resize(3);
-  
-  // NOTE: for now, this is dead code because we don't
-  // do anything for the first event in a run. We may want to revisit 
-  // this later to understand if there is a way we can do the POT
-  // accounting in the first event.
-  //
-  // Need to handle the first event in a run differently
-  if(isFirstEventInRun){
-    //We'll remove the spills after our event
-    int spills_after_our_target = 0;
-    // iterate through all the spills to find the 
-    // spills that are after our triggered event
-    for (size_t i = 0; i < times_temps.size(); i++) {       
-      if(times_temps[i] > (triggerInfo.t_current_event+fTimePad)){
-	spills_after_our_target++;
-      }
-    }//end loop through spill times 	 
-    
-    // Remove the spills after our trigger
-    times_temps.erase(times_temps.end()-spills_after_our_target,times_temps.end());
-    
-    // Remove the spills before the start of our Run
-    times_temps.erase(times_temps.begin(), times_temps.end() - std::min(int(triggerInfo.number_of_gates_since_previous_event), int(times_temps.size())));
-        
-  }//end fix for "first event"
-  
-    ///reject time_stamps which have a trigger_type == 1 from data-base
-    //To-Do 
 
   //  mf::LogDebug("SBNDBNBRetriever") << "Total number of Times we're going to test: " << times_temps.size() <<  std::endl;
   // mf::LogDebug("SBNDBNBRetriever") << std::setprecision(19) << "Upper Limit : " << (triggerInfo.t_current_event)+fTimePad <<  std::endl;
   // mf::LogDebug("SBNDBNBRetriever") << std::setprecision(19) << "Lower Limit : " << (triggerInfo.t_previous_event)+fTimePad <<  std::endl;
   
   // Iterating through each of the beamline times
-  for (size_t i = 0; i < times_temps.size(); i++) {
-    
-    // Only continue if these times are matched to our DAQ time
-    // mf::LogDebug("SBNDBNBRetriever") << std::setprecision(19) << "Time # : " <<  i << std::endl;
+ 
+  double best_diff = 10000000000.0; 
+  double diff; 
+  size_t i = 0;
 
-    if(!isFirstEventInRun){//We already addressed the "first event" above
+  for (size_t k = 0; k < times_temps.size(); k++){
+    diff = times_temps[k] - (triggerInfo.t_current_event + fTimePad);
+    if( diff < 0 and diff < best_diff){
       if(times_temps[i] > (triggerInfo.t_current_event)+fTimePad){
-	//mf::LogDebug("SBNDBNBRetriever") << std::setprecision(19) << "Removed!  : " << times_temps[i] << std::endl;
 	spills_removed++; 
 	continue;} 
       if(times_temps[i] <= (triggerInfo.t_previous_event)+fTimePad){
 	spills_removed++; 
 	//mf::LogDebug("SBNDBNBRetriever") << std::setprecision(19) << "Removed!  : " << times_temps[i] << std::endl;
 	continue;}
+      best_diff = diff; 
+      i = k;
     }
-
-    //check if this spill is is minbias   
-    /*
-      40 ms was selected to be close to but outside the 66 ms 
-      time of the next spill (when the beam is running at 15 Hz) 
-      DocDB 33155 provides documentation of this
-    */
-
-    // mf::LogDebug("SBNDBNBRetriever") << std::setprecision(19) << "matchMultiWireData:: trigger type : " << get_trigger_type_matching_gate(db, callback_trigger_type, run_number, times_temps[i]*1.e9-triggerInfo.WR_to_Spill_conversion+3.6e7, 40.) << " times : spill " << times_temps[i]*1.e9 << " - " << triggerInfo.WR_to_Spill_conversion << " + " << 3.6e7 <<  std::endl;
-    
-    // if(get_trigger_type_matching_gate(db, callback_trigger_type, run_number, times_temps[i]*1.e9-triggerInfo.WR_to_Spill_conversion+3.6e7, 40.) == 1){
-    //      mf::LogDebug("SBNDBNBRetriever") << std::setprecision(19)  << "matchMultiWireData:: Skipped a MinBias gate at : " << times_temps[i]*1000. << std::endl;
-
-    //  continue;
-    //}
+  }
+  for(int dev = 0; dev < int(MWR_times.size()); dev++){
       
-    //Great we found a matched spill! Let's count it
-    spill_count++;
+    //Loop through the multiwire times:
+    double Tdiff = 1000000000.;
+    matched_MWR[dev] = 0;
 
-    //Loop through the multiwire devices:
-    
-    for(int dev = 0; dev < int(MWR_times.size()); dev++){
-      
-      //Loop through the multiwire times:
-      double Tdiff = 1000000000.;
-      matched_MWR[dev] = 0;
+    for(int mwrt = 0;  mwrt < int(MWR_times[dev].size()); mwrt++){
 
-      for(int mwrt = 0;  mwrt < int(MWR_times[dev].size()); mwrt++){
-
-	//found a candidate match! 
-	if(fabs((MWR_times[dev][mwrt] - times_temps[i])) >= Tdiff){continue;}
+      //found a candidate match! 
+      if(fabs((MWR_times[dev][mwrt] - times_temps[i])) >= Tdiff){continue;}
 	
-	bool best_match = true;
+      bool best_match = true;
 	  
-	//Check for a better match...
-	for (size_t j = 0; j < times_temps.size(); j++) {
-	  if( j == i) continue;
-	  if(times_temps[j] > (triggerInfo.t_current_event+fTimePad)){continue;}
-	  if(times_temps[j] <= (triggerInfo.t_previous_event+fTimePad)){continue;}
+      //Check for a better match...
+      for (size_t j = 0; j < times_temps.size(); j++) {
+        if( j == i) continue;
+        if(times_temps[j] > (triggerInfo.t_current_event+fTimePad)){continue;}
+	if(times_temps[j] <= (triggerInfo.t_previous_event+fTimePad)){continue;}
 	  
-	  //is there a better match later in the spill sequence
-	  if(fabs((MWR_times[dev][mwrt] - times_temps[j])) < 
-	     fabs((MWR_times[dev][mwrt] - times_temps[i]))){
-	    //we can have patience...
-	    best_match = false;
-	    break;
-	  }	     
-	}//end better match check
+	//is there a better match later in the spill sequence
+	if(fabs((MWR_times[dev][mwrt] - times_temps[j])) < 
+	  fabs((MWR_times[dev][mwrt] - times_temps[i]))){
+	  //we can have patience...
+	  best_match = false;
+	  break;
+	}	     
+      }//end better match check
 	
-	//Verified best match!
-	if(best_match == true){
-	  matched_MWR[dev] = mwrt;
-	  Tdiff = fabs((MWR_times[dev][mwrt] - times_temps[i]));
-	}
-	
-      }//end loop over MWR times 
-      
-    }//end loop over MWR devices
+      //Verified best match! 
+      if(best_match == true){
+        matched_MWR[dev] = mwrt;
+	Tdiff = fabs((MWR_times[dev][mwrt] - times_temps[i]));
+      }	
+    }//end loop over MWR times 
+  }//end loop over MWR devices
     
     sbn::BNBSpillInfo spillInfo = makeBNBSpillInfo(eventID, times_temps[i], MWRdata, matched_MWR);
 
@@ -466,11 +420,10 @@ int sbn::SBNDBNBRetriever::matchMultiWireData(
     // we can filter events but want to keep all the POT 
     // information, so we'll write it to the SubRun
     
-  }//end iteration over beam device times
+  //}//end iteration over beam device times
   
   //  mf::LogDebug("SBNDBNBRetriever") << "matchMultiWireData:: Total spills counted:  " << spill_count << "   Total spills removed : " << spills_removed <<  std::endl;
 
-  return spill_count;
 }
 
 sbn::BNBSpillInfo sbn::SBNDBNBRetriever::makeBNBSpillInfo
@@ -586,14 +539,6 @@ void sbn::SBNDBNBRetriever::beginSubRun(art::SubRun& sr)
 
 void sbn::SBNDBNBRetriever::endSubRun(art::SubRun& sr)
 {
-  mf::LogDebug("SBNDBNBRetriever")<< "Total number of DAQ Spills : " << TotalBeamSpills << std::endl;
-  mf::LogDebug("SBNDBNBRetriever")<< "Total number of Selected Spills : " << fOutbeamInfos.size() << std::endl;
-  
-  auto p =  std::make_unique< std::vector< sbn::BNBSpillInfo > >();
-  std::swap(*p, fOutbeamInfos);
-  
-  sr.put(std::move(p), art::subRunFragment());
-  
   return;
 }
 
