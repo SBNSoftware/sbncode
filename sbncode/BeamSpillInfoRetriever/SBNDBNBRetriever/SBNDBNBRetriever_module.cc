@@ -12,9 +12,11 @@
 #include "art/Framework/Principal/Run.h"
 #include "art/Framework/Principal/SubRun.h"
 #include "canvas/Utilities/InputTag.h"
+#include "canvas/Utilities/Exception.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
+#include <cxxabi.h>
 #include <memory>
 #include <bitset>
 #include <tuple>
@@ -67,6 +69,7 @@ private:
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp_mwr;
 
   struct PTBInfo_t {
+    double currPTBTimeStamp  = 0;
     double prevPTBTimeStamp  = 0;
     unsigned int GateCounter = 0; // FIXME needs to be integral type
   };
@@ -101,6 +104,7 @@ private:
 
 sbn::SBNDBNBRetriever::SBNDBNBRetriever(fhicl::ParameterSet const & params)
   : EDProducer{params} {
+  produces< std::vector< sbn::BNBSpillInfo >, art::InSubRun >();
   raw_data_label = params.get<std::string>("raw_data_label", "daq");
   fInputLabel = params.get<std::string>("InputLabel");
   fDeviceUsedForTiming = params.get<std::string>("DeviceUsedForTiming");
@@ -162,9 +166,11 @@ sbn::SBNDBNBRetriever::PTBInfo_t sbn::SBNDBNBRetriever::extractPTBInfo(art::Hand
           wt = word_type;
 	  if (wt == 2 && ctb_frag.Trigger(word_i)->IsTrigger(2))
 	  {
-            PTBInfo.GateCounter = ctb_frag.Trigger(word_i)->gate_counter;
 	    uint64_t RawprevPTBTimeStamp = ctb_frag.PTBWord(word_i)->prevTS * 20; 
+            uint64_t RawcurrPTBTimeStamp = ctb_frag.Trigger(word_i)->timestamp * 20; 
+            PTBInfo.currPTBTimeStamp = std::bitset<64>(RawcurrPTBTimeStamp/20).to_ullong()/50e6; 
             PTBInfo.prevPTBTimeStamp = std::bitset<64>(RawprevPTBTimeStamp / 20).to_ullong()/50e6; 
+            PTBInfo.GateCounter = ctb_frag.Trigger(word_i)->gate_counter;
 	  }
         }
       } //End of loop over the number of trigger words
@@ -175,6 +181,7 @@ sbn::SBNDBNBRetriever::PTBInfo_t sbn::SBNDBNBRetriever::extractPTBInfo(art::Hand
 
 double sbn::SBNDBNBRetriever::extractTDCTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
   int numcont = 0;
+
   uint64_t TDCTimeStamp = 0;
   for (auto const& cont : *cont_frags)
   { 
@@ -193,7 +200,7 @@ double sbn::SBNDBNBRetriever::extractTDCTimeStamp(art::Handle<std::vector<artdaq
 }
 
 sbn::SBNDBNBRetriever::TriggerInfo_t sbn::SBNDBNBRetriever::extractTriggerInfo(art::Event const& e) const {
-  // Using TDC for current event, but PTB for previous event
+  // Using TDC for current event, but PTB for previous event. Exception for case where no TDC.
   art::InputTag PTB_itag("daq", "ContainerPTB");
   auto PTB_cont_frags = e.getHandle<artdaq::Fragments>(PTB_itag);
 
@@ -203,9 +210,16 @@ sbn::SBNDBNBRetriever::TriggerInfo_t sbn::SBNDBNBRetriever::extractTriggerInfo(a
   PTBInfo_t PTBInfo;
   TriggerInfo_t triggerInfo;
   PTBInfo = extractPTBInfo(PTB_cont_frags);
-  double TDCTimeStamp = extractTDCTimeStamp(TDC_cont_frags);
 
-  triggerInfo.t_current_event = TDCTimeStamp;
+  if (TDC_cont_frags) {
+    double TDCTimeStamp = extractTDCTimeStamp(TDC_cont_frags);
+    triggerInfo.t_current_event = TDCTimeStamp;
+  }
+  else{
+    mf::LogDebug("SBNDBNBRetriever") << " Missing TDC Container Fragments!!! " << std::endl;
+    triggerInfo.t_current_event = PTBInfo.currPTBTimeStamp;
+  }
+
   triggerInfo.t_previous_event = PTBInfo.prevPTBTimeStamp;
   triggerInfo.number_of_gates_since_previous_event = PTBInfo.GateCounter;
 
@@ -588,7 +602,7 @@ void sbn::SBNDBNBRetriever::endSubRun(art::SubRun& sr)
 {
   mf::LogDebug("SBNDBNBRetriever")<< "Total number of DAQ Spills : " << TotalBeamSpills << std::endl;
   mf::LogDebug("SBNDBNBRetriever")<< "Total number of Selected Spills : " << fOutbeamInfos.size() << std::endl;
-  
+
   auto p =  std::make_unique< std::vector< sbn::BNBSpillInfo > >();
   std::swap(*p, fOutbeamInfos);
   

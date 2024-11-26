@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////
-// Class:       SBNDBNBRetriever
+// Class:       SBNDBNBEXTRetriever
 // Plugin Type: producer 
-// File:        SBNDBNBRetriever_module.cc
+// File:        SBNDBNBEXTRetriever_module.cc
 //
 ////////////////////////////////////////////////////////////////////////
 
@@ -32,22 +32,22 @@
 #include "larcorealg/CoreUtils/counter.h"
 
 namespace sbn {
-  class SBNDBNBRetriever;
+  class SBNDBNBEXTRetriever;
 }
 
-class sbn::SBNDBNBRetriever : public art::EDProducer {
+class sbn::SBNDBNBEXTRetriever : public art::EDProducer {
 public:
-  explicit SBNDBNBRetriever(fhicl::ParameterSet const & params);
+  explicit SBNDBNBEXTRetriever(fhicl::ParameterSet const & params);
   // Required functions.
   void produce(art::Event & e) override;
   void beginSubRun(art::SubRun& sr) override;
   void endSubRun(art::SubRun& sr) override;
 
   // Plugins should not be copied or assigned.
-  SBNDBNBRetriever(SBNDBNBRetriever const &) = delete;
-  SBNDBNBRetriever(SBNDBNBRetriever &&) = delete;
-  SBNDBNBRetriever & operator = (SBNDBNBRetriever const &) = delete;
-  SBNDBNBRetriever & operator = (SBNDBNBRetriever &&) = delete;
+  SBNDBNBEXTRetriever(SBNDBNBEXTRetriever const &) = delete;
+  SBNDBNBEXTRetriever(SBNDBNBEXTRetriever &&) = delete;
+  SBNDBNBEXTRetriever & operator = (SBNDBNBEXTRetriever const &) = delete;
+  SBNDBNBEXTRetriever & operator = (SBNDBNBEXTRetriever &&) = delete;
 
 
 private:
@@ -76,7 +76,7 @@ private:
   float scale_factor;
 };
 
-sbn::SBNDBNBRetriever::SBNDBNBRetriever(fhicl::ParameterSet const & params)
+sbn::SBNDBNBEXTRetriever::SBNDBNBEXTRetriever(fhicl::ParameterSet const & params)
   : EDProducer{params} {
   produces< std::vector< sbn::EXTCountInfo >, art::InSubRun >();
   TotalEXTCounts = 0;
@@ -90,7 +90,7 @@ int _run;
 int _subrun;
 int _event;
 
-void sbn::SBNDBNBRetriever::produce(art::Event & e)
+void sbn::SBNDBNBEXTRetriever::produce(art::Event & e)
 {
   TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
   TotalEXTCounts += triggerInfo.number_of_gates_since_previous_event;
@@ -107,7 +107,7 @@ void sbn::SBNDBNBRetriever::produce(art::Event & e)
   fOutExtInfos.push_back(extInfo);
 }
 
-sbn::SBNDBNBRetriever::PTBInfo_t sbn::SBNDBNBRetriever::extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
+sbn::SBNDBNBEXTRetriever::PTBInfo_t sbn::SBNDBNBEXTRetriever::extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
   int numcont = 0;
   PTBInfo_t PTBInfo;
   for (auto const& cont : *cont_frags)
@@ -139,7 +139,7 @@ sbn::SBNDBNBRetriever::PTBInfo_t sbn::SBNDBNBRetriever::extractPTBInfo(art::Hand
   return PTBInfo; 
 }
 
-double sbn::SBNDBNBRetriever::extractTDCTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
+double sbn::SBNDBNBEXTRetriever::extractTDCTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
   int numcont = 0;
   uint64_t TDCTimeStamp = 0;
   for (auto const& cont : *cont_frags)
@@ -158,7 +158,7 @@ double sbn::SBNDBNBRetriever::extractTDCTimeStamp(art::Handle<std::vector<artdaq
   return TDCTimeStamp;
 }
 
-sbn::SBNDBNBRetriever::TriggerInfo_t sbn::SBNDBNBRetriever::extractTriggerInfo(art::Event const& e) const {
+sbn::SBNDBNBEXTRetriever::TriggerInfo_t sbn::SBNDBNBEXTRetriever::extractTriggerInfo(art::Event const& e) const {
   // Using TDC for current event, but PTB for previous event
   art::InputTag PTB_itag("daq", "ContainerPTB");
   auto PTB_cont_frags = e.getHandle<artdaq::Fragments>(PTB_itag);
@@ -178,7 +178,7 @@ sbn::SBNDBNBRetriever::TriggerInfo_t sbn::SBNDBNBRetriever::extractTriggerInfo(a
   return triggerInfo;
 }
 
-void sbn::SBNDBNBRetriever::beginSubRun(art::SubRun& sr)
+void sbn::SBNDBNBEXTRetriever::beginSubRun(art::SubRun& sr)
 {
   TotalEXTCounts = 0;
   totalMinBias = 0;
@@ -187,7 +187,7 @@ void sbn::SBNDBNBRetriever::beginSubRun(art::SubRun& sr)
   return;
 }
 
-void sbn::SBNDBNBRetriever::endSubRun(art::SubRun& sr)
+void sbn::SBNDBNBEXTRetriever::endSubRun(art::SubRun& sr)
 {
    // We will add all of the EXTCountInfo data-products to the 
   // art::SubRun so it persists 
@@ -211,4 +211,4 @@ void sbn::SBNDBNBRetriever::endSubRun(art::SubRun& sr)
   return; 
 }
 
-DEFINE_ART_MODULE(sbn::SBNDBNBRetriever)
+DEFINE_ART_MODULE(sbn::SBNDBNBEXTRetriever)
