@@ -67,6 +67,7 @@ private:
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp_mwr;
 
   struct PTBInfo_t {
+    double currPTBTimeStamp  = 0;
     double prevPTBTimeStamp  = 0;
     unsigned int GateCounter = 0; // FIXME needs to be integral type
   };
@@ -131,7 +132,14 @@ void sbn::SBNDBNBRetriever::produce(art::Event & e)
   // spill that the DAQ was sensitive to, so don't try to save any
   // spill information
 
+  std::cout << "new_event: " << e.event() << std::endl;
+
   TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
+
+  std::cout << "triggerInfo.t_current_event: " << std::setprecision(19) << triggerInfo.t_current_event << std::endl;
+  std::cout << "triggerInfo.t_previous_event: " <<  std::setprecision(19) << triggerInfo.t_previous_event << std::endl;
+  std::cout << "triggerInfo.number_of_gates_since_previous_event: " << triggerInfo.number_of_gates_since_previous_event << std::endl;
+
   TotalBeamSpills += triggerInfo.number_of_gates_since_previous_event;
   MWRdata_t const MWRdata = extractSpillTimes(triggerInfo);
 
@@ -143,6 +151,8 @@ void sbn::SBNDBNBRetriever::produce(art::Event & e)
 }
 
 sbn::SBNDBNBRetriever::PTBInfo_t sbn::SBNDBNBRetriever::extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
+  int HLT_count = 0;
+
   int numcont = 0;
   PTBInfo_t PTBInfo;
   for (auto const& cont : *cont_frags)
@@ -163,20 +173,27 @@ sbn::SBNDBNBRetriever::PTBInfo_t sbn::SBNDBNBRetriever::extractPTBInfo(art::Hand
           wt = word_type;
 	  if (wt == 2 && ctb_frag.Trigger(word_i)->IsTrigger(1))
 	  {
-            PTBInfo.GateCounter = ctb_frag.Trigger(word_i)->gate_counter;
+            HLT_count++;
+
 	    uint64_t RawprevPTBTimeStamp = ctb_frag.PTBWord(word_i)->prevTS * 20; 
+	    // uint64_t RawcurrPTBTimeStamp = ctb_frag.Trigger(word_i)->timestamp * 20;
+	    uint64_t RawcurrPTBTimeStamp = ctb_frag.TimeStamp(word_i) * 20;
             PTBInfo.prevPTBTimeStamp = std::bitset<64>(RawprevPTBTimeStamp / 20).to_ullong()/50e6; 
+            PTBInfo.currPTBTimeStamp = std::bitset<64>(RawcurrPTBTimeStamp / 20).to_ullong()/50e6; 
+            PTBInfo.GateCounter = ctb_frag.Trigger(word_i)->gate_counter;
 	  }
         }
       } //End of loop over the number of trigger words
     } //End of loop over the number of fragments per container
   } //End of loop over the number of containers
+
+  std::cout << "HLT_count: " << HLT_count << std::endl;
   return PTBInfo; 
 }
 
 double sbn::SBNDBNBRetriever::extractTDCTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
   int numcont = 0;
-  uint64_t TDCTimeStamp = 0;
+  double TDCTimeStamp = 0;
   for (auto const& cont : *cont_frags)
   { 
     artdaq::ContainerFragment cont_frag(cont);
@@ -186,8 +203,8 @@ double sbn::SBNDBNBRetriever::extractTDCTimeStamp(art::Handle<std::vector<artdaq
     {
       numfrag++;
       artdaq::Fragment frag = *cont_frag[fragi];
-      sbndaq::TDCTimestampFragment tdc_frag(frag); 
-      TDCTimeStamp = tdc_frag.getTDCTimestamp()->timestamp_ns()/1e9;
+      sbndaq::TDCTimestampFragment tdc_frag(frag);
+      TDCTimeStamp = static_cast<double>(tdc_frag.getTDCTimestamp()->timestamp_ns()) / 1e9;
     } //End of loop over the number of fragments per container
   } //End of loop over the number of containers
   return TDCTimeStamp;
@@ -204,11 +221,34 @@ sbn::SBNDBNBRetriever::TriggerInfo_t sbn::SBNDBNBRetriever::extractTriggerInfo(a
   PTBInfo_t PTBInfo;
   TriggerInfo_t triggerInfo;
   PTBInfo = extractPTBInfo(PTB_cont_frags);
-  double TDCTimeStamp = extractTDCTimeStamp(TDC_cont_frags);
 
-  triggerInfo.t_current_event = TDCTimeStamp;
+  if (TDC_cont_frags) {
+    double TDCTimeStamp = extractTDCTimeStamp(TDC_cont_frags);
+    triggerInfo.t_current_event = TDCTimeStamp;
+  }
+  else{
+    mf::LogDebug("SBNDBNBZEROBIASRetriever") << " Missing TDC Container Fragments!!!" << std::endl;
+    std::cout << " Missing TDC Container Fragments!!!" << std::endl;
+    triggerInfo.t_current_event = PTBInfo.currPTBTimeStamp;
+  }
+
   triggerInfo.t_previous_event = PTBInfo.prevPTBTimeStamp;
   triggerInfo.number_of_gates_since_previous_event = PTBInfo.GateCounter;
+
+  std::cout << "PTBdiff: " << PTBInfo.currPTBTimeStamp-PTBInfo.prevPTBTimeStamp << std::endl;
+
+  if(triggerInfo.t_current_event - PTBInfo.currPTBTimeStamp >= 1){
+    std::cout << "Caught PTB bug, PTB late" << std::endl;
+    std::cout << "Before: " << triggerInfo.t_previous_event << std::endl;
+    triggerInfo.t_previous_event+=1;
+    std::cout << "After: " << triggerInfo.t_previous_event << std::endl;
+  }
+  else if(triggerInfo.t_current_event - PTBInfo.currPTBTimeStamp <= -1){
+    std::cout << "Caught PTB bug, PTB early" << std::endl;
+    std::cout << "Before: " << triggerInfo.t_previous_event << std::endl;
+    triggerInfo.t_previous_event-=1;
+    std::cout << "After: " << triggerInfo.t_previous_event << std::endl;
+  }
 
   return triggerInfo;
 }
@@ -364,13 +404,13 @@ void sbn::SBNDBNBRetriever::matchMultiWireData(
 
   for (size_t k = 0; k < times_temps.size(); k++){
     diff = times_temps[k] - (triggerInfo.t_current_event + fTimePad);
+
     if( diff < 0 and diff < best_diff){
-      if(times_temps[i] > (triggerInfo.t_current_event)+fTimePad){
+      if(times_temps[k] > (triggerInfo.t_current_event)+fTimePad){
 	spills_removed++; 
 	continue;} 
-      if(times_temps[i] <= (triggerInfo.t_previous_event)+fTimePad){
+      if(times_temps[k] <= (triggerInfo.t_previous_event)+fTimePad){
 	spills_removed++; 
-	//mf::LogDebug("SBNDBNBRetriever") << std::setprecision(19) << "Removed!  : " << times_temps[i] << std::endl;
 	continue;}
       best_diff = diff; 
       i = k;
@@ -455,8 +495,8 @@ sbn::BNBSpillInfo sbn::SBNDBNBRetriever::makeBNBSpillInfo
   // since sometimes devices fail to report we'll
   // allow each to throw an exception but still move forward
   // interpreting these failures will be part of the beam quality analyses 
-
-  try{bfp->GetNamedData(time, "E:TOR860@",&TOR860,&TOR860_time);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+ 
+  try{bfp->GetNamedData(time, "E:TOR860@",&TOR860,&TOR860_time);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; std::cout << "ifbeam_failed" << std::endl;}
   try{bfp->GetNamedData(time, "E:TOR875",&TOR875);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
   try{bfp->GetNamedData(time, "E:LM875A",&LM875A);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
   try{bfp->GetNamedData(time, "E:LM875B",&LM875B);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
@@ -473,7 +513,10 @@ sbn::BNBSpillInfo sbn::SBNDBNBRetriever::makeBNBSpillInfo
   //crunch the times 
   unsigned long int time_closest_int = (int) TOR860_time;
   double time_closest_ns = (TOR860_time - time_closest_int)*1e9;
-  
+ 
+  std::cout << "TOR860_time: " << std::setprecision(19) << TOR860_time << std::endl;
+  std::cout << "TOR860: " << TOR860 << std::endl; 
+
   //Store everything in our data-product
   sbn::BNBSpillInfo beamInfo;
   beamInfo.TOR860 = TOR860*1e12; //add in factor of 1e12 protons to get correct POT units

@@ -54,6 +54,7 @@ private:
   // Declare member data here.
   std::vector< sbn::EXTCountInfo > fOutExtInfos;
   struct PTBInfo_t {
+    double currPTBTimeStamp  = 0;
     double prevPTBTimeStamp  = 0;
     unsigned int GateCounter = 0; // FIXME needs to be integral type
   };
@@ -92,7 +93,16 @@ int _event;
 
 void sbn::SBNDBNBEXTRetriever::produce(art::Event & e)
 {
+
+  std::cout << "new_event: " << e.event() << std::endl;
+
   TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
+
+  std::cout << "triggerInfo.t_current_event: " << std::setprecision(19) << triggerInfo.t_current_event << std::endl;
+  std::cout << "triggerInfo.t_previous_event: " <<  std::setprecision(19) << triggerInfo.t_previous_event << std::endl;
+  std::cout << "triggerInfo.number_of_gates_since_previous_event: " << triggerInfo.number_of_gates_since_previous_event << std::endl;
+
+
   TotalEXTCounts += triggerInfo.number_of_gates_since_previous_event;
 
   if(triggerInfo.number_of_gates_since_previous_event > 0){
@@ -108,6 +118,8 @@ void sbn::SBNDBNBEXTRetriever::produce(art::Event & e)
 }
 
 sbn::SBNDBNBEXTRetriever::PTBInfo_t sbn::SBNDBNBEXTRetriever::extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
+  int HLT_count = 0;
+
   int numcont = 0;
   PTBInfo_t PTBInfo;
   for (auto const& cont : *cont_frags)
@@ -128,20 +140,26 @@ sbn::SBNDBNBEXTRetriever::PTBInfo_t sbn::SBNDBNBEXTRetriever::extractPTBInfo(art
           wt = word_type;
 	  if (wt == 2 && ctb_frag.Trigger(word_i)->IsTrigger(4))
 	  {
-            PTBInfo.GateCounter = ctb_frag.Trigger(word_i)->gate_counter;
+            HLT_count++;
+
 	    uint64_t RawprevPTBTimeStamp = ctb_frag.PTBWord(word_i)->prevTS * 20; 
+	    uint64_t RawcurrPTBTimeStamp = ctb_frag.Trigger(word_i)->timestamp * 20;
             PTBInfo.prevPTBTimeStamp = std::bitset<64>(RawprevPTBTimeStamp / 20).to_ullong()/50e6; 
+            PTBInfo.currPTBTimeStamp = std::bitset<64>(RawcurrPTBTimeStamp / 20).to_ullong()/50e6; 
+            PTBInfo.GateCounter = ctb_frag.Trigger(word_i)->gate_counter;
 	  }
         }
       } //End of loop over the number of trigger words
     } //End of loop over the number of fragments per container
   } //End of loop over the number of containers
+
+  std::cout << "HLT_count: " << HLT_count << std::endl;
   return PTBInfo; 
 }
 
 double sbn::SBNDBNBEXTRetriever::extractTDCTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
   int numcont = 0;
-  uint64_t TDCTimeStamp = 0;
+  double TDCTimeStamp = 0;
   for (auto const& cont : *cont_frags)
   { 
     artdaq::ContainerFragment cont_frag(cont);
@@ -152,7 +170,7 @@ double sbn::SBNDBNBEXTRetriever::extractTDCTimeStamp(art::Handle<std::vector<art
       numfrag++;
       artdaq::Fragment frag = *cont_frag[fragi];
       sbndaq::TDCTimestampFragment tdc_frag(frag); 
-      TDCTimeStamp = tdc_frag.getTDCTimestamp()->timestamp_ns()/1e9;
+      TDCTimeStamp = static_cast<double>(tdc_frag.getTDCTimestamp()->timestamp_ns())/1e9;
     } //End of loop over the number of fragments per container
   } //End of loop over the number of containers
   return TDCTimeStamp;
@@ -169,9 +187,16 @@ sbn::SBNDBNBEXTRetriever::TriggerInfo_t sbn::SBNDBNBEXTRetriever::extractTrigger
   PTBInfo_t PTBInfo;
   TriggerInfo_t triggerInfo;
   PTBInfo = extractPTBInfo(PTB_cont_frags);
-  double TDCTimeStamp = extractTDCTimeStamp(TDC_cont_frags);
 
-  triggerInfo.t_current_event = TDCTimeStamp;
+  if (TDC_cont_frags) {
+    double TDCTimeStamp = extractTDCTimeStamp(TDC_cont_frags);
+    triggerInfo.t_current_event = TDCTimeStamp;
+  }
+  else{
+    mf::LogDebug("SBNDBNBEXTRetriever") << " Missing TDC Contaienr Fragments!!! " << std::endl;
+    triggerInfo.t_current_event = PTBInfo.currPTBTimeStamp;
+  }
+
   triggerInfo.t_previous_event = PTBInfo.prevPTBTimeStamp;
   triggerInfo.number_of_gates_since_previous_event = PTBInfo.GateCounter;
 
