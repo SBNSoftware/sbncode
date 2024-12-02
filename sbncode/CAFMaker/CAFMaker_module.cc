@@ -87,6 +87,8 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 // LArSoft includes
+#include "larcore/Geometry/WireReadout.h"
+#include "larcore/Geometry/Geometry.h"
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Slice.h"
 #include "lardataobj/RecoBase/Track.h"
@@ -98,8 +100,6 @@
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCNeutrino.h"
 #include "nusimdata/SimulationBase/GTruth.h"
-
-#include "fhiclcpp/ParameterSetRegistry.h"
 
 #include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlTruth.h"
 #include "sbnobj/Common/Reco/RangeP.h"
@@ -115,6 +115,11 @@
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
 #include "sbnobj/Common/Reco/OpT0FinderResult.h"
+
+// GENIE
+#include "Framework/EventGen/EventRecord.h"
+#include "Framework/Ntuple/NtpMCEventRecord.h"
+#include "nugen/EventGeneratorBase/GENIE/GENIE2ART.h"
 
 #include "canvas/Persistency/Provenance/ProcessConfiguration.h"
 #include "larcoreobj/SummaryData/POTSummary.h"
@@ -190,6 +195,7 @@ class CAFMaker : public art::EDProducer {
   std::string fFlatCafPrescaleFilename;
 
   std::string fSourceFile;
+  std::uint32_t fSourceFileHash;
 
   bool fFirstInSubRun;
   unsigned int fIndexInFile = SRHeader::NoSourceIndex;
@@ -231,6 +237,14 @@ class CAFMaker : public art::EDProducer {
   TTree* fFlatTree = 0;
   TTree* fFlatTreeb = 0;
   TTree* fFlatTreep = 0;
+
+  // GENIE EventRecord
+  genie::NtpMCEventRecord * fGenieEvtRec = 0;
+  TTree                   * fGenieTree = 0;
+  genie::NtpMCEventRecord * fFlatGenieEvtRec = 0;
+  TTree                   * fFlatGenieTree = 0;
+  bool fSaveGENIEEventRecord;
+  unsigned int fGenieEventCounter;
 
   flat::Flat<caf::StandardRecord>* fFlatRecord = 0;
   flat::Flat<caf::StandardRecord>* fFlatRecordb = 0;
@@ -373,6 +387,8 @@ class CAFMaker : public art::EDProducer {
 
   // setup volume definitions
   InitVolumes();
+
+  fSaveGENIEEventRecord = fParams.SaveGENIEEventRecord();
 
 }
 
@@ -536,9 +552,14 @@ void CAFMaker::InitVolumes() {
 //......................................................................
 CAFMaker::~CAFMaker()
 {
+
+  delete fGenieEvtRec;
+  delete fGenieTree;
   delete fRecTree;
   delete fFile;
 
+  delete fFlatGenieEvtRec;
+  delete fFlatGenieTree;
   delete fFlatRecord;
   delete fFlatTree;
   delete fFlatFile;
@@ -640,6 +661,13 @@ void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
   fFirstBlindInFile = true;
   fFirstPrescaleInFile = true;
   fSourceFile = inputBasename;
+  // Getting full hash
+  size_t fSourceFileHashFull = std::hash<std::string>{}(fSourceFile);
+  // truncate the full hash into a 32-bit integer
+  // This is required to be used as one of the ingredient of TTree::BuildIndex();
+  // it shifts the "major" value by 32-bit (https://root.cern/doc/master/classTTreeIndex.html#a08aac749ab22fd5c8ab792a0061a4b0f),
+  // so should be less than or equal to 32-bit
+  fSourceFileHash = static_cast<std::uint32_t>(fSourceFileHashFull);
 
 }
 
@@ -948,6 +976,7 @@ void CAFMaker::AddMetadataToFile(TFile* outfile, const std::map<std::string, std
 //......................................................................
 void CAFMaker::InitializeOutfiles()
 {
+
   if(fParams.CreateCAF()){
 
     mf::LogInfo("CAFMaker") << "Output filename is " << fCafFilename;
@@ -976,7 +1005,15 @@ void CAFMaker::InitializeOutfiles()
       AddEnvToFile(fFilep);
     }
 
-  }
+    if (fSaveGENIEEventRecord) {
+      fGenieTree = new TTree( "GenieEvtRecTree", "GenieEvtRecTree" );
+      fGenieTree->Branch("GenieEvtRec", &fGenieEvtRec);
+      fGenieTree->Branch("GENIEEntry", &fGenieEventCounter, "GENIEEntry/i");
+      fGenieTree->Branch("SourceFileHash", &fSourceFileHash, "SourceFileHash/i");
+    }
+
+  }     
+
 
   if(fParams.CreateFlatCAF()){
     mf::LogInfo("CAFMaker") << "Output flat filename is " << fFlatCafFilename;
@@ -1011,7 +1048,16 @@ void CAFMaker::InitializeOutfiles()
       AddEnvToFile(fFlatFilep);
     }
 
+    if (fSaveGENIEEventRecord){
+      fFlatGenieTree = new TTree( "GenieEvtRecTree", "GenieEvtRecTree" );
+      fFlatGenieTree->Branch("GenieEvtRec", &fFlatGenieEvtRec);
+      fFlatGenieTree->Branch("GENIEEntry", &fGenieEventCounter, "GENIE/i");
+      fFlatGenieTree->Branch("SourceFileHash", &fSourceFileHash, "SourceFileHash/i");
+    }
+
   }
+
+  fGenieEventCounter = 0;
 
   fFileNumber = -1;
   fTotalPOT = 0;
@@ -1256,7 +1302,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
   auto const dprop =
     art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clock_data);
-  const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
+  const geo::GeometryCore* geom = lar::providerFrom<geo::Geometry>();
+  const geo::WireReadoutGeom &wireReadout =
+    art::ServiceHandle<geo::WireReadout>()->Get();
 
   auto const *sce = lar::providerFrom<spacecharge::SpaceChargeService>();
 
@@ -1284,7 +1332,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   if ( !isRealData ) {
     art::ServiceHandle<cheat::BackTrackerService> bt_serv;
 
-    id_to_ide_map = PrepSimChannels(simchannels, *geometry);
+    id_to_ide_map = PrepSimChannels(simchannels, wireReadout);
     id_to_truehit_map = PrepTrueHits(hits, clock_data, *bt_serv);
     id_to_hit_energy_map = SetupIDHitEnergyMap(hits, clock_data, *bt_serv);
   }
@@ -1329,10 +1377,33 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       std::cout << "Failed to get GTruth object!" << std::endl;
     }
 
+    //GENIE EventRecord
+
     srtruthbranch.nu.push_back(SRTrueInteraction());
     srtruthbranch.nnu ++;
 
-    if ( !isRealData ) FillTrueNeutrino(mctruth, mcflux, gtruth, true_particles, id_to_truehit_map, srtruthbranch.nu.back(), i, fActiveVolumes);
+    if ( !isRealData ){
+
+      FillTrueNeutrino(mctruth, mcflux, gtruth, true_particles, id_to_truehit_map, srtruthbranch.nu.back(), i, fActiveVolumes);
+
+      srtruthbranch.nu.back().genie_evtrec_idx = fGenieEventCounter;
+
+      // GENIE event record
+      if(fSaveGENIEEventRecord){
+        genie::EventRecord* genie_rec = evgb::RetrieveGHEP(*mctruth, gtruth);
+        if(fGenieTree){
+          fGenieEvtRec->Fill(fGenieEventCounter, genie_rec);
+          fGenieTree->Fill();
+        }
+        if(fFlatGenieTree){
+          fFlatGenieEvtRec->Fill(fGenieEventCounter, genie_rec);
+          fFlatGenieTree->Fill();
+        }
+      }
+
+      fGenieEventCounter++;
+
+    }
 
     // Don't check for syst weight assocations until we have something (MCTruth
     // corresponding to a neutrino) that could plausibly be reweighted. This
@@ -1392,9 +1463,19 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   art::Handle<std::vector<raw::Trigger>> trig_handle;
   GetByLabelStrict(evt, fParams.TriggerLabel().encode(), trig_handle);
 
+  art::Handle<std::vector<raw::Trigger>> unshifted_trig_handle;
+  if (!isRealData)
+    GetByLabelStrict(evt, fParams.UnshiftedTriggerLabel().encode(), unshifted_trig_handle);
+
+  const bool isValidTrigger = extratrig_handle.isValid() && trig_handle.isValid() && trig_handle->size() == 1;
+  const bool isValidUnshiftedTrigger = unshifted_trig_handle.isValid() && unshifted_trig_handle->size() == 1;
+
+  const double triggerShift = (isValidUnshiftedTrigger && isValidTrigger)?
+    unshifted_trig_handle->at(0).TriggerTime() - trig_handle->at(0).TriggerTime() : 0.;
+
   caf::SRTrigger srtrigger;
-  if (extratrig_handle.isValid() && trig_handle.isValid() && trig_handle->size() == 1) {
-    FillTrigger(*extratrig_handle, trig_handle->at(0), srtrigger);
+  if (isValidTrigger) {
+      FillTrigger(*extratrig_handle, trig_handle->at(0), srtrigger, triggerShift);
   }
   // If not real data, fill in enough of the SRTrigger to make (e.g.) the CRT
   // time referencing work. TODO: add more stuff to a "MC"-Trigger?
@@ -1933,7 +2014,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         const sbn::PFPCNNScore *cnnScores = fmCNNScores.at(iPart).at(0).get();
         FillCNNScores(thisParticle, cnnScores, pfp);
       }
-    
+
       if (!thisTrack.empty())  { // it has a track!
         assert(thisTrack.size() == 1);
 
@@ -1969,7 +2050,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         FillTrackRangeP(*thisTrack[0], rangePs, trk);
 
         if (fmChi2PID.isValid()) {
-           FillTrackChi2PID(fmChi2PID.at(iPart), lar::providerFrom<geo::Geometry>(), trk);
+           FillTrackChi2PID(fmChi2PID.at(iPart), trk);
         }
         if (fmScatterClosestApproach.isValid() && fmScatterClosestApproach.at(iPart).size()==1) {
            FillTrackScatterClosestApproach(fmScatterClosestApproach.at(iPart).front(), trk);
@@ -1984,7 +2065,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           FillTrackCalo(fmCalo.at(iPart), fmTrackHit.at(iPart),
               (fParams.FillHitsNeutrinoSlices() && NeutrinoSlice) || fParams.FillHitsAllSlices(),
               fParams.TrackHitFillRRStartCut(), fParams.TrackHitFillRREndCut(),
-              lar::providerFrom<geo::Geometry>(), dprop, trk);
+              dprop, trk);
         }
         if (fmCRTHitMatch.isValid() && fDet == kICARUS) {
           art::FindManyP<sbn::crt::CRTHit> CRTT02Hit = FindManyPStrict<sbn::crt::CRTHit>
@@ -2022,7 +2103,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
             FillTrackTruth(fmTrackHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, trk);
             // Hit truth information corresponding to Calo-Points
             // Assumes truth matching and calo-points are filled
-            if (mc_particles.isValid() && fParams.FillTrackCaloTruth()) FillTrackCaloTruth(id_to_ide_map, *mc_particles, geometry, clock_data, sce, trk);
+            if (mc_particles.isValid() && fParams.FillTrackCaloTruth()) FillTrackCaloTruth(id_to_ide_map, *mc_particles, *geom, wireReadout, clock_data, sce, trk);
           }
         }
       } // thisTrack exists
@@ -2031,7 +2112,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         assert(thisShower.size() == 1);
 
         SRShower& shw = pfp.shw;
-        FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, shw);
+        FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), wireReadout, producer, shw);
 
         // We may have many residuals per shower depending on how many showers ar in the slice
         if (fmShowerRazzle.isValid() && fmShowerRazzle.at(iPart).size()==1) {
@@ -2112,7 +2193,23 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // time from MC.
   //
   // PMT's:
-  double PMT_reference_time = fParams.ReferencePMTFromTriggerToBeam() ? srtrigger.trigger_within_gate : 0.;
+  //
+  // TW (2024-03-29): In MC, when an event doesn't fire the trigger, the raw::Trigger will be
+  // filled with the default values, which are set to the numerical limits of double.
+  // In this case, we should set the PMT_reference_time to 0.
+
+  const bool hasValidTriggerTime =
+    srtrigger.global_trigger_det_time >
+      (std::numeric_limits<double>::min() + std::numeric_limits<double>::epsilon()) &&
+    srtrigger.global_trigger_det_time <
+      (std::numeric_limits<double>::max() - std::numeric_limits<double>::epsilon());
+
+  double PMT_reference_time = fParams.ReferencePMTFromTriggerToBeam() && hasValidTriggerTime ? triggerShift : 0.;
+
+  mf::LogInfo("CAFMaker") << "Setting PMT reference time to " << PMT_reference_time << " us\n"
+			  << "    Trigger Time   = " << srtrigger.global_trigger_det_time << " us\n"
+			  << "    Beam Gate Time =  " << srtrigger.beam_gate_det_time << " us";
+
   FixPMTReferenceTimes(rec, PMT_reference_time);
 
   // TODO: TPC?
@@ -2163,6 +2260,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.hdr.ngenevt = n_gen_evt;
   rec.hdr.mctype  = mctype;
   rec.hdr.sourceName = fSourceFile;
+  rec.hdr.sourceNameHash = fSourceFileHash;
+
   rec.hdr.sourceIndex = fIndexInFile;
   rec.hdr.first_in_file = firstInFile;
   rec.hdr.first_in_subrun = fFirstInSubRun;
@@ -2323,6 +2422,10 @@ void CAFMaker::endJob() {
 
     AddHistogramsToFile(fFile);
     fRecTree->SetDirectory(fFile);
+    if(fGenieTree){
+      fGenieTree->BuildIndex("SourceFileHash", "GENIEEntry");
+      fGenieTree->SetDirectory(fFile);
+    }
     if (fParams.CreateBlindedCAF()) {
       fRecTreeb->SetDirectory(fFileb);
       fRecTreep->SetDirectory(fFilep);
@@ -2344,6 +2447,10 @@ void CAFMaker::endJob() {
 
     AddHistogramsToFile(fFlatFile);
     fFlatTree->SetDirectory(fFlatFile);
+    if(fFlatGenieTree){
+      fFlatGenieTree->BuildIndex("SourceFileHash", "GENIEEntry");
+      fFlatGenieTree->SetDirectory(fFlatFile);
+    }
     if (fParams.CreateBlindedCAF() && fFlatFileb) {
       fFlatTreeb->SetDirectory(fFlatFileb);
       fFlatTreep->SetDirectory(fFlatFilep);
@@ -2358,6 +2465,7 @@ void CAFMaker::endJob() {
       fFlatFilep->cd();
       fFlatFilep->Write();
     }
+
   }
 
   std::map<std::string, std::string> metamap;

@@ -11,19 +11,11 @@
 /////////////////////////////////////////////////////////////////////
 
 // framework
-#include "art/Framework/Principal/Event.h"
-#include "art/Framework/Core/ModuleMacros.h"
-#include "fhiclcpp/ParameterSet.h" 
-#include "art/Framework/Principal/Handle.h" 
 #include "canvas/Persistency/Common/Ptr.h" 
-#include "canvas/Persistency/Common/PtrVector.h" 
-#include "art/Framework/Services/Registry/ServiceHandle.h" 
-#include "messagefacility/MessageLogger/MessageLogger.h" 
 
 // LArSoft
-#include "larcore/Geometry/Geometry.h"
-#include "larcore/CoreUtils/ServiceUtil.h"
-#include "larcorealg/Geometry/GeometryCore.h"
+#include "larcoreobj/SimpleTypesAndConstants/geo_vectors.h"
+#include "larcorealg/Geometry/fwd.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "lardataobj/RecoBase/Hit.h"
 
@@ -92,11 +84,8 @@ namespace sbn{
     double fCpaWidth;
 
     geo::GeometryCore const* fGeometryService;
-
   };
 
 }
 
 #endif
-
-

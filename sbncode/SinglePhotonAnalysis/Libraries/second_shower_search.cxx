@@ -1,5 +1,7 @@
 #include "sbncode/SinglePhotonAnalysis/Libraries/second_shower_search.h"
 
+#include "larcorealg/Geometry/GeometryCore.h"
+
 #include "art/Framework/Principal/Event.h"
 
 #include "TPrincipal.h"
@@ -1527,7 +1529,7 @@ namespace single_photon
 
         if(i==0 ) pader->SetLeftMargin(0.1);
 
-        std::vector<double> wire = {(double)calcWire(vars.m_vertex_pos_y, vars.m_vertex_pos_z, i, fTPC, fCryostat, *paras.s_geom)};
+        std::vector<double> wire = {(double)calcWire(vars.m_vertex_pos_y, vars.m_vertex_pos_z, i, fTPC, fCryostat, *paras.s_wireReadout)};
         std::vector<double> time = {theDetector.ConvertXToTicks(vars.m_vertex_pos_x, i, fTPC,fCryostat)};
 
         vertex_time[i] = time[0];
