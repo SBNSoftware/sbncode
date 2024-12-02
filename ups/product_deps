@@ -254,6 +254,7 @@ libdir	fq_dir		lib
 product			version		qual	flags		<table_format=2>
 genie_xsec		v3_04_00	-
 larcv2			v2_2_6		-
+larsoft			v10_00_00rc2	-
 larsoft			v09_93_01	-
 sbnanaobj		v09_23_02_01	-
 sbndaq_artdaq_core	v1_10_02	-
