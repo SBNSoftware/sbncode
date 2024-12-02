@@ -382,7 +382,7 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
     fWiresToSave.clear();
 
     // Fill the track!
-    FillTrack(*trkPtr, pfp, t0, t0CRT, trkHits, trkHitMetas, trkHitSPs, calo, rawdigits, track_infos, geometry, clock_data, bt, det, dprop);
+    FillTrack(*trkPtr, pfp, t0, t0CRT, trkHits, trkHitMetas, trkHitSPs, calo, rawdigits, track_infos, wireReadout, clock_data, bt, det, dprop);
     fTrack->whicht0 = whicht0;
 
     FillTrackDaughterRays(*trkPtr, pfp, PFParticleList, PFParticleSPs);
