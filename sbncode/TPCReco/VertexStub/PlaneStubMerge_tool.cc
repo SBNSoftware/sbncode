@@ -32,7 +32,7 @@ public:
     PlaneStubMerge(fhicl::ParameterSet const &pset);
 
     std::vector<sbn::StubInfo> Merge(const std::vector<sbn::StubInfo> &stubs,
-       const geo::GeometryCore *geo, 
+       const geo::WireReadoutGeom &wireReadout,
        const spacecharge::SpaceCharge *sce, 
        const detinfo::DetectorClocksData &dclock,
        const detinfo::DetectorPropertiesData &dprop) override;
@@ -47,7 +47,7 @@ PlaneStubMerge::PlaneStubMerge(fhicl::ParameterSet const &pset):
 }
 
 std::vector<sbn::StubInfo> PlaneStubMerge::Merge(const std::vector<sbn::StubInfo> &stubs,
-    const geo::GeometryCore *geo, 
+    const geo::WireReadoutGeom &wireReadout,
     const spacecharge::SpaceCharge *sce,
     const detinfo::DetectorClocksData &dclock,
     const detinfo::DetectorPropertiesData &dprop) {
@@ -58,7 +58,7 @@ std::vector<sbn::StubInfo> PlaneStubMerge::Merge(const std::vector<sbn::StubInfo
       if (i_stub == j_stub) continue;
       if (toerase[j_stub]) continue; // Already being erased
       if (sbn::StubContains(stubs[i_stub], stubs[j_stub])) {
-        if (sbn::StubDirectionDot(stubs[i_stub], stubs[j_stub], geo, dprop) > fStubDotCut) {
+        if (sbn::StubDirectionDot(stubs[i_stub], stubs[j_stub], wireReadout, dprop) > fStubDotCut) {
           toerase[j_stub] = true;
         }
       }
