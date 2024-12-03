@@ -24,6 +24,7 @@
 
 // LArSoft includes
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "lardata/ArtDataHelper/HitCreator.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
@@ -42,7 +43,6 @@
 #include <numeric> // std::accumulate
 
 // Ack!
-#include "TH1F.h"
 #include "TTree.h"
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -94,7 +94,7 @@ public:
      */
     virtual void produces(art::ProducesCollector&) override;
 
-    virtual void configure(const fhicl::ParameterSet&) override;
+    void configure(const fhicl::ParameterSet&);
 
     /**
      *  @brief Given a set of recob hits, run DBscan to form 3D clusters
@@ -326,13 +326,13 @@ private:
 
     mutable bool                            m_weHaveAllBeenHereBefore = false;
 
-    const geo::Geometry*                    m_geometry;              //< pointer to the Geometry service
+    const geo::GeometryCore*                m_geometry;
+    const geo::WireReadoutGeom*             m_wireReadout;
     const lariov::ChannelStatusProvider*    m_channelFilter;
 };
 
 SnippetHit3DBuilderSBN::SnippetHit3DBuilderSBN(fhicl::ParameterSet const &pset) :
     m_channelFilter(&art::ServiceHandle<lariov::ChannelStatusService const>()->GetProvider())
-
 {
     this->configure(pset);
 }
@@ -369,13 +369,13 @@ void SnippetHit3DBuilderSBN::configure(fhicl::ParameterSet const &pset)
     m_outputHistograms     = pset.get<bool                      >("OutputHistograms",      false);
     m_makeAssociations     = pset.get<bool                      >("MakeAssociations",      false);
 
-    m_geometry = art::ServiceHandle<geo::Geometry const>{}.get();
+    m_wireReadout = &art::ServiceHandle<geo::WireReadout const>{}->Get();
 
     // Returns the wire pitch per plane assuming they will be the same for all TPCs
     constexpr geo::TPCID tpcid{0, 0};
-    m_wirePitch[0] = m_geometry->WirePitch(geo::PlaneID{tpcid, 0});
-    m_wirePitch[1] = m_geometry->WirePitch(geo::PlaneID{tpcid, 1});
-    m_wirePitch[2] = m_geometry->WirePitch(geo::PlaneID{tpcid, 2});
+    m_wirePitch[0] = m_wireReadout->Plane({tpcid, 0}).WirePitch();
+    m_wirePitch[1] = m_wireReadout->Plane({tpcid, 1}).WirePitch();
+    m_wirePitch[2] = m_wireReadout->Plane({tpcid, 2}).WirePitch();
 
     // Access ART's TFileService, which will handle creating and writing
     // histograms and n-tuples for us.
@@ -467,23 +467,23 @@ void SnippetHit3DBuilderSBN::BuildChannelStatusVec(PlaneToWireToHitSetMap& plane
     m_channelStatus.clear();
 
     m_numBadChannels = 0;
-    m_channelStatus.resize(m_geometry->Nplanes());
+    m_channelStatus.resize(m_wireReadout->Nplanes());
 
     // Loop through views/planes to set the wire length vectors
     constexpr geo::TPCID tpcid{0, 0};
     for(size_t idx = 0; idx < m_channelStatus.size(); idx++)
     {
-        m_channelStatus[idx] = ChannelStatusVec(m_geometry->Nwires(geo::PlaneID(tpcid, idx)), 5);
+        m_channelStatus[idx] = ChannelStatusVec(m_wireReadout->Nwires(geo::PlaneID(tpcid, idx)), 5);
     }
 
     // Loop through the channels and mark those that are "bad"
-    for(size_t channel = 0; channel < m_geometry->Nchannels(); channel++)
+    for(size_t channel = 0; channel < m_wireReadout->Nchannels(); channel++)
     {
         try
         {  
             if( m_channelFilter->IsPresent(channel) && !m_channelFilter->IsGood(channel))
             {
-                std::vector<geo::WireID>                wireIDVec = m_geometry->ChannelToWire(channel);
+                std::vector<geo::WireID>                wireIDVec = m_wireReadout->ChannelToWire(channel);
                 geo::WireID                             wireID    = wireIDVec[0];
                 lariov::ChannelStatusProvider::Status_t chanStat  = m_channelFilter->Status(channel);
 
@@ -535,20 +535,12 @@ void SnippetHit3DBuilderSBN::Hit3DBuilder(art::Event& evt, reco::HitPairList& hi
         auto const det_prop   = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clock_data);
 
         // Initialize the plane to hit vector map
-        for(size_t cryoIdx = 0; cryoIdx < m_geometry->Ncryostats(); cryoIdx++)
-        {
-            for(size_t tpcIdx = 0; tpcIdx < m_geometry->NTPC(); tpcIdx++)
+        for(auto const& planeID : m_wireReadout->Iterate<geo::PlaneID>())
             {
-                for(size_t planeIdx = 0; planeIdx < m_geometry->Nplanes(); planeIdx++)
-                {
-                    geo::PlaneID planeID(cryoIdx,tpcIdx,planeIdx);
-
-                    if (m_useT0Offsets) m_PlaneToT0OffsetMap[planeID] = det_prop.GetXTicksOffset(planeID) - det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,0));
+          if (m_useT0Offsets) m_PlaneToT0OffsetMap[planeID] = det_prop.GetXTicksOffset(planeID) - det_prop.GetXTicksOffset(geo::PlaneID(planeID.parentID(),0));
                     else                m_PlaneToT0OffsetMap[planeID] = 0.;
                 }
             }
-        }   
-    }
 
     m_timeVector.resize(NUMTIMEVALUES, 0.);
 
@@ -670,17 +662,15 @@ size_t SnippetHit3DBuilderSBN::BuildHitPairMap(PlaneToSnippetHitMap& planeToSnip
     size_t nTriplets(0);
 
     // Set up to loop over cryostats and tpcs...
-    for(size_t cryoIdx = 0; cryoIdx < m_geometry->Ncryostats(); cryoIdx++)
-    {
-        for(size_t tpcIdx = 0; tpcIdx < m_geometry->NTPC(); tpcIdx++)
+    for(auto const& tpcID : m_geometry->Iterate<geo::TPCID>())
         {
             //************************************
             // Kludge
 //            if (!(cryoIdx == 1 && tpcIdx == 0)) continue;
 
-            PlaneToSnippetHitMap::iterator mapItr0 = planeToSnippetHitMap.find(geo::PlaneID(cryoIdx,tpcIdx,0));
-            PlaneToSnippetHitMap::iterator mapItr1 = planeToSnippetHitMap.find(geo::PlaneID(cryoIdx,tpcIdx,1));
-            PlaneToSnippetHitMap::iterator mapItr2 = planeToSnippetHitMap.find(geo::PlaneID(cryoIdx,tpcIdx,2));
+      PlaneToSnippetHitMap::iterator mapItr0 = planeToSnippetHitMap.find(geo::PlaneID(tpcID,0));
+      PlaneToSnippetHitMap::iterator mapItr1 = planeToSnippetHitMap.find(geo::PlaneID(tpcID,1));
+      PlaneToSnippetHitMap::iterator mapItr2 = planeToSnippetHitMap.find(geo::PlaneID(tpcID,2));
 
             size_t nPlanesWithHits = (mapItr0 != planeToSnippetHitMap.end() && !mapItr0->second.empty() ? 1 : 0)
                                    + (mapItr1 != planeToSnippetHitMap.end() && !mapItr1->second.empty() ? 1 : 0)
@@ -697,7 +687,6 @@ size_t SnippetHit3DBuilderSBN::BuildHitPairMap(PlaneToSnippetHitMap& planeToSnip
                                                       SnippetHitMapItrPair(snippetHitMap2.begin(),snippetHitMap2.end())};
 
             totalNumHits += BuildHitPairMapByTPC(hitItrVec, hitPairList);
-        }
     }
 
     // Return the hit pair list but sorted by z and y positions (faster traversal in next steps)
@@ -1487,8 +1476,8 @@ bool SnippetHit3DBuilderSBN::WireIDsIntersect(const geo::WireID& wireID0, const 
     if (wireID0.Cryostat != wireID1.Cryostat || wireID0.TPC != wireID1.TPC || wireID0.Plane == wireID1.Plane) return success;
         
     // Recover wire geometry information for each wire
-    const geo::WireGeo& wireGeo0 = m_geometry->WireIDToWireGeo(wireID0);
-    const geo::WireGeo& wireGeo1 = m_geometry->WireIDToWireGeo(wireID1);
+    const geo::WireGeo& wireGeo0 = m_wireReadout->Wire(wireID0);
+    const geo::WireGeo& wireGeo1 = m_wireReadout->Wire(wireID1);
 
     // Get wire position and direction for first wire
     auto wirePosArr = wireGeo0.GetCenter();
@@ -1624,18 +1613,14 @@ bool SnippetHit3DBuilderSBN::makeDeadChannelPair(reco::ClusterHit3D&       pairO
             if (!wireStatus) wireID.Wire += 1;
 
             // Want to refine position since we "know" the missing wire
-            geo::WireIDIntersection widIntersect0;
-
-            if (m_geometry->WireIDsIntersect(wireID0, wireID, widIntersect0))
+            if (auto widIntersect0 = m_wireReadout->WireIDsIntersect(wireID0, wireID))
             {
-                geo::WireIDIntersection widIntersect1;
-
-                if (m_geometry->WireIDsIntersect(wireID1, wireID, widIntersect1))
+                if (auto widIntersect1 = m_wireReadout->WireIDsIntersect(wireID1, wireID))
                 {
                     Eigen::Vector3f newPosition(pair.getPosition()[0],pair.getPosition()[1],pair.getPosition()[2]);
 
-                    newPosition[1] = (newPosition[1] + widIntersect0.y + widIntersect1.y) / 3.;
-                    newPosition[2] = (newPosition[2] + widIntersect0.z + widIntersect1.z - 2. * m_zPosOffset) / 3.;
+                    newPosition[1] = (newPosition[1] + widIntersect0->y + widIntersect1->y) / 3.;
+                    newPosition[2] = (newPosition[2] + widIntersect0->z + widIntersect1->z - 2. * m_zPosOffset) / 3.;
 
                     pairOut = pair;
                     pairOut.setWireID(wireID);
@@ -1719,7 +1704,7 @@ geo::WireID SnippetHit3DBuilderSBN::NearestWireID(const Eigen::Vector3f& positio
     try
     {
         // Not sure the thinking above but is wrong... switch back to NearestWireID...
-        wire = (m_geometry->NearestWireID(geo::vect::toPoint(position.data()),wireIDIn)).Wire;
+        wire = m_wireReadout->NearestWireID(geo::vect::toPoint(position.data()),wireIDIn).Wire;
     }
     catch(std::exception& exc) 
     {
@@ -1727,8 +1712,8 @@ geo::WireID SnippetHit3DBuilderSBN::NearestWireID(const Eigen::Vector3f& positio
         mf::LogWarning("Cluster3D") << "Exception caught finding nearest wire, position - " << exc.what() << std::endl;
 
         // Assume extremum for wire number depending on z coordinate
-        if (position[2] < 0.5 * m_geometry->DetLength()) wire = 0;
-        else                                             wire = m_geometry->Nwires(wireIDIn.asPlaneID()) - 1;
+        if (position[2] < m_geometry->TPC().HalfLength()) wire = 0;
+        else                                              wire = m_wireReadout->Nwires(wireIDIn.asPlaneID()) - 1;
     }
 
     geo::WireID wireID(wireIDIn.Cryostat,wireIDIn.TPC,wireIDIn.Plane,wire);
@@ -1744,7 +1729,7 @@ float SnippetHit3DBuilderSBN::DistanceFromPointToHitWire(const Eigen::Vector3f& 
     try
     {
         // Recover wire geometry information for each wire
-        const geo::WireGeo& wireGeo = m_geometry->WireIDToWireGeo(wireIDIn);
+        const geo::WireGeo& wireGeo = m_wireReadout->Wire(wireIDIn);
 
         // Get wire position and direction for first wire
         auto const wirePosArr = wireGeo.GetCenter();
@@ -1837,30 +1822,27 @@ void SnippetHit3DBuilderSBN::CollectArtHits(const art::Event& evt) const
     std::map<geo::PlaneID,double> planeIDToPositionMap;
 
     // Initialize the plane to hit vector map
-    for(size_t cryoIdx = 0; cryoIdx < m_geometry->Ncryostats(); cryoIdx++)
+    for(auto const& tpcID : m_geometry->Iterate<geo::TPCID>())
     {
-        for(size_t tpcIdx = 0; tpcIdx < m_geometry->NTPC(); tpcIdx++)
-        {
-            m_planeToSnippetHitMap[geo::PlaneID(cryoIdx,tpcIdx,0)] = SnippetHitMap();
-            m_planeToSnippetHitMap[geo::PlaneID(cryoIdx,tpcIdx,1)] = SnippetHitMap();
-            m_planeToSnippetHitMap[geo::PlaneID(cryoIdx,tpcIdx,2)] = SnippetHitMap();
+      m_planeToSnippetHitMap[geo::PlaneID(tpcID,0)] = SnippetHitMap();
+      m_planeToSnippetHitMap[geo::PlaneID(tpcID,1)] = SnippetHitMap();
+      m_planeToSnippetHitMap[geo::PlaneID(tpcID,2)] = SnippetHitMap();
 
             // Should we provide output?
             if (!m_weHaveAllBeenHereBefore)
             {
                 std::ostringstream outputString;
 
-                outputString << "***> plane 0 offset: " << m_PlaneToT0OffsetMap.find(geo::PlaneID(cryoIdx,tpcIdx,0))->second
-                             << ", plane 1: " << m_PlaneToT0OffsetMap.find(geo::PlaneID(cryoIdx,tpcIdx,1))->second
-                             << ", plane    2: " << m_PlaneToT0OffsetMap.find(geo::PlaneID(cryoIdx,tpcIdx,2))->second << "\n";
-                outputString << "     Det prop plane 0: " << det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,0)) << ", plane 1: "  << det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,1)) << ", plane 2: " << det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,2)) << ", Trig: " << trigger_offset(clock_data) << "\n";
+        outputString << "***> plane 0 offset: " << m_PlaneToT0OffsetMap.find(geo::PlaneID(tpcID,0))->second
+                     << ", plane 1: " << m_PlaneToT0OffsetMap.find(geo::PlaneID(tpcID,1))->second
+                     << ", plane    2: " << m_PlaneToT0OffsetMap.find(geo::PlaneID(tpcID,2))->second << "\n";
+        outputString << "     Det prop plane 0: " << det_prop.GetXTicksOffset(geo::PlaneID(tpcID,0)) << ", plane 1: "  << det_prop.GetXTicksOffset(geo::PlaneID(tpcID,1)) << ", plane 2: " << det_prop.GetXTicksOffset(geo::PlaneID(tpcID,2)) << ", Trig: " << trigger_offset(clock_data) << "\n";
                 debugMessage += outputString.str() + "\n";
             }
 
-            double xPosition(det_prop.ConvertTicksToX(0., 2, tpcIdx, cryoIdx));
-
-            planeIDToPositionMap[geo::PlaneID(cryoIdx,tpcIdx,2)] = xPosition;
-        }
+      geo::PlaneID const planeID2{tpcID, 2};
+      double xPosition(det_prop.ConvertTicksToX(0., planeID2));
+      planeIDToPositionMap[planeID2] = xPosition;
     }
 
     if (!m_weHaveAllBeenHereBefore)
@@ -1888,7 +1870,7 @@ void SnippetHit3DBuilderSBN::CollectArtHits(const art::Event& evt) const
 
         // For some detectors we can have multiple wire ID's associated to a given channel.
         // So we recover the list of these wire IDs
-        const std::vector<geo::WireID>& wireIDs = m_geometry->ChannelToWire(recobHit->Channel());
+        const std::vector<geo::WireID>& wireIDs = m_wireReadout->ChannelToWire(recobHit->Channel());
 
         // Start/End ticks to identify the snippet
         HitStartEndPair hitStartEndPair(recobHit->StartTick(),recobHit->EndTick());
