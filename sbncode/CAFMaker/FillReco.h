@@ -222,8 +222,10 @@ namespace caf
                   caf::SROpFlash &srflash,
                   bool allowEmpty = false);
   void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,
-		  caf::SRCRTPMTMatch &srmatch,
-		  bool allowEmpty = false);
+		       int &topen, int &topex, int &sideen, int &sidex,
+		       //int &bottomen, int &bottomex,
+		       caf::SRCRTPMTMatch &srmatch,
+		       bool allowEmpty = false);
 
   void FillTPCPMTBarycenterMatch(const sbn::TPCPMTBarycenterMatch *matchInfo,
                            caf::SRSlice& slice);
