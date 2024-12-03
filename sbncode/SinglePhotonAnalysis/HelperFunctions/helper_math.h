@@ -5,7 +5,7 @@
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 
 #include "lardataobj/RecoBase/Shower.h"
-#include "larcore/Geometry/Geometry.h"
+#include "larcorealg/Geometry/WireReadoutGeom.h"
 
 #include "canvas/Utilities/ensurePointer.h"
 
@@ -51,11 +51,10 @@ namespace single_photon
     }
 
 //inline functions
-  inline double calcWire(double Y, double Z, int plane, int fTPC, int fCryostat, geo::GeometryCore const& geo ){
-    return geo.WireCoordinate(geo::Point_t{0, Y, Z},
-                              geo::PlaneID{static_cast<unsigned>(fCryostat),
+  inline double calcWire(double Y, double Z, int plane, int fTPC, int fCryostat, geo::WireReadoutGeom const& wireReadout ){
+    return wireReadout.Plane(geo::PlaneID{static_cast<unsigned>(fCryostat),
                                            static_cast<unsigned>(fTPC),
-                                           static_cast<unsigned>(plane)});
+                                  static_cast<unsigned>(plane)}).WireCoordinate(geo::Point_t{0, Y, Z});
   }
 
 
