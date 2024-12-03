@@ -1478,7 +1478,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   if(crtpmtmatch_handle.isValid()){
     const std::vector<sbn::crt::CRTPMTMatching> &crtpmtmatches = *crtpmtmatch_handle;
     for (unsigned i = 0; i < crtpmtmatches.size(); i++) {
-      int topen = 0, topex = 0, sideen = 0, sideex = 0; // bottomen = 0, bottomex = 0;
+      unsigned int topen = 0, topex = 0, sideen = 0, sideex = 0; // bottomen = 0, bottomex = 0;
       srcrtpmtmatches.emplace_back();
       FillCRTPMTMatch(crtpmtmatches[i],
 		      topen, topex, sideen, sideex, 
