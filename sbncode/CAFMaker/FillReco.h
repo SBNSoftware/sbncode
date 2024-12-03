@@ -222,9 +222,6 @@ namespace caf
                   caf::SROpFlash &srflash,
                   bool allowEmpty = false);
   void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,
-		       unsigned int topen, unsigned int topex, 
-		       unsigned int sideen, unsigned int sidex,
-		       //unsigned int &bottomen, unsigned int &bottomex,
 		       caf::SRCRTPMTMatch &srmatch,
 		       bool allowEmpty = false);
 
