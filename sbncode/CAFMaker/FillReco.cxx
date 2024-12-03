@@ -138,9 +138,6 @@ namespace caf
   }
 
   void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,
-		       unsigned int topen, unsigned int topex, 
-		       unsigned int sideen, unsigned int sideex,
-		       //unsigned int &bottomen, unsigned int &bottomex,
 		       caf::SRCRTPMTMatch &srmatch,
 		       bool allowEmpty){
     // allowEmpty does not (yet) matter here                                                           
@@ -157,6 +154,7 @@ namespace caf
     srmatch.flashPosition = SRVector3D (match.flashPosition.X(), match.flashPosition.Y(), match.flashPosition.Z());
     srmatch.flashYWidth = match.flashYWidth;
     srmatch.flashZWidth = match.flashZWidth;
+    unsigned int topen = 0, topex = 0, sideen = 0, sideex = 0;
     for(const auto& matchedCRTHit : match.matchedCRTHits){
       caf::SRMatchedCRT matchedCRT;
       matchedCRT.PMTTimeDiff = matchedCRTHit.PMTTimeDiff; 
