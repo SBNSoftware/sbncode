@@ -473,7 +473,7 @@ void SnippetHit3DBuilderSBN::Hit3DBuilder(art::Event& evt, reco::HitPairList& hi
     m_planeToSnippetHitMap.clear();
     m_planeToWireToHitSetMap.clear();
 
-    std::cout << "SnippetHit3DBuilderSBN entered" << std::endl;
+    mf::LogDebug("SnippetHit3D") << "SnippetHit3DBuilderSBN entered" << std::endl;
 
     // Do the one time initialization of the tick offsets. 
     if (m_PlaneToT0OffsetMap.empty())
@@ -507,7 +507,7 @@ void SnippetHit3DBuilderSBN::Hit3DBuilder(art::Event& evt, reco::HitPairList& hi
     // DBscan algorithm for building the 3D clusters
     this->CollectArtHits(evt);
 
-    std::cout << "SnippetHit3DBuilderSBN building space points" << std::endl;
+    mf::LogDebug("SnippetHit3D") << "SnippetHit3DBuilderSBN building space points";
 
     // If there are no hits in our view/wire data structure then do not proceed with the full analysis
     if (!m_planeToWireToHitSetMap.empty())
@@ -519,8 +519,6 @@ void SnippetHit3DBuilderSBN::Hit3DBuilder(art::Event& evt, reco::HitPairList& hi
         if (!hitPairList.empty())
             CreateNewRecobHitCollection(evt, hitPairList, *outputHitPtrVec, clusterHitToArtPtrMap);
     }
-
-    std::cout << "SnippetHit3DBuilderSBN making associations" << std::endl;
 
     // Set up to make the associations (if desired)
     /// Associations with wires.
@@ -546,7 +544,7 @@ void SnippetHit3DBuilderSBN::Hit3DBuilder(art::Event& evt, reco::HitPairList& hi
         clear();
     }
 
-    std::cout << "SnippetHit3DBuilderSBN exited" << std::endl;
+    mf::LogDebug("SnippetHit3D") << "SnippetHit3DBuilderSBN exited";
 
     return;
 }
@@ -1463,11 +1461,11 @@ bool SnippetHit3DBuilderSBN::makeHitTriplet(reco::ClusterHit3D&       hitTriplet
 
                     result = true;
                 }
-//                else std::cout << "-Rejecting triple with chiSquare: " << hitChiSquare << " and hiMinIndex: " << hiMinIndex << ", loMaxIndex: " << lowMaxIndex << std::endl;
+//                else mf::LogDebug("SnippetHit3D") << "-Rejecting triple with chiSquare: " << hitChiSquare << " and hiMinIndex: " << hiMinIndex << ", loMaxIndex: " << lowMaxIndex;
             }
         }
     }
-//    else std::cout << "-MakeTriplet hit cut, delta: " << hitTimeTicks - pair.getAvePeakTime() << ", min scale fctr: " <<m_hitWidthSclFctr << ", pair sig: " << pair.getSigmaPeakTime() << ", hitSigma: " << hitSigma << std::endl;
+//    else mf::LogDebug("SnippetHit3D") << "-MakeTriplet hit cut, delta: " << hitTimeTicks - pair.getAvePeakTime() << ", min scale fctr: " <<m_hitWidthSclFctr << ", pair sig: " << pair.getSigmaPeakTime() << ", hitSigma: " << hitSigma << std::endl;
 
     // return success/fail
     return result;
@@ -1805,7 +1803,7 @@ void SnippetHit3DBuilderSBN::CollectArtHits(const art::Event& evt) const
         // Can this really happen?
         if (hitStartEndPair.second <= hitStartEndPair.first)
         {
-            mf::LogInfo("SnippetHit3D") << "Yes, found a hit with end time less than start time: " << hitStartEndPair.first << "/" << hitStartEndPair.second << ", mult: " << recobHit->Multiplicity();
+            mf::LogDebug("SnippetHit3D") << "Yes, found a hit with end time less than start time: " << hitStartEndPair.first << "/" << hitStartEndPair.second << ", mult: " << recobHit->Multiplicity();
             continue;
         }
 
