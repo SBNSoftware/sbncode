@@ -3,41 +3,16 @@ BEGIN_PROLOG
 simedepfilter_ind1gap: {
   module_type: "FilterSimEnergyDeposits"
   InitSimEnergyDepositLabel: "ionization"
-  OutSimEnergyDepositLabel: "filteredSED"
-  P1_X: -400
-  P1_Y: -200
-  P1_Z: -2
-  P2_X: 400
-  P2_Y: 200
-  P2_Z: 2
+  P1_X: -400 #cm, create a box that spans the full x,y range. Not super-precise.
+  P1_Y: -200 #cm, create a box that spans the full x,y range. Not super-precise.
+  P1_Z: -2 #cm, one edge of the filtered gap based on the 37 mm total size of the wire gap
+  P2_X: 400 #cm, create a box that spans the full x,y range. Not super-precise.
+  P2_Y: 200 #cm, create a box that spans the full x,y range. Not super-precise.
+  P2_Z: 2 #cm, other edge of the filtered gap based on the 37 mm total size of the wire gap
+  A: -0.431172
+  B: -2.52724
+  C: 0.22043
 }
 
-simedepfilter_cathodewest: {
-  module_type: "FilterSimEnergyDeposits"
-  InitSimEnergyDepositLabel: "ionization"
-  OutSimEnergyDepositLabel: "filteredSED"
-  P1_X: 192.2
-  P1_Y: -200
-  P1_Z:	-900
-  P2_X: 232.2
-  P2_Y:	200
-  P2_Z:	900
-}
-
-simedepfilter_cathodeeast: {
-  module_type: "FilterSimEnergyDeposits"
-  InitSimEnergyDepositLabel: "ionization"
-  OutSimEnergyDepositLabel: "filteredSED"
-  P1_X:	-232.2
-  P1_Y: -200
-  P1_Z: -900
-  P2_X:	-198.2
-  P2_Y: 200
-  P2_Z:	900
-}
-
-filter_ind1gap: @local::simedepfilter_ind1gap
-filter_cathodewest: @local::simedepfilter_cathodewest
-filter_cathodeeast: @local::simedepfilter_cathodeeast
 
 END_PROLOG

@@ -28,7 +28,6 @@ set(	MODULE_LIBRARIES
 		ROOT::Geom
 		ROOT::XMLIO
 		ROOT::Gdml
-		ROOT::Core
 		FFTW3::FFTW3
 		)
 
