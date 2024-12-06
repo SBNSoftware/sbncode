@@ -115,8 +115,8 @@ sbn::SBNDBNBRetriever::SBNDBNBRetriever(fhicl::ParameterSet const & params)
   bfp_mwr->set_epsilon(0.5);
   bfp_mwr->setValidWindow(3605);
   TotalBeamSpills = 0;
-
-  produces< std::vector<sbn::BNBSpillInfo> >();
+  produces< std::vector< sbn::BNBSpillInfo >, art::InEvent >();
+  // produces< std::vector<sbn::BNBSpillInfo> >();
 }
 
 int eventNum =0;
@@ -132,13 +132,20 @@ void sbn::SBNDBNBRetriever::produce(art::Event & e)
   // spill that the DAQ was sensitive to, so don't try to save any
   // spill information
 
-  std::cout << "new_event: " << e.event() << std::endl;
+  if (e.event() == 1) {
+    auto p =  std::make_unique< std::vector< sbn::BNBSpillInfo > >();
+    std::swap(*p, fOutbeamInfos);
+    e.put(std::move(p));
+    return;
+  }
+
+  mf::LogDebug("SBNDBNBZEROBIASRetriever") << "new_event: " << e.event() << std::endl;
 
   TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
 
-  std::cout << "triggerInfo.t_current_event: " << std::setprecision(19) << triggerInfo.t_current_event << std::endl;
-  std::cout << "triggerInfo.t_previous_event: " <<  std::setprecision(19) << triggerInfo.t_previous_event << std::endl;
-  std::cout << "triggerInfo.number_of_gates_since_previous_event: " << triggerInfo.number_of_gates_since_previous_event << std::endl;
+  mf::LogDebug("SBNDBNBZEROBIASRetriever") << "triggerInfo.t_current_event: " << std::setprecision(25) << triggerInfo.t_current_event << std::endl;
+  mf::LogDebug("SBNDBNBZEROBIASRetriever") << "triggerInfo.t_previous_event: " <<  std::setprecision(25) << triggerInfo.t_previous_event << std::endl;
+  mf::LogDebug("SBNDBNBZEROBIASRetriever") << "triggerInfo.number_of_gates_since_previous_event: " << triggerInfo.number_of_gates_since_previous_event << std::endl;
 
   TotalBeamSpills += triggerInfo.number_of_gates_since_previous_event;
   MWRdata_t const MWRdata = extractSpillTimes(triggerInfo);
@@ -151,7 +158,6 @@ void sbn::SBNDBNBRetriever::produce(art::Event & e)
 }
 
 sbn::SBNDBNBRetriever::PTBInfo_t sbn::SBNDBNBRetriever::extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
-  int HLT_count = 0;
 
   int numcont = 0;
   PTBInfo_t PTBInfo;
@@ -173,21 +179,23 @@ sbn::SBNDBNBRetriever::PTBInfo_t sbn::SBNDBNBRetriever::extractPTBInfo(art::Hand
           wt = word_type;
 	  if (wt == 2 && ctb_frag.Trigger(word_i)->IsTrigger(1))
 	  {
-            HLT_count++;
-
-	    uint64_t RawprevPTBTimeStamp = ctb_frag.PTBWord(word_i)->prevTS * 20; 
+	    uint64_t RawprevPTBTimeStamp = ctb_frag.PTBWord(word_i)->prevTS * 20.0; 
 	    // uint64_t RawcurrPTBTimeStamp = ctb_frag.Trigger(word_i)->timestamp * 20;
-	    uint64_t RawcurrPTBTimeStamp = ctb_frag.TimeStamp(word_i) * 20;
-            PTBInfo.prevPTBTimeStamp = std::bitset<64>(RawprevPTBTimeStamp / 20).to_ullong()/50e6; 
-            PTBInfo.currPTBTimeStamp = std::bitset<64>(RawcurrPTBTimeStamp / 20).to_ullong()/50e6; 
+	    uint64_t RawcurrPTBTimeStamp = ctb_frag.TimeStamp(word_i) * 20.0;
+            PTBInfo.prevPTBTimeStamp = std::bitset<64>(RawprevPTBTimeStamp / 20.0).to_ullong()/50e6; 
+            PTBInfo.currPTBTimeStamp = std::bitset<64>(RawcurrPTBTimeStamp / 20.0).to_ullong()/50e6; 
             PTBInfo.GateCounter = ctb_frag.Trigger(word_i)->gate_counter;
+
+            mf::LogDebug("SBNDBNBZEROBIASRetriever") << std::setprecision(25) << " prevPTBTimeStamp: " << PTBInfo.prevPTBTimeStamp << std::endl;
+            mf::LogDebug("SBNDBNBZEROBIASRetriever") << std::setprecision(25) << " currPTBTimeStamp: " << PTBInfo.currPTBTimeStamp << std::endl;
+            
+            break;
 	  }
         }
       } //End of loop over the number of trigger words
     } //End of loop over the number of fragments per container
   } //End of loop over the number of containers
 
-  std::cout << "HLT_count: " << HLT_count << std::endl;
   return PTBInfo; 
 }
 
@@ -228,26 +236,24 @@ sbn::SBNDBNBRetriever::TriggerInfo_t sbn::SBNDBNBRetriever::extractTriggerInfo(a
   }
   else{
     mf::LogDebug("SBNDBNBZEROBIASRetriever") << " Missing TDC Container Fragments!!!" << std::endl;
-    std::cout << " Missing TDC Container Fragments!!!" << std::endl;
     triggerInfo.t_current_event = PTBInfo.currPTBTimeStamp;
   }
 
   triggerInfo.t_previous_event = PTBInfo.prevPTBTimeStamp;
   triggerInfo.number_of_gates_since_previous_event = PTBInfo.GateCounter;
 
-  std::cout << "PTBdiff: " << PTBInfo.currPTBTimeStamp-PTBInfo.prevPTBTimeStamp << std::endl;
 
   if(triggerInfo.t_current_event - PTBInfo.currPTBTimeStamp >= 1){
-    std::cout << "Caught PTB bug, PTB late" << std::endl;
-    std::cout << "Before: " << triggerInfo.t_previous_event << std::endl;
+    mf::LogDebug("SBNDBNBZEROBIASRetriever") << "Caught PTB bug, PTB late" << std::endl;
+    mf::LogDebug("SBNDBNBZEROBIASRetriever") << "Before: " << triggerInfo.t_previous_event << std::endl;
     triggerInfo.t_previous_event+=1;
-    std::cout << "After: " << triggerInfo.t_previous_event << std::endl;
+    mf::LogDebug("SBNDBNBZEROBIASRetriever") << "After: " << triggerInfo.t_previous_event << std::endl;
   }
   else if(triggerInfo.t_current_event - PTBInfo.currPTBTimeStamp <= -1){
-    std::cout << "Caught PTB bug, PTB early" << std::endl;
-    std::cout << "Before: " << triggerInfo.t_previous_event << std::endl;
+    mf::LogDebug("SBNDBNBZEROBIASRetriever") << "Caught PTB bug, PTB early" << std::endl;
+    mf::LogDebug("SBNDBNBZEROBIASRetriever") << "Before: " << triggerInfo.t_previous_event << std::endl;
     triggerInfo.t_previous_event-=1;
-    std::cout << "After: " << triggerInfo.t_previous_event << std::endl;
+    mf::LogDebug("SBNDBNBZEROBIASRetriever") << "After: " << triggerInfo.t_previous_event << std::endl;
   }
 
   return triggerInfo;
@@ -398,6 +404,25 @@ void sbn::SBNDBNBRetriever::matchMultiWireData(
   
   // Iterating through each of the beamline times
  
+  if(isFirstEventInRun){
+    //We'll remove the spills after our event
+    int spills_after_our_target = 0;
+    // iterate through all the spills to find the 
+    // spills that are after our triggered event
+    for (size_t i = 0; i < times_temps.size(); i++) {       
+      if(times_temps[i] > (triggerInfo.t_current_event+fTimePad)){
+	spills_after_our_target++;
+      }
+    }//end loop through spill times 	 
+    
+    // Remove the spills after our trigger
+    times_temps.erase(times_temps.end()-spills_after_our_target,times_temps.end());
+    
+    // Remove the spills before the start of our Run
+    times_temps.erase(times_temps.begin(), times_temps.end() - std::min(int(triggerInfo.number_of_gates_since_previous_event), int(times_temps.size())));
+        
+  }//end fix for "first event"
+
   double best_diff = 10000000000.0; 
   double diff; 
   size_t i = 0;
@@ -406,12 +431,14 @@ void sbn::SBNDBNBRetriever::matchMultiWireData(
     diff = times_temps[k] - (triggerInfo.t_current_event + fTimePad);
 
     if( diff < 0 and diff < best_diff){
-      if(times_temps[k] > (triggerInfo.t_current_event)+fTimePad){
-	spills_removed++; 
-	continue;} 
-      if(times_temps[k] <= (triggerInfo.t_previous_event)+fTimePad){
-	spills_removed++; 
-	continue;}
+      if(!isFirstEventInRun){
+        if(times_temps[k] > (triggerInfo.t_current_event)+fTimePad){
+	  spills_removed++; 
+	  continue;} 
+        if(times_temps[k] <= (triggerInfo.t_previous_event)+fTimePad){
+	  spills_removed++; 
+	  continue;}
+      }
       best_diff = diff; 
       i = k;
     }
@@ -469,7 +496,6 @@ void sbn::SBNDBNBRetriever::matchMultiWireData(
 sbn::BNBSpillInfo sbn::SBNDBNBRetriever::makeBNBSpillInfo
   (art::EventID const& eventID, double time, MWRdata_t const& MWRdata, std::vector<int> const& matched_MWR) const
 {
-  
   auto const& [ MWR_times, unpacked_MWR ] = MWRdata; // alias
  
   // initializing all of our device carriers
@@ -496,7 +522,7 @@ sbn::BNBSpillInfo sbn::SBNDBNBRetriever::makeBNBSpillInfo
   // allow each to throw an exception but still move forward
   // interpreting these failures will be part of the beam quality analyses 
  
-  try{bfp->GetNamedData(time, "E:TOR860@",&TOR860,&TOR860_time);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; std::cout << "ifbeam_failed" << std::endl;}
+  try{bfp->GetNamedData(time, "E:TOR860@",&TOR860,&TOR860_time);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
   try{bfp->GetNamedData(time, "E:TOR875",&TOR875);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
   try{bfp->GetNamedData(time, "E:LM875A",&LM875A);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
   try{bfp->GetNamedData(time, "E:LM875B",&LM875B);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
@@ -514,8 +540,8 @@ sbn::BNBSpillInfo sbn::SBNDBNBRetriever::makeBNBSpillInfo
   unsigned long int time_closest_int = (int) TOR860_time;
   double time_closest_ns = (TOR860_time - time_closest_int)*1e9;
  
-  std::cout << "TOR860_time: " << std::setprecision(19) << TOR860_time << std::endl;
-  std::cout << "TOR860: " << TOR860 << std::endl; 
+  mf::LogDebug("SBNDBNBZEROBIASRetriever") << "TOR860_time: " << std::setprecision(25) << TOR860_time << std::endl;
+  mf::LogDebug("SBNDBNBZEROBIASRetriever") << "TOR860: " << TOR860 << std::endl; 
 
   //Store everything in our data-product
   sbn::BNBSpillInfo beamInfo;

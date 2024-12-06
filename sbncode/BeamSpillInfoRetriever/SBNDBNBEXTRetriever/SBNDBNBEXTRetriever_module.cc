@@ -74,7 +74,6 @@ private:
   float TotalEXTCounts;  
   float totalMinBias;
   float evtCount;
-  float scale_factor;
 };
 
 sbn::SBNDBNBEXTRetriever::SBNDBNBEXTRetriever(fhicl::ParameterSet const & params)
@@ -83,7 +82,6 @@ sbn::SBNDBNBEXTRetriever::SBNDBNBEXTRetriever(fhicl::ParameterSet const & params
   TotalEXTCounts = 0;
   totalMinBias = 0;
   evtCount = 0;
-  scale_factor = 0;
 }
 
 int eventNum =0;
@@ -94,13 +92,13 @@ int _event;
 void sbn::SBNDBNBEXTRetriever::produce(art::Event & e)
 {
 
-  std::cout << "new_event: " << e.event() << std::endl;
+  mf::LogDebug("SBNDBNBEXTRetriever") << "new_event: " << e.event() << std::endl;
 
   TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
 
-  std::cout << "triggerInfo.t_current_event: " << std::setprecision(19) << triggerInfo.t_current_event << std::endl;
-  std::cout << "triggerInfo.t_previous_event: " <<  std::setprecision(19) << triggerInfo.t_previous_event << std::endl;
-  std::cout << "triggerInfo.number_of_gates_since_previous_event: " << triggerInfo.number_of_gates_since_previous_event << std::endl;
+  mf::LogDebug("SBNDBNBEXTRetriever") << "triggerInfo.t_current_event: " << std::setprecision(19) << triggerInfo.t_current_event << std::endl;
+  mf::LogDebug("SBNDBNBEXTRetriever") << "triggerInfo.t_previous_event: " <<  std::setprecision(19) << triggerInfo.t_previous_event << std::endl;
+  mf::LogDebug("SBNDBNBEXTRetriever") << "triggerInfo.number_of_gates_since_previous_event: " << triggerInfo.number_of_gates_since_previous_event << std::endl;
 
 
   TotalEXTCounts += triggerInfo.number_of_gates_since_previous_event;
@@ -113,7 +111,6 @@ void sbn::SBNDBNBEXTRetriever::produce(art::Event & e)
   //Store everything in our data-product
   sbn::EXTCountInfo extInfo;
   extInfo.gates_since_last_trigger = triggerInfo.number_of_gates_since_previous_event;
-
   fOutExtInfos.push_back(extInfo);
 }
 
@@ -147,13 +144,13 @@ sbn::SBNDBNBEXTRetriever::PTBInfo_t sbn::SBNDBNBEXTRetriever::extractPTBInfo(art
             PTBInfo.prevPTBTimeStamp = std::bitset<64>(RawprevPTBTimeStamp / 20).to_ullong()/50e6; 
             PTBInfo.currPTBTimeStamp = std::bitset<64>(RawcurrPTBTimeStamp / 20).to_ullong()/50e6; 
             PTBInfo.GateCounter = ctb_frag.Trigger(word_i)->gate_counter;
+            break;
 	  }
         }
       } //End of loop over the number of trigger words
     } //End of loop over the number of fragments per container
   } //End of loop over the number of containers
 
-  std::cout << "HLT_count: " << HLT_count << std::endl;
   return PTBInfo; 
 }
 
@@ -200,6 +197,19 @@ sbn::SBNDBNBEXTRetriever::TriggerInfo_t sbn::SBNDBNBEXTRetriever::extractTrigger
   triggerInfo.t_previous_event = PTBInfo.prevPTBTimeStamp;
   triggerInfo.number_of_gates_since_previous_event = PTBInfo.GateCounter;
 
+  if(triggerInfo.t_current_event - PTBInfo.currPTBTimeStamp >= 1){
+    mf::LogDebug("SBNDBNBEXTRetriever") << "Caught PTB bug, PTB late" << std::endl;
+    mf::LogDebug("SBNDBNBEXTRetriever") << "Before: " << triggerInfo.t_previous_event << std::endl;
+    triggerInfo.t_previous_event+=1;
+    mf::LogDebug("SBNDBNBEXTRetriever") << "After: " << triggerInfo.t_previous_event << std::endl;
+  }
+  else if(triggerInfo.t_current_event - PTBInfo.currPTBTimeStamp <= -1){
+    mf::LogDebug("SBNDBNBEXTRetriever") << "Caught PTB bug, PTB early" << std::endl;
+    mf::LogDebug("SBNDBNBEXTRetriever") << "Before: " << triggerInfo.t_previous_event << std::endl;
+    triggerInfo.t_previous_event-=1;
+    mf::LogDebug("SBNDBNBEXTRetriever") << "After: " << triggerInfo.t_previous_event << std::endl;
+  }
+
   return triggerInfo;
 }
 
@@ -208,7 +218,6 @@ void sbn::SBNDBNBEXTRetriever::beginSubRun(art::SubRun& sr)
   TotalEXTCounts = 0;
   totalMinBias = 0;
   evtCount = 0;
-  scale_factor = 0;
   return;
 }
 
@@ -216,18 +225,6 @@ void sbn::SBNDBNBEXTRetriever::endSubRun(art::SubRun& sr)
 {
    // We will add all of the EXTCountInfo data-products to the 
   // art::SubRun so it persists 
-
-  if(evtCount != 0 && totalMinBias != 0)
-    scale_factor = 1. - (evtCount/totalMinBias);
-  else
-    std::cout << "FAILED! " << std::endl;
-  // probably want to throw an exception here
-
-  for(auto ExtInfo : fOutExtInfos){
-    
-    ExtInfo.gates_since_last_trigger *= scale_factor;
-    
-  } 
 
   auto p =  std::make_unique< std::vector< sbn::EXTCountInfo > >(fOutExtInfos);
 
