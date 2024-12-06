@@ -9,9 +9,10 @@ simedepfilter_ind1gap: {
   P2_X: 400 #cm, create a box that spans the full x,y range. Not super-precise.
   P2_Y: 200 #cm, create a box that spans the full x,y range. Not super-precise.
   P2_Z: 2 #cm, other edge of the filtered gap based on the 37 mm total size of the wire gap
-  A: -0.431172
-  B: -2.52724
-  C: 0.22043
+  #From SBN doc-db 38701:
+  A: -0.431172  
+  B: -2.52724 
+  C: 0.22043 
 }
 
 
