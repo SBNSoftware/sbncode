@@ -43,7 +43,7 @@ private:
   art::InputTag fInitSimEnergyDepositLabel;
   geo::BoxBoundedGeo fBox;
   static constexpr auto kModuleName = "FilterSimEnergyDeposit";
-  const double ShiftX(double z);
+  double ShiftX(double z) const;
   double fA;
   double fB;
   double fC;
@@ -57,9 +57,9 @@ FilterSimEnergyDeposits::FilterSimEnergyDeposits(fhicl::ParameterSet const& p)
   , fBox{p.get<double>("P1_X"), p.get<double>("P2_X"),
 	 p.get<double>("P1_Y"), p.get<double>("P2_Y"),
 	 p.get<double>("P1_Z"), p.get<double>("P2_Z")}
-  , fA{p.get<double>("A", 0.0)}
-  , fB{p.get<double>("B", 0.0)}
-  , fC{p.get<double>("C", 0.0)}
+  , fA{p.get<double>("A")}
+  , fB{p.get<double>("B")}
+  , fC{p.get<double>("C")}
 {
   // Call appropriate produces<>() functions here.
   // Call appropriate consumes<>() for any products to be retrieved by this module.
@@ -67,7 +67,7 @@ FilterSimEnergyDeposits::FilterSimEnergyDeposits(fhicl::ParameterSet const& p)
 }
 
 
-const double FilterSimEnergyDeposits::ShiftX(double z)
+double FilterSimEnergyDeposits::ShiftX(double z) const
 {
   //known as a "Hill equation" from fitting distribution of angle corrected tracks looking at the deflection as it gets closer to z = 0
   double a = fA;
