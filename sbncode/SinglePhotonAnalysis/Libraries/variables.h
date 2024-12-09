@@ -3,7 +3,7 @@
 
 #include "art/Framework/Principal/Handle.h"
 
-#include "larcore/Geometry/Geometry.h"
+#include "larcorealg/Geometry/fwd.h"
 #include "larcorealg/Geometry/BoxBoundedGeo.h"
 #include "larevt/SpaceChargeServices/SpaceChargeService.h" 
 
@@ -141,6 +141,7 @@ namespace single_photon
 
     spacecharge::SpaceCharge const * s_SCE;
     geo::GeometryCore const * s_geom;
+    geo::WireReadoutGeom const * s_wireReadout;
     double s_tpc_active_XMin;
     double s_tpc_active_YMin;
     double s_tpc_active_ZMin;

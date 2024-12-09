@@ -54,9 +54,7 @@
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
-#include "larcore/Geometry/Geometry.h"
-#include "larcore/CoreUtils/ServiceUtil.h"
-#include "larcorealg/Geometry/GeometryCore.h"
+#include "larcorealg/Geometry/fwd.h"
 
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "larsim/MCCheater/BackTrackerService.h"
@@ -119,17 +117,18 @@ private:
 
   // Fill vars
   void FillTrack(const recob::Track &track, 
-    const recob::PFParticle &pfp, float t0, 
+    const recob::PFParticle &pfp, float t0, float t0CRT,
     const std::vector<art::Ptr<recob::Hit>> &hits,
     const std::vector<const recob::TrackHitMeta*> &thms,
     const std::vector<art::Ptr<recob::SpacePoint>> &sps,
     const std::vector<art::Ptr<anab::Calorimetry>> &calo,
     const std::map<geo::WireID, art::Ptr<raw::RawDigit>> &rawdigits,
     const std::vector<GlobalTrackInfo> &tracks,
-    const geo::GeometryCore *geo,
+    const geo::WireReadoutGeom *wireReadout,
     const detinfo::DetectorClocksData &clock_data,
     const cheat::BackTrackerService *bt_serv,
-    const sbn::EDet det);
+    const sbn::EDet det,
+    const detinfo::DetectorPropertiesData &dprop);
 
   void FillTrackDaughterRays(const recob::Track &trk,
     const recob::PFParticle &pfp, 
@@ -137,6 +136,7 @@ private:
     const art::FindManyP<recob::SpacePoint> &PFParticleSPs);
 
   void FillTrackEndHits(const geo::GeometryCore *geometry,
+                        const geo::WireReadoutGeom *wireReadout,
     const detinfo::DetectorPropertiesData &dprop,
     const recob::Track &track,
     const std::vector<art::Ptr<recob::Hit>> &allHits,
@@ -150,7 +150,8 @@ private:
     const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map,
     const std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map,
     const detinfo::DetectorPropertiesData &dprop,
-    const geo::GeometryCore *geo);
+    const geo::GeometryCore *geo,
+    const geo::WireReadoutGeom *wireReadout);
 
   TrackHitInfo MakeHit(const recob::Hit &hit,
     unsigned hkey,
@@ -158,7 +159,7 @@ private:
     const recob::Track &trk,
     const art::Ptr<recob::SpacePoint> &sp,
     const std::vector<art::Ptr<anab::Calorimetry>> &calo,
-    const geo::GeometryCore *geo,
+    const geo::WireReadoutGeom *wireReadout,
     const detinfo::DetectorClocksData &dclock,
     const cheat::BackTrackerService *bt_serv);
 
