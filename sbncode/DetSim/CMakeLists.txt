@@ -32,6 +32,9 @@ set(	MODULE_LIBRARIES
 		)
 
 cet_build_plugin(AdjustSimForTrigger art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(FilterSimEnergyDeposits art::module LIBRARIES ${MODULE_LIBRARIES})
+
+add_subdirectory(fcl)
 
 #install_headers()
 install_fhicl()
