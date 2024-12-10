@@ -993,6 +993,19 @@ namespace caf
     }
   }
 
+  void FillCVNScores(const lcvn::Result *cvnResult,
+                           caf::SRSlice& slice)
+  { 
+
+    if ( cvnResult != nullptr ) {
+      auto const & cvn = cvnResult->fOutput;
+      slice.cvn.numuscore    = cvn[0][0];
+      slice.cvn.nuescore     = cvn[0][1];
+      slice.cvn.cosmicscore  = cvn[0][2];
+      slice.cvn.ncscore      = cvn[0][3];
+    }
+  }
+  
   //......................................................................
 
   void FillPFPRazzled(const art::Ptr<sbn::MVAPID> razzled,
