@@ -1,0 +1,10 @@
+
+BEGIN_PROLOG
+
+icarusbnbextcountinfo: {
+
+    module_type: "ICARUSBNBEXTRetriever"    
+    raw_data_label: "daq"
+
+}
+END_PROLOG
