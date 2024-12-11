@@ -4,6 +4,9 @@
 // \author  $Author: psihas@fnal.gov
 //////////////////////////////////////////////////////////////////////
 
+#include "larcorealg/Geometry/GeometryCore.h"
+#include "larcorealg/Geometry/WireReadoutGeom.h"
+
 #include "FillReco.h"
 #include "RecoUtils/RecoUtils.h"
 
@@ -138,6 +141,8 @@ namespace caf
   }
 
   void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,
+		       int &topen, int &topex, int &sideen, int &sideex,
+		       //int &bottomen, int &bottomex,
 		       caf::SRCRTPMTMatch &srmatch,
 		       bool allowEmpty){
     // allowEmpty does not (yet) matter here                                                           
@@ -154,17 +159,24 @@ namespace caf
     srmatch.flashPosition = SRVector3D (match.flashPosition.X(), match.flashPosition.Y(), match.flashPosition.Z());
     srmatch.flashYWidth = match.flashYWidth;
     srmatch.flashZWidth = match.flashZWidth;
-    srmatch.flashClassification = static_cast<int>(match.flashClassification);
     for(const auto& matchedCRTHit : match.matchedCRTHits){
-      std::cout << "CRTPMTTimeDiff = "<< matchedCRTHit.PMTTimeDiff << "\n";
       caf::SRMatchedCRT matchedCRT;
       matchedCRT.PMTTimeDiff = matchedCRTHit.PMTTimeDiff; 
       matchedCRT.time = matchedCRTHit.time;
       matchedCRT.sys = matchedCRTHit.sys;
       matchedCRT.region = matchedCRTHit.region;
       matchedCRT.position = SRVector3D(matchedCRTHit.position.X(), matchedCRTHit.position.Y(), matchedCRTHit.position.Z());
+      if(matchedCRTHit.PMTTimeDiff < 0){
+        if(matchedCRTHit.sys == 0) topen++;
+        else if(matchedCRTHit.sys == 1) sideen++;
+      }
+      else if(matchedCRTHit.PMTTimeDiff >= 0){
+        if(matchedCRTHit.sys == 0) topex++;
+        else if(matchedCRTHit.sys == 1) sideex++;
+      }
       srmatch.matchedCRTHits.push_back(matchedCRT);
     }
+    srmatch.flashClassification = static_cast<int>(sbn::crt::assignFlashClassification(topen, topex, sideen, sideex, 0, 0));
   }
 
 
@@ -228,7 +240,7 @@ namespace caf
   void FillShowerVars(const recob::Shower& shower,
                       const recob::Vertex* vertex,
                       const std::vector<art::Ptr<recob::Hit>> &hits,
-                      const geo::GeometryCore *geom,
+                      const geo::WireReadoutGeom& wireReadout,
                       unsigned producer,
                       caf::SRShower &srshower,
                       bool allowEmpty)
@@ -281,9 +293,9 @@ namespace caf
     for(int p = 0; p < 3; ++p) srshower.plane[p].nHits = 0;
     for (auto const& hit:hits) ++srshower.plane[hit->WireID().Plane].nHits;
 
-    for (geo::PlaneGeo const& plane: geom->Iterate<geo::PlaneGeo>()) {
+    for (geo::PlaneGeo const& plane: wireReadout.Iterate<geo::PlaneGeo>()) {
 
-      const double angleToVert(geom->WireAngleToVertical(plane.View(), plane.ID()) - 0.5*M_PI);
+      const double angleToVert(wireReadout.WireAngleToVertical(plane.View(), plane.ID()) - 0.5*M_PI);
       const double cosgamma(std::abs(std::sin(angleToVert)*shower.Direction().Y()+std::cos(angleToVert)*shower.Direction().Z()));
 
       srshower.plane[plane.ID().Plane].wirePitch = plane.WirePitch()/cosgamma;
@@ -695,7 +707,6 @@ namespace caf
   }
 
   void FillTrackChi2PID(const std::vector<art::Ptr<anab::ParticleID>> particleIDs,
-                        const geo::GeometryCore *geom,
                         caf::SRTrack& srtrack,
                         bool allowEmpty)
   {
@@ -753,7 +764,7 @@ namespace caf
             p.wire = h->WireID().Wire;
             p.tpc = h->WireID().TPC;
             p.channel = h->Channel();
-            p.sumadc = h->SummedADC();
+            p.sumadc = h->ROISummedADC();
             p.integral = h->Integral();
             p.t = h->PeakTime();
             p.width = h->RMS();
@@ -815,7 +826,7 @@ namespace caf
   void FillTrackCalo(const std::vector<art::Ptr<anab::Calorimetry>> &calos,
                      const std::vector<art::Ptr<recob::Hit>> &hits,
                      bool fill_calo_points, float fillhit_rrstart, float fillhit_rrend,
-                     const geo::GeometryCore *geom, const detinfo::DetectorPropertiesData &dprop,
+                     const detinfo::DetectorPropertiesData &dprop,
                      caf::SRTrack& srtrack,
                      bool allowEmpty)
   {
