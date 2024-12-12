@@ -999,10 +999,15 @@ namespace caf
 
     if ( cvnResult != nullptr ) {
       auto const & cvn = cvnResult->fOutput;
-      slice.cvn.numuscore    = cvn[0][0];
-      slice.cvn.nuescore     = cvn[0][1];
-      slice.cvn.cosmicscore  = cvn[0][2];
-      slice.cvn.ncscore      = cvn[0][3];
+      if (cvn.size()==1 && cvn[0].size()==4){
+        slice.cvn.numuscore    = cvn[0][0];
+        slice.cvn.nuescore     = cvn[0][1];
+        slice.cvn.cosmicscore  = cvn[0][2];
+        slice.cvn.ncscore      = cvn[0][3];
+      }
+      else{
+        std::cout<<"CVN result does not have the correct dimensions."<<std::endl;
+      }
     }
   }
   
