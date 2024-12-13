@@ -176,6 +176,12 @@ private:
     int saveOrphanPairs(HitMatchTripletVecMap&, MatchedHitMap&, reco::HitPairList&) const;
 
     /**
+     * @brief This will look at storing pairs where the third channel is consistent with a "bad" channel
+     */
+
+    int saveBadChannelPairs(HitMatchTripletVecMap&, MatchedHitMap&, reco::HitPairList&) const;
+
+    /**
      *  @brief Make a HitPair object by checking two hits
      */
     bool makeHitPair(reco::ClusterHit3D&       pairOut,
@@ -191,11 +197,6 @@ private:
                         MatchedHitMap&            matchedHitMap,
                         const reco::ClusterHit3D& pairIn,
                         const reco::ClusterHit2D* hit2) const;
-
-    /**
-     *  @brief Make a 3D HitPair object from a valid pair and a dead channel in the missing plane
-     */
-    bool makeDeadChannelPair(reco::ClusterHit3D& pairOut, const reco::ClusterHit3D& pair, MatchedHitMap&, size_t maxStatus = 4, size_t minStatus = 0, float minOverlap=0.2) const;
 
     /**
      * @brief function to detemine if two wires "intersect" (in the 2D sense)
@@ -229,20 +230,9 @@ private:
     float DistanceFromPointToHitWire(const Eigen::Vector3f& position, const geo::WireID& wireID) const;
 
     /**
-     *  @brief Create the internal channel status vector (assume will eventually be event-by-event)
-     */
-    void BuildChannelStatusVec(PlaneToWireToHitSetMap& planeToWiretoHitSetMap) const;
-
-    /**
      * @brief Perform charge integration between limits
      */
     float chargeIntegral(float,float,float,float,int,int) const;
-
-    /**
-     *  @brief define data structure for keeping track of channel status
-     */
-    using ChannelStatusVec        = std::vector<size_t>;
-    using ChannelStatusByPlaneVec = std::vector<ChannelStatusVec>;
 
     /**
      *  @brief clear the tuple vectors before processing next event
@@ -265,6 +255,7 @@ private:
     std::vector<int>                        m_invalidTPCVec;
     float                                   m_wirePitchScaleFactor;  ///< Scaling factor to determine max distance allowed between candidate pairs
     float                                   m_maxHit3DChiSquare;     ///< Provide ability to select hits based on "chi square"
+    bool                                    m_saveBadChannelPairs;   ///< Should we save pairs consistent with bad channels?
     bool                                    m_saveMythicalPoints;    ///< Should we save valid 2 hit space points? 
     float                                   m_maxMythicalChiSquare;  ///< Selection cut on mythical points
     bool                                    m_useT0Offsets;          ///< If true then we will use the LArSoft interplane offsets
@@ -320,10 +311,6 @@ private:
     mutable PlaneToSnippetHitMap            m_planeToSnippetHitMap;
     mutable PlaneToWireToHitSetMap          m_planeToWireToHitSetMap;
 
-
-    mutable ChannelStatusByPlaneVec         m_channelStatus;
-    mutable size_t                          m_numBadChannels;
-
     mutable bool                            m_weHaveAllBeenHereBefore = false;
 
     const geo::Geometry*                    m_geometry;              //< pointer to the Geometry service
@@ -363,6 +350,7 @@ void SnippetHit3DBuilderSBN::configure(fhicl::ParameterSet const &pset)
     m_invalidTPCVec        = pset.get<std::vector<int>          >("InvalidTPCVec",          std::vector<int>());
     m_wirePitchScaleFactor = pset.get<float                     >("WirePitchScaleFactor",   1.9 );
     m_maxHit3DChiSquare    = pset.get<float                     >("MaxHitChiSquare",        6.0 );
+    m_saveBadChannelPairs  = pset.get<bool                      >("SaveBadChannelPairs",    true);
     m_saveMythicalPoints   = pset.get<bool                      >("SaveMythicalPoints",     true);
     m_maxMythicalChiSquare = pset.get<float                     >("MaxMythicalChiSquare",    10.);
     m_useT0Offsets         = pset.get<bool                      >("UseT0Offsets",           true);
@@ -461,48 +449,6 @@ void SnippetHit3DBuilderSBN::clear()
     return;
 }
 
-void SnippetHit3DBuilderSBN::BuildChannelStatusVec(PlaneToWireToHitSetMap& planeToWireToHitSetMap) const
-{
-    // This is called each event, clear out the previous version and start over
-    m_channelStatus.clear();
-
-    m_numBadChannels = 0;
-    m_channelStatus.resize(m_geometry->Nplanes());
-
-    // Loop through views/planes to set the wire length vectors
-    constexpr geo::TPCID tpcid{0, 0};
-    for(size_t idx = 0; idx < m_channelStatus.size(); idx++)
-    {
-        m_channelStatus[idx] = ChannelStatusVec(m_geometry->Nwires(geo::PlaneID(tpcid, idx)), 5);
-    }
-
-    // Loop through the channels and mark those that are "bad"
-    for(size_t channel = 0; channel < m_geometry->Nchannels(); channel++)
-    {
-        try
-        {  
-            if( m_channelFilter->IsPresent(channel) && !m_channelFilter->IsGood(channel))
-            {
-                std::vector<geo::WireID>                wireIDVec = m_geometry->ChannelToWire(channel);
-                geo::WireID                             wireID    = wireIDVec[0];
-                lariov::ChannelStatusProvider::Status_t chanStat  = m_channelFilter->Status(channel);
-
-                m_channelStatus[wireID.Plane][wireID.Wire] = chanStat;
-                m_numBadChannels++;
-            }
-        }
-        catch(...)
-        {
-            mf::LogDebug("SnippetHit3D") << "--> Channel: " << channel << " threw exception so we will skip" << std::endl;
-        }
-    }
-
-    std::cout << "SnippetHit3D finds " << m_numBadChannels << " bad channels" << std::endl;
-
-    return;
-}
-
-
 bool SetPeakHitPairIteratorOrder(const reco::HitPairList::iterator& left, const reco::HitPairList::iterator& right)
 {
     return (*left).getAvePeakTime() < (*right).getAvePeakTime();
@@ -526,6 +472,9 @@ void SnippetHit3DBuilderSBN::Hit3DBuilder(art::Event& evt, reco::HitPairList& hi
     m_clusterHit2DMasterList.clear();
     m_planeToSnippetHitMap.clear();
     m_planeToWireToHitSetMap.clear();
+
+    mf::LogDebug("SnippetHit3D") << "SnippetHit3DBuilderSBN entered" << std::endl;
+    std::cout << "Tracy is here" << std::endl;
 
     // Do the one time initialization of the tick offsets. 
     if (m_PlaneToT0OffsetMap.empty())
@@ -558,6 +507,8 @@ void SnippetHit3DBuilderSBN::Hit3DBuilder(art::Event& evt, reco::HitPairList& hi
     // Recover the 2D hits and then organize them into data structures which will be used in the
     // DBscan algorithm for building the 3D clusters
     this->CollectArtHits(evt);
+
+    mf::LogDebug("SnippetHit3D") << "SnippetHit3DBuilderSBN building space points";
 
     // If there are no hits in our view/wire data structure then do not proceed with the full analysis
     if (!m_planeToWireToHitSetMap.empty())
@@ -594,6 +545,8 @@ void SnippetHit3DBuilderSBN::Hit3DBuilder(art::Event& evt, reco::HitPairList& hi
         clear();
     }
 
+    mf::LogDebug("SnippetHit3D") << "SnippetHit3DBuilderSBN exited";
+
     return;
 }
 
@@ -606,10 +559,6 @@ void SnippetHit3DBuilderSBN::BuildHit3D(reco::HitPairList& hitPairList) const
     cet::cpu_timer theClockMakeHits;
 
     if (m_enableMonitoring) theClockMakeHits.start();
-
-    // The first task is to take the lists of input 2D hits (a map of view to sorted lists of 2D hits)
-    // and then to build a list of 3D hits to be used in downstream processing
-    BuildChannelStatusVec(m_planeToWireToHitSetMap);
 
     size_t numHitPairs = BuildHitPairMap(m_planeToSnippetHitMap, hitPairList);
 
@@ -790,6 +739,12 @@ size_t SnippetHit3DBuilderSBN::BuildHitPairMapByTPC(PlaneSnippetHitMapItrPairVec
         if (n12Pairs > n13Pairs) findGoodTriplets(pair12Map, pair13Map, matchedHitMap, hitPairList);
         else                     findGoodTriplets(pair13Map, pair12Map, matchedHitMap, hitPairList);
 
+        if (m_saveBadChannelPairs)
+        {
+            nOrphanPairs += saveBadChannelPairs(pair12Map, matchedHitMap, hitPairList);
+            nOrphanPairs += saveBadChannelPairs(pair13Map, matchedHitMap, hitPairList);
+        }
+
         if (m_saveMythicalPoints)
         {
             nOrphanPairs += saveOrphanPairs(pair12Map, matchedHitMap, hitPairList);
@@ -807,9 +762,9 @@ size_t SnippetHit3DBuilderSBN::BuildHitPairMapByTPC(PlaneSnippetHitMapItrPairVec
 }
 
 int SnippetHit3DBuilderSBN::findGoodHitPairs(SnippetHitMap::iterator& firstSnippetItr,
-                                                SnippetHitMap::iterator& startItr,
-                                                SnippetHitMap::iterator& endItr,
-                                                HitMatchTripletVecMap&   hitMatchMap) const
+                                             SnippetHitMap::iterator& startItr,
+                                             SnippetHitMap::iterator& endItr,
+                                             HitMatchTripletVecMap&   hitMatchMap) const
 {
     int numPairs(0);
 
@@ -861,13 +816,13 @@ int SnippetHit3DBuilderSBN::findGoodHitPairs(SnippetHitMap::iterator& firstSnipp
 }
 
 void SnippetHit3DBuilderSBN::findGoodTriplets(HitMatchTripletVecMap& pair12Map, 
-                                                 HitMatchTripletVecMap& pair13Map, 
-                                                 MatchedHitMap&         matchedHitMap,
-                                                 reco::HitPairList&     hitPairList, 
-                                                 bool                   tagged) const
+                                              HitMatchTripletVecMap& pair13Map, 
+                                              MatchedHitMap&         matchedHitMap,
+                                              reco::HitPairList&     hitPairList, 
+                                              bool                   tagged) const
 {
     // Build triplets from the two lists of hit pairs
-    if (!pair12Map.empty())
+    if (!pair12Map.empty() && !pair13Map.empty())
     {
         // temporary container for dead channel hits
         std::vector<reco::ClusterHit3D> tempDeadChanVec;
@@ -920,57 +875,6 @@ void SnippetHit3DBuilderSBN::findGoodTriplets(HitMatchTripletVecMap& pair12Map,
                             usedPairMap[&pair2] = true;
                         }
                     }
-                }
-            }
-        }
-
-        // One more loop through the other pairs to check for sick channels
-        if (m_numBadChannels > 0)
-        {
-            for(const auto& pairMapPair : usedPairMap)
-            {
-                if (pairMapPair.second) continue;
-
-                const reco::ClusterHit3D* pair = pairMapPair.first;
-
-                // Here we look to see if we failed to make a triplet because the partner wire was dead/noisy/sick
-                if (makeDeadChannelPair(deadChanPair, *pair, matchedHitMap, 4, 0, 0.)) tempDeadChanVec.emplace_back(deadChanPair);
-            }
-
-            // Handle the dead wire triplets
-            if(!tempDeadChanVec.empty())
-            {
-                // If we have many then see if we can trim down a bit by keeping those with time significance
-                if (tempDeadChanVec.size() > 1)
-                {
-                    // Sort by "significance" of agreement
-                    std::sort(tempDeadChanVec.begin(),tempDeadChanVec.end(),[](const auto& left, const auto& right){return left.getDeltaPeakTime()/left.getSigmaPeakTime() < right.getDeltaPeakTime()/right.getSigmaPeakTime();});
-
-                    // What is the range of "significance" from first to last?
-                    float firstSig = tempDeadChanVec.front().getDeltaPeakTime() / tempDeadChanVec.front().getSigmaPeakTime();
-                    float lastSig  = tempDeadChanVec.back().getDeltaPeakTime()  / tempDeadChanVec.back().getSigmaPeakTime();
-                    float sigRange = lastSig - firstSig;
-
-                    if (lastSig > 0.5 * m_deltaPeakTimeSig && sigRange > 0.5)
-                    {
-                        // Declare a maximum of 1.5 * the average of the first and last pairs...
-                        float maxSignificance = std::max(0.75 * (firstSig + lastSig),1.0);
-
-                        std::vector<reco::ClusterHit3D>::iterator firstBadElem = std::find_if(tempDeadChanVec.begin(),tempDeadChanVec.end(),[&maxSignificance](const auto& pair){return pair.getDeltaPeakTime()/pair.getSigmaPeakTime() > maxSignificance;});
-
-                        // But only keep the best 10?
-                        if (std::distance(tempDeadChanVec.begin(),firstBadElem) > 20) firstBadElem = tempDeadChanVec.begin() + 20;
-                        // Keep at least one hit...
-                        else if (firstBadElem == tempDeadChanVec.begin()) firstBadElem++;
-
-                        tempDeadChanVec.resize(std::distance(tempDeadChanVec.begin(),firstBadElem));
-                    }
-                }
-
-                for(auto& pair : tempDeadChanVec)
-                {
-                    pair.setID(hitPairList.size());
-                    hitPairList.emplace_back(pair);
                 }
             }
         }
@@ -1037,11 +941,100 @@ int SnippetHit3DBuilderSBN::saveOrphanPairs(HitMatchTripletVecMap& pairMap, Matc
     return hitPairList.size() - curTripletCount;
 }
 
+int SnippetHit3DBuilderSBN::saveBadChannelPairs(HitMatchTripletVecMap& pairMap, MatchedHitMap& matchedHitMap, reco::HitPairList& hitPairList) const
+{
+    int curTripletCount = hitPairList.size();
+
+    // Assuming we havebad channels and the pairmap is not empty...
+    if (!m_channelFilter->NoisyChannels().empty() && !pairMap.empty())
+    {
+        // Initial population of this map with the pairMap hits
+        for(const auto& pair : pairMap)
+        {
+            if (pair.second.empty()) continue;
+
+            // This loop is over hit pairs that share the same first two plane wires but may have different
+            // hit times on those wires
+            for(const auto& hit2Dhit3DPair : pair.second)
+            {
+                const reco::ClusterHit3D& hit3D = std::get<2>(hit2Dhit3DPair);
+
+                // No point considering a 3D hit that has been used to make a space point already
+                if (hit3D.getStatusBits() & reco::ClusterHit3D::MADESPACEPOINT) continue;
+
+                const reco::ClusterHit2D* hit0 = std::get<0>(hit2Dhit3DPair);
+                const reco::ClusterHit2D* hit1 = std::get<1>(hit2Dhit3DPair);
+
+                // Have both of these hits already been used in some fashion?
+                if (matchedHitMap.find(hit0) != matchedHitMap.end() && matchedHitMap[hit0].find(hit1) != matchedHitMap[hit0].end()) continue;
+
+                // Which plane is missing?
+                geo::WireID wireID0 = hit0->WireID();
+                geo::WireID wireID1 = hit1->WireID();
+
+                // Determine the missing plane
+                int missPlane = 3 - (wireID0.Plane + wireID1.Plane);
+        
+                // Ok, recover the wireID expected in the third plane...
+                geo::WireID wireIn(wireID0.Cryostat,wireID0.TPC,missPlane,0);
+                geo::WireID wireID = NearestWireID(hit3D.getPosition(), wireIn);
+        
+                raw::ChannelID_t channel = m_geometry->PlaneWireToChannel(wireID);
+        
+                geo::WireID wireIDNext(wireID.Cryostat,wireID.TPC,wireID.Plane,wireID.Wire+1);
+                raw::ChannelID_t chanNext = m_geometry->PlaneWireToChannel(wireIDNext);
+        
+                bool wireStatus    =  m_channelFilter->IsPresent(channel)  && !m_channelFilter->IsGood(channel);
+                bool wireOneStatus =  m_channelFilter->IsPresent(chanNext) && !m_channelFilter->IsGood(chanNext);
+
+                // Make sure they are of at least the minimum status
+                if(wireStatus || wireOneStatus)
+                {
+                    // Sort out which is the wire we're dealing with
+                    if (!wireStatus) wireID = wireIDNext;
+
+                    // Want to refine position since we "know" the missing wire
+                    geo::WireIDIntersection widIntersect0;
+
+                    if (m_geometry->WireIDsIntersect(wireID0, wireID, widIntersect0))
+                    {
+                        geo::WireIDIntersection widIntersect1;
+
+                        if (m_geometry->WireIDsIntersect(wireID1, wireID, widIntersect1))
+                        {
+                            Eigen::Vector3f newPosition(hit3D.getPosition()[0],hit3D.getPosition()[1],hit3D.getPosition()[2]);
+
+                            newPosition[1] = (newPosition[1] + widIntersect0.y + widIntersect1.y) / 3.;
+                            newPosition[2] = (newPosition[2] + widIntersect0.z + widIntersect1.z - 2. * m_zPosOffset) / 3.;
+
+                            hit3D.setPosition(newPosition);
+        
+                            if (hit0->getStatusBits() & reco::ClusterHit2D::USEDINTRIPLET) hit0->setStatusBit(reco::ClusterHit2D::SHAREDINTRIPLET);
+                            if (hit1->getStatusBits() & reco::ClusterHit2D::USEDINTRIPLET) hit1->setStatusBit(reco::ClusterHit2D::SHAREDINTRIPLET);
+        
+                            hit0->setStatusBit(reco::ClusterHit2D::USEDINTRIPLET);
+                            hit1->setStatusBit(reco::ClusterHit2D::USEDINTRIPLET);
+        
+                            // Add to the list
+                            hitPairList.emplace_back(hit3D);
+                            hitPairList.back().setID(hitPairList.size()-1);
+                            matchedHitMap[hit0].insert(hit1);
+                            matchedHitMap[hit1].insert(hit0);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return hitPairList.size() - curTripletCount;
+}
+
 bool SnippetHit3DBuilderSBN::makeHitPair(reco::ClusterHit3D&       hitPair,
-                                            const reco::ClusterHit2D* hit1,
-                                            const reco::ClusterHit2D* hit2,
-                                            float                     hitWidthSclFctr,
-                                            size_t                    hitPairCntr) const
+                                         const reco::ClusterHit2D* hit1,
+                                         const reco::ClusterHit2D* hit2,
+                                         float                     hitWidthSclFctr,
+                                         size_t                    hitPairCntr) const
 {
     // Assume failure
     bool result(false);
@@ -1189,9 +1182,9 @@ bool SnippetHit3DBuilderSBN::makeHitPair(reco::ClusterHit3D&       hitPair,
 
 
 bool SnippetHit3DBuilderSBN::makeHitTriplet(reco::ClusterHit3D&       hitTriplet,
-                                               MatchedHitMap&            matchedHitMap,
-                                               const reco::ClusterHit3D& pair,
-                                               const reco::ClusterHit2D* hit) const
+                                            MatchedHitMap&            matchedHitMap,
+                                            const reco::ClusterHit3D& pair,
+                                            const reco::ClusterHit2D* hit) const
 {
     // Assume failure
     bool result(false);
@@ -1469,11 +1462,11 @@ bool SnippetHit3DBuilderSBN::makeHitTriplet(reco::ClusterHit3D&       hitTriplet
 
                     result = true;
                 }
-//                else std::cout << "-Rejecting triple with chiSquare: " << hitChiSquare << " and hiMinIndex: " << hiMinIndex << ", loMaxIndex: " << lowMaxIndex << std::endl;
+//                else mf::LogDebug("SnippetHit3D") << "-Rejecting triple with chiSquare: " << hitChiSquare << " and hiMinIndex: " << hiMinIndex << ", loMaxIndex: " << lowMaxIndex;
             }
         }
     }
-//    else std::cout << "-MakeTriplet hit cut, delta: " << hitTimeTicks - pair.getAvePeakTime() << ", min scale fctr: " <<m_hitWidthSclFctr << ", pair sig: " << pair.getSigmaPeakTime() << ", hitSigma: " << hitSigma << std::endl;
+//    else mf::LogDebug("SnippetHit3D") << "-MakeTriplet hit cut, delta: " << hitTimeTicks - pair.getAvePeakTime() << ", min scale fctr: " <<m_hitWidthSclFctr << ", pair sig: " << pair.getSigmaPeakTime() << ", hitSigma: " << hitSigma << std::endl;
 
     // return success/fail
     return result;
@@ -1572,91 +1565,6 @@ float SnippetHit3DBuilderSBN::chargeIntegral(float peakMean,
     }
 
     return integral;
-}
-
-bool SnippetHit3DBuilderSBN::makeDeadChannelPair(reco::ClusterHit3D&       pairOut,
-                                                    const reco::ClusterHit3D& pair,
-                                                    MatchedHitMap&            matchedHitMap,
-                                                    size_t                    maxChanStatus,
-                                                    size_t                    minChanStatus,
-                                                    float                     minOverlap) const
-{           
-    // Assume failure (most common result)
-    bool result(false);
-
-    const reco::ClusterHit2D* hit0 = pair.getHits()[0];
-    const reco::ClusterHit2D* hit1 = pair.getHits()[1];
-
-    size_t missPlane(2);
-
-    // u plane hit is missing
-    if (!hit0)
-    {
-        hit0      = pair.getHits()[2];
-        missPlane = 0;
-    }
-    // v plane hit is missing
-    else if (!hit1)
-    {
-        hit1      = pair.getHits()[2];
-        missPlane = 1;
-    }
-
-    // It can be the case that these hits have already been associated to a space point
-    if (matchedHitMap[hit0].find(hit1) != matchedHitMap[hit0].end())
-    {
-        // Which plane is missing?
-        geo::WireID wireID0 = hit0->WireID();
-        geo::WireID wireID1 = hit1->WireID();
-
-        // Ok, recover the wireID expected in the third plane...
-        geo::WireID wireIn(wireID0.Cryostat,wireID0.TPC,missPlane,0);
-        geo::WireID wireID = NearestWireID(pair.getPosition(), wireIn);
-
-        // There can be a round off issue so check the next wire as well
-        bool wireStatus    = m_channelStatus[wireID.Plane][wireID.Wire]   < maxChanStatus && m_channelStatus[wireID.Plane][wireID.Wire]   >= minChanStatus;
-        bool wireOneStatus = m_channelStatus[wireID.Plane][wireID.Wire+1] < maxChanStatus && m_channelStatus[wireID.Plane][wireID.Wire+1] >= minChanStatus;
-
-        // Make sure they are of at least the minimum status
-        if(wireStatus || wireOneStatus)
-        {
-            // Sort out which is the wire we're dealing with
-            if (!wireStatus) wireID.Wire += 1;
-
-            // Want to refine position since we "know" the missing wire
-            geo::WireIDIntersection widIntersect0;
-
-            if (m_geometry->WireIDsIntersect(wireID0, wireID, widIntersect0))
-            {
-                geo::WireIDIntersection widIntersect1;
-
-                if (m_geometry->WireIDsIntersect(wireID1, wireID, widIntersect1))
-                {
-                    Eigen::Vector3f newPosition(pair.getPosition()[0],pair.getPosition()[1],pair.getPosition()[2]);
-
-                    newPosition[1] = (newPosition[1] + widIntersect0.y + widIntersect1.y) / 3.;
-                    newPosition[2] = (newPosition[2] + widIntersect0.z + widIntersect1.z - 2. * m_zPosOffset) / 3.;
-
-                    pairOut = pair;
-                    pairOut.setWireID(wireID);
-                    pairOut.setPosition(newPosition);
-
-                    if (hit0->getStatusBits() & reco::ClusterHit2D::USEDINTRIPLET) hit0->setStatusBit(reco::ClusterHit2D::SHAREDINTRIPLET);
-                    if (hit1->getStatusBits() & reco::ClusterHit2D::USEDINTRIPLET) hit1->setStatusBit(reco::ClusterHit2D::SHAREDINTRIPLET);
-
-                    hit0->setStatusBit(reco::ClusterHit2D::USEDINTRIPLET);
-                    hit1->setStatusBit(reco::ClusterHit2D::USEDINTRIPLET);
-
-                    matchedHitMap[hit0].insert(hit1);
-                    matchedHitMap[hit1].insert(hit0);
-
-                    result  = true;
-                }
-            }
-        }
-    }
-
-    return result;
 }
 
 const reco::ClusterHit2D* SnippetHit3DBuilderSBN::FindBestMatchingHit(const Hit2DSet& hit2DSet, const reco::ClusterHit3D& pair, float pairDeltaTimeLimits) const
@@ -1896,7 +1804,7 @@ void SnippetHit3DBuilderSBN::CollectArtHits(const art::Event& evt) const
         // Can this really happen?
         if (hitStartEndPair.second <= hitStartEndPair.first)
         {
-            mf::LogInfo("SnippetHit3D") << "Yes, found a hit with end time less than start time: " << hitStartEndPair.first << "/" << hitStartEndPair.second << ", mult: " << recobHit->Multiplicity();
+            mf::LogDebug("SnippetHit3D") << "Yes, found a hit with end time less than start time: " << hitStartEndPair.first << "/" << hitStartEndPair.second << ", mult: " << recobHit->Multiplicity();
             continue;
         }
 
