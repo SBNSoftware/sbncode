@@ -109,18 +109,12 @@ void sbn::SBNDBNBEXTRetriever::produce(art::Event & e)
 }
 
 sbn::SBNDBNBEXTRetriever::PTBInfo_t sbn::SBNDBNBEXTRetriever::extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
-  int HLT_count = 0;
-
-  int numcont = 0;
   PTBInfo_t PTBInfo;
   for (auto const& cont : *cont_frags)
   { 
     artdaq::ContainerFragment cont_frag(cont);
-    numcont++;
-    int numfrag = 0;
     for (size_t fragi = 0; fragi < cont_frag.block_count(); ++fragi)
     {
-      numfrag++;
       artdaq::Fragment frag = *cont_frag[fragi];
       sbndaq::CTBFragment ctb_frag(frag);   // somehow the name CTBFragment stuck
       for(size_t word_i = 0; word_i < ctb_frag.NWords(); ++word_i)
@@ -131,8 +125,6 @@ sbn::SBNDBNBEXTRetriever::PTBInfo_t sbn::SBNDBNBEXTRetriever::extractPTBInfo(art
           wt = word_type;
 	  if (wt == 2 && ctb_frag.Trigger(word_i)->IsTrigger(4))
 	  {
-            HLT_count++;
-
 	    uint64_t RawprevPTBTimeStamp = ctb_frag.PTBWord(word_i)->prevTS * 20; 
 	    uint64_t RawcurrPTBTimeStamp = ctb_frag.Trigger(word_i)->timestamp * 20;
             PTBInfo.prevPTBTimeStamp = std::bitset<64>(RawprevPTBTimeStamp / 20).to_ullong()/50e6; 
@@ -149,16 +141,12 @@ sbn::SBNDBNBEXTRetriever::PTBInfo_t sbn::SBNDBNBEXTRetriever::extractPTBInfo(art
 }
 
 double sbn::SBNDBNBEXTRetriever::extractTDCTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
-  int numcont = 0;
   double TDCTimeStamp = 0;
   for (auto const& cont : *cont_frags)
   { 
     artdaq::ContainerFragment cont_frag(cont);
-    numcont++;
-    int numfrag = 0;
     for (size_t fragi = 0; fragi < cont_frag.block_count(); ++fragi)
     {
-      numfrag++;
       artdaq::Fragment frag = *cont_frag[fragi];
       sbndaq::TDCTimestampFragment tdc_frag(frag); 
       TDCTimeStamp = static_cast<double>(tdc_frag.getTDCTimestamp()->timestamp_ns())/1e9;
