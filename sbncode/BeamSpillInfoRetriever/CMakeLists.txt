@@ -1,4 +1,7 @@
 add_subdirectory(BNBRetriever)
+add_subdirectory(SBNDBNBRetriever)
+add_subdirectory(SBNDBNBZEROBIASRetriever)
+add_subdirectory(SBNDBNBEXTRetriever)
 add_subdirectory(NuMIRetriever)
 add_subdirectory(BNBEXTRetriever)
 add_subdirectory(NuMIEXTRetriever)
