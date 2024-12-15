@@ -62,44 +62,35 @@ sbn::TrackCaloSkimmer::TrackCaloSkimmer(fhicl::ParameterSet const& p)
     fFitConst(1)
 {
   // Grab config
-  fPFPproducer  = p.get< art::InputTag > ("PFPproducer","pandoraGausCryo0");
-  fT0producers   = p.get< std::vector<art::InputTag> > ("T0producers", {"pandoraGausCryo0"} );
+fproducerCRTTag = p.get< std::vector<art::InputTag> > ("CRTTagproducer",{"CRTT0Tagging"});  
+fPFPproducer = p.get< art::InputTag > ("PFPproducer","pandoraGausCryo0");
+  fT0producers = p.get< std::vector<art::InputTag> > ("T0producers", {"pandoraGausCryo0"} );
   fCALOproducer = p.get< art::InputTag > ("CALOproducer");
-  fTRKproducer  = p.get< art::InputTag > ("TRKproducer" );
-  fTRKHMproducer= p.get< art::InputTag   > ("TRKHMproducer", "");
-  //  fMCSproducerI = p.get< art::InputTag > ("MCSproducerI"); 
-  // fMCSproducerU = p.get< art::InputTag > ("MCSproducerU"); 
- fMCSproducerIIC = p.get< art::InputTag > ("MCSproducerIIC"); 
- fMCSproducerUIC = p.get< art::InputTag > ("MCSproducerUIC"); 
- std::cout << " label u " << fMCSproducerU << std::endl;
- std::cout << " label uic " << fMCSproducerUIC << std::endl;
+  fTRKproducer = p.get< art::InputTag > ("TRKproducer" );
+  fTRKHMproducer = p.get< art::InputTag > ("TRKHMproducer", "");
+  //fMCSproducerI = p.get< art::InputTag > ("MCSproducerI"); 
+  //fMCSproducerU = p.get< art::InputTag > ("MCSproducerU"); 
+  fMCSproducerIIC = p.get< art::InputTag > ("MCSproducerIIC"); 
+  fMCSproducerUIC = p.get< art::InputTag > ("MCSproducerUIC"); 
   fMCSproducerIFC = p.get< art::InputTag > ("MCSproducerIFC"); 
- fMCSproducerUFC = p.get< art::InputTag > ("MCSproducerUFC"); 
-
-fRangeInputtag = p.get< art::InputTag > ("RangeInputtag"); 
-
- fHITproducer  = p.get< art::InputTag > ("HITproducer" );
-  fG4producer  = p.get< std::string > ("G4producer" );
-  
-  fSimChannelproducer  = p.get< std::string > ("SimChannelproducer" );
-
+  fMCSproducerUFC = p.get< art::InputTag > ("MCSproducerUFC"); 
+  fRangeInputtag = p.get< art::InputTag > ("RangeInputtag"); 
+  fHITproducer = p.get< art::InputTag > ("HITproducer" );
+  fG4producer = p.get< std::string > ("G4producer" );
+  fSimChannelproducer = p.get< std::string > ("SimChannelproducer" );
   fRequireT0 = p.get<bool>("RequireT0", false);
   fDoTailFit = p.get<bool>("DoTailFit", true);
   fVerbose = p.get<bool>("Verbose", false);
-//fVerbose=true;
+  //fVerbose = true;
   fSilenceMissingDataProducts = p.get<bool>("SilenceMissingDataProducts", false);
   fHitRawDigitsTickCollectWidth = p.get<double>("HitRawDigitsTickCollectWidth", 50.);
   fHitRawDigitsWireCollectWidth = p.get<int>("HitRawDigitsWireCollectWidth", 5);
   fTailFitResidualRange = p.get<double>("TailFitResidualRange", 5.);
-  if (fTailFitResidualRange > 10.) {
-    std::cout << "sbn::TrackCaloSkimmer: Bad tail fit residual range config :(" << fTailFitResidualRange << "). Fits will not be meaningful.\n";
-  }
+  if (fTailFitResidualRange > 10.) std::cout << "sbn::TrackCaloSkimmer: Bad tail fit residual range config :(" << fTailFitResidualRange << "). Fits will not be meaningful.\n";
   fFillTrackEndHits = p.get<bool>("FillTrackEndHits", true);
   fTrackEndHitWireBox = p.get<float>("TrackEndHitWireBox", 60); // 20 cm
   fTrackEndHitTimeBox = p.get<float>("TrackEndHitTimeBox", 300); // about 20cm
-
   fRawDigitproducers = p.get<std::vector<art::InputTag>>("RawDigitproducers", {});
-
   std::vector<fhicl::ParameterSet> selection_tool_configs(p.get<std::vector<fhicl::ParameterSet>>("SelectionTools"), {});
   for (const fhicl::ParameterSet &p: selection_tool_configs) {
     fSelectionTools.push_back(art::make_tool<sbn::ITCSSelectionTool>(p));
@@ -195,7 +186,7 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
   // Truth information
   std::vector<art::Ptr<simb::MCParticle>> mcparticles;
   if (fG4producer.size()) {
-    art::ValidHandle<std::vector<simb::MCParticle>> mcparticle_handle = e.getValidHandle<std::vector<simb::MCParticle>>(fG4producer);
+   art::ValidHandle<std::vector<simb::MCParticle>> mcparticle_handle = e.getValidHandle<std::vector<simb::MCParticle>>(fG4producer);
     art::fill_ptr_vector(mcparticles, mcparticle_handle);
   }
 
@@ -206,7 +197,6 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
     art::fill_ptr_vector(simchannels, simchannel_handle);
       std::cout << " simchannels size " << simchannels.size() << std::endl;
   }
-
   // Reconstructed Information
   std::vector<art::Ptr<recob::PFParticle>> PFParticleList;
   try {
@@ -219,10 +209,16 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
       if (fSilenceMissingDataProducts) return;
       else throw;
   }
+//t0
+std::vector<art::FindManyP<anab::T0>> fmCRTTaggedT0;
+for(unsigned i_label=0;i_label<fproducerCRTTag.size();i_label++) {
+  std::cout << " ilabel " << i_label << fproducerCRTTag[i_label] << std::endl;
+fmCRTTaggedT0.emplace_back(PFParticleList,e,fproducerCRTTag[i_label]);
+}
 
-  // PFP-associated data
   std::vector<art::FindManyP<anab::T0>> fmT0;
   for (unsigned i_label = 0; i_label < fT0producers.size(); i_label++) {
+      std::cout << " old t0 ilabel " << i_label << fT0producers[i_label] << std::endl;
     fmT0.emplace_back(PFParticleList, e, fT0producers[i_label]);
   }
   art::FindManyP<recob::SpacePoint> PFParticleSPs(PFParticleList, e, fPFPproducer);
@@ -340,12 +336,11 @@ std::cout << "tracks size " << tracks->size() << std::endl;
     });
 
 //std::cout << " adding track " << std::endl;
-  
+
 //std::cout << " before looping on pfp " << std::endl;
   for (art::Ptr<recob::PFParticle> p_pfp: PFParticleList) {
-//std::cout << " looping on pfp " << std::endl;
     const recob::PFParticle &pfp = *p_pfp;
-
+  bool isCRTTagged=false;
     const std::vector<art::Ptr<recob::Track>> thisTrack = fmTracks.at(p_pfp.key());
     std::cout << " this track " << thisTrack.size() << std::endl;
     if (thisTrack.size() != 1)
@@ -395,12 +390,10 @@ std::cout << "tracks size " << tracks->size() << std::endl;
         }
       }
     }
-  std::cout << " after accessing track ptr 8" << std::endl;
     int whicht0 = -1;
-  std::cout << " after accessing track ptr 9" << std::endl;
     float t0 = std::numeric_limits<float>::signaling_NaN();
-  std::cout << " after accessing track ptr 10" << std::endl;
     for (unsigned i_t0 = 0; i_t0 < fmT0.size(); i_t0++) {
+std::cout << " looping on old t0 isvalid " << fmT0[i_t0].isValid() << std::endl;
       if (fmT0[i_t0].isValid() && fmT0[i_t0].at(p_pfp.key()).size()) {
         t0 = fmT0[i_t0].at(p_pfp.key()).at(0)->Time();
         whicht0 = i_t0;
@@ -410,12 +403,26 @@ std::cout << "tracks size " << tracks->size() << std::endl;
         break;
       }
     }
-    std::cout << " requring t0 " << fRequireT0 << " " << whicht0 << std::endl;
-    if (fRequireT0 && whicht0 < 0) {
+    float CRTT0=std::numeric_limits<float>::signaling_NaN();
+for(unsigned i_t0=0;i_t0<fmCRTTaggedT0.size();i_t0++) {
+std::cout << " looping on new t0 isvalid " << fmCRTTaggedT0[i_t0].isValid() << std::endl;
+
+	if(fmCRTTaggedT0[i_t0].isValid() && fmCRTTaggedT0[i_t0].at(p_pfp.key()).size()) {
+            if(fmCRTTaggedT0[i_t0].at(p_pfp.key()).at(0)->TriggerBits() != 0) continue;
+        if(fmCRTTaggedT0[i_t0].at(p_pfp.key()).at(0)->TriggerConfidence() > 70.) continue;
+           CRTT0=fmCRTTaggedT0[i_t0].at(p_pfp.key()).at(0)->Time();
+           std::cout << " skimmer CRTT0 " << CRTT0 << std::endl;
+           isCRTTagged=true;
+ break;
+}
+}
+   std::cout << " simchannels.size " << simchannels.size() << " iscrttagged " << isCRTTagged << " CRTT0" << CRTT0 << std::endl;
+   // if (fRequireT0 && whicht0 < 0) {
+   if((!simchannels.size()&&!isCRTTagged)) {
       continue;
     }
 
-    std::cout << "Processing new track! ID: " << trkPtr->ID() << " time: " << t0 << std::endl;
+    std::cout << "Processing new track! ID: " << trkPtr->ID() << " time: " << CRTT0 << std::endl;
 
     // Reset the track object
     *fTrack = sbn::TrackInfo();
@@ -455,7 +462,8 @@ std::cout << "tracks size " << tracks->size() << std::endl;
       }
       i_select ++;
     }
-    std::cout << " after selection " << select << std::endl;
+   select=true;
+    //std::cout << " after selection " << select << std::endl;
     // Save!
      if (select) {
       //  if (fVerbose)
@@ -1143,14 +1151,17 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
   fTrack->dir.z = track.StartDirection().Z();
   std::cout << " filling track before momentum " << std::endl;
   std::cout << " ufc momentum " <<mcsUFC->fwdMomentum() << std::endl;
-float minLen=40;
+  float minLen=40;
 //  fTrack->mcs_momentum_uboone = mcsU->fwdMomentum();
 //  fTrack->mcs_momentum_icarus =mcsI->fwdMomentum();;
     fTrack->mcs_momentum_ubooneIC = mcsUIC->fwdMomentum();
     fTrack->mcs_uncertainty_ubooneIC = mcsUIC->fwdMomUncertainty();
     fTrack->mcs_momentum_icarusIC = mcsIIC->fwdMomentum();
-    //fTrack->mcs_uncertainty_icarusIC = mcsIIC->fwdMomUncertainty();
-    fTrack->d3p_icarusIC = mcsIIC->bwdLogLikelihood();
+    fTrack->mcs_uncertainty_icarusIC = mcsIIC->fwdMomUncertainty();
+    fTrack->d3p_average = mcsIFC->fwdLogLikelihood();
+    fTrack->d3p_induction1 = mcsIFC->bwdMomentum();
+    fTrack->d3p_induction2 = mcsIFC->bwdMomUncertainty();
+    fTrack->d3p_collection = mcsIFC->bwdLogLikelihood();
 
     for(size_t ja=0;ja<mcsUFC->scatterAngles().size();ja++)
       fTrack->mcs_angles_ubooneFC.push_back(mcsUFC->scatterAngles().at(ja));
@@ -1178,11 +1189,11 @@ if(mcsIIC->fwdMomentum()>0.)std::cout << " mcs momentum icarus ic " <<  mcsIIC->
   std::cout << " ufc momentum after" <<mcsUFC->fwdMomentum() << std::endl;
 
   //if( fTrack->length>minLen)
-std::cout << " mcs momentum uboone fincut " << fTrack->mcs_momentum_ubooneFC << std::endl;
+//std::cout << " mcs momentum uboone fincut " << fTrack->mcs_momentum_ubooneFC << std::endl;
    fTrack->mcs_momentum_icarusFC = mcsIFC->fwdMomentum();
-   //fTrack->mcs_uncertainty_icarusFC = mcsIFC->fwdMomUncertainty();
+   fTrack->mcs_uncertainty_icarusFC = mcsIFC->fwdMomUncertainty();
    //if( fTrack->length>minLen)
-std::cout << " mcs momentum icarus fincut " << fTrack->mcs_momentum_icarusFC << std::endl;
+//std::cout << " mcs momentum icarus fincut " << fTrack->mcs_momentum_icarusFC << std::endl;
   fTrack->range_p = rangeP->range_p;
   //if( fTrack->length>minLen)
 std::cout << " range momentum " << fTrack->range_p << std::endl;
@@ -1350,7 +1361,6 @@ void sbn::TrackCaloSkimmer::DoTailFit() {
 
   }
 }
-
 
 sbn::TrackHitInfo sbn::TrackCaloSkimmer::MakeHit(const recob::Hit &hit,
     unsigned hkey,

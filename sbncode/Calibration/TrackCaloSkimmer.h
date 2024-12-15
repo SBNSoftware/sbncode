@@ -176,14 +176,14 @@ private:
   // config
 
   // tags
-  art::InputTag fPFPproducer;
+ art::InputTag fPFPproducer;
   art::InputTag fMCSproducerI;
   art::InputTag fMCSproducerU;
   art::InputTag fMCSproducerIIC;
   art::InputTag fMCSproducerUIC;
   art::InputTag fMCSproducerIFC;
   art::InputTag fMCSproducerUFC;
-
+std::vector<art::InputTag> fproducerCRTTag;
  art::InputTag fRangeInputtag;
 
   std::vector<art::InputTag> fT0producers;
