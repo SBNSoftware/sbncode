@@ -126,12 +126,16 @@ private:
     const std::vector<const recob::TrackHitMeta*> &thms,
     const std::vector<art::Ptr<recob::SpacePoint>> &sps,
     const std::vector<art::Ptr<anab::Calorimetry>> &calo,
-		 //		   const art::Ptr<recob::MCSFitResult> &mcsI,
-		 // const art::Ptr<recob::MCSFitResult> &mcsU, 
-		  const art::Ptr<recob::MCSFitResult> &mcsIIC,
-    const art::Ptr<recob::MCSFitResult> &mcsUIC,
-		 const art::Ptr<recob::MCSFitResult> &mcsIFC,
-		 const art::Ptr<recob::MCSFitResult> &mcsUFC,
+    const art::Ptr<recob::MCSFitResult> &mcsUF,
+    const art::Ptr<recob::MCSFitResult> &mcsUI,
+    const art::Ptr<recob::MCSFitResult> &mcsIF3D,
+    const art::Ptr<recob::MCSFitResult> &mcsIF2DI1,
+    const art::Ptr<recob::MCSFitResult> &mcsIF2DI2,
+    const art::Ptr<recob::MCSFitResult> &mcsIF2DC,
+    const art::Ptr<recob::MCSFitResult> &mcsII3D,
+    const art::Ptr<recob::MCSFitResult> &mcsII2DI1,
+    const art::Ptr<recob::MCSFitResult> &mcsII2DI2,
+    const art::Ptr<recob::MCSFitResult> &mcsII2DC,
     const art::Ptr<sbn::RangeP> &range,
     const std::map<geo::WireID, art::Ptr<raw::RawDigit>> &rawdigits,
     const std::vector<GlobalTrackInfo> &tracks,
@@ -176,15 +180,21 @@ private:
   // config
 
   // tags
- art::InputTag fPFPproducer;
-  art::InputTag fMCSproducerI;
-  art::InputTag fMCSproducerU;
-  art::InputTag fMCSproducerIIC;
-  art::InputTag fMCSproducerUIC;
-  art::InputTag fMCSproducerIFC;
-  art::InputTag fMCSproducerUFC;
-std::vector<art::InputTag> fproducerCRTTag;
- art::InputTag fRangeInputtag;
+  art::InputTag fPFPproducer;
+
+  art::InputTag fMCSproducerUF;
+  art::InputTag fMCSproducerUI;
+  art::InputTag fMCSproducerIF3D;
+  art::InputTag fMCSproducerIF2DI1;
+  art::InputTag fMCSproducerIF2DI2;
+  art::InputTag fMCSproducerIF2DC;
+  art::InputTag fMCSproducerII3D;
+  art::InputTag fMCSproducerII2DI1;
+  art::InputTag fMCSproducerII2DI2;
+  art::InputTag fMCSproducerII2DC;
+
+  std::vector<art::InputTag> fproducerCRTTag;
+  art::InputTag fRangeInputtag;
 
   std::vector<art::InputTag> fT0producers;
   art::InputTag fCALOproducer;
