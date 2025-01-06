@@ -23,7 +23,6 @@
 #include "sbndaq-artdaq-core/Overlays/SBND/PTBFragment.hh"
 #include "sbndaq-artdaq-core/Overlays/SBND/TDCTimestampFragment.hh"
 #include "artdaq-core/Data/ContainerFragment.hh"
-//#include "sbndcode/Decoders/PTB/sbndptb.h"
 #include "sbnobj/Common/POTAccounting/EXTCountInfo.h"
 
 #include "ifdh_art/IFBeamService/IFBeam_service.h"
@@ -72,16 +71,12 @@ private:
   // input labels
   std::string raw_data_label_;
   float TotalEXTCounts;  
-  float totalMinBias;
-  float evtCount;
 };
 
 sbn::SBNDBNBEXTRetriever::SBNDBNBEXTRetriever(fhicl::ParameterSet const & params)
   : EDProducer{params} {
   produces< std::vector< sbn::EXTCountInfo >, art::InSubRun >();
   TotalEXTCounts = 0;
-  totalMinBias = 0;
-  evtCount = 0;
 }
 
 int eventNum =0;
@@ -96,11 +91,6 @@ void sbn::SBNDBNBEXTRetriever::produce(art::Event & e)
   TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
 
   TotalEXTCounts += triggerInfo.number_of_gates_since_previous_event;
-
-  if(triggerInfo.number_of_gates_since_previous_event > 0){
-    evtCount++;  
-    totalMinBias += triggerInfo.number_of_gates_since_previous_event;
-  }
    
   //Store everything in our data-product
   sbn::EXTCountInfo extInfo;
@@ -110,7 +100,7 @@ void sbn::SBNDBNBEXTRetriever::produce(art::Event & e)
 
 sbn::SBNDBNBEXTRetriever::PTBInfo_t sbn::SBNDBNBEXTRetriever::extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
   int HLT_count = 0;
-
+  bool foundHLT = false;
   int numcont = 0;
   PTBInfo_t PTBInfo;
   for (auto const& cont : *cont_frags)
@@ -132,7 +122,7 @@ sbn::SBNDBNBEXTRetriever::PTBInfo_t sbn::SBNDBNBEXTRetriever::extractPTBInfo(art
 	  if (wt == 2 && ctb_frag.Trigger(word_i)->IsTrigger(4))
 	  {
             HLT_count++;
-
+            foundHLT = true;
 	    uint64_t RawprevPTBTimeStamp = ctb_frag.PTBWord(word_i)->prevTS * 20; 
 	    uint64_t RawcurrPTBTimeStamp = ctb_frag.Trigger(word_i)->timestamp * 20;
             PTBInfo.prevPTBTimeStamp = std::bitset<64>(RawprevPTBTimeStamp / 20).to_ullong()/50e6; 
@@ -145,7 +135,13 @@ sbn::SBNDBNBEXTRetriever::PTBInfo_t sbn::SBNDBNBEXTRetriever::extractPTBInfo(art
     } //End of loop over the number of fragments per container
   } //End of loop over the number of containers
 
-  return PTBInfo; 
+  if(foundHLT == true){
+    return PTBInfo; 
+  }
+  else{
+    std::cout << "Failed to find HLT 4!" << std::endl;
+    throw std::exception();
+  }
 }
 
 double sbn::SBNDBNBEXTRetriever::extractTDCTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
@@ -210,8 +206,6 @@ sbn::SBNDBNBEXTRetriever::TriggerInfo_t sbn::SBNDBNBEXTRetriever::extractTrigger
 void sbn::SBNDBNBEXTRetriever::beginSubRun(art::SubRun& sr)
 {
   TotalEXTCounts = 0;
-  totalMinBias = 0;
-  evtCount = 0;
   return;
 }
 

@@ -1,12 +1,6 @@
 find_package(ifbeam)
 find_package(ifdh_art)
 
-
-art_make_library(LIBRARIES Boost::system
-        LIBRARY_NAME sbn_SBNDBNBSpillInfoRetriever_MWRData
-        SOURCE MWRData.cpp
-)
-
 cet_build_plugin(SBNDBNBRetriever art::module
     LIBRARIES
         art::Persistency_Common
@@ -23,7 +17,7 @@ cet_build_plugin(SBNDBNBRetriever art::module
         sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS
         sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_SBND
         artdaq_core::artdaq-core_Utilities
-        sbn_SBNDBNBSpillInfoRetriever_MWRData
+        sbn_MWRData
         sbnobj::Common_POTAccounting
         larcorealg::CoreUtils
 )

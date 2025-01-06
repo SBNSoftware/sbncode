@@ -7,6 +7,11 @@ add_subdirectory(BNBEXTRetriever)
 add_subdirectory(NuMIEXTRetriever)
 add_subdirectory(job)
 
+art_make_library(LIBRARIES Boost::system
+        LIBRARY_NAME sbn_MWRData
+        SOURCE MWRData.cpp
+)
+
 install_headers()
 install_fhicl()
 install_source()

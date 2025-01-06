@@ -25,7 +25,6 @@
 #include "sbndaq-artdaq-core/Overlays/SBND/PTBFragment.hh"
 #include "sbndaq-artdaq-core/Overlays/SBND/TDCTimestampFragment.hh"
 #include "artdaq-core/Data/ContainerFragment.hh"
-//#include "sbndcode/Decoders/PTB/sbndptb.h"
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
 
 #include "ifdh_art/IFBeamService/IFBeam_service.h"
@@ -148,7 +147,7 @@ void sbn::SBNDBNBRetriever::produce(art::Event & e)
 }
 
 sbn::SBNDBNBRetriever::PTBInfo_t sbn::SBNDBNBRetriever::extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
-
+  bool foundHLT = false;
   int numcont = 0;
   PTBInfo_t PTBInfo;
   for (auto const& cont : *cont_frags)
@@ -169,7 +168,7 @@ sbn::SBNDBNBRetriever::PTBInfo_t sbn::SBNDBNBRetriever::extractPTBInfo(art::Hand
           wt = word_type;
 	  if (wt == 2 && ctb_frag.Trigger(word_i)->IsTrigger(2))
 	  {
-
+            foundHLT = true;
 	    uint64_t RawprevPTBTimeStamp = ctb_frag.PTBWord(word_i)->prevTS * 20; 
             uint64_t RawcurrPTBTimeStamp = ctb_frag.Trigger(word_i)->timestamp * 20; 
             PTBInfo.prevPTBTimeStamp = std::bitset<64>(RawprevPTBTimeStamp / 20).to_ullong()/50e6; 
@@ -182,7 +181,13 @@ sbn::SBNDBNBRetriever::PTBInfo_t sbn::SBNDBNBRetriever::extractPTBInfo(art::Hand
     } //End of loop over the number of fragments per container
   } //End of loop over the number of containers
 
-  return PTBInfo; 
+  if(foundHLT == true){
+    return PTBInfo;
+  }
+  else{
+    std::cout << "Failed to find HLT 2!" << std::endl;
+    throw std::exception();
+  }
 }
 
 double sbn::SBNDBNBRetriever::extractTDCTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
@@ -280,7 +285,6 @@ sbn::SBNDBNBRetriever::MWRdata_t sbn::SBNDBNBRetriever::extractSpillTimes(Trigge
   // match them to the closest spills in time
   // 
 
-  //  int t_steps = int(((triggerInfo.t_previous_event - fTimePad) - (triggerInfo.t_current_event + fTimePad))/0.5)+25;
   int t_steps = int(((triggerInfo.t_current_event + fTimePad) - (triggerInfo.t_previous_event - fTimePad - 20.))/0.5)+25;
 
   for(int t = 0; t < t_steps; t++){//Iterate through time increments
@@ -288,7 +292,7 @@ sbn::SBNDBNBRetriever::MWRdata_t sbn::SBNDBNBRetriever::extractSpillTimes(Trigge
       
       //Make sure we have a device
       if(var.empty()){ 
-	//mf::LogDebug("SBNDBNBRetriever") << " NO MWR DEVICES?!" << std::endl;
+	mf::LogDebug("SBNDBNBRetriever") << " NO MWR DEVICES?!" << std::endl;
 	continue;
       }
       /// Check the device name and interate the double-vector index
@@ -296,7 +300,7 @@ sbn::SBNDBNBRetriever::MWRdata_t sbn::SBNDBNBRetriever::extractSpillTimes(Trigge
       else if(var.find("M876BB") != std::string::npos ) dev = 1;
       else if(var.find("MMBTBB") != std::string::npos ) dev = 2;
       else{
-	//mf::LogDebug("SBNDBNBRetriever") << " NOT matched to a MWR DEVICES?!" << var << std::endl;
+	mf::LogDebug("SBNDBNBRetriever") << " NOT matched to a MWR DEVICES?!" << var << std::endl;
 	continue;}
       
       time_for_mwr = 0;
@@ -316,10 +320,6 @@ sbn::SBNDBNBRetriever::MWRdata_t sbn::SBNDBNBRetriever::extractSpillTimes(Trigge
 	packed_data_str.append(var);
 	packed_data_str.append(",,");
 	
-	/*	for(auto const value: packed_MWR){
-	  packed_data_str += ',';
-	  packed_data_str += std::to_string(int(value));
-	  }*/
 	for(int j = 0; j < int(packed_MWR.size()); j++){
 	  packed_data_str += std::to_string(int(packed_MWR[j]));
 	  if(j < int(packed_MWR.size())-1)
@@ -408,27 +408,15 @@ int sbn::SBNDBNBRetriever::matchMultiWireData(
         
   }//end fix for "first event"
   
-    ///reject time_stamps which have a trigger_type == 1 from data-base
-    //To-Do 
-
-  //  mf::LogDebug("SBNDBNBRetriever") << "Total number of Times we're going to test: " << times_temps.size() <<  std::endl;
-  // mf::LogDebug("SBNDBNBRetriever") << std::setprecision(19) << "Upper Limit : " << (triggerInfo.t_current_event)+fTimePad <<  std::endl;
-  // mf::LogDebug("SBNDBNBRetriever") << std::setprecision(19) << "Lower Limit : " << (triggerInfo.t_previous_event)+fTimePad <<  std::endl;
-  
   // Iterating through each of the beamline times
   for (size_t i = 0; i < times_temps.size(); i++) {
     
-    // Only continue if these times are matched to our DAQ time
-    // mf::LogDebug("SBNDBNBRetriever") << std::setprecision(19) << "Time # : " <<  i << std::endl;
-
     if(!isFirstEventInRun){//We already addressed the "first event" above
       if(times_temps[i] > (triggerInfo.t_current_event)+fTimePad){
-	//mf::LogDebug("SBNDBNBRetriever") << std::setprecision(19) << "Removed!  : " << times_temps[i] << std::endl;
 	spills_removed++; 
 	continue;} 
       if(times_temps[i] <= (triggerInfo.t_previous_event)+fTimePad){
 	spills_removed++; 
-	//mf::LogDebug("SBNDBNBRetriever") << std::setprecision(19) << "Removed!  : " << times_temps[i] << std::endl;
 	continue;}
     }
 
@@ -439,14 +427,6 @@ int sbn::SBNDBNBRetriever::matchMultiWireData(
       DocDB 33155 provides documentation of this
     */
 
-    // mf::LogDebug("SBNDBNBRetriever") << std::setprecision(19) << "matchMultiWireData:: trigger type : " << get_trigger_type_matching_gate(db, callback_trigger_type, run_number, times_temps[i]*1.e9-triggerInfo.WR_to_Spill_conversion+3.6e7, 40.) << " times : spill " << times_temps[i]*1.e9 << " - " << triggerInfo.WR_to_Spill_conversion << " + " << 3.6e7 <<  std::endl;
-    
-    // if(get_trigger_type_matching_gate(db, callback_trigger_type, run_number, times_temps[i]*1.e9-triggerInfo.WR_to_Spill_conversion+3.6e7, 40.) == 1){
-    //      mf::LogDebug("SBNDBNBRetriever") << std::setprecision(19)  << "matchMultiWireData:: Skipped a MinBias gate at : " << times_temps[i]*1000. << std::endl;
-
-    //  continue;
-    //}
-      
     //Great we found a matched spill! Let's count it
     spill_count++;
 
@@ -500,8 +480,6 @@ int sbn::SBNDBNBRetriever::matchMultiWireData(
     
   }//end iteration over beam device times
   
-  //  mf::LogDebug("SBNDBNBRetriever") << "matchMultiWireData:: Total spills counted:  " << spill_count << "   Total spills removed : " << spills_removed <<  std::endl;
-
   return spill_count;
 }
 
