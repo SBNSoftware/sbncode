@@ -106,11 +106,8 @@ sbn::SBNDBNBEXTRetriever::PTBInfo_t sbn::SBNDBNBEXTRetriever::extractPTBInfo(art
   for (auto const& cont : *cont_frags)
   { 
     artdaq::ContainerFragment cont_frag(cont);
-    numcont++;
-    int numfrag = 0;
     for (size_t fragi = 0; fragi < cont_frag.block_count(); ++fragi)
     {
-      numfrag++;
       artdaq::Fragment frag = *cont_frag[fragi];
       sbndaq::CTBFragment ctb_frag(frag);   // somehow the name CTBFragment stuck
       for(size_t word_i = 0; word_i < ctb_frag.NWords(); ++word_i)
@@ -145,16 +142,12 @@ sbn::SBNDBNBEXTRetriever::PTBInfo_t sbn::SBNDBNBEXTRetriever::extractPTBInfo(art
 }
 
 double sbn::SBNDBNBEXTRetriever::extractTDCTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
-  int numcont = 0;
   double TDCTimeStamp = 0;
   for (auto const& cont : *cont_frags)
   { 
     artdaq::ContainerFragment cont_frag(cont);
-    numcont++;
-    int numfrag = 0;
     for (size_t fragi = 0; fragi < cont_frag.block_count(); ++fragi)
     {
-      numfrag++;
       artdaq::Fragment frag = *cont_frag[fragi];
       sbndaq::TDCTimestampFragment tdc_frag(frag); 
       TDCTimeStamp = static_cast<double>(tdc_frag.getTDCTimestamp()->timestamp_ns())/1e9;
