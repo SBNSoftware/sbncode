@@ -29,7 +29,7 @@
 
 #include "ifdh_art/IFBeamService/IFBeam_service.h"
 #include "ifbeam_c.h"
-#include "MWRData.h"
+#include "sbncode/BeamSpillInfoRetriever/MWRData.h"
 
 #include "larcorealg/CoreUtils/counter.h"
 
@@ -148,7 +148,6 @@ void sbn::SBNDBNBRetriever::produce(art::Event & e)
 
 sbn::SBNDBNBRetriever::PTBInfo_t sbn::SBNDBNBRetriever::extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
   bool foundHLT = false;
-  int numcont = 0;
   PTBInfo_t PTBInfo;
   for (auto const& cont : *cont_frags)
   { 

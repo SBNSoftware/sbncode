@@ -27,7 +27,7 @@
 
 #include "ifdh_art/IFBeamService/IFBeam_service.h"
 #include "ifbeam_c.h"
-#include "MWRData.h"
+#include "sbncode/BeamSpillInfoRetriever/MWRData.h"
 
 #include "larcorealg/CoreUtils/counter.h"
 
@@ -153,12 +153,10 @@ void sbn::SBNDBNBRetriever::produce(art::Event & e)
 
 sbn::SBNDBNBRetriever::PTBInfo_t sbn::SBNDBNBRetriever::extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
   bool foundHLT = false;
-  int numcont = 0;
   PTBInfo_t PTBInfo;
   for (auto const& cont : *cont_frags)
   { 
     artdaq::ContainerFragment cont_frag(cont);
-    numcont++;
     int numfrag = 0;
     for (size_t fragi = 0; fragi < cont_frag.block_count(); ++fragi)
     {
@@ -198,12 +196,10 @@ sbn::SBNDBNBRetriever::PTBInfo_t sbn::SBNDBNBRetriever::extractPTBInfo(art::Hand
 }
 
 double sbn::SBNDBNBRetriever::extractTDCTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
-  int numcont = 0;
   double TDCTimeStamp = 0;
   for (auto const& cont : *cont_frags)
   { 
     artdaq::ContainerFragment cont_frag(cont);
-    numcont++;
     int numfrag = 0;
     for (size_t fragi = 0; fragi < cont_frag.block_count(); ++fragi)
     {
