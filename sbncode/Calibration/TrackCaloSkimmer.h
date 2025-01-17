@@ -142,7 +142,10 @@ private:
     const geo::GeometryCore *geo,
     const detinfo::DetectorClocksData &clock_data,
     const cheat::BackTrackerService *bt_serv,
-    const sbn::EDet det);
+    const sbn::EDet det,
+    const int whichcrt,
+    const float crtt0,
+    const float confidence);
 
   void FillTrackDaughterRays(const recob::Track &trk,
     const recob::PFParticle &pfp, 
