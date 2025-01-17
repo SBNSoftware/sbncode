@@ -64,7 +64,7 @@ private:
     unsigned int number_of_gates_since_previous_event = 0; // FIXME needs to be integral type
   };
 
-  TriggerInfo_t (art::Event const& e) const;
+  TriggerInfo_t extractTriggerInfo(art::Event const& e) const;
   PTBInfo_t extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const;
   double extractTDCTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const;
 
@@ -87,10 +87,19 @@ int _event;
 void sbn::SBNDBNBEXTRetriever::produce(art::Event & e)
 {
 
+  if (e.event() == 1) {
+    auto p =  std::make_unique< std::vector< sbn::EXTCountInfo > >();
+    std::swap(*p, fOutExtInfos);
+    e.put(std::move(p));
+    return;
+  }
 
   TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
 
   if (triggerInfo.t_previous_event == 0) {
+    auto p =  std::make_unique< std::vector< sbn::EXTCountInfo > >();
+    std::swap(*p, fOutExtInfos);
+    e.put(std::move(p));
     return;
   }
 

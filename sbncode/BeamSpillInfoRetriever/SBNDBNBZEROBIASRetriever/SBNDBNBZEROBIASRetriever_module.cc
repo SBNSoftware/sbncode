@@ -141,6 +141,9 @@ void sbn::SBNDBNBRetriever::produce(art::Event & e)
   TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
 
   if (triggerInfo.t_previous_event == 0) {
+    auto p =  std::make_unique< std::vector< sbn::BNBSpillInfo > >();
+    std::swap(*p, fOutbeamInfos);
+    e.put(std::move(p));
     return;
   }
 
