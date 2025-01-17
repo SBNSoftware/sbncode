@@ -134,6 +134,9 @@ void sbn::SBNDBNBRetriever::produce(art::Event & e)
 
   TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
 
+  if (triggerInfo.t_previous_event == 0) {
+    return;
+  }
 
   TotalBeamSpills += triggerInfo.number_of_gates_since_previous_event;
   MWRdata_t const MWRdata = extractSpillTimes(triggerInfo);
