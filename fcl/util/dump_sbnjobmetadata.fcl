@@ -1,0 +1,41 @@
+#
+# File:    dump_sbnjobmetadata.fcl
+# Purpose: Prints on screen all the job SBN metadata stored in an input file.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    January 20, 2025
+# 
+# Reads and prints on screen the SBN job environment information from the input
+# file.
+#
+# Changes
+# --------
+# 
+# [20250120] (petrillo@slac.stanford.edu)
+#   original version
+#
+
+#include "messages_icarus.fcl"
+
+process_name: JobMeta
+
+# use `icarus_message_services_interactive` to see dump on screen
+services.message: @local::icarus_message_services_prod
+
+services.message.destinations.MetadataLog: {
+  type:       file
+  filename:  "JobEnvironment.log"
+  append:     false
+  threshold:  INFO
+  categories: {
+    DumpJobEnvironment: { limit: -1 }
+    default:            { limit: 0 }
+  }
+}
+
+outputs.metadataDumper: {
+  module_type: "DumpJobEnvironment"
+}
+
+physics: {
+  streams: [ metadataDumper ]
+}

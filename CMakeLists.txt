@@ -20,7 +20,6 @@ project(sbncode VERSION 09.92.00 LANGUAGES CXX)
 
 message(STATUS "\n\n  ==========================   ${PROJECT_NAME}   ==========================")
 
-
 include(CetCMakeEnv)
 cet_cmake_env()
 
@@ -82,6 +81,7 @@ find_package( Boost COMPONENTS system filesystem REQUIRED )
 include(ArtDictionary)
 include(ArtMake)
 include(BuildPlugins)
+include(SBNutils)
 
 add_subdirectory(sbncode)
 add_subdirectory(fcl)
