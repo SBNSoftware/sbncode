@@ -88,19 +88,18 @@ void sbn::SBNDBNBEXTRetriever::produce(art::Event & e)
 {
 
   if (e.event() == 1) {
-    auto p =  std::make_unique< std::vector< sbn::EXTCountInfo > >();
-    std::swap(*p, fOutExtInfos);
-    e.put(std::move(p));
-    return;
+     sbn::EXTCountInfo extInfo;
+     extInfo.gates_since_last_trigger = 0;
+     fOutExtInfos.push_back(extInfo);
+     return;
   }
-
   TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
 
   if (triggerInfo.t_previous_event == 0) {
-    auto p =  std::make_unique< std::vector< sbn::EXTCountInfo > >();
-    std::swap(*p, fOutExtInfos);
-    e.put(std::move(p));
-    return;
+     sbn::EXTCountInfo extInfo;
+     extInfo.gates_since_last_trigger = 0;
+     fOutExtInfos.push_back(extInfo);
+     return;
   }
 
   TotalEXTCounts += triggerInfo.number_of_gates_since_previous_event;
