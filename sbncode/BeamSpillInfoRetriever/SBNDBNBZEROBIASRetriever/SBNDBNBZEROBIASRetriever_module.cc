@@ -91,7 +91,7 @@ private:
   void matchMultiWireData(
     art::EventID const& eventID, 
     TriggerInfo_t const& triggerInfo,
-    MWRdata_t const& MWRdata, bool isFirstEventInRun,
+    MWRdata_t const& MWRdata,
     std::vector< sbn::BNBSpillInfo >& beamInfos
     ) const;
   unsigned int TotalBeamSpills;
@@ -150,7 +150,7 @@ void sbn::SBNDBNBRetriever::produce(art::Event & e)
   TotalBeamSpills += triggerInfo.number_of_gates_since_previous_event;
   MWRdata_t const MWRdata = extractSpillTimes(triggerInfo);
 
-  matchMultiWireData(e.id(), triggerInfo, MWRdata, e.event() == 1, fOutbeamInfos);
+  matchMultiWireData(e.id(), triggerInfo, MWRdata, fOutbeamInfos);
 
   auto p =  std::make_unique< std::vector< sbn::BNBSpillInfo > >();
   std::swap(*p, fOutbeamInfos);
@@ -367,7 +367,7 @@ sbn::SBNDBNBRetriever::MWRdata_t sbn::SBNDBNBRetriever::extractSpillTimes(Trigge
 void sbn::SBNDBNBRetriever::matchMultiWireData(
   art::EventID const& eventID,
   TriggerInfo_t const& triggerInfo,
-  MWRdata_t const& MWRdata, bool isFirstEventInRun,
+  MWRdata_t const& MWRdata,
   std::vector< sbn::BNBSpillInfo >& beamInfos
 ) const {
   
@@ -388,25 +388,6 @@ void sbn::SBNDBNBRetriever::matchMultiWireData(
 
   // Iterating through each of the beamline times
  
-  if(isFirstEventInRun){
-    //We'll remove the spills after our event
-    int spills_after_our_target = 0;
-    // iterate through all the spills to find the 
-    // spills that are after our triggered event
-    for (size_t i = 0; i < times_temps.size(); i++) {       
-      if(times_temps[i] > (triggerInfo.t_current_event+fTimePad)){
-	spills_after_our_target++;
-      }
-    }//end loop through spill times 	 
-    
-    // Remove the spills after our trigger
-    times_temps.erase(times_temps.end()-spills_after_our_target,times_temps.end());
-    
-    // Remove the spills before the start of our Run
-    times_temps.erase(times_temps.begin(), times_temps.end() - std::min(int(triggerInfo.number_of_gates_since_previous_event), int(times_temps.size())));
-        
-  }//end fix for "first event"
-
   double best_diff = 10000000000.0; 
   double diff; 
   size_t i = 0;
@@ -415,14 +396,12 @@ void sbn::SBNDBNBRetriever::matchMultiWireData(
     diff = times_temps[k] - (triggerInfo.t_current_event + fTimePad);
 
     if( diff < 0 and diff < best_diff){
-      if(!isFirstEventInRun){
-        if(times_temps[k] > (triggerInfo.t_current_event)+fTimePad){
-	  spills_removed++; 
-	  continue;} 
-        if(times_temps[k] <= (triggerInfo.t_previous_event)+fTimePad){
-	  spills_removed++; 
-	  continue;}
-      }
+      if(times_temps[k] > (triggerInfo.t_current_event)+fTimePad){
+        spills_removed++; 
+        continue;} 
+      if(times_temps[k] <= (triggerInfo.t_previous_event)+fTimePad){
+        spills_removed++; 
+        continue;}
       best_diff = diff; 
       i = k;
     }

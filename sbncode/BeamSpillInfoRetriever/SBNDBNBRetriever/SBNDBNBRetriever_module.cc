@@ -93,7 +93,7 @@ private:
   int matchMultiWireData(
     art::EventID const& eventID, 
     TriggerInfo_t const& triggerInfo,
-    MWRdata_t const& MWRdata, bool isFirstEventInRun,
+    MWRdata_t const& MWRdata,
     std::vector< sbn::BNBSpillInfo >& beamInfos
     ) const;
   unsigned int TotalBeamSpills;
@@ -133,25 +133,19 @@ void sbn::SBNDBNBRetriever::produce(art::Event & e)
   // spill information
 
   if (e.event() == 1) {
-    auto p =  std::make_unique< std::vector< sbn::BNBSpillInfo > >();
-    std::swap(*p, fOutbeamInfos);
-    e.put(std::move(p));
     return;
   }
 
   TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
 
   if (triggerInfo.t_previous_event == 0) {
-    auto p =  std::make_unique< std::vector< sbn::BNBSpillInfo > >();
-    std::swap(*p, fOutbeamInfos);
-    e.put(std::move(p));
     return;
   }
 
   TotalBeamSpills += triggerInfo.number_of_gates_since_previous_event;
   MWRdata_t const MWRdata = extractSpillTimes(triggerInfo);
 
-  int const spill_count = matchMultiWireData(e.id(), triggerInfo, MWRdata, e.event() == 1, fOutbeamInfos);
+  int const spill_count = matchMultiWireData(e.id(), triggerInfo, MWRdata, fOutbeamInfos);
 
   if(spill_count > int(triggerInfo.number_of_gates_since_previous_event))
     mf::LogDebug("SBNDBNBRetriever")<< "Event Spills : " << spill_count << ", DAQ Spills : " << triggerInfo.number_of_gates_since_previous_event << " \t \t ::: WRONG!"<< std::endl;
@@ -368,7 +362,7 @@ sbn::SBNDBNBRetriever::MWRdata_t sbn::SBNDBNBRetriever::extractSpillTimes(Trigge
 int sbn::SBNDBNBRetriever::matchMultiWireData(
   art::EventID const& eventID,
   TriggerInfo_t const& triggerInfo,
-  MWRdata_t const& MWRdata, bool isFirstEventInRun,
+  MWRdata_t const& MWRdata,
   std::vector< sbn::BNBSpillInfo >& beamInfos
 ) const {
   
@@ -388,42 +382,14 @@ int sbn::SBNDBNBRetriever::matchMultiWireData(
   std::vector<int> matched_MWR;
   matched_MWR.resize(3);
   
-  // NOTE: for now, this is dead code because we don't
-  // do anything for the first event in a run. We may want to revisit 
-  // this later to understand if there is a way we can do the POT
-  // accounting in the first event.
-  //
-  // Need to handle the first event in a run differently
-  if(isFirstEventInRun){
-    //We'll remove the spills after our event
-    int spills_after_our_target = 0;
-    // iterate through all the spills to find the 
-    // spills that are after our triggered event
-    for (size_t i = 0; i < times_temps.size(); i++) {       
-      if(times_temps[i] > (triggerInfo.t_current_event+fTimePad)){
-	spills_after_our_target++;
-      }
-    }//end loop through spill times 	 
-    
-    // Remove the spills after our trigger
-    times_temps.erase(times_temps.end()-spills_after_our_target,times_temps.end());
-    
-    // Remove the spills before the start of our Run
-    times_temps.erase(times_temps.begin(), times_temps.end() - std::min(int(triggerInfo.number_of_gates_since_previous_event), int(times_temps.size())));
-        
-  }//end fix for "first event"
-  
   // Iterating through each of the beamline times
   for (size_t i = 0; i < times_temps.size(); i++) {
-    
-    if(!isFirstEventInRun){//We already addressed the "first event" above
-      if(times_temps[i] > (triggerInfo.t_current_event)+fTimePad){
-	spills_removed++; 
-	continue;} 
-      if(times_temps[i] <= (triggerInfo.t_previous_event)+fTimePad){
-	spills_removed++; 
-	continue;}
-    }
+    if(times_temps[i] > (triggerInfo.t_current_event)+fTimePad){
+      spills_removed++; 
+      continue;} 
+    if(times_temps[i] <= (triggerInfo.t_previous_event)+fTimePad){
+      spills_removed++; 
+      continue;}
 
     //check if this spill is is minbias   
     /*
