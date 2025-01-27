@@ -256,9 +256,9 @@ genie_xsec		v3_04_00	-
 larcv2			v2_2_6		-
 larsoft			v10_01_04	-
 sbnanaobj		v09_23_02_01	-
-sbndaq_artdaq_core	v1_10_03	-
+sbndaq_artdaq_core	v1_10_04	-
 sbndata			v01_07		-
-sbnobj			v10_00_00	-
+sbnobj			v10_00_01	-
 systematicstools	v01_04_04	-
 nusystematics		v1_05_04	-
 cetmodules		v3_24_01	-	only_for_build
