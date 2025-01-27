@@ -25,6 +25,7 @@
 // LArSoft includes
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/Geometry/WireReadout.h"
+#include "larcorealg/Geometry/WireReadoutGeom.h"
 #include "lardata/ArtDataHelper/HitCreator.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
@@ -369,6 +370,7 @@ void SnippetHit3DBuilderSBN::configure(fhicl::ParameterSet const &pset)
     m_outputHistograms     = pset.get<bool                      >("OutputHistograms",      false);
     m_makeAssociations     = pset.get<bool                      >("MakeAssociations",      false);
 
+    m_geometry    = art::ServiceHandle<geo::Geometry const>{}.get();
     m_wireReadout = &art::ServiceHandle<geo::WireReadout const>{}->Get();
 
     // Returns the wire pitch per plane assuming they will be the same for all TPCs
@@ -1822,27 +1824,28 @@ void SnippetHit3DBuilderSBN::CollectArtHits(const art::Event& evt) const
     std::map<geo::PlaneID,double> planeIDToPositionMap;
 
     // Initialize the plane to hit vector map
-    for(auto const& tpcID : m_geometry->Iterate<geo::TPCID>())
+    for(auto const& tpcGeo : m_geometry->Iterate<geo::TPCGeo>())
     {
-      m_planeToSnippetHitMap[geo::PlaneID(tpcID,0)] = SnippetHitMap();
-      m_planeToSnippetHitMap[geo::PlaneID(tpcID,1)] = SnippetHitMap();
-      m_planeToSnippetHitMap[geo::PlaneID(tpcID,2)] = SnippetHitMap();
+        m_planeToSnippetHitMap[geo::PlaneID(tpcGeo.ID(),0)] = SnippetHitMap();
+        m_planeToSnippetHitMap[geo::PlaneID(tpcGeo.ID(),1)] = SnippetHitMap();
+        m_planeToSnippetHitMap[geo::PlaneID(tpcGeo.ID(),2)] = SnippetHitMap();
 
-            // Should we provide output?
-            if (!m_weHaveAllBeenHereBefore)
-            {
-                std::ostringstream outputString;
+        // Should we provide output?
+        if (!m_weHaveAllBeenHereBefore)
+        {
+            std::ostringstream outputString;
 
-        outputString << "***> plane 0 offset: " << m_PlaneToT0OffsetMap.find(geo::PlaneID(tpcID,0))->second
-                     << ", plane 1: " << m_PlaneToT0OffsetMap.find(geo::PlaneID(tpcID,1))->second
-                     << ", plane    2: " << m_PlaneToT0OffsetMap.find(geo::PlaneID(tpcID,2))->second << "\n";
-        outputString << "     Det prop plane 0: " << det_prop.GetXTicksOffset(geo::PlaneID(tpcID,0)) << ", plane 1: "  << det_prop.GetXTicksOffset(geo::PlaneID(tpcID,1)) << ", plane 2: " << det_prop.GetXTicksOffset(geo::PlaneID(tpcID,2)) << ", Trig: " << trigger_offset(clock_data) << "\n";
-                debugMessage += outputString.str() + "\n";
-            }
+            outputString << "***> plane 0 offset: " << m_PlaneToT0OffsetMap.find(geo::PlaneID(tpcGeo.ID(),0))->second
+                         << ", plane 1: " << m_PlaneToT0OffsetMap.find(geo::PlaneID(tpcGeo.ID(),1))->second
+                         << ", plane    2: " << m_PlaneToT0OffsetMap.find(geo::PlaneID(tpcGeo.ID(),2))->second << "\n";
+            outputString << "     Det prop plane 0: " << det_prop.GetXTicksOffset(geo::PlaneID(tpcGeo.ID(),0)) << ", plane 1: "  << det_prop.GetXTicksOffset(geo::PlaneID(tpcGeo.ID(),1)) << ", plane 2: " << det_prop.GetXTicksOffset(geo::PlaneID(tpcGeo.ID(),2)) << ", Trig: " << trigger_offset(clock_data) << "\n";
+                    
+            debugMessage += outputString.str() + "\n";
+        }
 
-      geo::PlaneID const planeID2{tpcID, 2};
-      double xPosition(det_prop.ConvertTicksToX(0., planeID2));
-      planeIDToPositionMap[planeID2] = xPosition;
+        geo::PlaneID const planeID2{tpcGeo.ID(), 2};
+        double xPosition(det_prop.ConvertTicksToX(0., planeID2));
+        planeIDToPositionMap[planeID2] = xPosition;
     }
 
     if (!m_weHaveAllBeenHereBefore)
