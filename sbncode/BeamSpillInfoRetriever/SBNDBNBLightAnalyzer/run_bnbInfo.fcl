@@ -1,0 +1,26 @@
+#include "bnbInfo.fcl"
+
+process_name: BNBInfo
+
+source:
+{
+	module_type: RootInput
+	maxEvents: -1
+}
+
+services: 
+{
+	TFileService: { fileName: "bnbInfoOutput.root" }
+}
+
+
+physics: 
+{
+	analyzers:
+	{
+		ana: @local::bnbInfo
+	}	
+	
+	path0:  [ ana ]
+	end_paths: [ path0 ]
+}

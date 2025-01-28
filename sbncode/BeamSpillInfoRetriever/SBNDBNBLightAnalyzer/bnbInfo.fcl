@@ -1,0 +1,8 @@
+BEGIN_PROLOG
+
+bnbInfo:
+{
+	module_type: "BNBInfo"
+}
+
+END_PROLOG
