@@ -11,7 +11,9 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcorealg/Geometry/GeometryCore.h"
+#include "larcorealg/Geometry/WireReadoutGeom.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "larcorealg/Geometry/BoxBoundedGeo.h"
 
@@ -99,9 +101,13 @@ void FilterSimEnergyDeposits::produce(art::Event& e)
     const double syratio = sedep.ScintYieldRatio();
     const double energy = sedep.Energy();
     geo::Point_t start = sedep.Start();
-    if (TPC) TPC->DriftPoint(start, ShiftX(std::abs(sedep.Start().Z())));
     geo::Point_t end = sedep.End();
-    if (TPC) TPC->DriftPoint(end, ShiftX(std::abs(sedep.End().Z())));
+    if (TPC) {
+      auto const& wireReadout = art::ServiceHandle<geo::WireReadout const>()->Get();
+      auto const& referencePlane = wireReadout.FirstPlane(TPC->ID());
+      referencePlane.DriftPoint(start, ShiftX(std::abs(sedep.Start().Z())));
+      referencePlane.DriftPoint(end, ShiftX(std::abs(sedep.End().Z())));
+    }
     const double startT = sedep.StartT();
     const double endT = sedep.EndT();
     const int thisID = sedep.TrackID();
