@@ -6,6 +6,7 @@ sbn_largeant_info_reducer: {
 	VoxelSizeX: 0.3
 	VoxelSizeY: 0.3
 	VoxelSizeZ: 0.3
+	useOrigTrackID: true
 }
 
 END_PROLOG
