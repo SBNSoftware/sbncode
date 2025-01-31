@@ -14,7 +14,6 @@
 #include "larsim/MCCheater/BackTrackerService.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
 #include "larsim/Utils/TruthMatchUtils.h"
-#include "larevt/SpaceCharge/SpaceCharge.h"
 
 #include "nusimdata/SimulationBase/GTruth.h"
 #include "nusimdata/SimulationBase/MCFlux.h"
@@ -48,6 +47,7 @@ namespace caf
         const TVector3 p0,
         const TVector3 p1);
 
+  caf::genie_status_ GetGenieStatusID(const int &status_code);
   caf::g4_process_ GetG4ProcessID(const std::string &name);
   
   void FillSRGlobal(const sbn::evwgh::EventWeightParameterSet& pset,
@@ -70,7 +70,19 @@ namespace caf
                          caf::SRSlice &srslice, 
                          const std::vector<caf::SRTrueParticle> &srparticles,
                          const std::vector<art::Ptr<sim::MCTrack>> &mctracks,
-                         const std::vector<geo::BoxBoundedGeo> &volumes, TRandom &rand);
+                         const std::vector<geo::BoxBoundedGeo> &volumes, 
+                         const std::map<std::string, std::vector<float> > &customVolumes,
+                         const bool &proposalStyle,
+                         TRandom &rand);
+
+  void FillTrueGenParticle(const simb::MCParticle &particle,
+        const std::vector<geo::BoxBoundedGeo> &active_volumes,
+        const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
+        const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE *>>> &id_to_ide_map,
+        const std::map<int, std::vector<art::Ptr<recob::Hit>>> &id_to_truehit_map,
+        const cheat::BackTrackerService &backtracker,
+        const cheat::ParticleInventoryService &inventory_service,
+        caf::SRTrueParticle &srparticle);
 
   void FillTrueG4Particle(const simb::MCParticle &particle,
         const std::vector<geo::BoxBoundedGeo> &active_volumes,
@@ -105,14 +117,6 @@ namespace caf
                       caf::SRTrack& srtrack,
                       bool allowEmpty = false);
 
-  void FillTrackCaloTruth(const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> &id_to_ide_map,
-                          const std::vector<simb::MCParticle> &mc_particles,
-                          const geo::GeometryCore *geo,
-                          const detinfo::DetectorClocksData &clockData,
-                          const spacecharge::SpaceCharge *sce,
-                          caf::SRTrack& srtrack);
-
-
   void FillStubTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
                      const std::map<int, caf::HitsEnergy> &id_hits_map,
                      const std::vector<caf::SRTrueParticle> &particles,
@@ -131,6 +135,10 @@ namespace caf
                     const std::vector<caf::SRTrueParticle> &srparticles, 
                     const std::vector<art::Ptr<sim::MCTrack>> &mctracks, 
                     const std::vector<geo::BoxBoundedGeo> &volumes,
+                    const std::map<std::string, std::vector<float> > &customVolumes,
+                    const bool &numuOnly,
+                    const bool &nueOnly,
+                    const bool &proposalStyle,
                     TRandom &rand,
                     std::vector<caf::SRFakeReco> &srfakereco);
 

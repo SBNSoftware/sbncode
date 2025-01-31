@@ -250,12 +250,6 @@ namespace caf
       Comment("Label of sbn CRT tracks."),
       "crttrack" // same for icarus and sbnd
     };
-    
-    Atom<string> CRTPMTLabel {
-      Name("CRTPMTLabel"),
-      Comment("Label for the CRTPMT Matched variables from the crtpmt data product"),
-      "crtpmt" // this variable exists in icaruscode, pretty sure it does not yet exist in sbnd
-    };
 
     Atom<string> OpFlashLabel {
       Name("OpFlashLabel"),
@@ -297,12 +291,6 @@ namespace caf
       Name("FillTrueParticles"),
       Comment("Whether to fill the rec.true_particles branch. The information on true particles"
               " will still be stored for the neutirno primaries and for trk/shw truth matching."),
-      true
-    };
-
-    Atom<bool> FillTrackCaloTruth {
-      Name("FillTrackCaloTruth"),
-      Comment("Whether to save truth information associated with CaloPoints"),
       true
     };
 
@@ -353,6 +341,83 @@ namespace caf
       true
     };
 
+    fhicl::OptionalSequence<float> XMinFV {
+      Name("XMinFV"),
+      Comment("Minimum X FV values in custom geometry")
+    };
+
+    fhicl::OptionalSequence<float> XMaxFV {
+      Name("XMaxFV"),
+      Comment("Maximum X FV values in custom geometry")
+    };
+
+    fhicl::OptionalSequence<float> YMinFV {
+      Name("YMinFV"),
+      Comment("Minimum Y FV values in custom geometry")
+    };
+
+    fhicl::OptionalSequence<float> YMaxFV {
+      Name("YMaxFV"),
+      Comment("Maximum Y FV values in custom geometry")
+    };
+
+    fhicl::OptionalSequence<float> ZMinFV {
+      Name("ZMinFV"),
+      Comment("Minimum Z FV values in custom geometry")
+    };
+
+    fhicl::OptionalSequence<float> ZMaxFV {
+      Name("ZMaxFV"),
+      Comment("Maximum Z values in custom geometry")
+    };
+
+    fhicl::OptionalSequence<float> XMinAV {
+      Name("XMinAV"),
+      Comment("Minimum X AV values in custom geometry")
+    };
+
+    fhicl::OptionalSequence<float> XMaxAV {
+      Name("XMaxAV"),
+      Comment("Maximum X AV values in custom geometry")
+    };
+
+    fhicl::OptionalSequence<float> YMinAV {
+      Name("YMinAV"),
+      Comment("Minimum Y AV values in custom geometry")
+    };
+
+    fhicl::OptionalSequence<float> YMaxAV {
+      Name("YMaxAV"),
+      Comment("Maximum Y AV values in custom geometry")
+    };
+
+    fhicl::OptionalSequence<float> ZMinAV {
+      Name("ZMinAV"),
+      Comment("Minimum Z AV values in custom geometry")
+    };
+
+    fhicl::OptionalSequence<float> ZMaxAV {
+      Name("ZMaxAV"),
+      Comment("Maximum Z values in custom geometry")
+    };
+
+    Atom<bool> NumuOnly {
+      Name("NumuOnly"),
+      Comment("Whether to only run the numu selection"),
+      false
+    };
+
+    Atom<bool> NueOnly {
+      Name("NueOnly"),
+      Comment("Whether to only run the nue selection"),
+      false
+    };
+    
+    Atom<bool> ProposalStyle {
+      Name("ProposalStyle"),
+      Comment("Whether to run the proposal pseudo-selection"),
+      false
+    };
   };
 }
 
