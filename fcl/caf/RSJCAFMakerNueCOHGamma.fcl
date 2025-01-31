@@ -1,0 +1,21 @@
+BEGIN_PROLOG
+
+#   This file defines the configuration for the job module "CAFMaker" 
+#   Inspired by the NOvA CAFMaker package.
+
+standard_cafmaker:{
+    module_type:          CAFMaker
+
+#    SliceLabel00:         "pandoraGausCryo0"
+#    SliceLabel01:         "pandora"
+
+    CAFFilename:          "" # Provide a string to override the automatic filename
+    DataTier:             "caf" # Provide a string to override automatic filename
+    FileExtension:        ".caf.root"
+    GeneratorInput:       "generator"
+    SystWeightLabels:     [] # If weights exist they are likely "genieweight" and "fluxweight"
+    StrictMode:           false    # Abort if any required product is not found, unless the label is empty
+    NueOnly:              true
+}
+
+END_PROLOG
