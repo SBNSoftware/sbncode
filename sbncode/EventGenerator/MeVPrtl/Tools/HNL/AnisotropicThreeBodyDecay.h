@@ -2,7 +2,7 @@
 #define AnisotropicThreeBodyDecay_h
 
 #include "TLorentzVector.h"
-
+#include "TRandom3.h"
 
 //Implementation of HNL Three Body Decays Anisotropies
 //Valid as long as the HNL is decaying into a neutrino and identical final-state charged leptons

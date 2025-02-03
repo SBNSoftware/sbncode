@@ -12,6 +12,13 @@ art_make_library( LIBRARY_NAME sbncode_EventGenerator_MeVPrtl_AnThreeBD
                         sbnobj::Common_EventGen_MeVPrtl
         )
 
+art_make_library( LIBRARY_NAME sbncode_EventGenerator_MeVPrtl_AnTwoBD
+          SOURCE AnisotropicTwoBodyDecay.cpp
+          LIBRARIES
+                        sbncode_EventGenerator_MeVPrtl_Constants
+                        sbnobj::Common_EventGen_MeVPrtl
+        )
+
 
 cet_build_plugin( Kaon2HNLFlux art::tool
                         LIBRARIES
@@ -70,6 +77,7 @@ cet_build_plugin( HNLMakeDecay art::tool
                             larcorealg::Geometry
                             sbncode_EventGenerator_MeVPrtl_Dalitz
                             sbncode_EventGenerator_MeVPrtl_AnThreeBD
+                            sbncode_EventGenerator_MeVPrtl_AnTwoBD
 			    sbncode_EventGenerator_MeVPrtl_Constants
                             sbnobj::Common_EventGen_MeVPrtl
 )
