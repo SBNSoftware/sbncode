@@ -53,6 +53,7 @@ public:
 private:
   // Declare member data here.
   std::vector< sbn::BNBSpillInfo > fOutbeamInfos;
+  std::vector< sbn::BNBSpillInfo > fOutbeamInfosTotal;
   double fTimePad;
   double fBESOffset;
   std::string fInputLabel;
@@ -155,7 +156,7 @@ void sbn::SBNDBNBRetriever::produce(art::Event & e)
   MWRdata_t const MWRdata = extractSpillTimes(triggerInfo);
 
   matchMultiWireData(e.id(), triggerInfo, MWRdata, fOutbeamInfos);
-
+  fOutbeamInfosTotal.insert(fOutbeamInfosTotal.end(),fOutbeamInfos.begin(),fOutbeamInfos.end());
   auto p =  std::make_unique< std::vector< sbn::BNBSpillInfo > >();
   std::swap(*p, fOutbeamInfos);
   e.put(std::move(p));
@@ -459,7 +460,7 @@ sbn::BNBSpillInfo sbn::SBNDBNBRetriever::makeBNBSpillInfo
   (art::EventID const& eventID, double time, MWRdata_t const& MWRdata, std::vector<int> const& matched_MWR) const
 {
   auto const& [ MWR_times, unpacked_MWR ] = MWRdata; // alias
- 
+
   // initializing all of our device carriers
   // device definitions can be found in BNBSpillInfo.h
   
@@ -568,10 +569,10 @@ void sbn::SBNDBNBRetriever::beginSubRun(art::SubRun& sr)
 void sbn::SBNDBNBRetriever::endSubRun(art::SubRun& sr)
 {
   mf::LogDebug("SBNDBNBRetriever")<< "Total number of DAQ Spills : " << TotalBeamSpills << std::endl;
-  mf::LogDebug("SBNDBNBRetriever")<< "Total number of Selected Spills : " << fOutbeamInfos.size() << std::endl;
+  mf::LogDebug("SBNDBNBRetriever")<< "Total number of Selected Spills : " << fOutbeamInfosTotal.size() << std::endl;
 
   auto p =  std::make_unique< std::vector< sbn::BNBSpillInfo > >();
-  std::swap(*p, fOutbeamInfos);
+  std::swap(*p, fOutbeamInfosTotal);
 
   sr.put(std::move(p), art::subRunFragment());
 
