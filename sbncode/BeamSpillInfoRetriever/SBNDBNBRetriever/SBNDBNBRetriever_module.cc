@@ -56,6 +56,7 @@ private:
   // Declare member data here.
   std::vector< sbn::BNBSpillInfo > fOutbeamInfos;
   double fTimePad;
+  double fBESOffset;
   std::string fInputLabel;
   std::string fInputNonContainerInstance;
   std::string fDeviceUsedForTiming;
@@ -108,6 +109,7 @@ sbn::SBNDBNBRetriever::SBNDBNBRetriever(fhicl::ParameterSet const & params)
   fInputLabel = params.get<std::string>("InputLabel");
   fDeviceUsedForTiming = params.get<std::string>("DeviceUsedForTiming");
   fTimePad = params.get<double>("TimePadding");
+  fBESOffset = params.get<double>("BESOffset");
   fInputNonContainerInstance = params.get<std::string>("InputNonContainerInstance");
   fOutputInstance = params.get<std::string>("OutputInstance");
   fDebugLevel = params.get<int>("DebugLevel",0);
@@ -384,10 +386,10 @@ int sbn::SBNDBNBRetriever::matchMultiWireData(
   
   // Iterating through each of the beamline times
   for (size_t i = 0; i < times_temps.size(); i++) {
-    if(times_temps[i] > (triggerInfo.t_current_event)+fTimePad){
+    if(times_temps[i] > (triggerInfo.t_current_event)+fTimePad-fBESOffset){
       spills_removed++; 
       continue;} 
-    if(times_temps[i] <= (triggerInfo.t_previous_event)+fTimePad){
+    if(times_temps[i] <= (triggerInfo.t_previous_event)+fTimePad-fBESOffset){
       spills_removed++; 
       continue;}
 
@@ -400,7 +402,6 @@ int sbn::SBNDBNBRetriever::matchMultiWireData(
 
     //Great we found a matched spill! Let's count it
     spill_count++;
-
     //Loop through the multiwire devices:
     
     for(int dev = 0; dev < int(MWR_times.size()); dev++){
@@ -478,7 +479,7 @@ sbn::BNBSpillInfo sbn::SBNDBNBRetriever::makeBNBSpillInfo
   double THCURR = 0; // units kiloAmps
   
   double TOR860_time = 0; // units s
-    
+  
   // Here we request all the devices
   // since sometimes devices fail to report we'll
   // allow each to throw an exception but still move forward

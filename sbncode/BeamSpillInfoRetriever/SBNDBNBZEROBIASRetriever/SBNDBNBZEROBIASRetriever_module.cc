@@ -54,6 +54,7 @@ private:
   // Declare member data here.
   std::vector< sbn::BNBSpillInfo > fOutbeamInfos;
   double fTimePad;
+  double fBESOffset;
   std::string fInputLabel;
   std::string fInputNonContainerInstance;
   std::string fDeviceUsedForTiming;
@@ -105,6 +106,7 @@ sbn::SBNDBNBRetriever::SBNDBNBRetriever(fhicl::ParameterSet const & params)
   fInputLabel = params.get<std::string>("InputLabel");
   fDeviceUsedForTiming = params.get<std::string>("DeviceUsedForTiming");
   fTimePad = params.get<double>("TimePadding");
+  fBESOffset = params.get<double>("BESOffset");
   fInputNonContainerInstance = params.get<std::string>("InputNonContainerInstance");
   fOutputInstance = params.get<std::string>("OutputInstance");
   fDebugLevel = params.get<int>("DebugLevel",0);
@@ -115,6 +117,7 @@ sbn::SBNDBNBRetriever::SBNDBNBRetriever(fhicl::ParameterSet const & params)
   bfp_mwr->setValidWindow(3605);
   TotalBeamSpills = 0;
   produces< std::vector< sbn::BNBSpillInfo >, art::InEvent >();
+  produces< std::vector< sbn::BNBSpillInfo >, art::InSubRun >();
 }
 
 int eventNum =0;
@@ -139,6 +142,7 @@ void sbn::SBNDBNBRetriever::produce(art::Event & e)
 
 
   TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
+
 
   if (triggerInfo.t_previous_event == 0) {
     auto p =  std::make_unique< std::vector< sbn::BNBSpillInfo > >();
@@ -256,7 +260,6 @@ sbn::SBNDBNBRetriever::TriggerInfo_t sbn::SBNDBNBRetriever::extractTriggerInfo(a
 sbn::SBNDBNBRetriever::MWRdata_t sbn::SBNDBNBRetriever::extractSpillTimes(TriggerInfo_t const& triggerInfo) const {
   
   // These lines get everything primed within the IFBeamDB.
-  try{bfp->FillCache((triggerInfo.t_current_event)+fTimePad);} catch (WebAPIException &we) {}; 
   try{bfp->FillCache((triggerInfo.t_current_event)+fTimePad);} catch (WebAPIException &we) {};     
   try{bfp->FillCache((triggerInfo.t_previous_event)-fTimePad);} catch (WebAPIException &we) {};      
   try{bfp_mwr->FillCache((triggerInfo.t_current_event)+fTimePad);} catch (WebAPIException &we) {};
@@ -396,10 +399,10 @@ void sbn::SBNDBNBRetriever::matchMultiWireData(
     diff = times_temps[k] - (triggerInfo.t_current_event + fTimePad);
 
     if( diff < 0 and diff < best_diff){
-      if(times_temps[k] > (triggerInfo.t_current_event)+fTimePad){
+      if(times_temps[k] > (triggerInfo.t_current_event)+fTimePad-fBESOffset){
         spills_removed++; 
         continue;} 
-      if(times_temps[k] <= (triggerInfo.t_previous_event)+fTimePad){
+      if(times_temps[k] <= (triggerInfo.t_previous_event)+fTimePad-fBESOffset){
         spills_removed++; 
         continue;}
       best_diff = diff; 
@@ -498,7 +501,7 @@ sbn::BNBSpillInfo sbn::SBNDBNBRetriever::makeBNBSpillInfo
   //crunch the times 
   unsigned long int time_closest_int = (int) TOR860_time;
   double time_closest_ns = (TOR860_time - time_closest_int)*1e9;
- 
+
   //Store everything in our data-product
   sbn::BNBSpillInfo beamInfo;
   beamInfo.TOR860 = TOR860*1e12; //add in factor of 1e12 protons to get correct POT units
@@ -564,6 +567,14 @@ void sbn::SBNDBNBRetriever::beginSubRun(art::SubRun& sr)
 
 void sbn::SBNDBNBRetriever::endSubRun(art::SubRun& sr)
 {
+  mf::LogDebug("SBNDBNBRetriever")<< "Total number of DAQ Spills : " << TotalBeamSpills << std::endl;
+  mf::LogDebug("SBNDBNBRetriever")<< "Total number of Selected Spills : " << fOutbeamInfos.size() << std::endl;
+
+  auto p =  std::make_unique< std::vector< sbn::BNBSpillInfo > >();
+  std::swap(*p, fOutbeamInfos);
+
+  sr.put(std::move(p), art::subRunFragment());
+
   return;
 }
 
