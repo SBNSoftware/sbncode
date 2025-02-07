@@ -188,7 +188,6 @@ sbn::SBNDBNBRetriever::PTBInfo_t sbn::SBNDBNBRetriever::extractPTBInfo(art::Hand
             PTBInfo.prevPTBTimeStamp = std::bitset<64>(RawprevPTBTimeStamp / 20.0).to_ullong()/50e6; 
             PTBInfo.currPTBTimeStamp = std::bitset<64>(RawcurrPTBTimeStamp / 20.0).to_ullong()/50e6; 
             PTBInfo.GateCounter = ctb_frag.Trigger(word_i)->gate_counter;
-
             break;
 	  }
         }
@@ -247,11 +246,12 @@ sbn::SBNDBNBRetriever::TriggerInfo_t sbn::SBNDBNBRetriever::extractTriggerInfo(a
   triggerInfo.t_previous_event = PTBInfo.prevPTBTimeStamp;
   triggerInfo.number_of_gates_since_previous_event = PTBInfo.GateCounter;
 
-
   if(triggerInfo.t_current_event - PTBInfo.currPTBTimeStamp >= 1){
+    mf::LogDebug("SBNDBNBZEROBIASRetriever") << " PTB and TDC Disagree!!! Correcting by adding 1 second." << std::endl;
     triggerInfo.t_previous_event+=1;
   }
   else if(triggerInfo.t_current_event - PTBInfo.currPTBTimeStamp <= -1){
+    mf::LogDebug("SBNDBNBZEROBIASRetriever") << " PTB and TDC Disagree!!! Correcting by subtracting 1 second." << std::endl;
     triggerInfo.t_previous_event-=1;
   }
 
@@ -397,9 +397,8 @@ void sbn::SBNDBNBRetriever::matchMultiWireData(
   size_t i = 0;
 
   for (size_t k = 0; k < times_temps.size(); k++){
-    diff = times_temps[k] - (triggerInfo.t_current_event + fTimePad);
-
-    if( diff < 0 and diff < best_diff){
+    diff = (triggerInfo.t_current_event + fTimePad - fBESOffset) - times_temps[k];// diff is greater than zero!
+    if( diff > 0 and diff < best_diff){
       if(times_temps[k] > (triggerInfo.t_current_event)+fTimePad-fBESOffset){
         spills_removed++; 
         continue;} 
@@ -410,6 +409,7 @@ void sbn::SBNDBNBRetriever::matchMultiWireData(
       i = k;
     }
   }
+
   for(int dev = 0; dev < int(MWR_times.size()); dev++){
       
     //Loop through the multiwire times:
