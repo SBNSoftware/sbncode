@@ -71,7 +71,6 @@
 namespace sbn {
   class TrackCaloSkimmer;
   enum EDet {kNOTDEFINED, kSBND, kICARUS};
-  //enum T0Type {kNoT0, kPandoraT0, kCRTTrackT0, kCRTTimeT0};
 }
 
 class sbn::TrackCaloSkimmer : public art::EDAnalyzer {
