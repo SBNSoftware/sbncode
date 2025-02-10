@@ -1185,7 +1185,7 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
   }
 
   // Fill each hit
-  for (unsigned i_hit = 0; i_hit < hits.size(); i_hit++) {    
+  for (unsigned i_hit = 0; i_hit < hits.size(); i_hit++) {
     sbn::TrackHitInfo hinfo = MakeHit(*hits[i_hit], hits[i_hit].key(), *thms[i_hit], track, t0Info, sps[i_hit], calo, geo, clock_data, bt_serv, dprop);
     if (hinfo.h.plane == 0) {
       fTrack->hits0.push_back(hinfo);
