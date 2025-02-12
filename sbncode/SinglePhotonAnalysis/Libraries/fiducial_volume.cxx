@@ -2,6 +2,7 @@
 #include "sbncode/SinglePhotonAnalysis/Libraries/fiducial_volume.h"
 #include "larcorealg/Geometry/BoxBoundedGeo.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
+#include "larcore/Geometry/Geometry.h"
 
 namespace single_photon
 {

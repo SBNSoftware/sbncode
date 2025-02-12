@@ -3,7 +3,7 @@
 
 #include "canvas/Persistency/Common/Ptr.h"
 
-#include "larcorealg/Geometry/GeometryCore.h"
+#include "larcorealg/Geometry/fwd.h"
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardataalg/DetectorInfo/DetectorClocksStandard.h"
@@ -45,9 +45,9 @@ struct StubInfo {
  * and whether or not the input location/direction are already corrected for SCE.
  */
 double GetPitch(
-    const geo::GeometryCore *geo, const spacecharge::SpaceCharge *sce, 
+    const geo::WireReadoutGeom &wireReadout, const spacecharge::SpaceCharge *sce,
     geo::Point_t loc, geo::Vector_t dir, 
-    geo::View_t view, geo::TPCID tpc, 
+    geo::View_t view, geo::TPCGeo const& tpc,
     bool correct_sce, bool track_is_sce_corrected, float xsign=1.);
 
 /// Get the location in the presence of space charge
@@ -57,14 +57,14 @@ geo::Point_t GetLocation(const spacecharge::SpaceCharge *sce, geo::Point_t loc_w
 double GetEfield(const detinfo::DetectorPropertiesData &dprop, const spacecharge::SpaceCharge *sce, geo::Point_t loc, geo::TPCID TPC, bool correct_loc_sce, float xsign=1.);
 
 /// Get the SCE-distorted location (i.e. the location "seen" by the wireplanes)
-geo::Point_t GetLocationAtWires(const spacecharge::SpaceCharge *sce, const geo::GeometryCore *geo, geo::Point_t loc, geo::TPCID TPC, float xsign=1.);
+geo::Point_t GetLocationAtWires(const spacecharge::SpaceCharge *sce, geo::Point_t loc, geo::Vector_t driftDir, float xsign=1.);
 
 /// Returns whether stub `A` contains stub `B`.
 bool StubContains(const sbn::StubInfo &A, const sbn::StubInfo &B);
 
 /// Computes the dot product of two stubs
 float StubDirectionDot(const sbn::StubInfo &A, const sbn::StubInfo &B, 
-    const geo::GeometryCore *geo,
+    const geo::WireReadoutGeom &wireReadout,
     const detinfo::DetectorPropertiesData &dprop);
 
 // For matching stubs across planes
@@ -74,7 +74,7 @@ float StubTimeOffset(const sbn::StubInfo &A, const sbn::StubInfo &B,
 
 /// Returns an updated end position of a stub after merging across two planes
 geo::Point_t TwoStubEndPosition(const sbn::StubInfo &A, const sbn::StubInfo &B,
-    const geo::GeometryCore *geo,
+    const geo::WireReadoutGeom &wireReadout,
     const spacecharge::SpaceCharge *sce,
     const detinfo::DetectorPropertiesData &dprop);
 
@@ -86,7 +86,8 @@ float StubPeakChargeOffset(const sbn::StubInfo &A, const sbn::StubInfo &B);
 
 /// Difference of the endpoint dQ/dx between two stubs
 float StubPeakdQdxOffset(const sbn::StubInfo &A, const sbn::StubInfo &B,
-    const geo::GeometryCore *geo,
+    const geo::GeometryCore &geometry,
+    const geo::WireReadoutGeom &wireReadout,
     const spacecharge::SpaceCharge *sce,
     const detinfo::DetectorPropertiesData &dprop);
 

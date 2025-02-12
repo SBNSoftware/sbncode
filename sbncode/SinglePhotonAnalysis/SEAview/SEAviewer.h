@@ -31,7 +31,9 @@
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/LArPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
-#include "larcore/Geometry/Geometry.h"
+#include "larcorealg/Geometry/WireReadoutGeom.h"
+#include "larcorealg/Geometry/GeometryCore.h"
+#include "larcorealg/Geometry/fwd.h"
 
 #include "canvas/Utilities/ensurePointer.h"
 #include "canvas/Persistency/Common/FindManyP.h"
@@ -271,7 +273,10 @@ namespace seaview {
 
       //constructor
       //Keng, DetectorProperties--> DetectorPropertiesData 
-      SEAviewer(std::string tag,geo::GeometryCore const * geom,detinfo::DetectorPropertiesData const & theDetector );
+      SEAviewer(std::string tag,
+                geo::GeometryCore const * geom,
+                geo::WireReadoutGeom const * wireReadout,
+                detinfo::DetectorPropertiesData const & theDetector);
 
       void configure(const fhicl::ParameterSet& pset){};
 
@@ -303,12 +308,11 @@ namespace seaview {
       int Print(double plot_distance);
       int runseaDBSCAN(double min_pts, double eps);
 
-      double calcWire(double Y, double Z, int plane, int fTPC, int fCryostat, geo::GeometryCore const& geo ){
+      double calcWire(double Y, double Z, int plane, int fTPC, int fCryostat, geo::WireReadoutGeom const& wireReadout ){
         //WireCoordinate returns the index of the nearest wire to the specified position.
-        return geo.WireCoordinate(geo::Point_t{0, Y, Z},
-                                  geo::PlaneID{static_cast<unsigned>(fCryostat),
+        return wireReadout.Plane(geo::PlaneID{static_cast<unsigned>(fCryostat),
                                                static_cast<unsigned>(fTPC),
-                                               static_cast<unsigned>(plane)});
+                                      static_cast<unsigned>(plane)}).WireCoordinate(geo::Point_t{0, Y, Z});
       }
 
       double calcTime(double X,int plane,int fTPC,int fCryostat, detinfo::DetectorPropertiesData const& detprop){
@@ -387,6 +391,7 @@ namespace seaview {
       std::vector<std::vector<std::vector<double>>> vec_chans; //vector of wires on each plane for all PFParticle
 
       geo::GeometryCore const * geom;
+      geo::WireReadoutGeom const * wireReadout;
       detinfo::DetectorPropertiesData const & theDetector ;
 
       double tick_shift;

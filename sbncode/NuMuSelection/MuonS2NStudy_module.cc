@@ -23,9 +23,8 @@
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 
 // LArSoft includes
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
-#include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/BoxBoundedGeo.h"
 #include "larsim/MCCheater/BackTrackerService.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
@@ -105,7 +104,7 @@ numu::MuonS2NStudy::MuonS2NStudy(fhicl::ParameterSet const& p)
 void numu::MuonS2NStudy::analyze(art::Event const& ev)
 {
   art::ServiceHandle<cheat::BackTrackerService> backtracker;
-  const geo::GeometryCore *geo = lar::providerFrom<geo::Geometry>();
+  geo::WireReadoutGeom const& wireReadout = art::ServiceHandle<geo::WireReadout>()->Get();
   auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(ev);
 
   // Get the Signal Amplitude
@@ -159,24 +158,24 @@ void numu::MuonS2NStudy::analyze(art::Event const& ev)
 
   // fill up all of the signals
   for (auto const &pair: amplitude_map) {
-    fSignal[angle_bin][geo->View(pair.first)]->Fill(pair.second);
+    fSignal[angle_bin][wireReadout.View(pair.first)]->Fill(pair.second);
   }
 
   // now get the background noise RMS
 
   // figure out which channels do not have any energy depositions
-  std::vector<raw::ChannelID_t> allChannels = geo->ChannelsInTPCs();
+  std::vector<raw::ChannelID_t> allChannels = wireReadout.ChannelsInTPCs();
 
   std::set<raw::ChannelID_t> channelSet;
   for (raw::ChannelID_t c: allChannels) channelSet.insert(c);
 
   // ignore wires that are shorter than the max length
   for (raw::ChannelID_t c: allChannels) {
-    geo::WireID wireID = geo->ChannelToWire(c).at(0);
-    const geo::WireGeo &wireGeo = geo->Wire(wireID);
+    geo::WireID wireID = wireReadout.ChannelToWire(c).at(0);
+    const geo::WireGeo &wireGeo = wireReadout.Wire(wireID);
     float length = wireGeo.Length();
     // TODO: don't hardcode
-    if (geo->SignalType(wireID) == geo::kInduction && length < 577.3) {
+    if (wireReadout.SignalType(wireID) == geo::kInduction && length < 577.3) {
       channelSet.erase(c);
     }
   }
@@ -207,7 +206,7 @@ void numu::MuonS2NStudy::analyze(art::Event const& ev)
     }
     float noise = sqrt(rms_sum / ncount);
     // std::cout << "Noise: " << noise;
-    fNoise[geo->View(wire.Channel())]->Fill(noise);
+    fNoise[wireReadout.View(wire.Channel())]->Fill(noise);
   }
 
 }
