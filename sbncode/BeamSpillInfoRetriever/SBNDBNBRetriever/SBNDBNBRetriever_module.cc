@@ -225,14 +225,14 @@ sbn::SBNDBNBRetriever::TriggerInfo_t sbn::SBNDBNBRetriever::extractTriggerInfo(a
 
   if (TDC_cont_frags) {
     double TDCTimeStamp = extractTDCTimeStamp(TDC_cont_frags);
-    triggerInfo.t_current_event = TDCTimeStamp;
+    triggerInfo.t_current_event = TDCTimeStamp - fBESOffset;
   }
   else{
     mf::LogDebug("SBNDBNBRetriever") << " Missing TDC Container Fragments!!! " << std::endl;
-    triggerInfo.t_current_event = PTBInfo.currPTBTimeStamp;
+    triggerInfo.t_current_event = PTBInfo.currPTBTimeStamp - fBESOffset;
   }
 
-  triggerInfo.t_previous_event = PTBInfo.prevPTBTimeStamp;
+  triggerInfo.t_previous_event = PTBInfo.prevPTBTimeStamp - fBESOffset;
   triggerInfo.number_of_gates_since_previous_event = PTBInfo.GateCounter;
 
   if(triggerInfo.t_current_event - PTBInfo.currPTBTimeStamp >= 1){
@@ -386,10 +386,10 @@ int sbn::SBNDBNBRetriever::matchMultiWireData(
   
   // Iterating through each of the beamline times
   for (size_t i = 0; i < times_temps.size(); i++) {
-    if(times_temps[i] > (triggerInfo.t_current_event)+fTimePad-fBESOffset){
+    if(times_temps[i] > (triggerInfo.t_current_event)+fTimePad){
       spills_removed++; 
       continue;} 
-    if(times_temps[i] <= (triggerInfo.t_previous_event)+fTimePad-fBESOffset){
+    if(times_temps[i] <= (triggerInfo.t_previous_event)+fTimePad){
       spills_removed++; 
       continue;}
 
