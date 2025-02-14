@@ -38,7 +38,7 @@ services:
 }
 
 services.Geometry: @local::icarus_single_induction_nooverburden_geometry
-services.ExpGeoHelperInterface: @local::icarus_single_induction_geometry_helper
+services.WireReadout: @local::icarus_single_induction_wire_readout
 services.SpaceCharge.EnableSimEfield : false
 services.SpaceCharge.EnableSimEfield : false
 services.SpaceCharge.InputFilename: "SCEoffsets/SCEoffsets_ICARUS_E500_voxelTH3.root"
