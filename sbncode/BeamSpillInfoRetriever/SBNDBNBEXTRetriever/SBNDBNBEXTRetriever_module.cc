@@ -97,8 +97,8 @@ void sbn::SBNDBNBEXTRetriever::produce(art::Event & e)
   fOutExtInfos.push_back(extInfo);
 }
 
-sbn::SBNDBNBEXTRetriever::PTBInfo_t sbn::SBNDBNBEXTRetriever::extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
-  int HLT_count = 0;
+
+sbn::SBNDBNBRetriever::PTBInfo_t sbn::SBNDBNBRetriever::extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
   bool foundHLT = false;
   PTBInfo_t PTBInfo;
   for (auto const& cont : *cont_frags)
@@ -116,12 +116,11 @@ sbn::SBNDBNBEXTRetriever::PTBInfo_t sbn::SBNDBNBEXTRetriever::extractPTBInfo(art
           wt = word_type;
 	  if (wt == 2 && ctb_frag.Trigger(word_i)->IsTrigger(4))
 	  {
-            HLT_count++;
             foundHLT = true;
 	    uint64_t RawprevPTBTimeStamp = ctb_frag.PTBWord(word_i)->prevTS * 20; 
-	    uint64_t RawcurrPTBTimeStamp = ctb_frag.Trigger(word_i)->timestamp * 20;
+            uint64_t RawcurrPTBTimeStamp = ctb_frag.Trigger(word_i)->timestamp * 20; 
             PTBInfo.prevPTBTimeStamp = std::bitset<64>(RawprevPTBTimeStamp / 20).to_ullong()/50e6; 
-            PTBInfo.currPTBTimeStamp = std::bitset<64>(RawcurrPTBTimeStamp / 20).to_ullong()/50e6; 
+            PTBInfo.currPTBTimeStamp = std::bitset<64>(RawcurrPTBTimeStamp/20).to_ullong()/50e6; 
             PTBInfo.GateCounter = ctb_frag.Trigger(word_i)->gate_counter;
             break;
 	  }
@@ -131,7 +130,7 @@ sbn::SBNDBNBEXTRetriever::PTBInfo_t sbn::SBNDBNBEXTRetriever::extractPTBInfo(art
   } //End of loop over the number of containers
 
   if(foundHLT == true){
-    return PTBInfo; 
+    return PTBInfo;
   }
   else{
     std::cout << "Failed to find HLT 4!" << std::endl;
