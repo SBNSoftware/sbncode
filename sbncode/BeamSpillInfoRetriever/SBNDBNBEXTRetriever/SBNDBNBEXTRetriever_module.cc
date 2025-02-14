@@ -115,14 +115,16 @@ sbn::SBNDBNBEXTRetriever::PTBInfo_t sbn::SBNDBNBEXTRetriever::extractPTBInfo(art
           uint32_t word_type = ctb_frag.Word(word_i)->word_type;
           wt = word_type;
 	  if (wt == 2 && ctb_frag.Trigger(word_i)->IsTrigger(4))
-	  {
+          {
             foundHLT = true;
-	    uint64_t RawprevPTBTimeStamp = ctb_frag.PTBWord(word_i)->prevTS * 20; 
-            uint64_t RawcurrPTBTimeStamp = ctb_frag.Trigger(word_i)->timestamp * 20; 
-            PTBInfo.prevPTBTimeStamp = std::bitset<64>(RawprevPTBTimeStamp / 20).to_ullong()/50e6; 
-            PTBInfo.currPTBTimeStamp = std::bitset<64>(RawcurrPTBTimeStamp/20).to_ullong()/50e6; 
-            PTBInfo.GateCounter = ctb_frag.Trigger(word_i)->gate_counter;
-            break;
+            uint64_t RawprevPTBTimeStamp = ctb_frag.PTBWord(word_i)->prevTS * 20;
+            uint64_t RawcurrPTBTimeStamp = ctb_frag.Trigger(word_i)->timestamp * 20;
+            double currTS_candidate = std::bitset<64>(RawcurrPTBTimeStamp/20).to_ullong()/50e6;
+            if(currTS_candidate < PTBInfo.currPTBTimeStamp){
+              PTBInfo.prevPTBTimeStamp = std::bitset<64>(RawprevPTBTimeStamp / 20).to_ullong()/50e6;
+              PTBInfo.currPTBTimeStamp = currTS_candidate;
+              PTBInfo.GateCounter = ctb_frag.Trigger(word_i)->gate_counter;
+            }
 	  }
         }
       } //End of loop over the number of trigger words
