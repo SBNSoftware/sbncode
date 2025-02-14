@@ -1,6 +1,9 @@
 #include "StubMergeAlgorithms.h"
 
 #include "larcorealg/Geometry/WireReadoutGeom.h"
+#include "larcore/Geometry/Geometry.h"
+#include "larcore/CoreUtils/ServiceUtil.h"
+#include "larcorealg/Geometry/GeometryCore.h"
 
 geo::Point_t sbn::GetLocation(const spacecharge::SpaceCharge *sce, geo::Point_t loc_w, geo::TPCID TPC, float xsign) {
   if (sce && sce->EnableCalSpatialSCE()) {
@@ -49,14 +52,17 @@ geo::Point_t sbn::GetLocationAtWires(const spacecharge::SpaceCharge *sce, geo::P
 double sbn::GetPitch(
     const geo::WireReadoutGeom &wireReadout, const spacecharge::SpaceCharge *sce,
     geo::Point_t loc, geo::Vector_t dir, 
-    geo::View_t view, geo::TPCGeo const& tpc,
+    geo::View_t view, geo::PlaneID const& plane_id,
     bool correct_sce, bool track_is_sce_corrected, float xsign) {
 
-  double angleToVert = wireReadout.WireAngleToVertical(view, tpc.ID()) - 0.5*::util::pi<>();
+  const geo::GeometryCore *geo = lar::providerFrom<geo::Geometry>();
+
+  double angleToVert = wireReadout.WireAngleToVertical(view, plane_id) - 0.5*::util::pi<>();
 
   geo::Vector_t dir_w;
 
-  geo::PlaneGeo const& plane = wireReadout.Plane(geo::PlaneID{0, 0, view});
+  geo::PlaneGeo const& plane = wireReadout.Plane(plane_id);
+  geo::TPCGeo const& tpc = geo->TPC(plane_id);
   // "dir_w" should be the direction that the wires see. If the track already has the field
   // distortion corrections applied, then we need to de-apply them to get the direction as
   // seen by the wire planes
@@ -92,8 +98,8 @@ double sbn::GetPitch(
     loc_w = sbn::GetLocationAtWires(sce, loc, tpc.DriftDir(), xsign);
   }
 
-  geo::Point_t locw_traj = (correct_sce) ? sbn::GetLocation(sce, loc_w, tpc.ID(), xsign) : loc_w;
-  geo::Point_t locw_pdx_traj = (correct_sce) ? sbn::GetLocation(sce, loc_w + pitch * dir_w, tpc.ID(), xsign) : (loc_w + pitch * dir_w);
+  geo::Point_t locw_traj = (correct_sce) ? sbn::GetLocation(sce, loc_w, plane_id, xsign) : loc_w;
+  geo::Point_t locw_pdx_traj = (correct_sce) ? sbn::GetLocation(sce, loc_w + pitch * dir_w, plane_id, xsign) : (loc_w + pitch * dir_w);
 
   pitch = (locw_traj - locw_pdx_traj).R();
 
@@ -222,8 +228,8 @@ float sbn::StubPeakdQdxOffset(const sbn::StubInfo &A, const sbn::StubInfo &B,
   geo::Vector_t dir((end-vtx).Unit());
 
   // Input point, dir are always space charge corrected here
-  float Apitch = GetPitch(wireReadout, sce, end, dir, A.vhit_hit->View(), geometry.TPC(A.vhit_hit->WireID()), true, true);
-  float Bpitch = GetPitch(wireReadout, sce, end, dir, B.vhit_hit->View(), geometry.TPC(B.vhit_hit->WireID()), true, true);
+  float Apitch = GetPitch(wireReadout, sce, end, dir, A.vhit_hit->View(), A.vhit_hit->WireID(), true, true);
+  float Bpitch = GetPitch(wireReadout, sce, end, dir, B.vhit_hit->View(), B.vhit_hit->WireID(), true, true);
 
   return abs(A.vhit->charge / Apitch - B.vhit->charge / Bpitch);
 }

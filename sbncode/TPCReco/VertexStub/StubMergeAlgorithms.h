@@ -47,7 +47,7 @@ struct StubInfo {
 double GetPitch(
     const geo::WireReadoutGeom &wireReadout, const spacecharge::SpaceCharge *sce,
     geo::Point_t loc, geo::Vector_t dir, 
-    geo::View_t view, geo::TPCGeo const& tpc,
+    geo::View_t view, geo::PlaneID const& plane_id,
     bool correct_sce, bool track_is_sce_corrected, float xsign=1.);
 
 /// Get the location in the presence of space charge

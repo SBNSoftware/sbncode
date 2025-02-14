@@ -24,6 +24,7 @@
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "lardataobj/RecoBase/MCSFitResult.h"
+#include "larrecodnn/CVN/func/Result.h"
 #include "sbnobj/Common/Reco/Stub.h"
 #include "sbnobj/Common/Reco/RangeP.h"
 #include "sbnobj/Common/Reco/ShowerSelectionVars.h"
@@ -227,6 +228,9 @@ namespace caf
 
   void FillTPCPMTBarycenterMatch(const sbn::TPCPMTBarycenterMatch *matchInfo,
                            caf::SRSlice& slice);
+
+  void FillCVNScores(const lcvn::Result *cvnResult,
+                     caf::SRSlice& slice);
 
   void FillPFPRazzled(const art::Ptr<sbn::MVAPID> razzled,
                       caf::SRPFP& srpfp,
