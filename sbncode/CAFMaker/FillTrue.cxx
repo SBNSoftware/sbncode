@@ -300,7 +300,7 @@ namespace caf {
           double cosgamma = std::abs(std::sin(angletovert)*dir.Y() + std::cos(angletovert)*dir.Z());
           double pitch;
           if (cosgamma) {
-            pitch = plane.View()/cosgamma;
+            pitch = plane.WirePitch()/cosgamma;
           }
           else {
             pitch = 0.;
