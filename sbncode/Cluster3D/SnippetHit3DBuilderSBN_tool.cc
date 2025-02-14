@@ -1633,8 +1633,8 @@ geo::WireID SnippetHit3DBuilderSBN::NearestWireID(const Eigen::Vector3f& positio
         mf::LogWarning("Cluster3D") << "Exception caught finding nearest wire, position - " << exc.what() << std::endl;
 
         // Assume extremum for wire number depending on z coordinate
-        if (position[2] < 0.5 * m_geometry->TPC({0,0}).Length()) wire = 0;
-        else                                                     wire = m_wireReadoutAlg->Nwires(wireIDIn.asPlaneID()) - 1;
+        if (position[2] < m_geometry->TPC({0,0}).ActiveLength()*0.5) wire = 0;
+        else                                              wire = m_wireReadoutAlg->Nwires(wireIDIn.asPlaneID()) - 1;
     }
 
     geo::WireID wireID(wireIDIn.Cryostat,wireIDIn.TPC,wireIDIn.Plane,wire);

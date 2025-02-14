@@ -949,9 +949,9 @@ void sbn::NuVertexChargeTree::FillNeutrino(const simb::MCTruth &nu,
     geo::TPCGeo const* firstTPC = geo.PositionToTPCptr(start_loc);
     if (firstTPC) {
       geo::TPCID firstTPCID = firstTPC->ID();
-      fFSPPitch0.push_back(sbn::GetPitch(wireReadout, sce, start_loc, start_dir, wireReadout.Plane(geo::PlaneID(firstTPCID, 0)).View(), *firstTPC, true, true));
-      fFSPPitch1.push_back(sbn::GetPitch(wireReadout, sce, start_loc, start_dir, wireReadout.Plane(geo::PlaneID(firstTPCID, 1)).View(), *firstTPC, true, true));
-      fFSPPitch2.push_back(sbn::GetPitch(wireReadout, sce, start_loc, start_dir, wireReadout.Plane(geo::PlaneID(firstTPCID, 2)).View(), *firstTPC, true, true));
+      fFSPPitch0.push_back(sbn::GetPitch(wireReadout, sce, start_loc, start_dir, wireReadout.Plane(geo::PlaneID(firstTPCID, 0)).View(), geo::PlaneID(firstTPCID, 0), true, true));
+      fFSPPitch1.push_back(sbn::GetPitch(wireReadout, sce, start_loc, start_dir, wireReadout.Plane(geo::PlaneID(firstTPCID, 1)).View(), geo::PlaneID(firstTPCID, 1), true, true));
+      fFSPPitch2.push_back(sbn::GetPitch(wireReadout, sce, start_loc, start_dir, wireReadout.Plane(geo::PlaneID(firstTPCID, 2)).View(), geo::PlaneID(firstTPCID, 2), true, true));
     }
     else {
       fFSPPitch0.push_back(-1);
