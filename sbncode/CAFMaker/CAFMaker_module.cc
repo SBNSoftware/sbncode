@@ -1768,6 +1768,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     const sbn::TPCPMTBarycenterMatch *barycenterMatch
       = foTPCPMTBarycenterMatch.isValid()? foTPCPMTBarycenterMatch.at(0).get(): nullptr;
 
+    art::FindOneP<lcvn::Result> foCVNResult =
+      FindOnePStrict<lcvn::Result>(sliceList, evt,
+          fParams.CVNLabel() + slice_tag_suff);
+    const lcvn::Result *cvnResult
+      = foCVNResult.isValid()? foCVNResult.at(0).get(): nullptr;
+    
     art::FindManyP<larpandoraobj::PFParticleMetadata> fmPFPMeta =
       FindManyPStrict<larpandoraobj::PFParticleMetadata>(fmPFPart, evt,
                fParams.PFParticleLabel() + slice_tag_suff);
@@ -1993,7 +1999,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceOpT0Finder(slcOpT0, recslc);
     FillSliceBarycenter(slcHits, slcSpacePoints, recslc);
     FillTPCPMTBarycenterMatch(barycenterMatch, recslc);
-
+    FillCVNScores(cvnResult, recslc);
+    
     // select slice
     if (!SelectSlice(recslc, fParams.CutClearCosmic())) continue;
 
