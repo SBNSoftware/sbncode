@@ -5,6 +5,7 @@ icarusbnbspillinfo: {
 
     module_type: "ICARUSBNBRetriever"    
     TimePadding: 0.0333 #unit seconds, Booster Rep Rate is 15 Hz, so the closest spill could be 66ms away
+    BESOffset: 0.036 #unit seconds, we expect the BES to be about 35 ms from $1D. Need to adjust search range accordingly.
     URL: "" #keep this blank and we're good
     Bundle: "BoosterNeutrinoBeam_read"
     MultiWireBundle: "BNBMultiWire"

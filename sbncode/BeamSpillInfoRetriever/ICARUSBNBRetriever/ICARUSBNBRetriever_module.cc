@@ -121,6 +121,7 @@ private:
   // input labels
   std::vector< sbn::BNBSpillInfo > fOutbeamInfos;
   double fTimePad;
+  double fBESOffset;
   std::string fURL;
   MWRData mwrdata;
   int run_number;
@@ -257,6 +258,7 @@ int sbn::ICARUSBNBRetriever::get_trigger_type_matching_gate(sqlite3 *db, int fun
 sbn::ICARUSBNBRetriever::ICARUSBNBRetriever(Parameters const& params)
   : EDProducer{params},
   fTimePad(params().TimePadding()),
+  fBESOffset(params().BESOffset()),
   raw_data_label(params().RawDataLabel()),
   fDeviceUsedForTiming(params().DeviceUsedForTiming()),
   bfp(     ifbeam_handle->getBeamFolder(params().Bundle(), params().URL(), params().TimeWindow())),
@@ -370,11 +372,12 @@ sbn::ICARUSBNBRetriever::TriggerInfo_t sbn::ICARUSBNBRetriever::extractTriggerIn
                                                                                                                         
     */
 
-    triggerInfo.t_current_event = static_cast<double>(artdaq_ts-3.6e7)/(1000000000.0); //check this offset...
+    double BESinTSUnits = fBESOffset*1e9; // flc param is in seconds need to convert to match TS
+    triggerInfo.t_current_event = static_cast<double>(artdaq_ts-BESinTSUnits)/(1000000000.0); //check this offset...
     if(triggerInfo.gate_type == 1)
-      triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampBNBMaj()-3.6e7))/(1e9);
+      triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampBNBMaj()-BESinTSUnits))/(1e9);
     else
-      triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampOther()-3.6e7))/(1000000000.0);
+      triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampOther()-BESinTSUnits))/(1000000000.0);
     
   }
   
@@ -581,9 +584,10 @@ int sbn::ICARUSBNBRetriever::matchMultiWireData(
       DocDB 33155 provides documentation of this
     */
 
-    mf::LogDebug("ICARUSBNBRetriever") << std::setprecision(19) << "matchMultiWireData:: trigger type : " << get_trigger_type_matching_gate(db, callback_trigger_type, run_number, times_temps[i]*1.e9-triggerInfo.WR_to_Spill_conversion+3.6e7, 40.) << " times : spill " << times_temps[i]*1.e9 << " - " << triggerInfo.WR_to_Spill_conversion << " + " << 3.6e7 <<  std::endl;
+    double BESinTSUnits = fBESOffset*1e9; // flc param is in seconds need to convert to match TS
+    mf::LogDebug("ICARUSBNBRetriever") << std::setprecision(19) << "matchMultiWireData:: trigger type : " << get_trigger_type_matching_gate(db, callback_trigger_type, run_number, times_temps[i]*1.e9-triggerInfo.WR_to_Spill_conversion+BESinTSUnits, 40.) << " times : spill " << times_temps[i]*1.e9 << " - " << triggerInfo.WR_to_Spill_conversion << " + " << BESinTSUnits <<  std::endl;
     
-    if(get_trigger_type_matching_gate(db, callback_trigger_type, run_number, times_temps[i]*1.e9-triggerInfo.WR_to_Spill_conversion+3.6e7, 40.) == 1){
+    if(get_trigger_type_matching_gate(db, callback_trigger_type, run_number, times_temps[i]*1.e9-triggerInfo.WR_to_Spill_conversion+BESinTSUnits, 40.) == 1){
           mf::LogDebug("ICARUSBNBRetriever") << std::setprecision(19)  << "matchMultiWireData:: Skipped a MinBias gate at : " << times_temps[i]*1000. << std::endl;
 
       continue;
