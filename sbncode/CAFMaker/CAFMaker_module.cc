@@ -119,6 +119,9 @@
 // GENIE
 #include "Framework/EventGen/EventRecord.h"
 #include "Framework/Ntuple/NtpMCEventRecord.h"
+#include "Framework/Conventions/Units.h"
+#include "Framework/GHEP/GHepParticle.h"
+
 #include "nugen/EventGeneratorBase/GENIE/GENIE2ART.h"
 
 #include "canvas/Persistency/Provenance/ProcessConfiguration.h"
@@ -245,6 +248,27 @@ class CAFMaker : public art::EDProducer {
   TTree                   * fFlatGenieTree = 0;
   bool fSaveGENIEEventRecord;
   unsigned int fGenieEventCounter;
+
+  //TBits      * fGenieEvtRec_brEvtFlags  = 0; ////< Generator-specific event flags
+  //TObjString * fGenieEvtRec_brEvtCode   = 0; ////< Generator-specific string with 'event code'
+  int          fGenieEvtRec_brEvtNum    = 0; ////< Event number
+  double       fGenieEvtRec_brEvtXSec   = 0.0; ////< Cross section for selected event (1e-38 cm2)
+  double       fGenieEvtRec_brEvtDXSec  = 0.0; ////< Cross section for selected event kinematics (1e-38 cm2 / {K^n})
+  unsigned int fGenieEvtRec_brEvtKPS    = 0; ////< Kinematic phase space variables. See $GENIE/src/Framework/Conventions/KinePhaseSpace.h -> KinePhaseSpace_t
+  double       fGenieEvtRec_brEvtWght   = 0.0; ////< Weight for that event
+  double       fGenieEvtRec_brEvtProb   = 0.0; ////< Probability for that event (given cross section, path lengths, etc)
+  double       fGenieEvtRec_brEvtVtx[4] = {0.0}; ////< Event vertex position in detector coord syst (SI)
+  int          fGenieEvtRec_brStdHepN   = 0; ////< Number of particles in particle array
+  int          fGenieEvtRec_brStdHepPdg   [250] = {0}; ////< Pdg codes (& generator specific codes for pseudoparticles)
+  int          fGenieEvtRec_brStdHepStatus[250] = {0}; ////< Generator-specific status code
+  int          fGenieEvtRec_brStdHepRescat[250] = {0}; ////< Hadron transport model-specific rescattering code
+  double       fGenieEvtRec_brStdHepX4    [250][4] = {{0.0}}; ////< 4-x (x, y, z, t) of particle in hit nucleus frame (fm)
+  double       fGenieEvtRec_brStdHepP4    [250][4] = {{0.0}}; ////< 4-p (px,py,pz,E) of particle in LAB frame (GeV)
+  double       fGenieEvtRec_brStdHepPolz  [250][3] = {{0.0}}; ////< Polarization vector
+  int          fGenieEvtRec_brStdHepFd    [250] = {0}; ////< First daughter
+  int          fGenieEvtRec_brStdHepLd    [250] = {0}; ////< Last  daughter
+  int          fGenieEvtRec_brStdHepFm    [250] = {0}; ////< First mother
+  int          fGenieEvtRec_brStdHepLm    [250] = {0}; ////< Last  mother
 
   flat::Flat<caf::StandardRecord>* fFlatRecord = 0;
   flat::Flat<caf::StandardRecord>* fFlatRecordb = 0;
@@ -1050,7 +1074,32 @@ void CAFMaker::InitializeOutfiles()
 
     if (fSaveGENIEEventRecord){
       fFlatGenieTree = new TTree( "GenieEvtRecTree", "GenieEvtRecTree" );
-      fFlatGenieTree->Branch("GenieEvtRec", &fFlatGenieEvtRec);
+      //fFlatGenieTree->Branch("GenieEvtRec", &fFlatGenieEvtRec);
+
+      // Flatten the event record.
+      // Follows the convention of the GENIE numi_rootracker (see $GENIE/src/Apps/gNtpConv.cxx).
+      //fFlatGenieTree->Branch("GenieEvtRec.EvtFlags", "TBits", fGenieEvtRec_brEvtFlags, 32000, 1);
+      //fFlatGenieTree->Branch("GenieEvtRec.EvtCode", "TObjString", fGenieEvtRec_brEvtCode, 32000, 1);
+
+      fFlatGenieTree->Branch("GenieEvtRec.EvtNum",   &fGenieEvtRec_brEvtNum,   "GenieEvtRec.EvtNum/I"    );
+      fFlatGenieTree->Branch("GenieEvtRec.EvtXSec",  &fGenieEvtRec_brEvtXSec,  "GenieEvtRec.EvtXSec/D"   );
+      fFlatGenieTree->Branch("GenieEvtRec.EvtDXSec", &fGenieEvtRec_brEvtDXSec, "GenieEvtRec.EvtDXSec/D"  );
+      fFlatGenieTree->Branch("GenieEvtRec.EvtKPS",   &fGenieEvtRec_brEvtKPS,   "GenieEvtRec.EvtKPS/i"    );
+      fFlatGenieTree->Branch("GenieEvtRec.EvtWght",  &fGenieEvtRec_brEvtWght,  "GenieEvtRec.EvtWght/D"   );
+      fFlatGenieTree->Branch("GenieEvtRec.EvtProb",  &fGenieEvtRec_brEvtProb,  "GenieEvtRec.EvtProb/D"   );
+      fFlatGenieTree->Branch("GenieEvtRec.EvtVtx",    fGenieEvtRec_brEvtVtx,   "GenieEvtRec.EvtVtx[4]/D" );
+      fFlatGenieTree->Branch("GenieEvtRec.StdHepN",  &fGenieEvtRec_brStdHepN,  "GenieEvtRec.StdHepN/I"   );
+      fFlatGenieTree->Branch("GenieEvtRec.StdHepPdg",    fGenieEvtRec_brStdHepPdg,    "GenieEvtRec.StdHepPdg[GenieEvtRec.StdHepN]/I"     );
+      fFlatGenieTree->Branch("GenieEvtRec.StdHepStatus", fGenieEvtRec_brStdHepStatus, "GenieEvtRec.StdHepStatus[GenieEvtRec.StdHepN]/I"  );
+      fFlatGenieTree->Branch("GenieEvtRec.StdHepRescat", fGenieEvtRec_brStdHepRescat, "GenieEvtRec.StdHepRescat[GenieEvtRec.StdHepN]/I"  );
+      fFlatGenieTree->Branch("GenieEvtRec.StdHepX4",     fGenieEvtRec_brStdHepX4,     "GenieEvtRec.StdHepX4[GenieEvtRec.StdHepN][4]/D"   );
+      fFlatGenieTree->Branch("GenieEvtRec.StdHepP4",     fGenieEvtRec_brStdHepP4,     "GenieEvtRec.StdHepP4[GenieEvtRec.StdHepN][4]/D"   );
+      fFlatGenieTree->Branch("GenieEvtRec.StdHepPolz",   fGenieEvtRec_brStdHepPolz,   "GenieEvtRec.StdHepPolz[GenieEvtRec.StdHepN][3]/D" );
+      fFlatGenieTree->Branch("GenieEvtRec.StdHepFd",     fGenieEvtRec_brStdHepFd,     "GenieEvtRec.StdHepFd[GenieEvtRec.StdHepN]/I"      );
+      fFlatGenieTree->Branch("GenieEvtRec.StdHepLd",     fGenieEvtRec_brStdHepLd,     "GenieEvtRec.StdHepLd[GenieEvtRec.StdHepN]/I"      );
+      fFlatGenieTree->Branch("GenieEvtRec.StdHepFm",     fGenieEvtRec_brStdHepFm,     "GenieEvtRec.StdHepFm[GenieEvtRec.StdHepN]/I"      );
+      fFlatGenieTree->Branch("GenieEvtRec.StdHepLm",     fGenieEvtRec_brStdHepLm,     "GenieEvtRec.StdHepLm[GenieEvtRec.StdHepN]/I"      );
+
       fFlatGenieTree->Branch("GENIEEntry", &fGenieEventCounter, "GENIE/i");
       fFlatGenieTree->Branch("SourceFileHash", &fSourceFileHash, "SourceFileHash/i");
     }
@@ -1396,7 +1445,46 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           fGenieTree->Fill();
         }
         if(fFlatGenieTree){
-          fFlatGenieEvtRec->Fill(fGenieEventCounter, genie_rec);
+          //fFlatGenieEvtRec->Fill(fGenieEventCounter, genie_rec);
+	  fGenieEvtRec_brEvtNum   = fGenieEventCounter;
+	  fGenieEvtRec_brEvtXSec  = genie_rec->XSec() * (1e+38/genie::units::cm2);
+	  fGenieEvtRec_brEvtDXSec = genie_rec->DiffXSec() * (1e+38/genie::units::cm2);
+	  fGenieEvtRec_brEvtKPS   = genie_rec->DiffXSecVars();
+	  fGenieEvtRec_brEvtWght  = genie_rec->Weight();
+	  fGenieEvtRec_brEvtProb  = genie_rec->Probability();
+	  fGenieEvtRec_brEvtVtx[0] = genie_rec->Vertex()->X();
+	  fGenieEvtRec_brEvtVtx[1] = genie_rec->Vertex()->Y();
+	  fGenieEvtRec_brEvtVtx[2] = genie_rec->Vertex()->Z();
+	  fGenieEvtRec_brEvtVtx[3] = genie_rec->Vertex()->T();
+
+	  int iparticle=0;
+	  genie::GHepParticle * p = 0;
+	  while( genie_rec->Particle(iparticle) != 0 ) {
+	    p = genie_rec->Particle(iparticle);
+	    fGenieEvtRec_brStdHepPdg[iparticle] = p->Pdg();
+	    fGenieEvtRec_brStdHepStatus[iparticle] = (int) p->Status(); 
+	    fGenieEvtRec_brStdHepRescat[iparticle] = p->RescatterCode(); 
+	    fGenieEvtRec_brStdHepX4    [iparticle][0] = p->X4()->X(); 
+	    fGenieEvtRec_brStdHepX4    [iparticle][1] = p->X4()->Y(); 
+	    fGenieEvtRec_brStdHepX4    [iparticle][2] = p->X4()->Z(); 
+	    fGenieEvtRec_brStdHepX4    [iparticle][3] = p->X4()->T(); 
+	    fGenieEvtRec_brStdHepP4    [iparticle][0] = p->P4()->Px(); 
+	    fGenieEvtRec_brStdHepP4    [iparticle][1] = p->P4()->Py(); 
+	    fGenieEvtRec_brStdHepP4    [iparticle][2] = p->P4()->Pz(); 
+	    fGenieEvtRec_brStdHepP4    [iparticle][3] = p->P4()->E(); 
+	    if(p->PolzIsSet()) {
+	      fGenieEvtRec_brStdHepPolz  [iparticle][0] = TMath::Sin(p->PolzPolarAngle()) * TMath::Cos(p->PolzAzimuthAngle());
+	      fGenieEvtRec_brStdHepPolz  [iparticle][1] = TMath::Sin(p->PolzPolarAngle()) * TMath::Sin(p->PolzAzimuthAngle());
+	      fGenieEvtRec_brStdHepPolz  [iparticle][2] = TMath::Cos(p->PolzPolarAngle());
+	    }
+	    fGenieEvtRec_brStdHepFd    [iparticle] = p->FirstDaughter(); 
+	    fGenieEvtRec_brStdHepLd    [iparticle] = p->LastDaughter(); 
+	    fGenieEvtRec_brStdHepFm    [iparticle] = p->FirstMother(); 
+	    fGenieEvtRec_brStdHepLm    [iparticle] = p->LastMother(); 
+	    iparticle++;
+	  }
+	  fGenieEvtRec_brStdHepN = iparticle;
+	  
           fFlatGenieTree->Fill();
         }
       }
