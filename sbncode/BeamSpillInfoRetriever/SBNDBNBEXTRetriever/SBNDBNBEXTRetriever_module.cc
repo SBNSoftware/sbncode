@@ -98,7 +98,7 @@ void sbn::SBNDBNBEXTRetriever::produce(art::Event & e)
 }
 
 
-sbn::SBNDBNBRetriever::PTBInfo_t sbn::SBNDBNBRetriever::extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
+sbn::SBNDBNBEXTRetriever::PTBInfo_t sbn::SBNDBNBEXTRetriever::extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
   bool foundHLT = false;
   PTBInfo_t PTBInfo;
   for (auto const& cont : *cont_frags)
