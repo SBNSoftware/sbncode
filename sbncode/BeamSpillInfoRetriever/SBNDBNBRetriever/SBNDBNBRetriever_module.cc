@@ -69,7 +69,7 @@ private:
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp_mwr;
 
   struct PTBInfo_t {
-    double currPTBTimeStamp  = 0;
+    double currPTBTimeStamp  = 1e20;
     double prevPTBTimeStamp  = 0;
     unsigned int GateCounter = 0; // FIXME needs to be integral type
   };
@@ -176,10 +176,12 @@ sbn::SBNDBNBRetriever::PTBInfo_t sbn::SBNDBNBRetriever::extractPTBInfo(art::Hand
             foundHLT = true;
 	    uint64_t RawprevPTBTimeStamp = ctb_frag.PTBWord(word_i)->prevTS * 20; 
             uint64_t RawcurrPTBTimeStamp = ctb_frag.Trigger(word_i)->timestamp * 20; 
-            PTBInfo.prevPTBTimeStamp = std::bitset<64>(RawprevPTBTimeStamp / 20).to_ullong()/50e6; 
-            PTBInfo.currPTBTimeStamp = std::bitset<64>(RawcurrPTBTimeStamp/20).to_ullong()/50e6; 
-            PTBInfo.GateCounter = ctb_frag.Trigger(word_i)->gate_counter;
-            break;
+            double currTS_candidate = std::bitset<64>(RawcurrPTBTimeStamp/20).to_ullong()/50e6;
+            if(currTS_candidate < PTBInfo.currPTBTimeStamp){
+              PTBInfo.prevPTBTimeStamp = std::bitset<64>(RawprevPTBTimeStamp / 20).to_ullong()/50e6; 
+              PTBInfo.currPTBTimeStamp = currTS_candidate;
+              PTBInfo.GateCounter = ctb_frag.Trigger(word_i)->gate_counter;
+            }
 	  }
         }
       } //End of loop over the number of trigger words
@@ -235,13 +237,13 @@ sbn::SBNDBNBRetriever::TriggerInfo_t sbn::SBNDBNBRetriever::extractTriggerInfo(a
   triggerInfo.t_previous_event = PTBInfo.prevPTBTimeStamp - fBESOffset;
   triggerInfo.number_of_gates_since_previous_event = PTBInfo.GateCounter;
 
-  if(triggerInfo.t_current_event - PTBInfo.currPTBTimeStamp >= 1){
+  if(triggerInfo.t_current_event + fBESOffset - PTBInfo.currPTBTimeStamp >= 1){
     mf::LogDebug("SBNDBNBRetriever") << "Caught PTB bug, PTB late" << std::endl;
     mf::LogDebug("SBNDBNBRetriever") << "Before: " << triggerInfo.t_previous_event << std::endl;
     triggerInfo.t_previous_event+=1;
     mf::LogDebug("SBNDBNBRetriever") << "After: " << triggerInfo.t_previous_event << std::endl;
   }
-  else if(triggerInfo.t_current_event - PTBInfo.currPTBTimeStamp <= -1){
+  else if(triggerInfo.t_current_event + fBESOffset - PTBInfo.currPTBTimeStamp <= -1){
     mf::LogDebug("SBNDBNBRetriever") << "Caught PTB bug, PTB early" << std::endl;
     mf::LogDebug("SBNDBNBRetriever") << "Before: " << triggerInfo.t_previous_event << std::endl;
     triggerInfo.t_previous_event-=1;

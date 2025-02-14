@@ -68,7 +68,7 @@ private:
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp_mwr;
 
   struct PTBInfo_t {
-    double currPTBTimeStamp  = 0;
+    double currPTBTimeStamp  = 1e20;
     double prevPTBTimeStamp  = 0;
     unsigned int GateCounter = 0; // FIXME needs to be integral type
   };
@@ -166,12 +166,10 @@ sbn::SBNDBNBRetriever::PTBInfo_t sbn::SBNDBNBRetriever::extractPTBInfo(art::Hand
   bool foundHLT = false;
   PTBInfo_t PTBInfo;
   for (auto const& cont : *cont_frags)
-  { 
+  {
     artdaq::ContainerFragment cont_frag(cont);
-    int numfrag = 0;
     for (size_t fragi = 0; fragi < cont_frag.block_count(); ++fragi)
     {
-      numfrag++;
       artdaq::Fragment frag = *cont_frag[fragi];
       sbndaq::CTBFragment ctb_frag(frag);   // somehow the name CTBFragment stuck
       for(size_t word_i = 0; word_i < ctb_frag.NWords(); ++word_i)
@@ -180,16 +178,18 @@ sbn::SBNDBNBRetriever::PTBInfo_t sbn::SBNDBNBRetriever::extractPTBInfo(art::Hand
           uint32_t wt = 0;
           uint32_t word_type = ctb_frag.Word(word_i)->word_type;
           wt = word_type;
-	  if (wt == 2 && ctb_frag.Trigger(word_i)->IsTrigger(1))
-	  {
+          if (wt == 2 && ctb_frag.Trigger(word_i)->IsTrigger(1))
+          {
             foundHLT = true;
-	    uint64_t RawprevPTBTimeStamp = ctb_frag.PTBWord(word_i)->prevTS * 20.0; 
-	    uint64_t RawcurrPTBTimeStamp = ctb_frag.TimeStamp(word_i) * 20.0;
-            PTBInfo.prevPTBTimeStamp = std::bitset<64>(RawprevPTBTimeStamp / 20.0).to_ullong()/50e6; 
-            PTBInfo.currPTBTimeStamp = std::bitset<64>(RawcurrPTBTimeStamp / 20.0).to_ullong()/50e6; 
-            PTBInfo.GateCounter = ctb_frag.Trigger(word_i)->gate_counter;
-            break;
-	  }
+            uint64_t RawprevPTBTimeStamp = ctb_frag.PTBWord(word_i)->prevTS * 20;
+            uint64_t RawcurrPTBTimeStamp = ctb_frag.Trigger(word_i)->timestamp * 20;
+            double currTS_candidate = std::bitset<64>(RawcurrPTBTimeStamp/20).to_ullong()/50e6;
+            if(currTS_candidate < PTBInfo.currPTBTimeStamp){
+              PTBInfo.prevPTBTimeStamp = std::bitset<64>(RawprevPTBTimeStamp / 20).to_ullong()/50e6;
+              PTBInfo.currPTBTimeStamp = currTS_candidate;
+              PTBInfo.GateCounter = ctb_frag.Trigger(word_i)->gate_counter;
+            }
+          }
         }
       } //End of loop over the number of trigger words
     } //End of loop over the number of fragments per container
@@ -202,7 +202,6 @@ sbn::SBNDBNBRetriever::PTBInfo_t sbn::SBNDBNBRetriever::extractPTBInfo(art::Hand
     std::cout << "Failed to find HLT 1!" << std::endl;
     throw std::exception();
   }
-
 }
 
 double sbn::SBNDBNBRetriever::extractTDCTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
@@ -236,21 +235,21 @@ sbn::SBNDBNBRetriever::TriggerInfo_t sbn::SBNDBNBRetriever::extractTriggerInfo(a
 
   if (TDC_cont_frags) {
     double TDCTimeStamp = extractTDCTimeStamp(TDC_cont_frags);
-    triggerInfo.t_current_event = TDCTimeStamp;
+    triggerInfo.t_current_event = TDCTimeStamp - fBESOffset;
   }
   else{
     mf::LogDebug("SBNDBNBZEROBIASRetriever") << " Missing TDC Container Fragments!!!" << std::endl;
-    triggerInfo.t_current_event = PTBInfo.currPTBTimeStamp;
+    triggerInfo.t_current_event = PTBInfo.currPTBTimeStamp - fBESOffset;
   }
 
-  triggerInfo.t_previous_event = PTBInfo.prevPTBTimeStamp;
+  triggerInfo.t_previous_event = PTBInfo.prevPTBTimeStamp - fBESOffset;
   triggerInfo.number_of_gates_since_previous_event = PTBInfo.GateCounter;
 
-  if(triggerInfo.t_current_event - PTBInfo.currPTBTimeStamp >= 1){
+  if(triggerInfo.t_current_event + fBESOffset - PTBInfo.currPTBTimeStamp >= 1){
     mf::LogDebug("SBNDBNBZEROBIASRetriever") << " PTB and TDC Disagree!!! Correcting by adding 1 second." << std::endl;
     triggerInfo.t_previous_event+=1;
   }
-  else if(triggerInfo.t_current_event - PTBInfo.currPTBTimeStamp <= -1){
+  else if(triggerInfo.t_current_event + fBESOffset - PTBInfo.currPTBTimeStamp <= -1){
     mf::LogDebug("SBNDBNBZEROBIASRetriever") << " PTB and TDC Disagree!!! Correcting by subtracting 1 second." << std::endl;
     triggerInfo.t_previous_event-=1;
   }
@@ -397,12 +396,12 @@ void sbn::SBNDBNBRetriever::matchMultiWireData(
   size_t i = 0;
 
   for (size_t k = 0; k < times_temps.size(); k++){
-    diff = (triggerInfo.t_current_event + fTimePad - fBESOffset) - times_temps[k];// diff is greater than zero!
+    diff = (triggerInfo.t_current_event + fTimePad) - times_temps[k];// diff is greater than zero!
     if( diff > 0 and diff < best_diff){
-      if(times_temps[k] > (triggerInfo.t_current_event)+fTimePad-fBESOffset){
+      if(times_temps[k] > (triggerInfo.t_current_event)+fTimePad){
         spills_removed++; 
         continue;} 
-      if(times_temps[k] <= (triggerInfo.t_previous_event)+fTimePad-fBESOffset){
+      if(times_temps[k] <= (triggerInfo.t_previous_event)+fTimePad){
         spills_removed++; 
         continue;}
       best_diff = diff; 
