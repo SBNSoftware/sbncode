@@ -138,6 +138,7 @@ void sbn::SBNDBNBRetriever::produce(art::Event & e)
     return;
   }
 
+  mf::LogDebug("SBNDBNBRetriever")<< "ptb_event: " << e.event() << std::endl;
   TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
 
   if (triggerInfo.t_previous_event == 0) {
@@ -168,10 +169,7 @@ sbn::SBNDBNBRetriever::PTBInfo_t sbn::SBNDBNBRetriever::extractPTBInfo(art::Hand
       for(size_t word_i = 0; word_i < ctb_frag.NWords(); ++word_i)
       {
         if(ctb_frag.Trigger(word_i)){
-          uint32_t wt = 0;
-          uint32_t word_type = ctb_frag.Word(word_i)->word_type;
-          wt = word_type;
-	  if (wt == 2 && ctb_frag.Trigger(word_i)->IsTrigger(2))
+	  if (ctb_frag.Trigger(word_i)->IsHLT() && ctb_frag.Trigger(word_i)->IsTrigger(2))
 	  {
             foundHLT = true;
 	    uint64_t RawprevPTBTimeStamp = ctb_frag.PTBWord(word_i)->prevTS * 20; 
@@ -250,6 +248,8 @@ sbn::SBNDBNBRetriever::TriggerInfo_t sbn::SBNDBNBRetriever::extractTriggerInfo(a
     mf::LogDebug("SBNDBNBRetriever") << "After: " << triggerInfo.t_previous_event << std::endl;
   }
 
+  mf::LogDebug("SBNDBNBRetriever") << std::setprecision(19) << "t_previous_event: " << triggerInfo.t_previous_event << std::endl;
+  mf::LogDebug("SBNDBNBRetriever") << std::setprecision(19) << "t_current_event: " << triggerInfo.t_current_event << std::endl; 
   return triggerInfo;
 }
 
@@ -559,7 +559,11 @@ sbn::BNBSpillInfo sbn::SBNDBNBRetriever::makeBNBSpillInfo
   // information, so we'll write it to the SubRun
   
   beamInfo.event = eventID.event(); // the rest of ID is known by art::SubRun
-  
+ 
+  mf::LogDebug("SBNDBNBRetriever")<< "event_num: " << beamInfo.event << std::endl;
+  mf::LogDebug("SBNDBNBRetriever") << std::setprecision(19) << "spill_time: " << TOR860_time << std::endl;
+  mf::LogDebug("SBNDBNBRetriever")<< "TOR860: " << TOR860 << std::endl;
+
   return beamInfo;
 }
 

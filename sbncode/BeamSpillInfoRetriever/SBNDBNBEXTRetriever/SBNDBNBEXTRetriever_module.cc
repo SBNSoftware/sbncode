@@ -53,7 +53,7 @@ private:
   // Declare member data here.
   std::vector< sbn::EXTCountInfo > fOutExtInfos;
   struct PTBInfo_t {
-    double currPTBTimeStamp  = 0;
+    double currPTBTimeStamp  = 1e20;
     double prevPTBTimeStamp  = 0;
     unsigned int GateCounter = 0; // FIXME needs to be integral type
   };
@@ -90,7 +90,6 @@ void sbn::SBNDBNBEXTRetriever::produce(art::Event & e)
   TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
 
   TotalEXTCounts += triggerInfo.number_of_gates_since_previous_event;
-   
   //Store everything in our data-product
   sbn::EXTCountInfo extInfo;
   extInfo.gates_since_last_trigger = triggerInfo.number_of_gates_since_previous_event;
@@ -111,10 +110,7 @@ sbn::SBNDBNBEXTRetriever::PTBInfo_t sbn::SBNDBNBEXTRetriever::extractPTBInfo(art
       for(size_t word_i = 0; word_i < ctb_frag.NWords(); ++word_i)
       {
         if(ctb_frag.Trigger(word_i)){
-          uint32_t wt = 0;
-          uint32_t word_type = ctb_frag.Word(word_i)->word_type;
-          wt = word_type;
-	  if (wt == 2 && ctb_frag.Trigger(word_i)->IsTrigger(4))
+	  if (ctb_frag.Trigger(word_i)->IsHLT() && ctb_frag.Trigger(word_i)->IsTrigger(4))
           {
             foundHLT = true;
             uint64_t RawprevPTBTimeStamp = ctb_frag.PTBWord(word_i)->prevTS * 20;
@@ -192,6 +188,8 @@ sbn::SBNDBNBEXTRetriever::TriggerInfo_t sbn::SBNDBNBEXTRetriever::extractTrigger
     mf::LogDebug("SBNDBNBEXTRetriever") << "After: " << triggerInfo.t_previous_event << std::endl;
   }
 
+  mf::LogDebug("SBNDBNBEXTRetriever") << std::setprecision(19) << "t_previous_event: " << triggerInfo.t_previous_event << std::endl;
+  mf::LogDebug("SBNDBNBEXTRetriever") << std::setprecision(19) << "t_current_event: " << triggerInfo.t_current_event << std::endl;
   return triggerInfo;
 }
 
@@ -205,6 +203,8 @@ void sbn::SBNDBNBEXTRetriever::endSubRun(art::SubRun& sr)
 {
    // We will add all of the EXTCountInfo data-products to the 
   // art::SubRun so it persists 
+
+  mf::LogDebug("SBNDBNBRetriever")<< "Total number of DAQ Spills : " << TotalEXTCounts << std::endl;
 
   auto p =  std::make_unique< std::vector< sbn::EXTCountInfo > >(fOutExtInfos);
 

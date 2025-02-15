@@ -175,10 +175,7 @@ sbn::SBNDBNBRetriever::PTBInfo_t sbn::SBNDBNBRetriever::extractPTBInfo(art::Hand
       for(size_t word_i = 0; word_i < ctb_frag.NWords(); ++word_i)
       {
         if(ctb_frag.Trigger(word_i)){
-          uint32_t wt = 0;
-          uint32_t word_type = ctb_frag.Word(word_i)->word_type;
-          wt = word_type;
-          if (wt == 2 && ctb_frag.Trigger(word_i)->IsTrigger(1))
+          if (ctb_frag.Trigger(word_i)->IsHLT() && ctb_frag.Trigger(word_i)->IsTrigger(1))
           {
             foundHLT = true;
             uint64_t RawprevPTBTimeStamp = ctb_frag.PTBWord(word_i)->prevTS * 20;
