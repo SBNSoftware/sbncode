@@ -34,8 +34,8 @@ decay_hnl: {
   Decays: ["mu_pi"]
   WidthDecays: ["mu_pi", "e_pi", "nu_mu_mu", "nu_e_e", "nu_nu_nu", "nu_pi0", "nu_eta", "nu_etap", "nu_rho0", "nu_mu_e"]
   Majorana: true
-  DecayIsThreeBodyAnisotropic: false
-  DecayIsTwoBodyAnisotropic: true
+  DecayIsThreeBodyAnisotropic: true
+  TwoBodyAnisotropyIncludeInterference: false
   ReferenceUE4: 0
   ReferenceUM4: 1e-7
   ReferenceUT4: 0
@@ -50,8 +50,8 @@ decay_tau_hnl: {
   Decays: ["nu_mu_mu"]
   WidthDecays: ["mu_pi", "e_pi", "nu_mu_mu", "nu_e_e", "nu_nu_nu", "nu_pi0", "nu_eta", "nu_etap", "nu_rho0", "nu_mu_e"]
   Majorana: false
-  DecayIsThreeBodyAnisotropic: false
-  DecayIsTwoBodyAnisotropic: true
+  DecayIsThreeBodyAnisotropic: true
+  TwoBodyAnisotropyIncludeInterference: false
   ReferenceUE4: 0.
   ReferenceUM4: 0.
   ReferenceUT4: 1e-5

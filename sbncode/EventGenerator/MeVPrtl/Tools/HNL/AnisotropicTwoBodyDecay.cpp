@@ -1,5 +1,18 @@
 #include "AnisotropicTwoBodyDecay.h"
-#include "sbncode/EventGenerator/MeVPrtl/Tools/Constants.h"
+
+
+TVector3 evgen::ldm::AnTwoBD::RandomUnitVector(CLHEP::HepRandomEngine* fEngine) {
+  // In order to pick a random point on a sphere -- pick a random value of _costh_, __not__ theta
+  // b.c. d\Omega = d\phi dcos\theta, i.e. d\Omega != d\phi d\theta
+  double costheta = CLHEP::RandFlat::shoot(fEngine, -1, 1);
+  double sintheta = sqrt(1. - costheta * costheta);
+  double phi = CLHEP::RandFlat::shoot(fEngine, 0, 2*M_PI);
+  return TVector3(sintheta * cos(phi), sintheta * sin(phi), costheta);
+}
+
+double evgen::ldm::AnTwoBD::GetRandom(CLHEP::HepRandomEngine* fEngine) {
+  return CLHEP::RandFlat::shoot(fEngine);
+}
 
 //Implementation of HNL Two Body Decays Anisotropies (N -> m+l-)
 //Valid as long as the HNL is decaying into a charged lepton and a charged pseudoscalar meson
@@ -15,15 +28,18 @@ double evgen::ldm::AnTwoBD::two_body_momentum(double parent_mass, double childA_
               4 * parent_mass * parent_mass * childA_mass * childA_mass) / (2 * parent_mass);
 }
 
+/*
 //Helper function to calculate  a random 3 dimensional vector
 TVector3 evgen::ldm::AnTwoBD::RandomUnitVector(TRandom3 *rand) {
   // In order to pick a random point on a sphere -- pick a random value of _costh_, __not__ theta
   // b.c. d\Omega = d\phi dcos\theta, i.e. d\Omega != d\phi d\theta
+
   double costheta = rand->Uniform(-1, 1);
   double sintheta = sqrt(1. - costheta * costheta);
   double phi = rand->Uniform(0, 2*M_PI);
   return TVector3(sintheta * cos(phi), sintheta * sin(phi), costheta);
 }
+*/
 
 //Helper function to calculate the lambda term present in the I_1_plus, I_1_minus e I_1^+ functions
 double evgen::ldm::AnTwoBD::lambda(double a, double b, double c) {
@@ -107,7 +123,7 @@ double evgen::ldm::AnTwoBD::GetMaxIntegral(int LeptonPDG, double Pol, double eps
   Meson PDG: The Pdg of the meson 211=Pion, 321=Kaon
   Pol: Polarization of the HNL
   See arXiv:1905.00284 for more details */
-void evgen::ldm::AnTwoBD::AnisotropicTwoBodyDist( TLorentzVector pHNL, TLorentzVector &pl, TLorentzVector &pm, double m_HNL, int LeptonPDG, int MesonPDG, double Pol)
+void evgen::ldm::AnTwoBD::AnisotropicTwoBodyDist( TLorentzVector pHNL, TLorentzVector &pl, TLorentzVector &pm, double m_HNL, int LeptonPDG, int MesonPDG, double Pol, CLHEP::HepRandomEngine* fEngine)
 {
   //Get the lepton mass, by default choose the lepton to be a muon
   double m_l = evgen::ldm::Constants::Instance().muon_mass;
@@ -124,9 +140,6 @@ void evgen::ldm::AnTwoBD::AnisotropicTwoBodyDist( TLorentzVector pHNL, TLorentzV
   } else if (abs(MesonPDG) == 321) {
     m_m = evgen::ldm::Constants::Instance().kplus_mass;
   }
-
-  //Initialize the seed to apply rejection-acceptance method. Use 0 to automatically compute the seed via a TUUID object.
-  TRandom3 *rand = new TRandom3(0);
 
   /*
     Declare variables to use inside the loop and for the calculations   
@@ -147,7 +160,7 @@ void evgen::ldm::AnTwoBD::AnisotropicTwoBodyDist( TLorentzVector pHNL, TLorentzV
   //Use a rejection-acceptance method to select final states following the desired anisotropic distribution
   do {
     //Get a random direction for the lepton in the decay
-    l_dir = evgen::ldm::AnTwoBD::RandomUnitVector(rand);
+    l_dir = evgen::ldm::AnTwoBD::RandomUnitVector(fEngine);
     double cos_theta = l_dir.Z();
     //Calculate the integral value in the direction chosen as a weigthed sum of the + and - polariztaion integral as given in arXiv:1905.00284
     if(LeptonPDG > 0) {
@@ -163,7 +176,7 @@ void evgen::ldm::AnTwoBD::AnisotropicTwoBodyDist( TLorentzVector pHNL, TLorentzV
     }
   
   //Reject or accept the state
-  } while( rand->Uniform(0, 1) > I/max_I);
+  } while( evgen::ldm::AnTwoBD::GetRandom(fEngine) > I/max_I);
 
   //Calculate the daughters three-momentum and prepare the HNL momentum for calculations
   TVector3 pl_RF = TVector3(p_mag * l_dir);

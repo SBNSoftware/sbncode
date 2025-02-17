@@ -105,7 +105,7 @@ private:
 
   //Configure the decay                                                                            
   bool fDecayIsThreeBodyAnisotropic;                                                              
-  bool fDecayIsTwoBodyAnisotropic;
+  bool fTwoBodyAnisotropyIncludeInterference;
   
   // Internal struct for holding decay information
   struct DecayFinalState {
@@ -471,7 +471,7 @@ HNLMakeDecay::DecayFinalState HNLMakeDecay::NuDiLep(const MeVPrtlFlux &flux, boo
     }else AntiHNL = true;
       
     //Calculate the Anisotropic distribution, comments about how the code works can be found in "AnisotropicThreeBodyDecay.cpp", currently the function is optimized for m_HNL<390 MeV and decays N->eenu and N->mumunu
-    evgen::ldm::AnThreeBD::AnisotropicThreeBodyDist(PA, PB, PC, flux.mass, ue4, um4, ut4, lep_pdg, fMajorana, AntiHNL, Pol);
+    evgen::ldm::AnThreeBD::AnisotropicThreeBodyDist(flux.mom, PA, PB, PC, flux.mass, ue4, um4, ut4, lep_pdg, fMajorana, AntiHNL, Pol, fEngine);
 
     momenta.A = PA;
     momenta.B = PB;
@@ -572,16 +572,16 @@ HNLMakeDecay::DecayFinalState HNLMakeDecay::LepPi(const MeVPrtlFlux &flux, bool 
   }
   TLorentzVector LB;
   TLorentzVector PI;
-  if(fDecayIsTwoBodyAnisotropic) {
+  if(!fTwoBodyAnisotropyIncludeInterference) {
     if (fVerbose) {
-      std::cout <<"Using Anisotropic TwoBody Momentum" << "\n";
+      std::cout <<"Using Anisotropic TwoBody Momentum not including interference" << "\n";
     }
-    evgen::ldm::AnTwoBD::AnisotropicTwoBodyDist(flux.mom, LB,PI, flux.mass, lep_pdg*lep_pdg_sign, 211*lep_pdg_sign, flux.polarization);
+    evgen::ldm::AnTwoBD::AnisotropicTwoBodyDist(flux.mom, LB,PI, flux.mass, lep_pdg*lep_pdg_sign, 211*lep_pdg_sign, flux.polarization, fEngine);
     LB.Boost(flux.mom.BoostVector());
     PI.Boost(flux.mom.BoostVector());
   } else {
     if (fVerbose) {
-      std::cout <<"Using Isotropic TwoBody Momentum" << "\n";
+      std::cout <<"Using Anisotropic TwoBody Momentum including interference" << "\n";
     }
     // Use rejection sampling to draw a direction for the child particles
     // Work in the lab frame
@@ -876,7 +876,7 @@ void HNLMakeDecay::configure(fhicl::ParameterSet const &pset)
   
   fMajorana = pset.get<bool>("Majorana");
   fDecayIsThreeBodyAnisotropic=pset.get<bool>("DecayIsThreeBodyAnisotropic");
-  fDecayIsTwoBodyAnisotropic=pset.get<bool>("DecayIsTwoBodyAnisotropic");
+  fTwoBodyAnisotropyIncludeInterference=pset.get<bool>("TwoBodyAnisotropyIncludeInterference");
 
   fMaxWeight = CalculateMaxWeight();
   
