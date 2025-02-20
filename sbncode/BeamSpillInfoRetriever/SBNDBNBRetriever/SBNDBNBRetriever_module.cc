@@ -100,6 +100,9 @@ private:
   unsigned int TotalBeamSpills;
   sbn::BNBSpillInfo makeBNBSpillInfo
     (art::EventID const& eventID, double time, MWRdata_t const& MWRdata, std::vector<int> const& matched_MWR) const;
+
+  bool BrokenClock(double time) const;
+
 };
 
 sbn::SBNDBNBRetriever::SBNDBNBRetriever(fhicl::ParameterSet const & params)
@@ -395,6 +398,10 @@ int sbn::SBNDBNBRetriever::matchMultiWireData(
       spills_removed++; 
       continue;}
 
+    if(BrokenClock(times_temps[i])){
+      continue;
+    }
+    
     //check if this spill is is minbias   
     /*
       40 ms was selected to be close to but outside the 66 ms 
@@ -455,6 +462,55 @@ int sbn::SBNDBNBRetriever::matchMultiWireData(
   }//end iteration over beam device times
   
   return spill_count;
+}
+
+bool sbn::SBNDBNBRetriever::BrokenClock(double time) const
+{
+  double TOR860 = 0; // units e12 protons
+  double TOR875 = 0; // units e12 protons
+  double LM875A = 0; // units R/s
+  double LM875B = 0; // units R/s
+  double LM875C = 0; // units R/s
+  double HP875 = 0; // units mm
+  double VP875 = 0; // units mm
+  double HPTG1 = 0; // units mm
+  double VPTG1 = 0; // units mm
+  double HPTG2 = 0; // units mm
+  double VPTG2 = 0; // units mm
+  double BTJT2 = 0; // units Deg C
+  double THCURR = 0; // units kiloAmps
+  
+  double TOR860_time = 0; // units s
+  
+  // Here we request all the devices
+  // since sometimes devices fail to report we'll
+  // allow each to throw an exception but still move forward
+  // interpreting these failures will be part of the beam quality analyses 
+
+  int ExceptionCounter = 0;
+
+  try{bfp->GetNamedData(time, "E:TOR860@",&TOR860,&TOR860_time);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:TOR875",&TOR875);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:LM875A",&LM875A);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:LM875B",&LM875B);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:LM875C",&LM875C);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:HP875",&HP875);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:VP875",&VP875);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:HPTG1",&HPTG1);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:VPTG1",&VPTG1);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:HPTG2",&HPTG2);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:VPTG2",&VPTG2);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:BTJT2",&BTJT2);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:THCURR",&THCURR);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+
+  if(ExceptionCounter > 10){
+    mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "found large number of device exceptions. Throwing away spill!\n";
+    return true;
+  }
+  else{
+    return false;
+  }
+
 }
 
 sbn::BNBSpillInfo sbn::SBNDBNBRetriever::makeBNBSpillInfo
