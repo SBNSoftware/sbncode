@@ -17,7 +17,6 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
 find_package(cetmodules 3.20.00 REQUIRED)
 project(sbncode VERSION 09.89.02 LANGUAGES CXX)
-
 message(STATUS "\n\n  ==========================   ${PROJECT_NAME}   ==========================")
 
 

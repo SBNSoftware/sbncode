@@ -258,9 +258,9 @@ larsoft			v09_89_02	-
 sbnanaobj		v09_23_00_02	-
 sbndaq_artdaq_core	v1_09_00of1	-
 sbndata			v01_07		-
-sbnobj			v09_19_00_01	-
+sbnobj			v09_19_01	-
 systematicstools	v01_04_04	-
-nusystematics		v01_04_06	-
+nusystematics		v01_04_07	-
 cetmodules		v3_24_01	-	only_for_build
 end_product_list
 ####################################

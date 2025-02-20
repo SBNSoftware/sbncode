@@ -197,6 +197,7 @@ class CAFMaker : public art::EDProducer {
   std::string fSourceFile;
   std::uint32_t fSourceFileHash;
 
+  bool fOverrideRealData;
   bool fFirstInSubRun;
   unsigned int fIndexInFile = SRHeader::NoSourceIndex;
   bool fFirstBlindInSubRun;
@@ -378,6 +379,8 @@ class CAFMaker : public art::EDProducer {
 
   fCafFilename = fParams.CAFFilename();
   fFlatCafFilename = fParams.FlatCAFFilename();
+  fOverrideRealData = fParams.OverrideRealData();
+
 
   // Normally CAFMaker is run wit no output ART stream, so these go
   // nowhere, but can be occasionally useful for filtering in ART
@@ -824,70 +827,83 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
     abort();
   }
 
-  if(bnb_spill){
-    FillExposure(*bnb_spill, fBNBInfo, fSubRunPOT);
-    fTotalPOT += fSubRunPOT;
-
-    // Find the spill for each event and fill the event map:
-    // We take the latest spill for a given event number to be the one to keep
-    fHasBNBInfo = true;
-    for(const sbn::BNBSpillInfo& info: *bnb_spill)
-    {
-      auto& storedInfo = fBNBInfoEventMap[info.event]; // creates if needed
-      if ( (storedInfo.event == UINT_MAX) || spillInfoToTimestamp(info) > spillInfoToTimestamp(storedInfo) ) {
-        storedInfo = std::move(info);
-      }
+    // TODO (BH) I think this will "work" but I'm not sure if it's really the best way...
+  if ( fOverrideRealData ) {
+    // Expects a generator POT summary then...
+    if(auto pot_handle = sr.getHandle<sumdata::POTSummary>(fParams.GenLabel())){
+      fSubRunPOT = pot_handle->totgoodpot;
+      fTotalPOT += fSubRunPOT;
     }
-  }
-  else if (numi_spill) {
-    FillExposureNuMI(*numi_spill, fNuMIInfo, fSubRunPOT);
-    fTotalPOT += fSubRunPOT;
-
-    // Find the spill for each event and fill the event map:
-    // We take the latest spill for a given event number to be the one to keep
-    fHasNuMIInfo = true;
-    for(const sbn::NuMISpillInfo& info: *numi_spill)
-    {
-      auto& storedInfo = fNuMIInfoEventMap[info.event]; // creates if needed
-      if ( (storedInfo.event == UINT_MAX) || spillInfoToTimestamp(info) > spillInfoToTimestamp(storedInfo) ) {
-        storedInfo = std::move(info);
-      }
-    }
-  }
-  else if (bnb_offbeam_spill){
-    for(const auto& spill: *bnb_offbeam_spill) {
-      fOffbeamBNBGates += spill.gates_since_last_trigger;
-    }
-  }
-  else if (numi_offbeam_spill){
-    for(const auto& spill: *numi_offbeam_spill) {
-      fOffbeamNuMIGates += spill.gates_since_last_trigger;
-    }
-  }
-  else if(auto pot_handle = sr.getHandle<sumdata::POTSummary>(fParams.GenLabel())){
-    fSubRunPOT = pot_handle->totgoodpot;
-    fTotalPOT += fSubRunPOT;
-  }
-  else{
-    if(!fParams.BNBPOTDataLabel().empty() || !fParams.GenLabel().empty() || !fParams.NuMIPOTDataLabel().empty() ||
-       !fParams.OffbeamBNBCountDataLabel().empty() || !fParams.OffbeamNuMICountDataLabel().empty()){
-      std::cout << "Found neither BNB data POT info under '"
-                << fParams.BNBPOTDataLabel()
-                << "' nor NuMIdata POT info under '"
-                << fParams.NuMIPOTDataLabel()
-                << "' nor BNB EXT Count info under '"
-                << fParams.OffbeamBNBCountDataLabel()
-                << "' nor NuMI EXT Count info under '"
-                << fParams.OffbeamNuMICountDataLabel()
-                << "' nor MC POT info under '"
-                << fParams.GenLabel() << "'"
-                << std::endl;
+    else{
+      std::cout << "Did not find MC POT info under " << fParams.GenLabel() << std::endl;
       if(fParams.StrictMode()) abort();
     }
+  } else {
 
-    // Otherwise, if one label is blank, maybe no POT was the expected result
+    if(bnb_spill){
+      FillExposure(*bnb_spill, fBNBInfo, fSubRunPOT);
+      fTotalPOT += fSubRunPOT;
+
+      // Find the spill for each event and fill the event map:
+      // We take the latest spill for a given event number to be the one to keep
+      fHasBNBInfo = true;
+      for(const sbn::BNBSpillInfo& info: *bnb_spill)
+      {
+        auto& storedInfo = fBNBInfoEventMap[info.event]; // creates if needed
+        if ( (storedInfo.event == UINT_MAX) || spillInfoToTimestamp(info) > spillInfoToTimestamp(storedInfo) ) {
+          storedInfo = std::move(info);
+        }
+      }
+    }
+    else if (numi_spill) {
+      FillExposureNuMI(*numi_spill, fNuMIInfo, fSubRunPOT);
+      fTotalPOT += fSubRunPOT;
+
+      // Find the spill for each event and fill the event map:
+      // We take the latest spill for a given event number to be the one to keep
+      fHasNuMIInfo = true;
+      for(const sbn::NuMISpillInfo& info: *numi_spill)
+      {
+        auto& storedInfo = fNuMIInfoEventMap[info.event]; // creates if needed
+        if ( (storedInfo.event == UINT_MAX) || spillInfoToTimestamp(info) > spillInfoToTimestamp(storedInfo) ) {
+          storedInfo = std::move(info);
+        }
+      }
+    }
+    else if (bnb_offbeam_spill){
+      for(const auto& spill: *bnb_offbeam_spill) {
+        fOffbeamBNBGates += spill.gates_since_last_trigger;
+      }
+    }
+    else if (numi_offbeam_spill){
+      for(const auto& spill: *numi_offbeam_spill) {
+        fOffbeamNuMIGates += spill.gates_since_last_trigger;
+      }
+    }
+    else if(auto pot_handle = sr.getHandle<sumdata::POTSummary>(fParams.GenLabel())){
+      fSubRunPOT = pot_handle->totgoodpot;
+      fTotalPOT += fSubRunPOT;
+    }
+    else{
+      if(!fParams.BNBPOTDataLabel().empty() || !fParams.GenLabel().empty() || !fParams.NuMIPOTDataLabel().empty() ||
+        !fParams.OffbeamBNBCountDataLabel().empty() || !fParams.OffbeamNuMICountDataLabel().empty()){
+        std::cout << "Found neither BNB data POT info under '"
+                  << fParams.BNBPOTDataLabel()
+                  << "' nor NuMIdata POT info under '"
+                  << fParams.NuMIPOTDataLabel()
+                  << "' nor BNB EXT Count info under '"
+                  << fParams.OffbeamBNBCountDataLabel()
+                  << "' nor NuMI EXT Count info under '"
+                  << fParams.OffbeamNuMICountDataLabel()
+                  << "' nor MC POT info under '"
+                  << fParams.GenLabel() << "'"
+                  << std::endl;
+        if(fParams.StrictMode()) abort();
+      }
+
+      // Otherwise, if one label is blank, maybe no POT was the expected result
+    }
   }
-
   std::cout << "POT: " << fSubRunPOT << std::endl;
 
   fFirstInSubRun = true;
@@ -1213,8 +1229,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   bool const firstInFile = (fIndexInFile++ == 0);
 
-  // is this event real data?
-  bool isRealData = evt.isRealData();
+  // is this event real data? -- BH: if fOverrideRealData, treat it as MC. Otherwise, get the info from the art event.
+  bool isRealData = ( fOverrideRealData ? false : evt.isRealData() );
 
   std::unique_ptr<std::vector<caf::StandardRecord>> srcol(
       new std::vector<caf::StandardRecord>);

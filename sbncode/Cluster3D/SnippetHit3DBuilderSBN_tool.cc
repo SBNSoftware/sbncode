@@ -1713,28 +1713,25 @@ int SnippetHit3DBuilderSBN::FindNumberInRange(const Hit2DSet& hit2DSet, const re
 
 geo::WireID SnippetHit3DBuilderSBN::NearestWireID(const Eigen::Vector3f& position, const geo::WireID& wireIDIn) const
 {
-    geo::WireID wireID = wireIDIn;
+    int wire(0);
 
     // Embed the call to the geometry's services nearest wire id method in a try-catch block
     try
     {
-        // Switch from NearestWireID to this method to avoid the roundoff error issues...
-        //double distanceToWire = m_geometry->Plane(wireIDIn).WireCoordinate(geo::vect::toPoint(position.data()));
-
-        //wireID.Wire = int(distanceToWire);
-
         // Not sure the thinking above but is wrong... switch back to NearestWireID...
-        wireID = m_geometry->NearestWireID(geo::vect::toPoint(position.data()),wireIDIn);
+        wire = (m_geometry->NearestWireID(geo::vect::toPoint(position.data()),wireIDIn)).Wire;
     }
-    catch(std::exception& exc)
+    catch(std::exception& exc) 
     {
         // This can happen, almost always because the coordinates are **just** out of range
         mf::LogWarning("Cluster3D") << "Exception caught finding nearest wire, position - " << exc.what() << std::endl;
 
         // Assume extremum for wire number depending on z coordinate
-        if (position[2] < 0.5 * m_geometry->DetLength()) wireID.Wire = 0;
-        else                                             wireID.Wire = m_geometry->Nwires(wireIDIn.asPlaneID()) - 1;
+        if (position[2] < 0.5 * m_geometry->DetLength()) wire = 0;
+        else                                             wire = m_geometry->Nwires(wireIDIn.asPlaneID()) - 1;
     }
+
+    geo::WireID wireID(wireIDIn.Cryostat,wireIDIn.TPC,wireIDIn.Plane,wire);
 
     return wireID;
 }
