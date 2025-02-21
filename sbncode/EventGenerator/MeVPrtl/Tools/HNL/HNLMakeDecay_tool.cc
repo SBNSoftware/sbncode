@@ -19,6 +19,7 @@
 #include "sbncode/EventGenerator/MeVPrtl/Tools/IMeVPrtlDecay.h"
 #include "sbncode/EventGenerator/MeVPrtl/Tools/Constants.h"
 #include "AnisotropicThreeBodyDecay.h"
+#include "AnisotropicTwoBodyDecay.h"
 
 // LArSoft includes
 #include "larcorealg/Geometry/BoxBoundedGeo.h"
@@ -103,7 +104,8 @@ private:
   bool fMajorana;
 
   //Configure the decay                                                                            
-  bool fDecayIsThreeBodyAnisotropic;
+  bool fDecayIsThreeBodyAnisotropic;                                                              
+  bool fTwoBodyAnisotropyIncludeInterference;
   
   // Internal struct for holding decay information
   struct DecayFinalState {
@@ -469,7 +471,7 @@ HNLMakeDecay::DecayFinalState HNLMakeDecay::NuDiLep(const MeVPrtlFlux &flux, boo
     }else AntiHNL = true;
       
     //Calculate the Anisotropic distribution, comments about how the code works can be found in "AnisotropicThreeBodyDecay.cpp", currently the function is optimized for m_HNL<390 MeV and decays N->eenu and N->mumunu
-    evgen::ldm::AnThreeBD::AnisotropicThreeBodyDist(PA, PB, PC, flux.mass, ue4, um4, ut4, lep_pdg, fMajorana, AntiHNL, Pol);
+    evgen::ldm::AnThreeBD::AnisotropicThreeBodyDist(flux.mom, PA, PB, PC, flux.mass, ue4, um4, ut4, lep_pdg, fMajorana, AntiHNL, Pol, fEngine);
 
     momenta.A = PA;
     momenta.B = PB;
@@ -567,53 +569,65 @@ HNLMakeDecay::DecayFinalState HNLMakeDecay::LepPi(const MeVPrtlFlux &flux, bool 
   else {
     // Dirac HNL caries opposite lepton number to production lepton
     lep_pdg_sign = (flux.secondary_pdg > 0) ? -1 : 1;
-    }
-  
-  // Use rejection sampling to draw a direction for the child particles
-  //
-  // Work in the lab frame
-  double piplus_mass = Constants::Instance().piplus_mass;
-  double dalitz_max = HNLLepPiDalitzMax(Constants::Instance().kplus_mass, flux.sec.M(), flux.mass, piplus_mass, lep_mass); 
-  double this_dalitz = 0.;
-  double p = evgen::ldm::twobody_momentum(flux.mass, lep_mass, piplus_mass);
+  }
   TLorentzVector LB;
   TLorentzVector PI;
-  do {
-    TVector3 dir = RandomUnitVector(); 
-    LB = TLorentzVector(p*dir, sqrt(p*p + lep_mass*lep_mass));
-    PI = TLorentzVector(-p*dir, sqrt(p*p + piplus_mass*piplus_mass));
+  if(!fTwoBodyAnisotropyIncludeInterference) {
+    if (fVerbose) {
+      std::cout <<"Using Anisotropic TwoBody Momentum not including interference" << "\n";
+    }
+    evgen::ldm::AnTwoBD::AnisotropicTwoBodyDist(flux.mom, LB,PI, flux.mass, lep_pdg*lep_pdg_sign, 211*lep_pdg_sign, flux.polarization, fEngine);
     LB.Boost(flux.mom.BoostVector());
     PI.Boost(flux.mom.BoostVector());
-    
-    this_dalitz = ((flux.secondary_pdg > 0 ) != (lep_pdg_sign > 0)) ?	\
-      evgen::ldm::HNLLepPiLNCDalitz(flux.mmom, flux.sec, flux.mom, PI, LB):
-      evgen::ldm::HNLLepPiLNVDalitz(flux.mmom, flux.sec, flux.mom, PI, LB);
-    
-    assert(this_dalitz < dalitz_max);
-    if (this_dalitz > dalitz_max) {
-      std::cerr << "VERY VERY BAD!!!! Incorrect dalitz max!!!\n";
-      std::cout << "VERY VERY BAD!!!! Incorrect dalitz max!!!\n";
-      std::cout << "PK: " << flux.mmom.E() << " " << flux.mmom.Px() << " " << flux.mmom.Py() << " " << flux.mmom.Pz() << std::endl;
-      std::cout << "PA: " << flux.sec.E() << " " << flux.sec.Px() << " " << flux.sec.Py() << " " << flux.sec.Pz() << std::endl;
-      std::cout << "PN: " << flux.mom.E() << " " << flux.mom.Px() << " " << flux.mom.Py() << " " << flux.mom.Pz() << std::endl;
-      std::cout << "PP: " << PI.E() << " " << PI.Px() << " " << PI.Py() << " " << PI.Pz() << std::endl;
-      std::cout << "PB: " << LB.E() << " " << LB.Px() << " " << LB.Py() << " " << LB.Pz() << std::endl;
-      
-      std::cout << "This Dalitz: " << this_dalitz << std::endl;
-      std::cout << "Max Dalitz: " << dalitz_max << std::endl;
-      std::cout << "LNC: " << ((flux.secondary_pdg > 0 ) != (lep_pdg_sign > 0)) << std::endl;
-      
-      exit(1);
+  } else {
+    if (fVerbose) {
+      std::cout <<"Using Anisotropic TwoBody Momentum including interference" << "\n";
     }
-  } while (GetRandom() > this_dalitz / dalitz_max);
+    // Use rejection sampling to draw a direction for the child particles
+    // Work in the lab frame
+    double piplus_mass = Constants::Instance().piplus_mass;
+    double dalitz_max = HNLLepPiDalitzMax(Constants::Instance().kplus_mass, flux.sec.M(), flux.mass, piplus_mass, lep_mass); 
+    double this_dalitz = 0.;
+    double p = evgen::ldm::twobody_momentum(flux.mass, lep_mass, piplus_mass);
+    do {
+      TVector3 dir = RandomUnitVector(); 
+      LB = TLorentzVector(p*dir, sqrt(p*p + lep_mass*lep_mass));
+      PI = TLorentzVector(-p*dir, sqrt(p*p + piplus_mass*piplus_mass));
+      LB.Boost(flux.mom.BoostVector());
+      PI.Boost(flux.mom.BoostVector());
 
-  // lep
-  ret.mom.push_back(LB);
-  ret.pdg.push_back(lep_pdg*lep_pdg_sign);
-  
-  // pion
-  ret.mom.emplace_back(PI);
-  ret.pdg.push_back(211*lep_pdg_sign); // negative of lepton-charge has same-sign-PDG code
+      this_dalitz = ((flux.secondary_pdg > 0 ) != (lep_pdg_sign > 0)) ?	\
+        evgen::ldm::HNLLepPiLNCDalitz(flux.mmom, flux.sec, flux.mom, PI, LB):
+        evgen::ldm::HNLLepPiLNVDalitz(flux.mmom, flux.sec, flux.mom, PI, LB);
+
+      assert(this_dalitz < dalitz_max);
+      if (this_dalitz > dalitz_max) {
+        std::cerr << "VERY VERY BAD!!!! Incorrect dalitz max!!!\n";
+        std::cout << "VERY VERY BAD!!!! Incorrect dalitz max!!!\n";
+        std::cout << "PK: " << flux.mmom.E() << " " << flux.mmom.Px() << " " << flux.mmom.Py() << " " << flux.mmom.Pz() << std::endl;
+        std::cout << "PA: " << flux.sec.E() << " " << flux.sec.Px() << " " << flux.sec.Py() << " " << flux.sec.Pz() << std::endl;
+        std::cout << "PN: " << flux.mom.E() << " " << flux.mom.Px() << " " << flux.mom.Py() << " " << flux.mom.Pz() << std::endl;
+        std::cout << "PP: " << PI.E() << " " << PI.Px() << " " << PI.Py() << " " << PI.Pz() << std::endl;
+        std::cout << "PB: " << LB.E() << " " << LB.Px() << " " << LB.Py() << " " << LB.Pz() << std::endl;
+
+        std::cout << "This Dalitz: " << this_dalitz << std::endl;
+        std::cout << "Max Dalitz: " << dalitz_max << std::endl;
+        std::cout << "LNC: " << ((flux.secondary_pdg > 0 ) != (lep_pdg_sign > 0)) << std::endl;
+
+        exit(1);
+      }
+    } while (GetRandom() > this_dalitz / dalitz_max);
+  }
+
+   // lep
+    ret.mom.push_back(LB);
+    ret.pdg.push_back(lep_pdg*lep_pdg_sign);
+
+    // pion
+    ret.mom.emplace_back(PI);
+    ret.pdg.push_back(211*lep_pdg_sign); // negative of lepton-charge has same-sign-PDG code
+
+ 
   
   return ret;
 }
@@ -862,6 +876,7 @@ void HNLMakeDecay::configure(fhicl::ParameterSet const &pset)
   
   fMajorana = pset.get<bool>("Majorana");
   fDecayIsThreeBodyAnisotropic=pset.get<bool>("DecayIsThreeBodyAnisotropic");
+  fTwoBodyAnisotropyIncludeInterference=pset.get<bool>("TwoBodyAnisotropyIncludeInterference");
 
   fMaxWeight = CalculateMaxWeight();
   

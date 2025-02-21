@@ -1,8 +1,10 @@
 #include "AnisotropicThreeBodyDecay.h"
-#include "sbncode/EventGenerator/MeVPrtl/Tools/Constants.h"
 
-#include "TLorentzVector.h"
-#include "TRandom3.h"
+double evgen::ldm::AnThreeBD::GetRandom(CLHEP::HepRandomEngine* fEngine) {
+  return CLHEP::RandFlat::shoot(fEngine);
+}
+
+
 
 /*Implementation of HNL Three Body Decays Anisotropies
   Valid as long as the HNL is decaying into a neutrino and identical final-state charged leptons
@@ -178,7 +180,7 @@ double evgen::ldm::AnThreeBD::MSqDM(double (&C)[6], double z2_num, double z2_ll,
   Currently optimized for electrons and muons for m_HNl<388 MeV
   This function returns values of the maximum previously calculated using multiple iterations of MSqDM function, as the maximum is not trivial to estimate, mainly because the allowed Dalitz region restricts the use of some algorithms. 
  */
-double evgen::ldm::AnThreeBD::MaxMSqDM(double m_HNL, int  LeptonPDG, double Ue4, double Umu4, double Ut4, double m_p, double m_m, double Pol, double (&C)[6], bool Majorana)
+double evgen::ldm::AnThreeBD::MaxMSqDM(double m_HNL, int  LeptonPDG, double Ue4, double Umu4, double Ut4, double m_p, double m_m, double Pol, double (&C)[6], bool Majorana, CLHEP::HepRandomEngine* fEngine)
 {
   double Ce4 = 0;
   double Cmu4 = 0;
@@ -293,15 +295,14 @@ in the rejection sampling method used in AnisotropicThreeBodyDist.  If the theor
     //Use 10e6 as a good aproximation of the maximum, if more precision is required the number can be increased
     int N_iter = pow(10,6);
     double MSqMax = 0;
-    TRandom3 *rand = new TRandom3(0);
     for (int i=0;i<N_iter;i++) {	  
       double MSq = 0;
-      do {
-	//Generate a position in the Dalitz Plot randomly
-	double r1 = rand->Rndm();
-	double r2 = rand->Rndm();
-	double r3 = rand->Rndm();
-	double r4 = rand->Rndm();
+      do { 
+	    //Generate a position in the Dalitz Plot randomly
+	    double r1 = evgen::ldm::AnThreeBD::GetRandom(fEngine);
+	    double r2 = evgen::ldm::AnThreeBD::GetRandom(fEngine);
+	    double r3 = evgen::ldm::AnThreeBD::GetRandom(fEngine);
+	    double r4 = evgen::ldm::AnThreeBD::GetRandom(fEngine);
 	      
 	z2_ll = ((m_HNL * m_HNL - (m_m + m_p) * (m_m + m_p)) * r1 + (m_m + m_p) * (m_m + m_p)) / (m_HNL * m_HNL);
 	z2_num = (((m_HNL - m_p) * (m_HNL - m_p) - m_m * m_m) * r2 + m_m * m_m) / (m_HNL * m_HNL);
@@ -331,15 +332,14 @@ in the rejection sampling method used in AnisotropicThreeBodyDist.  If the theor
   ctll: cosine of the angle between the charged-lepton-pair (sum of the four-vectors) and the z-axis
   gamll: rotation angle about the direction of the charged-lepton pair
   masses: [mN, mm, mp] the HNL and daughter charged-lepton masses (mm: negatively-charged, mp: positively-charged) */
-void evgen::ldm::AnThreeBD::RF4vecs(TLorentzVector &pnu, TLorentzVector &pm, TLorentzVector &pp, double z2_num, double z2_ll, double ct_ll, double gam_ll, double m_HNL, double m_p, double m_m)
+void evgen::ldm::AnThreeBD::RF4vecs(TLorentzVector &pnu, TLorentzVector &pm, TLorentzVector &pp, double z2_num, double z2_ll, double ct_ll, double gam_ll, double m_HNL, double m_p, double m_m, CLHEP::HepRandomEngine* fEngine)
 {
   double PnuRF[4], PmRF[4], PpRF[4];
   
   double m2_ll = z2_ll * m_HNL * m_HNL;
   double m2_num = z2_num * m_HNL * m_HNL;
   
-  TRandom3 *rand1 = new TRandom3(0);
-  double r1 = rand1->Rndm();
+  double r1 = evgen::ldm::AnThreeBD::GetRandom(fEngine);
 
   //Calculate some useful kinematical cuantities
   double E_m = (m2_ll + m2_num - m_p * m_p) / (2.0 * m_HNL);
@@ -352,7 +352,6 @@ void evgen::ldm::AnThreeBD::RF4vecs(TLorentzVector &pnu, TLorentzVector &pm, TLo
 
   //Select the phi angle randomly as it doesnt affect the anisotropies
   double phi = r1 * 2.0 * TMath::Pi();
-  phi = 1;
     
   PnuRF[0] = E_nu;
   PnuRF[1] = -E_nu * st_ll * sin(phi);
@@ -385,13 +384,11 @@ void evgen::ldm::AnThreeBD::RF4vecs(TLorentzVector &pnu, TLorentzVector &pm, TLo
   AntiHNL: Wether the HNL is a AntiHNL or a HNL (Only relevant in Dirac case)
   Pol: Polarization of the HNL
   See arXiv:2104.05719 for more details */
-void evgen::ldm::AnThreeBD::AnisotropicThreeBodyDist(TLorentzVector &pnu, TLorentzVector &pm, TLorentzVector& pp, double m_HNL, double Ue4, double Umu4, double Ut4, int LeptonPDG, bool Majorana, bool AntiHNL, double Pol)
+void evgen::ldm::AnThreeBD::AnisotropicThreeBodyDist(TLorentzVector pHNL, TLorentzVector &pnu, TLorentzVector &pm, TLorentzVector& pp, double m_HNL, double Ue4, double Umu4, double Ut4, int LeptonPDG, bool Majorana, bool AntiHNL, double Pol, CLHEP::HepRandomEngine* fEngine)
 {
   //By default select the electron as the lepton pair
   double m_p = evgen::ldm::Constants::Instance().elec_mass;
   double m_m = evgen::ldm::Constants::Instance().elec_mass;
-
-  TRandom3 *rand = new TRandom3(0);
 
   //Select wether the final leptons are electrons or muons
   if(LeptonPDG == 13) {
@@ -418,7 +415,7 @@ void evgen::ldm::AnThreeBD::AnisotropicThreeBodyDist(TLorentzVector &pnu, TLoren
   double gam_ll = 0;
 
   //Get the Maximum of the Matrix-element squared and use rejection sampling to get the anisotropic final states distribution
-  double MSqMax = evgen::ldm::AnThreeBD::MaxMSqDM(m_HNL, LeptonPDG, Ue4, Umu4, Ut4, m_p, m_m, Pol, C, Majorana);
+  double MSqMax = evgen::ldm::AnThreeBD::MaxMSqDM(m_HNL, LeptonPDG, Ue4, Umu4, Ut4, m_p, m_m, Pol, C, Majorana,fEngine);
   
   double MSq = 0;
   bool IsW = false;
@@ -430,10 +427,10 @@ void evgen::ldm::AnThreeBD::AnisotropicThreeBodyDist(TLorentzVector &pnu, TLoren
             ctll: cosine of the angle between the charged-lepton-pair (sum of the four-vectors) and the z-axis
             gamll: rotation angle about the direction of the charged-lepton pair
       */
-      double r1 = rand->Rndm();
-      double r2 = rand->Rndm();
-      double r3 = rand->Rndm();
-      double r4 = rand->Rndm();
+      double r1 = evgen::ldm::AnThreeBD::GetRandom(fEngine);
+      double r2 = evgen::ldm::AnThreeBD::GetRandom(fEngine);
+      double r3 = evgen::ldm::AnThreeBD::GetRandom(fEngine);
+      double r4 = evgen::ldm::AnThreeBD::GetRandom(fEngine);
       
       z2_ll = ((m_HNL * m_HNL - (m_m + m_p) * (m_m + m_p)) * r1 + (m_m + m_p) * (m_m + m_p))/(m_HNL * m_HNL);
       z2_num = (((m_HNL - m_p) * (m_HNL - m_p) - m_m * m_m) * r2 + m_m * m_m) / (m_HNL * m_HNL);
@@ -441,12 +438,57 @@ void evgen::ldm::AnThreeBD::AnisotropicThreeBodyDist(TLorentzVector &pnu, TLoren
       gam_ll = 2 * TMath::Pi() * r4;
       MSq = evgen::ldm::AnThreeBD::MSqDM(C, z2_num, z2_ll, ct_ll, gam_ll, m_HNL, m_p, m_m, Pol);
     }while(MSq==0);//Check if the randomly selected kinematical quantities  where allowed in the Dalitz
-    double r5 = rand->Rndm();
+    double r5 = evgen::ldm::AnThreeBD::GetRandom(fEngine);
     if(r5 < MSq/MSqMax) IsW = true;
   }while(!IsW); //Use rejection-sampling to select each final state given its probability to happen
   
   //Change from the generated kinematical quantities to 4 Vectors that can be used by the generator
-  evgen::ldm::AnThreeBD::RF4vecs(pnu, pm, pp, z2_num, z2_ll, ct_ll, gam_ll, m_HNL, m_p, m_m);
-  
+  evgen::ldm::AnThreeBD::RF4vecs(pnu, pm, pp, z2_num, z2_ll, ct_ll, gam_ll, m_HNL, m_p, m_m, fEngine);
+  evgen::ldm::AnThreeBD::RotateToHNLPolFrame(pHNL, pnu, pm, pp);
+
   return;
 }   
+
+/*
+  Function to apply a rotation to the calculated vector to match the HNL Pol direction. 
+  Formulas in arXiv:2104.05719 are defined with an HNL with the spin in the z direction. 
+  A rotation must be applied to the decay products to change the z direction to the beam direction (or HNL direction) 
+  in order for the results to be consistent, as per the reference arXiv:2104.05719
+  p_HNL: HNL momentum vector 
+  pnu: neutrino momentum vector 
+  pl: positive charge momentum vector 
+  pm: negative charge lepton momentum vector (3D)
+*/
+void evgen::ldm::AnThreeBD::RotateToHNLPolFrame(TLorentzVector pHNL, TLorentzVector &pnu, TLorentzVector &pm, TLorentzVector &pp) {
+  //Define the HNL direction
+  TVector3 HNL_dir = TVector3(pHNL.X(), pHNL.Y(), pHNL.Z()).Unit();
+  
+  //Define the direction of the polarized HNL in which formulas are calculated (In this case z)
+  TVector3 z(0, 0, 1);
+  
+  // Calculate the axis of rotation (cross product of z and hnl direction)
+  TVector3 rotation_axis = z.Cross(HNL_dir);
+
+  // Calculate the angle of rotation 
+  double angle = z.Angle(HNL_dir);
+  
+  TVector3 pnu3D = TVector3(pnu.X(), pnu.Y(), pnu.Z());
+  TVector3 pm3D = TVector3(pm.X(), pm.Y(), pm.Z());
+  TVector3 pp3D = TVector3(pp.X(), pp.Y(), pp.Z());
+
+  //Apply the rotation
+  if (rotation_axis.Mag() != 0) {
+    pnu3D.Rotate(angle, rotation_axis);
+    pm3D.Rotate(angle, rotation_axis);
+    pp3D.Rotate(angle, rotation_axis);
+  } else if(angle == M_PI) {
+    pnu3D = -pnu3D;
+    pm3D = -pm3D;
+    pp3D = -pp3D;
+  }
+  pnu.SetXYZT(pnu3D.X(), pnu3D.Y(), pnu3D.Z(), pnu.T());
+  pm.SetXYZT(pm3D.X(), pm3D.Y(), pm3D.Z(), pm.T());
+  pp.SetXYZT(pp3D.X(), pp3D.Y(), pp3D.Z(), pp.T());
+
+  return;
+}

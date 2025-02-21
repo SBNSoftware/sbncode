@@ -268,6 +268,8 @@ bool Kaon2HNLFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux &h
   }
   
   hnl.polarization = PolHNL(fM , lep_mass, meson_mass);
+  //Account for the Polarization of m+ ->l+N being opposite to the polarization of m- -> l-bar{N} due to CP
+  if(hnl.secondary_pdg < 0) hnl.polarization *= -1;
 
   return true;
 }

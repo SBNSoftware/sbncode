@@ -8,9 +8,40 @@ art_make_library( LIBRARY_NAME sbncode_EventGenerator_MeVPrtl_Dalitz
 art_make_library( LIBRARY_NAME sbncode_EventGenerator_MeVPrtl_AnThreeBD
           SOURCE AnisotropicThreeBodyDecay.cpp
           LIBRARIES
+			sbncode_EventGenerator_MeVPrtl_Constants
+                        sbnobj::Common_EventGen_MeVPrtl
+                        CLHEP::CLHEP
+                        art::Framework_Core
+                        art::Framework_Services_Registry
+			art::Framework_Principal
+                        art::Persistency_Common
+                        art::Utilities canvas::canvas
+                        cetlib::cetlib cetlib_except::cetlib_except
+                        nurandom::RandomUtils_NuRandomService_service
+                        nusimdata::SimulationBase
+                        GSL::gsl
+                        sbnobj::Common_EventGen_MeVPrtl
+
+        )
+
+art_make_library( LIBRARY_NAME sbncode_EventGenerator_MeVPrtl_AnTwoBD
+          SOURCE AnisotropicTwoBodyDecay.cpp
+          LIBRARIES
                         sbncode_EventGenerator_MeVPrtl_Constants
+              		sbnobj::Common_EventGen_MeVPrtl
+			CLHEP::CLHEP
+                        art::Framework_Core
+                        art::Framework_Services_Registry
+                        art::Framework_Principal
+                        art::Persistency_Common
+                        art::Utilities canvas::canvas
+                        cetlib::cetlib cetlib_except::cetlib_except
+                        nurandom::RandomUtils_NuRandomService_service
+                        nusimdata::SimulationBase
+                        GSL::gsl
                         sbnobj::Common_EventGen_MeVPrtl
         )
+
 
 
 cet_build_plugin( Kaon2HNLFlux art::tool
@@ -70,6 +101,7 @@ cet_build_plugin( HNLMakeDecay art::tool
                             larcorealg::Geometry
                             sbncode_EventGenerator_MeVPrtl_Dalitz
                             sbncode_EventGenerator_MeVPrtl_AnThreeBD
+                            sbncode_EventGenerator_MeVPrtl_AnTwoBD
 			    sbncode_EventGenerator_MeVPrtl_Constants
                             sbnobj::Common_EventGen_MeVPrtl
 )
