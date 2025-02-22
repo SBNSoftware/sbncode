@@ -197,6 +197,7 @@ sbn::SBNDBNBEXTRetriever::TriggerInfo_t sbn::SBNDBNBEXTRetriever::extractTrigger
 
 void sbn::SBNDBNBEXTRetriever::beginSubRun(art::SubRun& sr)
 {
+  fOutExtInfos = {};
   TotalEXTCounts = 0;
   return;
 }
