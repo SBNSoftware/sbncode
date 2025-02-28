@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////
-// Class:       SBNDBNBRetriever
+// Class:       SBNDBNBZEROBIASRetriever
 // Plugin Type: producer 
-// File:        SBNDBNBRetriever_module.cc
+// File:        SBNDBNBZEROBIASRetriever_module.cc
 //
 ////////////////////////////////////////////////////////////////////////
 
@@ -32,22 +32,22 @@
 #include "larcorealg/CoreUtils/counter.h"
 
 namespace sbn {
-  class SBNDBNBRetriever;
+  class SBNDBNBZEROBIASRetriever;
 }
 
-class sbn::SBNDBNBRetriever : public art::EDProducer {
+class sbn::SBNDBNBZEROBIASRetriever : public art::EDProducer {
 public:
-  explicit SBNDBNBRetriever(fhicl::ParameterSet const & params);
+  explicit SBNDBNBZEROBIASRetriever(fhicl::ParameterSet const & params);
   // Required functions.
   void produce(art::Event & e) override;
   void beginSubRun(art::SubRun& sr) override;
   void endSubRun(art::SubRun& sr) override;
 
   // Plugins should not be copied or assigned.
-  SBNDBNBRetriever(SBNDBNBRetriever const &) = delete;
-  SBNDBNBRetriever(SBNDBNBRetriever &&) = delete;
-  SBNDBNBRetriever & operator = (SBNDBNBRetriever const &) = delete;
-  SBNDBNBRetriever & operator = (SBNDBNBRetriever &&) = delete;
+  SBNDBNBZEROBIASRetriever(SBNDBNBZEROBIASRetriever const &) = delete;
+  SBNDBNBZEROBIASRetriever(SBNDBNBZEROBIASRetriever &&) = delete;
+  SBNDBNBZEROBIASRetriever & operator = (SBNDBNBZEROBIASRetriever const &) = delete;
+  SBNDBNBZEROBIASRetriever & operator = (SBNDBNBZEROBIASRetriever &&) = delete;
 
 
 private:
@@ -104,7 +104,7 @@ private:
 
 };
 
-sbn::SBNDBNBRetriever::SBNDBNBRetriever(fhicl::ParameterSet const & params)
+sbn::SBNDBNBZEROBIASRetriever::SBNDBNBZEROBIASRetriever(fhicl::ParameterSet const & params)
   : EDProducer{params} {
   raw_data_label = params.get<std::string>("raw_data_label", "daq");
   fInputLabel = params.get<std::string>("InputLabel");
@@ -129,7 +129,7 @@ int _run;
 int _subrun;
 int _event;
 
-void sbn::SBNDBNBRetriever::produce(art::Event & e)
+void sbn::SBNDBNBZEROBIASRetriever::produce(art::Event & e)
 {
 
   // If this is the first event in the run, then ignore it
@@ -165,7 +165,7 @@ void sbn::SBNDBNBRetriever::produce(art::Event & e)
   e.put(std::move(p));
 }
 
-sbn::SBNDBNBRetriever::PTBInfo_t sbn::SBNDBNBRetriever::extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
+sbn::SBNDBNBZEROBIASRetriever::PTBInfo_t sbn::SBNDBNBZEROBIASRetriever::extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
   bool foundHLT = false;
   PTBInfo_t PTBInfo;
   for (auto const& cont : *cont_frags)
@@ -204,7 +204,7 @@ sbn::SBNDBNBRetriever::PTBInfo_t sbn::SBNDBNBRetriever::extractPTBInfo(art::Hand
   }
 }
 
-double sbn::SBNDBNBRetriever::extractTDCTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
+double sbn::SBNDBNBZEROBIASRetriever::extractTDCTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
   double TDCTimeStamp = 0;
   for (auto const& cont : *cont_frags)
   { 
@@ -221,7 +221,7 @@ double sbn::SBNDBNBRetriever::extractTDCTimeStamp(art::Handle<std::vector<artdaq
   return TDCTimeStamp;
 }
 
-sbn::SBNDBNBRetriever::TriggerInfo_t sbn::SBNDBNBRetriever::extractTriggerInfo(art::Event const& e) const {
+sbn::SBNDBNBZEROBIASRetriever::TriggerInfo_t sbn::SBNDBNBZEROBIASRetriever::extractTriggerInfo(art::Event const& e) const {
   // Using TDC for current event, but PTB for previous event
   art::InputTag PTB_itag("daq", "ContainerPTB");
   auto PTB_cont_frags = e.getHandle<artdaq::Fragments>(PTB_itag);
@@ -257,7 +257,7 @@ sbn::SBNDBNBRetriever::TriggerInfo_t sbn::SBNDBNBRetriever::extractTriggerInfo(a
   return triggerInfo;
 }
 
-sbn::SBNDBNBRetriever::MWRdata_t sbn::SBNDBNBRetriever::extractSpillTimes(TriggerInfo_t const& triggerInfo) const {
+sbn::SBNDBNBZEROBIASRetriever::MWRdata_t sbn::SBNDBNBZEROBIASRetriever::extractSpillTimes(TriggerInfo_t const& triggerInfo) const {
   
   // These lines get everything primed within the IFBeamDB.
   try{bfp->FillCache((triggerInfo.t_current_event)+fTimePad);} catch (WebAPIException &we) {};     
@@ -279,7 +279,7 @@ sbn::SBNDBNBRetriever::MWRdata_t sbn::SBNDBNBRetriever::extractSpillTimes(Trigge
   // memory buffer increments 
   // generally in the format: "E:<Device>.{Memory Block}"
   std::vector<std::string> vars = bfp_mwr->GetDeviceList();
-  mf::LogDebug("SBNDBNBRetriever") << " Number of MWR Device Blocks Found : " << vars.size() << std::endl;
+  mf::LogDebug("SBNDBNBZEROBIASRetriever") << " Number of MWR Device Blocks Found : " << vars.size() << std::endl;
   // Tracking the time from the IFBeamDB
   double time_for_mwr;    
   
@@ -299,7 +299,7 @@ sbn::SBNDBNBRetriever::MWRdata_t sbn::SBNDBNBRetriever::extractSpillTimes(Trigge
       
       //Make sure we have a device
       if(var.empty()){ 
-        mf::LogDebug("SBNDBNBRetriever") << " NO MWR DEVICES?!" << std::endl;
+        mf::LogDebug("SBNDBNBZEROBIASRetriever") << " NO MWR DEVICES?!" << std::endl;
 	continue;
       }
       /// Check the device name and interate the double-vector index
@@ -307,7 +307,7 @@ sbn::SBNDBNBRetriever::MWRdata_t sbn::SBNDBNBRetriever::extractSpillTimes(Trigge
       else if(var.find("M876BB") != std::string::npos ) dev = 1;
       else if(var.find("MMBTBB") != std::string::npos ) dev = 2;
       else{
-	mf::LogDebug("SBNDBNBRetriever") << " NOT matched to a MWR DEVICES?!" << var << std::endl;
+	mf::LogDebug("SBNDBNBZEROBIASRetriever") << " NOT matched to a MWR DEVICES?!" << var << std::endl;
 	continue;}
       
       time_for_mwr = 0;
@@ -357,17 +357,17 @@ sbn::SBNDBNBRetriever::MWRdata_t sbn::SBNDBNBRetriever::extractSpillTimes(Trigge
     }// Iterate over all the multiwire devices
   }// Iterate over all times
 
-  mf::LogDebug("SBNDBNBRetriever") << " Number of MWR[0] times : " << MWR_times[0].size() << std::endl;	
-  mf::LogDebug("SBNDBNBRetriever") << " Number of MWR[0]s : " << unpacked_MWR[0].size() << std::endl;	
-  mf::LogDebug("SBNDBNBRetriever") << " Number of MWR[1] times : " << MWR_times[1].size() << std::endl;	
-  mf::LogDebug("SBNDBNBRetriever") << " Number of MWR[1]s : " << unpacked_MWR[1].size() << std::endl;	
-  mf::LogDebug("SBNDBNBRetriever") << " Number of MWR[2] times : " << MWR_times[2].size() << std::endl;	
-  mf::LogDebug("SBNDBNBRetriever") << " Number of MWR[2]s : " << unpacked_MWR[2].size() << std::endl;	
+  mf::LogDebug("SBNDBNBZEROBIASRetriever") << " Number of MWR[0] times : " << MWR_times[0].size() << std::endl;	
+  mf::LogDebug("SBNDBNBZEROBIASRetriever") << " Number of MWR[0]s : " << unpacked_MWR[0].size() << std::endl;	
+  mf::LogDebug("SBNDBNBZEROBIASRetriever") << " Number of MWR[1] times : " << MWR_times[1].size() << std::endl;	
+  mf::LogDebug("SBNDBNBZEROBIASRetriever") << " Number of MWR[1]s : " << unpacked_MWR[1].size() << std::endl;	
+  mf::LogDebug("SBNDBNBZEROBIASRetriever") << " Number of MWR[2] times : " << MWR_times[2].size() << std::endl;	
+  mf::LogDebug("SBNDBNBZEROBIASRetriever") << " Number of MWR[2]s : " << unpacked_MWR[2].size() << std::endl;	
   
   return { std::move(MWR_times), std::move(unpacked_MWR) };
 }
 
-void sbn::SBNDBNBRetriever::matchMultiWireData(
+void sbn::SBNDBNBZEROBIASRetriever::matchMultiWireData(
   art::EventID const& eventID,
   TriggerInfo_t const& triggerInfo,
   MWRdata_t const& MWRdata,
@@ -381,7 +381,7 @@ void sbn::SBNDBNBRetriever::matchMultiWireData(
   //  we have to pick a specific variable to use
   std::vector<double> times_temps = bfp->GetTimeList(fDeviceUsedForTiming);
 
-  mf::LogDebug("SBNDBNBRetriever") << "matchMultiWireData:: Number of time spills : " << times_temps.size() << std::endl;
+  mf::LogDebug("SBNDBNBZEROBIASRetriever") << "matchMultiWireData:: Number of time spills : " << times_temps.size() << std::endl;
 
   // We'll keep track of how many of these spills match to our 
   // DAQ trigger times
@@ -460,7 +460,7 @@ void sbn::SBNDBNBRetriever::matchMultiWireData(
     
 }
 
-bool sbn::SBNDBNBRetriever::BrokenClock(double time) const
+bool sbn::SBNDBNBZEROBIASRetriever::BrokenClock(double time) const
 {
   double TOR860 = 0; // units e12 protons
   double TOR875 = 0; // units e12 protons
@@ -485,22 +485,22 @@ bool sbn::SBNDBNBRetriever::BrokenClock(double time) const
 
   int ExceptionCounter = 0;
 
-  try{bfp->GetNamedData(time, "E:TOR860@",&TOR860,&TOR860_time);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
-  try{bfp->GetNamedData(time, "E:TOR875",&TOR875);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
-  try{bfp->GetNamedData(time, "E:LM875A",&LM875A);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
-  try{bfp->GetNamedData(time, "E:LM875B",&LM875B);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
-  try{bfp->GetNamedData(time, "E:LM875C",&LM875C);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
-  try{bfp->GetNamedData(time, "E:HP875",&HP875);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
-  try{bfp->GetNamedData(time, "E:VP875",&VP875);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
-  try{bfp->GetNamedData(time, "E:HPTG1",&HPTG1);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
-  try{bfp->GetNamedData(time, "E:VPTG1",&VPTG1);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
-  try{bfp->GetNamedData(time, "E:HPTG2",&HPTG2);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
-  try{bfp->GetNamedData(time, "E:VPTG2",&VPTG2);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
-  try{bfp->GetNamedData(time, "E:BTJT2",&BTJT2);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
-  try{bfp->GetNamedData(time, "E:THCURR",&THCURR);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:TOR860@",&TOR860,&TOR860_time);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:TOR875",&TOR875);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:LM875A",&LM875A);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:LM875B",&LM875B);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:LM875C",&LM875C);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:HP875",&HP875);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:VP875",&VP875);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:HPTG1",&HPTG1);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:VPTG1",&VPTG1);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:HPTG2",&HPTG2);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:VPTG2",&VPTG2);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:BTJT2",&BTJT2);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:THCURR",&THCURR);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
 
   if(ExceptionCounter > 10){
-    mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "found large number of device exceptions. Throwing away spill!\n";
+    mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "found large number of device exceptions. Throwing away spill!\n";
     return true;
   }
   else{
@@ -510,7 +510,7 @@ bool sbn::SBNDBNBRetriever::BrokenClock(double time) const
 }
 
 
-sbn::BNBSpillInfo sbn::SBNDBNBRetriever::makeBNBSpillInfo
+sbn::BNBSpillInfo sbn::SBNDBNBZEROBIASRetriever::makeBNBSpillInfo
   (art::EventID const& eventID, double time, MWRdata_t const& MWRdata, std::vector<int> const& matched_MWR) const
 {
   auto const& [ MWR_times, unpacked_MWR ] = MWRdata; // alias
@@ -539,19 +539,19 @@ sbn::BNBSpillInfo sbn::SBNDBNBRetriever::makeBNBSpillInfo
   // allow each to throw an exception but still move forward
   // interpreting these failures will be part of the beam quality analyses 
  
-  try{bfp->GetNamedData(time, "E:TOR860@",&TOR860,&TOR860_time);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-  try{bfp->GetNamedData(time, "E:TOR875",&TOR875);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-  try{bfp->GetNamedData(time, "E:LM875A",&LM875A);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-  try{bfp->GetNamedData(time, "E:LM875B",&LM875B);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-  try{bfp->GetNamedData(time, "E:LM875C",&LM875C);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-  try{bfp->GetNamedData(time, "E:HP875",&HP875);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-  try{bfp->GetNamedData(time, "E:VP875",&VP875);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-  try{bfp->GetNamedData(time, "E:HPTG1",&HPTG1);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-  try{bfp->GetNamedData(time, "E:VPTG1",&VPTG1);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-  try{bfp->GetNamedData(time, "E:HPTG2",&HPTG2);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-  try{bfp->GetNamedData(time, "E:VPTG2",&VPTG2);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-  try{bfp->GetNamedData(time, "E:BTJT2",&BTJT2);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-  try{bfp->GetNamedData(time, "E:THCURR",&THCURR);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:TOR860@",&TOR860,&TOR860_time);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:TOR875",&TOR875);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:LM875A",&LM875A);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:LM875B",&LM875B);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:LM875C",&LM875C);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:HP875",&HP875);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:VP875",&VP875);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:HPTG1",&HPTG1);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:VPTG1",&VPTG1);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:HPTG2",&HPTG2);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:VPTG2",&VPTG2);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:BTJT2",&BTJT2);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:THCURR",&THCURR);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
 
   //crunch the times 
   unsigned long int time_closest_int = (int) TOR860_time;
@@ -615,15 +615,15 @@ sbn::BNBSpillInfo sbn::SBNDBNBRetriever::makeBNBSpillInfo
   return beamInfo;
 }
 
-void sbn::SBNDBNBRetriever::beginSubRun(art::SubRun& sr)
+void sbn::SBNDBNBZEROBIASRetriever::beginSubRun(art::SubRun& sr)
 {
   return;
 }
 
-void sbn::SBNDBNBRetriever::endSubRun(art::SubRun& sr)
+void sbn::SBNDBNBZEROBIASRetriever::endSubRun(art::SubRun& sr)
 {
-  mf::LogDebug("SBNDBNBRetriever")<< "Total number of DAQ Spills : " << TotalBeamSpills << std::endl;
-  mf::LogDebug("SBNDBNBRetriever")<< "Total number of Selected Spills : " << fOutbeamInfosTotal.size() << std::endl;
+  mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "Total number of DAQ Spills : " << TotalBeamSpills << std::endl;
+  mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "Total number of Selected Spills : " << fOutbeamInfosTotal.size() << std::endl;
 
   auto p =  std::make_unique< std::vector< sbn::BNBSpillInfo > >();
   std::swap(*p, fOutbeamInfosTotal);
@@ -633,4 +633,4 @@ void sbn::SBNDBNBRetriever::endSubRun(art::SubRun& sr)
   return;
 }
 
-DEFINE_ART_MODULE(sbn::SBNDBNBRetriever)
+DEFINE_ART_MODULE(sbn::SBNDBNBZEROBIASRetriever)

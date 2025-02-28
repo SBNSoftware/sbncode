@@ -207,7 +207,7 @@ void sbn::SBNDBNBEXTRetriever::endSubRun(art::SubRun& sr)
    // We will add all of the EXTCountInfo data-products to the 
   // art::SubRun so it persists 
 
-  mf::LogDebug("SBNDBNBRetriever")<< "Total number of DAQ Spills : " << TotalEXTCounts << std::endl;
+  mf::LogDebug("SBNDBNBEXTRetriever")<< "Total number of DAQ Spills : " << TotalEXTCounts << std::endl;
 
   auto p =  std::make_unique< std::vector< sbn::EXTCountInfo > >(fOutExtInfos);
 
