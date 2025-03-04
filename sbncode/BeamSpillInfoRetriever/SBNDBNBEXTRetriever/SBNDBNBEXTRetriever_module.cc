@@ -88,7 +88,6 @@ void sbn::SBNDBNBEXTRetriever::produce(art::Event & e)
 {
 
   TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
-
   TotalEXTCounts += triggerInfo.number_of_gates_since_previous_event;
   //Store everything in our data-product
   sbn::EXTCountInfo extInfo;
@@ -188,27 +187,22 @@ sbn::SBNDBNBEXTRetriever::TriggerInfo_t sbn::SBNDBNBEXTRetriever::extractTrigger
     mf::LogDebug("SBNDBNBEXTRetriever") << "After: " << triggerInfo.t_previous_event << std::endl;
   }
 
-  mf::LogDebug("SBNDBNBEXTRetriever") << std::setprecision(19) << "t_previous_event: " << triggerInfo.t_previous_event << std::endl;
-  mf::LogDebug("SBNDBNBEXTRetriever") << std::setprecision(19) << "t_current_event: " << triggerInfo.t_current_event << std::endl;
-  mf::LogDebug("SBNDBNBEXTRetriever") << std::setprecision(19) << "Manual Counter: " << (triggerInfo.t_current_event-triggerInfo.t_previous_event)*9.8 << std::endl;
-  mf::LogDebug("SBNDBNBEXTRetriever") << std::setprecision(19) << "GateCounter: " << triggerInfo.number_of_gates_since_previous_event << std::endl;
   return triggerInfo;
 }
 
 void sbn::SBNDBNBEXTRetriever::beginSubRun(art::SubRun& sr)
 {
-  fOutExtInfos = {};
   TotalEXTCounts = 0;
+  fOutExtInfos = {};
   return;
 }
 
 void sbn::SBNDBNBEXTRetriever::endSubRun(art::SubRun& sr)
 {
-   // We will add all of the EXTCountInfo data-products to the 
+  // We will add all of the EXTCountInfo data-products to the 
   // art::SubRun so it persists 
 
   mf::LogDebug("SBNDBNBEXTRetriever")<< "Total number of DAQ Spills : " << TotalEXTCounts << std::endl;
-
   auto p =  std::make_unique< std::vector< sbn::EXTCountInfo > >(fOutExtInfos);
 
   sr.put(std::move(p), art::subRunFragment());

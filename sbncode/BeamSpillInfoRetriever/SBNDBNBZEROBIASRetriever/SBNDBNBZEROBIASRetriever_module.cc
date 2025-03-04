@@ -485,22 +485,22 @@ bool sbn::SBNDBNBZEROBIASRetriever::BrokenClock(double time) const
 
   int ExceptionCounter = 0;
 
-  try{bfp->GetNamedData(time, "E:TOR860@",&TOR860,&TOR860_time);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
-  try{bfp->GetNamedData(time, "E:TOR875",&TOR875);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
-  try{bfp->GetNamedData(time, "E:LM875A",&LM875A);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
-  try{bfp->GetNamedData(time, "E:LM875B",&LM875B);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
-  try{bfp->GetNamedData(time, "E:LM875C",&LM875C);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
-  try{bfp->GetNamedData(time, "E:HP875",&HP875);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
-  try{bfp->GetNamedData(time, "E:VP875",&VP875);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
-  try{bfp->GetNamedData(time, "E:HPTG1",&HPTG1);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
-  try{bfp->GetNamedData(time, "E:VPTG1",&VPTG1);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
-  try{bfp->GetNamedData(time, "E:HPTG2",&HPTG2);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
-  try{bfp->GetNamedData(time, "E:VPTG2",&VPTG2);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
-  try{bfp->GetNamedData(time, "E:BTJT2",&BTJT2);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
-  try{bfp->GetNamedData(time, "E:THCURR",&THCURR);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:TOR860@",&TOR860,&TOR860_time);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << std::setprecision(19) << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:TOR875",&TOR875);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << std::setprecision(19) << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:LM875A",&LM875A);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << std::setprecision(19) << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:LM875B",&LM875B);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << std::setprecision(19) << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:LM875C",&LM875C);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << std::setprecision(19) << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:HP875",&HP875);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << std::setprecision(19) << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:VP875",&VP875);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << std::setprecision(19) << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:HPTG1",&HPTG1);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << std::setprecision(19) << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:VPTG1",&VPTG1);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << std::setprecision(19) << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:HPTG2",&HPTG2);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << std::setprecision(19) << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:VPTG2",&VPTG2);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << std::setprecision(19) << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:BTJT2",&BTJT2);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << std::setprecision(19) << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
+  try{bfp->GetNamedData(time, "E:THCURR",&THCURR);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << std::setprecision(19) << time << " " << "got exception: " << we.what() << "\n"; ExceptionCounter++;}
 
   if(ExceptionCounter > 10){
-    mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << time << " " << "found large number of device exceptions. Throwing away spill!\n";
+    mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "At time : " << std::setprecision(19) << time << " " << "found large number of device exceptions. Throwing away spill!\n";
     return true;
   }
   else{
