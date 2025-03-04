@@ -1,19 +1,3 @@
-#include <iostream>
-#include <vector>
-
-#include "art/Framework/Core/EDProducer.h"
-#include "art/Framework/Core/ModuleMacros.h"
-#include "art/Framework/Principal/Event.h"
-#include "art/Framework/Principal/ProductRetriever.h"
-#include "art/Persistency/Common/GroupQueryResult.h"
-#include "canvas/Utilities/InputTag.h"
-#include "art/Framework/Principal/Handle.h"
-#include "messagefacility/MessageLogger/MessageLogger.h"
-
-#include "sbndaq-artdaq-core/Overlays/SBND/PTBFragment.hh"
-#include "sbndaq-artdaq-core/Overlays/SBND/TDCTimestampFragment.hh"
-#include "artdaq-core/Data/ContainerFragment.hh"
-
 #include "SBNDPOTTools.h"
 
 using namespace std;

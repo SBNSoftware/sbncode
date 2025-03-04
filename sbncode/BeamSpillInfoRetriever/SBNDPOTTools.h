@@ -4,35 +4,9 @@
 #include <iostream>
 #include <vector>
 
-#include "art/Framework/Core/EDProducer.h"
-#include "art/Framework/Core/ModuleMacros.h"
-#include "art/Framework/Principal/Event.h"
-#include "canvas/Utilities/InputTag.h"
-#include "art/Framework/Principal/Handle.h"
-#include "art/Framework/Principal/Provenance.h"
-#include "messagefacility/MessageLogger/MessageLogger.h"
-
-#include "sbndaq-artdaq-core/Overlays/SBND/PTBFragment.hh"
-#include "sbndaq-artdaq-core/Overlays/SBND/TDCTimestampFragment.hh"
-#include "artdaq-core/Data/ContainerFragment.hh"
-
-
-#include <string.h>
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/Handle.h"
-#include "art/Framework/Principal/Run.h"
-#include "art/Framework/Principal/SubRun.h"
-#include "art/Framework/Principal/Provenance.h"
-#include "canvas/Utilities/InputTag.h"
-#include "canvas/Utilities/Exception.h"
-#include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-
-#include <cxxabi.h>
-#include <memory>
-#include <bitset>
-#include <tuple>
-#include <algorithm>
 
 #include "sbndaq-artdaq-core/Overlays/SBND/PTBFragment.hh"
 #include "sbndaq-artdaq-core/Overlays/SBND/TDCTimestampFragment.hh"

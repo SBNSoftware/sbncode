@@ -440,7 +440,6 @@ bool sbn::SBNDBNBZEROBIASRetriever::BrokenClock(double time) const
 
 }
 
-
 sbn::BNBSpillInfo sbn::SBNDBNBZEROBIASRetriever::makeBNBSpillInfo
   (art::EventID const& eventID, double time, MWRdata_t const& MWRdata, std::vector<int> const& matched_MWR) const
 {
