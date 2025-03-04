@@ -7,6 +7,9 @@ add_subdirectory(BNBEXTRetriever)
 add_subdirectory(NuMIEXTRetriever)
 add_subdirectory(job)
 
+find_package(ifbeam)
+find_package(ifdh_art)
+
 art_make_library(LIBRARIES Boost::system
         LIBRARY_NAME sbn_MWRData
         SOURCE MWRData.cpp
@@ -18,6 +21,8 @@ art_make_library(
         art::Utilities canvas::canvas
         cetlib::cetlib cetlib_except::cetlib_except
         ROOT::X3d
+        ifbeam::ifbeam
+        ifdh_art::IFBeam_service
         Boost::system
         messagefacility::MF_MessageLogger
         sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
@@ -25,6 +30,7 @@ art_make_library(
         sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS
         sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_SBND
         artdaq_core::artdaq-core_Utilities
+        sbnobj::Common_POTAccounting
 
         LIBRARY_NAME sbn_SBNDPOTTools
         SOURCE SBNDPOTTools.cpp
