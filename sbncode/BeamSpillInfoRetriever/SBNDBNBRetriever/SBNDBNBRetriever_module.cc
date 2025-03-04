@@ -30,6 +30,7 @@
 #include "ifdh_art/IFBeamService/IFBeam_service.h"
 #include "ifbeam_c.h"
 #include "sbncode/BeamSpillInfoRetriever/MWRData.h"
+#include "sbncode/BeamSpillInfoRetriever/SBNDPOTTools.h"
 
 #include "larcorealg/CoreUtils/counter.h"
 
@@ -68,18 +69,6 @@ private:
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp;
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp_mwr;
 
-  struct PTBInfo_t {
-    double currPTBTimeStamp  = 1e20;
-    double prevPTBTimeStamp  = 0;
-    unsigned int GateCounter = 0; // FIXME needs to be integral type
-  };
-
-  struct TriggerInfo_t {
-    double t_current_event  = 0;
-    double t_previous_event = 0;
-    unsigned int number_of_gates_since_previous_event = 0; // FIXME needs to be integral type
-  };
-
   struct MWRdata_t {
     std::vector< std::vector<double> > MWR_times;
     std::vector< std::vector< std::vector< int > > > unpacked_MWR;
@@ -88,8 +77,6 @@ private:
   static constexpr double MWRtoroidDelay = -0.035; ///< the same time point is measured _t_ by MWR and _t + MWRtoroidDelay`_ by the toroid [ms]
 
   TriggerInfo_t extractTriggerInfo(art::Event const& e) const;
-  PTBInfo_t extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const;
-  double extractTDCTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const;
   MWRdata_t extractSpillTimes(TriggerInfo_t const& triggerInfo) const; 
   int matchMultiWireData(
     art::EventID const& eventID, 
@@ -159,62 +146,7 @@ void sbn::SBNDBNBRetriever::produce(art::Event & e)
     mf::LogDebug("SBNDBNBRetriever")<< "Event Spills : " << spill_count << ", DAQ Spills : " << triggerInfo.number_of_gates_since_previous_event << std::endl;
 }
 
-sbn::SBNDBNBRetriever::PTBInfo_t sbn::SBNDBNBRetriever::extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
-  bool foundHLT = false;
-  PTBInfo_t PTBInfo;
-  for (auto const& cont : *cont_frags)
-  { 
-    artdaq::ContainerFragment cont_frag(cont);
-    for (size_t fragi = 0; fragi < cont_frag.block_count(); ++fragi)
-    {
-      artdaq::Fragment frag = *cont_frag[fragi];
-      sbndaq::CTBFragment ctb_frag(frag);   // somehow the name CTBFragment stuck
-      for(size_t word_i = 0; word_i < ctb_frag.NWords(); ++word_i)
-      {
-        if(ctb_frag.Trigger(word_i)){
-	  if (ctb_frag.Trigger(word_i)->IsHLT() && ctb_frag.Trigger(word_i)->IsTrigger(2))
-	  {
-            foundHLT = true;
-	    uint64_t RawprevPTBTimeStamp = ctb_frag.PTBWord(word_i)->prevTS * 20; 
-            uint64_t RawcurrPTBTimeStamp = ctb_frag.Trigger(word_i)->timestamp * 20; 
-            double currTS_candidate = std::bitset<64>(RawcurrPTBTimeStamp/20).to_ullong()/50e6;
-            if(currTS_candidate < PTBInfo.currPTBTimeStamp){
-              PTBInfo.prevPTBTimeStamp = std::bitset<64>(RawprevPTBTimeStamp / 20).to_ullong()/50e6; 
-              PTBInfo.currPTBTimeStamp = currTS_candidate;
-              PTBInfo.GateCounter = ctb_frag.Trigger(word_i)->gate_counter;
-            }
-	  }
-        }
-      } //End of loop over the number of trigger words
-    } //End of loop over the number of fragments per container
-  } //End of loop over the number of containers
-
-  if(foundHLT == true){
-    return PTBInfo;
-  }
-  else{
-    std::cout << "Failed to find HLT 2!" << std::endl;
-    throw std::exception();
-  }
-}
-
-double sbn::SBNDBNBRetriever::extractTDCTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) const {
-
-  double TDCTimeStamp = 0;
-  for (auto const& cont : *cont_frags)
-  { 
-    artdaq::ContainerFragment cont_frag(cont);
-    for (size_t fragi = 0; fragi < cont_frag.block_count(); ++fragi)
-    {
-      artdaq::Fragment frag = *cont_frag[fragi];
-      sbndaq::TDCTimestampFragment tdc_frag(frag); 
-      TDCTimeStamp = static_cast<double>(tdc_frag.getTDCTimestamp()->timestamp_ns())/1e9;
-    } //End of loop over the number of fragments per container
-  } //End of loop over the number of containers
-  return TDCTimeStamp;
-}
-
-sbn::SBNDBNBRetriever::TriggerInfo_t sbn::SBNDBNBRetriever::extractTriggerInfo(art::Event const& e) const {
+sbn::TriggerInfo_t sbn::SBNDBNBRetriever::extractTriggerInfo(art::Event const& e) const {
   // Using TDC for current event, but PTB for previous event. Exception for case where no TDC.
   art::InputTag PTB_itag("daq", "ContainerPTB");
   auto PTB_cont_frags = e.getHandle<artdaq::Fragments>(PTB_itag);
@@ -224,7 +156,7 @@ sbn::SBNDBNBRetriever::TriggerInfo_t sbn::SBNDBNBRetriever::extractTriggerInfo(a
 
   PTBInfo_t PTBInfo;
   TriggerInfo_t triggerInfo;
-  PTBInfo = extractPTBInfo(PTB_cont_frags);
+  PTBInfo = extractPTBInfo(PTB_cont_frags, 2);
 
   if (TDC_cont_frags) {
     double TDCTimeStamp = extractTDCTimeStamp(TDC_cont_frags);

@@ -18,6 +18,7 @@ cet_build_plugin(SBNDBNBZEROBIASRetriever art::module
         sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_SBND
         artdaq_core::artdaq-core_Utilities
         sbn_MWRData
+        sbn_SBNDPOTTools
         sbnobj::Common_POTAccounting
         larcorealg::CoreUtils
 )

@@ -19,6 +19,7 @@ cet_build_plugin(SBNDBNBEXTRetriever art::module
         artdaq_core::artdaq-core_Utilities
         sbnobj::Common_POTAccounting
         larcorealg::CoreUtils
+        sbn_SBNDPOTTools
 )
 
 install_headers()
