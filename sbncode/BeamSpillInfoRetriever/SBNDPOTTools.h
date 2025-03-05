@@ -15,6 +15,8 @@
 #include "sbndaq-artdaq-core/Overlays/SBND/TDCTimestampFragment.hh"
 #include "artdaq-core/Data/ContainerFragment.hh"
 
+#include "sbncode/BeamSpillInfoRetriever/MWRData.h"
+#include "larcorealg/CoreUtils/counter.h"
 
 namespace sbn{
   typedef struct PTBInfo_t {
@@ -37,6 +39,7 @@ namespace sbn{
   PTBInfo_t extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags, int HLT);
   double extractTDCTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags);
   bool BrokenClock(double time, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp);
+  MWRdata_t extractSpillTimes(TriggerInfo_t const& triggerInfo, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp_mwr, double fTimePad, double MWRtoroidDelay, sbn::MWRData mwrdata );
   sbn::BNBSpillInfo makeBNBSpillInfo(art::EventID const& eventID, double time, MWRdata_t const& MWRdata, std::vector<int> const& matched_MWR, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp);
 }
 

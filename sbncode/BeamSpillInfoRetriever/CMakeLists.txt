@@ -31,6 +31,8 @@ art_make_library(
         sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_SBND
         artdaq_core::artdaq-core_Utilities
         sbnobj::Common_POTAccounting
+        sbn_MWRData
+        larcorealg::CoreUtils
 
         LIBRARY_NAME sbn_SBNDPOTTools
         SOURCE SBNDPOTTools.cpp

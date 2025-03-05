@@ -53,10 +53,8 @@ public:
 private:
   // Declare member data here.
   std::vector< sbn::EXTCountInfo > fOutExtInfos;
-
   TriggerInfo_t extractTriggerInfo(art::Event const& e) const;
   // input labels
-  std::string raw_data_label_;
   float TotalEXTCounts;  
 };
 
@@ -65,11 +63,6 @@ sbn::SBNDBNBEXTRetriever::SBNDBNBEXTRetriever(fhicl::ParameterSet const & params
   produces< std::vector< sbn::EXTCountInfo >, art::InSubRun >();
   TotalEXTCounts = 0;
 }
-
-int eventNum =0;
-int _run;
-int _subrun;
-int _event;
 
 void sbn::SBNDBNBEXTRetriever::produce(art::Event & e)
 {

@@ -1,20 +1,15 @@
 BEGIN_PROLOG
 
 sbndbnbspillinfo: {
-    module_type: SBNDBNBRetriever
-    InputLabel: "bnb"
-    InputContainerInstance: "ContainerBNB"
-    InputNonContainerInstance: "BNB"
-    OutputInstance: ""
+    module_type: ""
     DebugLevel: 0
     TimePadding: 0.0333 #unit seconds, Booster Rep Rate is 15 Hz, so the closest spill could be 66ms away was 0.0333
     BESOffset: 0.035 #unit seconds, we expect the BES to be about 35 ms from $1D. Need to adjust search range accordingly.
-    URL: "https://dbdata3vm.fnal.gov:9443/ifbeam" #Default URL having issues Nov 21 2024, used this instead https://dbdata3vm.fnal.gov:9443/ifbeam
+    URL: "" #Default URL having issues Nov 21 2024, used this instead https://dbdata3vm.fnal.gov:9443/ifbeam
     Bundle: "BoosterNeutrinoBeam_read"
     MultiWireBundle: "BNBMultiWire"
     TimeWindow: "700" #seconds
     MWR_TimeWindow: "3601" #seconds
-    raw_data_label: "daq"
     DeviceUsedForTiming: "E:TOR860"
 }
 

@@ -30,10 +30,11 @@ physics: {
  producers: {
    sbndbnbinfo: @local::sbndbnbspillinfo
  }
-
  simulate: [sbndbnbinfo ]
  stream1: [ out1 ]
 }
+
+physics.producers.sbndbnbinfo.module_type: "SBNDBNBRetriever"
 
 outputs: {
  out1: {

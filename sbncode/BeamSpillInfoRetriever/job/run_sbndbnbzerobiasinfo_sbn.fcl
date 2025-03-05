@@ -1,4 +1,4 @@
-#include "sbndbnbzerobiasspillinfo.fcl"
+#include "sbndbnbspillinfo.fcl"
 
 process_name: SBNDBNBZEROBIASInfoGen
 
@@ -27,12 +27,14 @@ source: {
 
 physics: {
  producers: {
-   sbndbnbzerobiasinfo: @local::sbndbnbzerobiasspillinfo
+   sbndbnbzerobiasinfo: @local::sbndbnbspillinfo
  }
 
  simulate: [sbndbnbzerobiasinfo ]
  stream1: [ out1 ]
 }
+
+physics.producers.sbndbnbzerobiasinfo.module_type: "SBNDBNBZEROBIASRetriever"
 
 outputs: {
  out1: {
@@ -42,5 +44,4 @@ outputs: {
    compressionLevel: 1
  }
 }
-
 physics.producers.sbndbnbzerobiasinfo.fileNames: @local::outputs.out1.fileName
