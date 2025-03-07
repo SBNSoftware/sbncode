@@ -61,6 +61,9 @@
 #include "larsim/MCCheater/ParticleInventoryService.h"
 
 #include "sbnobj/Common/Calibration/TrackCaloSkimmerObj.h"
+#include "sbnobj/Common/CRT/CRTHitT0TaggingInfo.cc"
+#include "sbnobj/Common/CRT/CRTHitT0TaggingTruthInfo.cc"
+
 #include "ITCSSelectionTool.h"
 
 namespace sbn {
@@ -90,6 +93,16 @@ public:
   }
 
 private:
+
+  struct T0TimingInfo {
+    double  t0Pandora;
+    double  t0CRTTrack;
+    double  t0CRTHit;
+    bool    hasT0Pandora;
+    bool    hasT0CRTTrack;
+    bool    hasT0CRTHit;
+  };
+
   // Internal data struct
   struct GlobalTrackInfo {
     geo::Point_t start;
@@ -117,13 +130,14 @@ private:
 
   // Fill vars
   void FillTrack(const recob::Track &track, 
-    const recob::PFParticle &pfp, float t0, float t0CRT,
+    const recob::PFParticle &pfp, const T0TimingInfo &t0Info,
     const std::vector<art::Ptr<recob::Hit>> &hits,
     const std::vector<const recob::TrackHitMeta*> &thms,
     const std::vector<art::Ptr<recob::SpacePoint>> &sps,
     const std::vector<art::Ptr<anab::Calorimetry>> &calo,
     const std::map<geo::WireID, art::Ptr<raw::RawDigit>> &rawdigits,
     const std::vector<GlobalTrackInfo> &tracks,
+    const geo::GeometryCore *geo,
     const geo::WireReadoutGeom *wireReadout,
     const detinfo::DetectorClocksData &clock_data,
     const cheat::BackTrackerService *bt_serv,
@@ -157,11 +171,14 @@ private:
     unsigned hkey,
     const recob::TrackHitMeta &thm,
     const recob::Track &trk,
+    const T0TimingInfo &t0Info,
     const art::Ptr<recob::SpacePoint> &sp,
     const std::vector<art::Ptr<anab::Calorimetry>> &calo,
+    const geo::GeometryCore *geo,
     const geo::WireReadoutGeom *wireReadout,
     const detinfo::DetectorClocksData &dclock,
-    const cheat::BackTrackerService *bt_serv);
+    const cheat::BackTrackerService *bt_serv,
+    const detinfo::DetectorPropertiesData &dprop);
 
   void DoTailFit();
 
@@ -187,7 +204,14 @@ private:
   bool fFillTrackEndHits;
   float fTrackEndHitWireBox;
   float fTrackEndHitTimeBox;
-
+  bool fIncludeCRTHitTagging;
+  bool fIncludeTopCRT;
+  bool fIncludeSideCRT;
+  double fTopCRTDistanceCutStopping;
+  double fTopCRTDistanceCutPassing;
+  double fSideCRTDistanceCutStopping;
+  double fSideCRTDistanceCutPassing;  
+  
   // tools
   std::vector<std::unique_ptr<sbn::ITCSSelectionTool>> fSelectionTools;
 
