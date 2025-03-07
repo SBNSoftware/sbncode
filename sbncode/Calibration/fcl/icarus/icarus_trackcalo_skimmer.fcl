@@ -114,6 +114,32 @@ selectall: {
   RequireT0: false
 }
 
+# Include also crthittagged tracks
+caloskim_crthittagging_cryoe: @local::caloskim_cryoe
+caloskim_crthittagging_cryoe.IncludeCRTHitTagging: true
+caloskim_crthittagging_cryoe.IncludeTopCRT: true
+caloskim_crthittagging_cryoe.IncludeSideCRT: false
+caloskim_crthittagging_cryoe.TopCRTDistanceCut_stopping: 100.
+caloskim_crthittagging_cryoe.TopCRTDistanceCut_throughgoing: 100.
+caloskim_crthittagging_cryoe.SideCRTDistanceCut_stopping: 100.
+caloskim_crthittagging_cryoe.SideCRTDistanceCut_throughgoing: 100.
+
+
+caloskim_crthittagging_cryow: @local::caloskim_cryow
+caloskim_crthittagging_cryow.IncludeCRTHitTagging: true
+caloskim_crthittagging_cryow.IncludeTopCRT: true
+caloskim_crthittagging_cryow.IncludeSideCRT: false
+caloskim_crthittagging_cryow.TopCRTDistanceCut_stopping: 60.
+caloskim_crthittagging_cryow.TopCRTDistanceCut_throughgoing: 50.
+caloskim_crthittagging_cryow.SideCRTDistanceCut_stopping: 100.
+caloskim_crthittagging_cryow.SideCRTDistanceCut_throughgoing: 100.
+
+crthittagged_stopping_selection: @local::stopping_selection
+crthittagged_stopping_selection.AllowT0: [true, false, true]
+
+crthittagged_throughgoing_selection: @local::throughgoing_selection
+crthittagged_throughgoing_selection.AllowT0: [true, false, true]
+
 # Require T0 tag, don't save raw waveforms, 
 caloskim_cryow_nodigits_goldentracks: @local::caloskim_cryow_nodigits
 caloskim_cryow_nodigits_goldentracks.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection]
@@ -141,5 +167,11 @@ caloskim_cryow_nodigits_goldentracks_not0.SelectionTools: [@local::stopping_sele
 caloskim_cryoe_nodigits_goldentracks_not0: @local::caloskim_cryoe_nodigits
 caloskim_cryoe_nodigits_goldentracks_not0.RequireT0: false
 caloskim_cryoe_nodigits_goldentracks_not0.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection, @local::selectall]
+
+# Require T0 tag, allow Top CRT Hit tagging, do save raw waveforms
+caloskim_cryow_crthittagged_goldentracks: @local::caloskim_crthittagging_cryow
+caloskim_cryow_crthittagged_goldentracks.SelectionTools: [@local::crthittagged_stopping_selection, @local::a2c_selection, @local::crthittagged_throughgoing_selection]
+caloskim_cryoe_crthittagged_goldentracks: @local::caloskim_crthittagging_cryoe
+caloskim_cryoe_crthittagged_goldentracks.SelectionTools: [@local::crthittagged_stopping_selection, @local::a2c_selection, @local::crthittagged_throughgoing_selection]
 
 END_PROLOG
