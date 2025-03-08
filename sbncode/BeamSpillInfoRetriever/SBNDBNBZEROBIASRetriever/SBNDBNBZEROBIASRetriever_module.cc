@@ -89,11 +89,6 @@ sbn::SBNDBNBZEROBIASRetriever::SBNDBNBZEROBIASRetriever(fhicl::ParameterSet cons
   produces< std::vector< sbn::BNBSpillInfo >, art::InSubRun >();
 }
 
-int eventNum =0;
-int _run;
-int _subrun;
-int _event;
-
 void sbn::SBNDBNBZEROBIASRetriever::produce(art::Event & e)
 {
 
@@ -101,7 +96,6 @@ void sbn::SBNDBNBZEROBIASRetriever::produce(art::Event & e)
   // We do not currently have the ability to figure out the first
   // spill that the DAQ was sensitive to, so don't try to save any
   // spill information
-
   if (e.event() == 1) {
     auto p =  std::make_unique< std::vector< sbn::BNBSpillInfo > >();
     std::swap(*p, fOutbeamInfos);
@@ -154,13 +148,15 @@ sbn::TriggerInfo_t sbn::SBNDBNBZEROBIASRetriever::extractTriggerInfo(art::Event 
   triggerInfo.t_previous_event = PTBInfo.prevPTBTimeStamp - fBESOffset;
   triggerInfo.number_of_gates_since_previous_event = PTBInfo.GateCounter;
 
-  if(triggerInfo.t_current_event + fBESOffset - PTBInfo.currPTBTimeStamp >= 1){
-    mf::LogDebug("SBNDBNBZEROBIASRetriever") << " PTB and TDC Disagree!!! Correcting by adding 1 second." << std::endl;
-    triggerInfo.t_previous_event+=1;
-  }
-  else if(triggerInfo.t_current_event + fBESOffset - PTBInfo.currPTBTimeStamp <= -1){
-    mf::LogDebug("SBNDBNBZEROBIASRetriever") << " PTB and TDC Disagree!!! Correcting by subtracting 1 second." << std::endl;
-    triggerInfo.t_previous_event-=1;
+  double PTBandCurrOffset = PTBInfo.currPTBTimeStamp - triggerInfo.t_current_event - fBESOffset;
+
+  // Catch for an issue seen a few times where PTB off by a second.
+  // Only need to correct prevTS because either currTS is from TDC
+  // or there is no offset between currTS and PTB.
+  if(abs(PTBandCurrOffset) >= 0.5){
+    triggerInfo.t_previous_event-=PTBandCurrOffset;
+    mf::LogDebug("SBNDBNBZEROBIASRetriever") << "Offset between PTB and TDC, " << PTBandCurrOffset << std::endl;
+    mf::LogDebug("SBNDBNBZEROBIASRetriever") << "Corrected previous event TS is " << std::setprecision(19) << triggerInfo.t_previous_event << std::endl;
   }
 
   return triggerInfo;

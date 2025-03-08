@@ -76,7 +76,8 @@ void sbn::SBNDBNBEXTRetriever::produce(art::Event & e)
 }
 
 sbn::TriggerInfo_t sbn::SBNDBNBEXTRetriever::extractTriggerInfo(art::Event const& e) const {
-  // Using TDC for current event, but PTB for previous event
+  // Using TDC for current event, but PTB for previous event.
+  // Don't worry about BESOffset since we only record number of gates
   art::InputTag PTB_itag("daq", "ContainerPTB");
   auto PTB_cont_frags = e.getHandle<artdaq::Fragments>(PTB_itag);
 
@@ -99,17 +100,15 @@ sbn::TriggerInfo_t sbn::SBNDBNBEXTRetriever::extractTriggerInfo(art::Event const
   triggerInfo.t_previous_event = PTBInfo.prevPTBTimeStamp;
   triggerInfo.number_of_gates_since_previous_event = PTBInfo.GateCounter;
 
-  if(triggerInfo.t_current_event - PTBInfo.currPTBTimeStamp >= 1){
-    mf::LogDebug("SBNDBNBEXTRetriever") << "Caught PTB bug, PTB late" << std::endl;
-    mf::LogDebug("SBNDBNBEXTRetriever") << "Before: " << triggerInfo.t_previous_event << std::endl;
-    triggerInfo.t_previous_event+=1;
-    mf::LogDebug("SBNDBNBEXTRetriever") << "After: " << triggerInfo.t_previous_event << std::endl;
-  }
-  else if(triggerInfo.t_current_event - PTBInfo.currPTBTimeStamp <= -1){
-    mf::LogDebug("SBNDBNBEXTRetriever") << "Caught PTB bug, PTB early" << std::endl;
-    mf::LogDebug("SBNDBNBEXTRetriever") << "Before: " << triggerInfo.t_previous_event << std::endl;
-    triggerInfo.t_previous_event-=1;
-    mf::LogDebug("SBNDBNBEXTRetriever") << "After: " << triggerInfo.t_previous_event << std::endl;
+  double PTBandCurrOffset = PTBInfo.currPTBTimeStamp - triggerInfo.t_current_event;
+
+  // Catch for an issue seen a few times where PTB off by a second.
+  // Only need to correct prevTS because either currTS is from TDC
+  // or there is no offset between currTS and PTB.
+  if(abs(PTBandCurrOffset) >= 0.5){
+    triggerInfo.t_previous_event-=PTBandCurrOffset;
+    mf::LogDebug("SBNDBNBZEROBIASRetriever") << "Offset between PTB and TDC, " << PTBandCurrOffset << std::endl;
+    mf::LogDebug("SBNDBNBZEROBIASRetriever") << "Corrected previous event TS is " << std::setprecision(19) << triggerInfo.t_previous_event << std::endl;
   }
 
   return triggerInfo;

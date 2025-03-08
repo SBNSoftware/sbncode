@@ -37,7 +37,7 @@ namespace sbn{
       return PTBInfo;
     }
     else{
-      std::cout << "Failed to find HLT 2!" << std::endl;
+      std::cout << "Failed to find HLT " << HLT << std::endl;
       throw std::exception();
     }
   }
@@ -161,10 +161,6 @@ namespace sbn{
     
     beamInfo.event = eventID.event(); // the rest of ID is known by art::SubRun
    
-    mf::LogDebug("SBNDBNBRetriever")<< "event_num: " << beamInfo.event << std::endl;
-    mf::LogDebug("SBNDBNBRetriever") << std::setprecision(19) << "spill_time: " << TOR860_time << std::endl;
-    mf::LogDebug("SBNDBNBRetriever")<< "TOR860: " << TOR860 << std::endl;
-  
     return beamInfo;
   }
 

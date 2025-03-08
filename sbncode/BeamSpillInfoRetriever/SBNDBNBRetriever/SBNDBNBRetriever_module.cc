@@ -88,11 +88,6 @@ sbn::SBNDBNBRetriever::SBNDBNBRetriever(fhicl::ParameterSet const & params)
   TotalBeamSpills = 0;
 }
 
-int eventNum =0;
-int _run;
-int _subrun;
-int _event;
-
 void sbn::SBNDBNBRetriever::produce(art::Event & e)
 {
 
@@ -147,17 +142,15 @@ sbn::TriggerInfo_t sbn::SBNDBNBRetriever::extractTriggerInfo(art::Event const& e
   triggerInfo.t_previous_event = PTBInfo.prevPTBTimeStamp - fBESOffset;
   triggerInfo.number_of_gates_since_previous_event = PTBInfo.GateCounter;
 
-  if(triggerInfo.t_current_event + fBESOffset - PTBInfo.currPTBTimeStamp >= 1){
-    mf::LogDebug("SBNDBNBRetriever") << "Caught PTB bug, PTB late" << std::endl;
-    mf::LogDebug("SBNDBNBRetriever") << "Before: " << triggerInfo.t_previous_event << std::endl;
-    triggerInfo.t_previous_event+=1;
-    mf::LogDebug("SBNDBNBRetriever") << "After: " << triggerInfo.t_previous_event << std::endl;
-  }
-  else if(triggerInfo.t_current_event + fBESOffset - PTBInfo.currPTBTimeStamp <= -1){
-    mf::LogDebug("SBNDBNBRetriever") << "Caught PTB bug, PTB early" << std::endl;
-    mf::LogDebug("SBNDBNBRetriever") << "Before: " << triggerInfo.t_previous_event << std::endl;
-    triggerInfo.t_previous_event-=1;
-    mf::LogDebug("SBNDBNBRetriever") << "After: " << triggerInfo.t_previous_event << std::endl;
+  double PTBandCurrOffset = PTBInfo.currPTBTimeStamp - triggerInfo.t_current_event - fBESOffset;
+
+  // Catch for an issue seen a few times where PTB off by a second.
+  // Only need to correct prevTS because either currTS is from TDC
+  // or there is no offset between currTS and PTB.
+  if(abs(PTBandCurrOffset) >= 0.5){
+    triggerInfo.t_previous_event-=PTBandCurrOffset;
+    mf::LogDebug("SBNDBNBZEROBIASRetriever") << "Offset between PTB and TDC, " << PTBandCurrOffset << std::endl;
+    mf::LogDebug("SBNDBNBZEROBIASRetriever") << "Corrected previous event TS is " << std::setprecision(19) << triggerInfo.t_previous_event << std::endl;
   }
 
   return triggerInfo;
