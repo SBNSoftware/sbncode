@@ -88,7 +88,7 @@ void sbn::SBNDBNBRetriever::produce(art::Event & e)
 
   int const spill_count = matchMultiWireData(e.id(), triggerInfo, MWRdata, fOutbeamInfos);
 
-  if(spill_count > int(triggerInfo.number_of_gates_since_previous_event))
+  if(spill_count != int(triggerInfo.number_of_gates_since_previous_event))
     mf::LogDebug("SBNDBNBRetriever")<< "Event Spills : " << spill_count << ", DAQ Spills : " << triggerInfo.number_of_gates_since_previous_event << " \t \t ::: WRONG!"<< std::endl;
   else
     mf::LogDebug("SBNDBNBRetriever")<< "Event Spills : " << spill_count << ", DAQ Spills : " << triggerInfo.number_of_gates_since_previous_event << std::endl;
@@ -102,15 +102,15 @@ sbn::TriggerInfo_t sbn::SBNDBNBRetriever::extractTriggerInfo(art::Event const& e
   art::InputTag TDC_itag("daq", "ContainerTDCTIMESTAMP");
   auto TDC_cont_frags = e.getHandle<artdaq::Fragments>(TDC_itag);
 
-  PTBInfo_t PTBInfo;
   TriggerInfo_t triggerInfo;
-  PTBInfo = extractPTBInfo(PTB_cont_frags, 2);
+  PTBInfo_t PTBInfo = extractPTBInfo(PTB_cont_frags, 2);
 
   if (TDC_cont_frags) {
     double TDCTimeStamp = extractTDCTimeStamp(TDC_cont_frags);
     triggerInfo.t_current_event = TDCTimeStamp - fBESOffset;
   }
   else{
+    // If missing TDC, use PTB instead
     mf::LogDebug("SBNDBNBRetriever") << " Missing TDC Container Fragments!!! " << std::endl;
     triggerInfo.t_current_event = PTBInfo.currPTBTimeStamp - fBESOffset;
   }
@@ -168,13 +168,6 @@ int sbn::SBNDBNBRetriever::matchMultiWireData(
       continue;
     }
     
-    //check if this spill is is minbias   
-    /*
-      40 ms was selected to be close to but outside the 66 ms 
-      time of the next spill (when the beam is running at 15 Hz) 
-      DocDB 33155 provides documentation of this
-    */
-
     //Great we found a matched spill! Let's count it
     spill_count++;
     //Loop through the multiwire devices:

@@ -28,7 +28,6 @@ public:
   SBNDBNBZEROBIASRetriever & operator = (SBNDBNBZEROBIASRetriever const &) = delete;
   SBNDBNBZEROBIASRetriever & operator = (SBNDBNBZEROBIASRetriever &&) = delete;
 
-
 private:
   // Declare member data here.
   double fTimePad;
@@ -69,7 +68,6 @@ sbn::SBNDBNBZEROBIASRetriever::SBNDBNBZEROBIASRetriever(fhicl::ParameterSet cons
 
 void sbn::SBNDBNBZEROBIASRetriever::produce(art::Event & e)
 {
-
   // If this is the first event in the run, then ignore it
   // We do not currently have the ability to figure out the first
   // spill that the DAQ was sensitive to, so don't try to save any
@@ -81,9 +79,7 @@ void sbn::SBNDBNBZEROBIASRetriever::produce(art::Event & e)
     return;
   }
 
-
   TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
-
 
   if (triggerInfo.t_previous_event == 0) {
     auto p =  std::make_unique< std::vector< sbn::BNBSpillInfo > >();
@@ -110,15 +106,15 @@ sbn::TriggerInfo_t sbn::SBNDBNBZEROBIASRetriever::extractTriggerInfo(art::Event 
   art::InputTag TDC_itag("daq", "ContainerTDCTIMESTAMP");
   auto TDC_cont_frags = e.getHandle<artdaq::Fragments>(TDC_itag);
 
-  PTBInfo_t PTBInfo;
   TriggerInfo_t triggerInfo;
-  PTBInfo = extractPTBInfo(PTB_cont_frags, 1);
+  PTBInfo_t PTBInfo = extractPTBInfo(PTB_cont_frags, 1);
 
   if (TDC_cont_frags) {
     double TDCTimeStamp = extractTDCTimeStamp(TDC_cont_frags);
     triggerInfo.t_current_event = TDCTimeStamp - fBESOffset;
   }
   else{
+    // If missing TDC, use PTB instead
     mf::LogDebug("SBNDBNBZEROBIASRetriever") << " Missing TDC Container Fragments!!!" << std::endl;
     triggerInfo.t_current_event = PTBInfo.currPTBTimeStamp - fBESOffset;
   }
@@ -188,20 +184,18 @@ void sbn::SBNDBNBZEROBIASRetriever::matchMultiWireData(
   }
 
   for(int dev = 0; dev < int(MWR_times.size()); dev++){
-      
     //Loop through the multiwire times:
     double Tdiff = 1000000000.;
     matched_MWR[dev] = 0;
 
     for(int mwrt = 0;  mwrt < int(MWR_times[dev].size()); mwrt++){
-
       //found a candidate match! 
       if(fabs((MWR_times[dev][mwrt] - times_temps[i])) >= Tdiff){continue;}
 	
       bool best_match = true;
 	  
-      //Check for a better match...
       for (size_t j = 0; j < times_temps.size(); j++) {
+        //Check for a better match...
         if( j == i) continue;
         if(times_temps[j] > (triggerInfo.t_current_event+fTimePad)){continue;}
 	if(times_temps[j] <= (triggerInfo.t_previous_event+fTimePad)){continue;}
@@ -223,14 +217,12 @@ void sbn::SBNDBNBZEROBIASRetriever::matchMultiWireData(
     }//end loop over MWR times 
   }//end loop over MWR devices
     
-    sbn::BNBSpillInfo spillInfo = makeBNBSpillInfo(eventID, times_temps[i], MWRdata, matched_MWR, bfp);
+  sbn::BNBSpillInfo spillInfo = makeBNBSpillInfo(eventID, times_temps[i], MWRdata, matched_MWR, bfp);
+  beamInfos.push_back(std::move(spillInfo));
 
-    beamInfos.push_back(std::move(spillInfo));
-
-    // We do not write these to the art::Events because 
-    // we can filter events but want to keep all the POT 
-    // information, so we'll write it to the SubRun
-    
+  // We do not write these to the art::Events because 
+  // we can filter events but want to keep all the POT 
+  // information, so we'll write it to the SubRun
 }
 
 void sbn::SBNDBNBZEROBIASRetriever::beginSubRun(art::SubRun& sr)
@@ -242,12 +234,9 @@ void sbn::SBNDBNBZEROBIASRetriever::endSubRun(art::SubRun& sr)
 {
   mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "Total number of DAQ Spills : " << TotalBeamSpills << std::endl;
   mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "Total number of Selected Spills : " << fOutbeamInfosTotal.size() << std::endl;
-
   auto p =  std::make_unique< std::vector< sbn::BNBSpillInfo > >();
   std::swap(*p, fOutbeamInfosTotal);
-
   sr.put(std::move(p), art::subRunFragment());
-
   return;
 }
 
