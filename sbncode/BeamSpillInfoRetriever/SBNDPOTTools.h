@@ -1,14 +1,10 @@
 #ifndef _SBNDPOTTOOLS_H
 #define _SBNDPOTTOOLS_H
 
-#include <iostream>
-#include <vector>
-
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/Handle.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "ifdh_art/IFBeamService/IFBeam_service.h"
-#include "ifbeam_c.h"
 
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
 #include "sbndaq-artdaq-core/Overlays/SBND/PTBFragment.hh"

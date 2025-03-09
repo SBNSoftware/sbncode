@@ -1,4 +1,4 @@
-#include "sbndbnbspillinfo.fcl"
+#include "sbndbnbdefaults.fcl"
 
 process_name: SBNDBNBInfoGen
 

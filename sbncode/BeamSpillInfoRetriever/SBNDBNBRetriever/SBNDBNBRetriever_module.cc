@@ -6,33 +6,9 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "art/Framework/Core/EDProducer.h"
-#include "art/Framework/Core/ModuleMacros.h"
-#include "art/Framework/Principal/Event.h"
-#include "art/Framework/Principal/Handle.h"
-#include "art/Framework/Principal/Run.h"
-#include "art/Framework/Principal/SubRun.h"
-#include "canvas/Utilities/InputTag.h"
-#include "canvas/Utilities/Exception.h"
-#include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-
-#include <cxxabi.h>
-#include <memory>
-#include <bitset>
-#include <tuple>
-#include <algorithm>
-
-#include "sbndaq-artdaq-core/Overlays/SBND/PTBFragment.hh"
-#include "sbndaq-artdaq-core/Overlays/SBND/TDCTimestampFragment.hh"
-#include "artdaq-core/Data/ContainerFragment.hh"
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
-
-#include "ifdh_art/IFBeamService/IFBeam_service.h"
-#include "ifbeam_c.h"
-#include "sbncode/BeamSpillInfoRetriever/MWRData.h"
 #include "sbncode/BeamSpillInfoRetriever/SBNDPOTTools.h"
-
-#include "larcorealg/CoreUtils/counter.h"
 
 namespace sbn {
   class SBNDBNBRetriever;

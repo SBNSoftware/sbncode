@@ -18,18 +18,11 @@ art_make_library(LIBRARIES Boost::system
 art_make_library(
     LIBRARIES
         art::Persistency_Common
-        art::Utilities canvas::canvas
-        cetlib::cetlib cetlib_except::cetlib_except
-        ROOT::X3d
+        art::Utilities 
         ifbeam::ifbeam
         ifdh_art::IFBeam_service
-        Boost::system
         messagefacility::MF_MessageLogger
-        sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
-        sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays
-        sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS
         sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_SBND
-        artdaq_core::artdaq-core_Utilities
         sbnobj::Common_POTAccounting
         sbn_MWRData
         larcorealg::CoreUtils
