@@ -3,6 +3,9 @@
 using namespace std;
 
 namespace sbn{
+
+  // Function for extracting the PTB information (current timestamp,
+  // previous timestamp, gate counter). Used in SBND modules only.
   sbn::PTBInfo_t extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags, int HLT) {
     bool foundHLT = false;
     PTBInfo_t PTBInfo;
@@ -42,6 +45,7 @@ namespace sbn{
     }
   }
 
+  // Function for extracting the TDC timestamp. Used in SBND modules only.
   double extractTDCTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) {
   
     double TDCTimeStamp = 0;
@@ -58,6 +62,8 @@ namespace sbn{
     return TDCTimeStamp;
   }
 
+  // Collect device information to make BNBSpillInfo object. Used in
+  // ICARUS and SBND modules.
   sbn::BNBSpillInfo makeBNBSpillInfo
     (art::EventID const& eventID, double time, MWRdata_t const& MWRdata, std::vector<int> const& matched_MWR, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp)
   {
@@ -86,7 +92,7 @@ namespace sbn{
     // Here we request all the devices
     // since sometimes devices fail to report we'll
     // allow each to throw an exception but still move forward
-    // interpreting these failures will be part of the beam quality analyses 
+    // interpreting these failures will be part of the beam quality analyses
   
     try{bfp->GetNamedData(time, "E:TOR860@",&TOR860,&TOR860_time);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
     try{bfp->GetNamedData(time, "E:TOR875",&TOR875);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
@@ -164,6 +170,9 @@ namespace sbn{
     return beamInfo;
   }
 
+  // Returns true if a time in IFBeam corresponds to a broken clock false if
+  // it is a real spill. Check this by seeing if all devices fire at once or
+  // if time is just a single outlier.
   bool BrokenClock(double time, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp)
   {
     double TOR860 = 0; // units e12 protons
@@ -185,7 +194,7 @@ namespace sbn{
     // Here we request all the devices
     // since sometimes devices fail to report we'll
     // allow each to throw an exception but still move forward
-    // interpreting these failures will be part of the beam quality analyses 
+    // interpreting these failures will be part of the beam quality analyses
   
     int ExceptionCounter = 0;
   
@@ -210,9 +219,9 @@ namespace sbn{
     else{
       return false;
     }
-  
   }
 
+  // extract spill times from the IFBeam data base. Used in SBND and ICARUS.
   sbn::MWRdata_t extractSpillTimes(TriggerInfo_t const& triggerInfo, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp_mwr, double fTimePad, double MWRtoroidDelay, sbn::MWRData mwrdata) {
     
     // These lines get everything primed within the IFBeamDB.
