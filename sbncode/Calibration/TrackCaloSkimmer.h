@@ -179,14 +179,19 @@ private:
     const detinfo::DetectorClocksData &dclock,
     const cheat::BackTrackerService *bt_serv,
     const detinfo::DetectorPropertiesData &dprop);
+  void FillTrackCRTHitInfo(const std::vector<art::Ptr<sbn::crt::CRTHitT0TaggingInfo>> &tag);
 
+  // helpers
   void DoTailFit();
+  bool PointIsContained(const std::vector<geo::BoxBoundedGeo> &vols, geo::Point_t p);
 
   // config
 
   // tags
   art::InputTag fPFPproducer;
-  std::vector<art::InputTag> fT0producers;
+  art::InputTag fPFPT0producer;
+  art::InputTag fCRTTrackT0producer;
+  art::InputTag fCRTHitT0producer;
   art::InputTag fCALOproducer;
   art::InputTag fTRKproducer;
   art::InputTag fTRKHMproducer;
