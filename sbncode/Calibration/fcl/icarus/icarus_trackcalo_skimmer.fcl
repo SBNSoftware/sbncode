@@ -26,7 +26,7 @@ caloskim_cryoe: {
   module_type: TrackCaloSkimmer
   CALOproducer: "caloskimCalorimetryCryoE"
   TRKproducer:  "pandoraTrackGausCryoE"
-  T0producers: ["pandoraGausCryoE"]
+  PFPT0producer: "pandoraGausCryoE"
   PFPproducer: "pandoraGausCryoE"
   G4producer: ""
   SimChannelproducer: ""
@@ -43,7 +43,7 @@ caloskim_cryow: {
   module_type: TrackCaloSkimmer
   CALOproducer: "caloskimCalorimetryCryoW"
   TRKproducer:  "pandoraTrackGausCryoW"
-  T0producers: ["pandoraGausCryoW"]
+  PFPT0producer: "pandoraGausCryoW"
   PFPproducer: "pandoraGausCryoW"
   G4producer: ""
   SimChannelproducer: ""
