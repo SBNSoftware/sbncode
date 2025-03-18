@@ -27,8 +27,8 @@ art_make_library(
         sbn_MWRData
         larcorealg::CoreUtils
 
-        LIBRARY_NAME sbn_SBNDPOTTools
-        SOURCE SBNDPOTTools.cpp
+        LIBRARY_NAME sbn_POTTools
+        SOURCE POTTools.cpp
 )
 
 install_headers()
