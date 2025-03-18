@@ -300,7 +300,7 @@ namespace caf {
           double cosgamma = std::abs(std::sin(angletovert)*dir.Y() + std::cos(angletovert)*dir.Z());
           double pitch;
           if (cosgamma) {
-            pitch = plane.View()/cosgamma;
+            pitch = plane.WirePitch()/cosgamma;
           }
           else {
             pitch = 0.;
@@ -1363,6 +1363,7 @@ caf::g4_process_ caf::GetG4ProcessID(const std::string &process_name) {
   MATCH_PROCESS(Transportation)
   MATCH_PROCESS(msc)
   MATCH_PROCESS(StepLimiter)
+  MATCH_PROCESS(RadioactiveDecayBase)
   std::cerr << "Error: Process name with no match (" << process_name << ")\n";
   assert(false);
   return caf::kG4UNKNOWN; // unreachable in debug mode

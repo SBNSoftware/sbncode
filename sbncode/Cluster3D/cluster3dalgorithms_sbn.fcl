@@ -14,12 +14,15 @@ sbn_snippethit3dbuilder:
   PHLowSelection:        8.    # If matching the above then require hits larger than this
   MinPHFor2HitPoints:    4.    # Don't consider hits less than this for 2 hit space points
   DeltaPeakTimeSig:      1.75  # "Significance" of agreement between 2 hit peak times
+  ZPosOffset:            0.00
+  MaxHitChiSquare:       6.00
   WirePitchScaleFactor:  1.9
+  SaveBadChannelPairs:   true
   SaveMythicalPoints:    true
   MaxMythicalChiSquare:  25.
   UseT0Offsets:          false
-  MaxHitChiSquare:       6.0
   OutputHistograms:      false
+  MakeAssociations:      false
 }
 
 END_PROLOG

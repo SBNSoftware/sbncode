@@ -270,7 +270,7 @@ sbn::Stub sbn::StubBuilder::FromVertexHit(const art::Ptr<recob::Slice> &slice,
 
     // See if we can compute a track pitch
     if (pfp_ind >= 0 && trks[pfp_ind]) {
-      stub.trkpitch.push_back(sbn::GetPitch(wireReadout, sce, trks[pfp_ind]->Start(), trks[pfp_ind]->StartDirection(), wireReadout.Plane(vhit_hit.WireID()).View(), geometry.TPC(vhit_hit.WireID()), true, fPositionsAreSCECorrected));
+      stub.trkpitch.push_back(sbn::GetPitch(wireReadout, sce, trks[pfp_ind]->Start(), trks[pfp_ind]->StartDirection(), wireReadout.Plane(vhit_hit.WireID()).View(), vhit_hit.WireID(), true, fPositionsAreSCECorrected));
     }
     else {
       stub.trkpitch.push_back(-1.);

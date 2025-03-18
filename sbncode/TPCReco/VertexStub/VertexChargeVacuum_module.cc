@@ -430,7 +430,7 @@ void sbn::VertexChargeVacuum::produce(art::Event& evt)
 
           // Compute the pitch. Since we have used the corrected vertex and Space-Point position, the
           // pt and dir here are space-charge corrected regardless of the input configuration
-          vhit.pitch = sbn::GetPitch(wireReadout, sce, spXYZ, dir, hit.View(), geo->TPC(hit.WireID()), fCorrectSCE, true);
+          vhit.pitch = sbn::GetPitch(wireReadout, sce, spXYZ, dir, hit.View(), hit.WireID(), fCorrectSCE, true);
 
           vhit.dqdx = vhit.charge / vhit.pitch;
 
