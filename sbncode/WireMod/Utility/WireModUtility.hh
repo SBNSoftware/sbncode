@@ -12,6 +12,7 @@
 
 //Framework includes
 #include "larcorealg/Geometry/GeometryCore.h"
+#include "larcorealg/Geometry/WireReadoutGeom.h"
 #include "lardataalg/DetectorInfo/DetectorPropertiesData.h"
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/TrackHitMeta.h"
@@ -33,6 +34,7 @@ namespace sys {
       // the notes at the end refer to their old names in the MircoBooNE code which preceded this
       // TODO: how best to initialize the splines/graphs?
       const geo::GeometryCore* geometry;                  // save the TPC geometry
+      const geo::WireReadoutGeom* wireReadout;            // new for LarSoft v10
       const detinfo::DetectorPropertiesData& detPropData; // save the detector property data
       bool   applyChannelScale;                           // do we scale with channel?
       bool   applyXScale;                                 // do we scale with X?
@@ -60,7 +62,9 @@ namespace sys {
       // assume we can get a geometry service, a detector clcok, and a detector properties
       // pass the CryoStat and TPC IDs because it's IDs all the way down
       // set some optional args fpr the booleans, the readout window, and the offset
-      WireModUtility(const geo::GeometryCore* geom, const detinfo::DetectorPropertiesData& detProp,
+      WireModUtility(const geo::GeometryCore* geom, 
+                     const geo::WireReadoutGeom* wireRead,
+                     const detinfo::DetectorPropertiesData& detProp,
                      const bool& arg_ApplyChannelScale = false, 
                      const bool& arg_ApplyXScale = true,
                      const bool& arg_ApplyYZScale = true,
@@ -69,6 +73,7 @@ namespace sys {
                      const bool& arg_ApplydEdXScale = true,
                      const double& arg_TickOffset = 0)
       : geometry(geom),
+        wireReadout(wireRead),
         detPropData(detProp),
         applyChannelScale(arg_ApplyChannelScale),
         applyXScale(arg_ApplyXScale),
@@ -141,11 +146,14 @@ namespace sys {
 
       // some useful functions
       // geometries
-      double planeXToTick(double xPos, int planeNumber, const geo::TPCGeo& tpcGeom, double offset = 0) { return detPropData.ConvertXToTicks(xPos, tpcGeom.Plane(planeNumber).ID()) + offset; }
+      // TODO is this the most efficient for new v10 iterators?
+      double planeXToTick(double xPos, const geo::PlaneGeo& plane, const geo::TPCGeo& tpcGeom, double offset = 0) {
+          return detPropData.ConvertXToTicks(xPos, plane.ID()) + offset;
+      }
 
-      bool planeXInWindow(double xPos, int planeNumber, const geo::TPCGeo& tpcGeom, double offset = 0)
+      bool planeXInWindow(double xPos, const geo::PlaneGeo& plane, const geo::TPCGeo& tpcGeom, double offset = 0)
       {
-        double tick = planeXToTick(xPos, planeNumber, tpcGeom, offset);
+        double tick = planeXToTick(xPos, plane, tpcGeom, offset);
         return (tick > 0 && tick <= detPropData.ReadOutWindowSize());
       }
       
