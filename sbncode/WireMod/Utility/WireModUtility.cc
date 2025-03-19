@@ -56,6 +56,20 @@ std::vector<std::pair<unsigned int, unsigned int>> sys::WireModUtility::GetTarge
     return target_roi_vec;
 
   // iterate over planes
+  for (auto const& plane : wireReadout->Iterate<geo::PlaneGeo>(curTPCGeomPtr->ID())) {
+    // check the wire exists in this plane
+    int wireNumber = int(0.5 + plane.WireCoordinate(shifted_edep.MidPoint()));
+    if ((wireNumber < 0) || (wireNumber >= (int)plane.Nwires()))
+      continue;
+    
+    // reconstruct the wireID from the position
+    geo::WireID edep_wireID = plane.NearestWireID(shifted_edep.MidPoint());
+ 
+    // if the deposition is inside the range where it would leave a signal on the wire, look for the ROI there
+    if (planeXInWindow(shifted_edep.X(), plane, *curTPCGeomPtr, offset + tickOffset))
+      target_roi_vec.emplace_back(wireReadout->PlaneWireToChannel(edep_wireID), std::round(planeXToTick(shifted_edep.X(), plane, *curTPCGeomPtr, offset + tickOffset)));
+  }
+  /*
   for (size_t i_p = 0; i_p < curTPCGeomPtr->Nplanes(); ++i_p)
   {
     // check the wire exists in this plane
@@ -70,6 +84,7 @@ std::vector<std::pair<unsigned int, unsigned int>> sys::WireModUtility::GetTarge
     if (planeXInWindow(shifted_edep.X(), i_p, *curTPCGeomPtr, offset + tickOffset))
       target_roi_vec.emplace_back(geometry->PlaneWireToChannel(edep_wireID), std::round(planeXToTick(shifted_edep.X(), i_p, *curTPCGeomPtr, offset + tickOffset)));
   }
+  */
 
   return target_roi_vec;
 }
@@ -251,10 +266,11 @@ std::map<sys::WireModUtility::SubROI_Key_t, std::vector<const sim::SimEnergyDepo
     // get EDep properties
     auto edep_ptr  = edepPtrVec[i_e];
     const geo::TPCGeo& curTPCGeom = geometry->PositionToTPC(edep_ptr->MidPoint());
+    const auto plane0 = wireReadout->FirstPlane(curTPCGeom.ID());
     double ticksPercm = detPropData.GetXTicksCoefficient(); // this should be by TPCID, but isn't building right now
-    double zeroTick = detPropData.ConvertXToTicks(0, curTPCGeom.Plane(0).ID());
+    double zeroTick = detPropData.ConvertXToTicks(0, plane0.ID());
     auto edep_tick = ticksPercm * edep_ptr->X() + (zeroTick + offset) + tickOffset;
-    edep_tick = detPropData.ConvertXToTicks(edep_ptr->X(), curTPCGeom.Plane(0).ID()) + offset + tickOffset;
+    edep_tick = detPropData.ConvertXToTicks(edep_ptr->X(), plane0.ID()) + offset + tickOffset;
 
     // loop over subROIs
     unsigned int closest_hit = std::numeric_limits<unsigned int>::max();
@@ -350,10 +366,9 @@ sys::WireModUtility::TruthProperties_t sys::WireModUtility::CalcPropertiesFromEd
     total_energy_all += edep_ptr->E();
 
     const geo::TPCGeo& curTPCGeom = geometry->PositionToTPC(edep_ptr->MidPoint());
-
-    for (size_t i_p = 0; i_p < 3; ++i_p)
-    {
-      auto scales = GetViewScaleValues(edep_props, curTPCGeom.Plane(i_p).View());
+    for (auto const& plane : wireReadout->Iterate<geo::PlaneGeo>(curTPCGeom.ID())) {
+      int i_p = plane.ID().Plane;
+      auto scales = GetViewScaleValues(edep_props, plane.View());
       scales_e_weighted[i_p].r_Q     += edep_ptr->E()*scales.r_Q;
       scales_e_weighted[i_p].r_sigma += edep_ptr->E()*scales.r_sigma; 
     }
@@ -436,12 +451,13 @@ sys::WireModUtility::TruthProperties_t sys::WireModUtility::CalcPropertiesFromEd
     edep_col_properties.x_rms = std::sqrt(edep_col_properties.x_rms/total_energy);
 
   const geo::TPCGeo& tpcGeom = geometry->PositionToTPC({edep_col_properties.x, edep_col_properties.y, edep_col_properties.z});
+  const auto plane0 = wireReadout->FirstPlane(tpcGeom.ID());
   double ticksPercm = detPropData.GetXTicksCoefficient(); // this should be by TPCID, but isn't building right now
-  edep_col_properties.tick              = detPropData.ConvertXToTicks(edep_col_properties.x    , tpcGeom.Plane(0).ID()) + offset + tickOffset;
+  edep_col_properties.tick              = detPropData.ConvertXToTicks(edep_col_properties.x    , plane0.ID()) + offset + tickOffset;
   edep_col_properties.tick_rms          = ticksPercm*edep_col_properties.x_rms;
   edep_col_properties.tick_rms_noWeight = ticksPercm*edep_col_properties.x_rms_noWeight;
-  edep_col_properties.tick_min          = detPropData.ConvertXToTicks(edep_col_properties.x_min, tpcGeom.Plane(0).ID()) + offset + tickOffset;
-  edep_col_properties.tick_max          = detPropData.ConvertXToTicks(edep_col_properties.x_max, tpcGeom.Plane(0).ID()) + offset + tickOffset;
+  edep_col_properties.tick_min          = detPropData.ConvertXToTicks(edep_col_properties.x_min, plane0.ID()) + offset + tickOffset;
+  edep_col_properties.tick_max          = detPropData.ConvertXToTicks(edep_col_properties.x_max, plane0.ID()) + offset + tickOffset;
   edep_col_properties.total_energy      = total_energy;
   
 
@@ -505,7 +521,8 @@ sys::WireModUtility::ScaleValues_t sys::WireModUtility::GetViewScaleValues(sys::
     return scales;
 
   // get the plane number by the view
-  size_t plane = curTPCGeomPtr->Plane(view).ID().Plane;
+  auto const& plane_obj = wireReadout->Plane(curTPCGeomPtr->ID(), view);
+  unsigned int plane = plane_obj.ID().Plane;
 
   if (applyXScale)
   {
@@ -536,8 +553,8 @@ sys::WireModUtility::ScaleValues_t sys::WireModUtility::GetViewScaleValues(sys::
         splines_Sigma_XZAngle [plane] == nullptr  )
       throw cet::exception("WireModUtility")
         << "Tried to apply XZ-angle scale factor, but could not find splines. Check that you have set those in the utility.";
-    scales.r_Q     *= splines_Charge_XZAngle[plane]->Eval(ThetaXZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, curTPCGeomPtr->Plane(plane).ThetaZ()));
-    scales.r_sigma *= splines_Sigma_XZAngle [plane]->Eval(ThetaXZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, curTPCGeomPtr->Plane(plane).ThetaZ()));
+    scales.r_Q     *= splines_Charge_XZAngle[plane]->Eval(ThetaXZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()));
+    scales.r_sigma *= splines_Sigma_XZAngle [plane]->Eval(ThetaXZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()));
   }
   if (applyYZAngleScale)
   {
@@ -545,8 +562,8 @@ sys::WireModUtility::ScaleValues_t sys::WireModUtility::GetViewScaleValues(sys::
         splines_Sigma_YZAngle [plane] == nullptr  )
       throw cet::exception("WireModUtility")
         << "Tried to apply YZ-angle scale factor, but could not find splines. Check that you have set those in the utility.";
-    scales.r_Q     *= splines_Charge_YZAngle[plane]->Eval(ThetaYZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, curTPCGeomPtr->Plane(plane).ThetaZ()));
-    scales.r_sigma *= splines_Sigma_YZAngle [plane]->Eval(ThetaYZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, curTPCGeomPtr->Plane(plane).ThetaZ()));
+    scales.r_Q     *= splines_Charge_YZAngle[plane]->Eval(ThetaYZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()));
+    scales.r_sigma *= splines_Sigma_YZAngle [plane]->Eval(ThetaYZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()));
   }
 
   if(applydEdXScale)
