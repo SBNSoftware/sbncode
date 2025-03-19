@@ -8,7 +8,7 @@
 #include "art/Framework/Core/EDProducer.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
-#include "sbncode/BeamSpillInfoRetriever/SBNDPOTTools.h"
+#include "sbncode/BeamSpillInfoRetriever/POTTools.h"
 
 namespace sbn {
   class SBNDBNBRetriever;

@@ -22,9 +22,11 @@ namespace sbn{
   } PTBInfo_t;
 
   typedef struct TriggerInfo_t {
+    int gate_type = 0; ///< Source of the spill: `1`: BNB, `2`: NuMI
     double t_current_event  = 0;
     double t_previous_event = 0;
     unsigned int number_of_gates_since_previous_event = 0;
+    std::int64_t WR_to_Spill_conversion = 0;
   } TriggerInfo_t;
   
   typedef struct MWRdata_t {

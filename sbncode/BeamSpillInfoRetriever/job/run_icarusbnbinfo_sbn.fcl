@@ -1,6 +1,6 @@
-#include "bnbspillinfo.fcl"
+#include "icarusbnbspillinfo.fcl"
 
-process_name: BNBInfoGen
+process_name: ICARUSBNBInfoGen
 
 services:{
   
@@ -28,17 +28,17 @@ source: {
 
 physics: {
  producers: {
-   bnbinfo: @local::bnbspillinfo
+   icarusbnbinfo: @local::icarusbnbspillinfo
  }
 
- simulate: [bnbinfo ]
+ simulate: [icarusbnbinfo ]
  stream1: [ out1 ]
 }
 
 outputs: {
  out1: {
    module_type: RootOutput
-   fileName: "%ifb_%tc_bnbinfo.root"
+   fileName: "%ifb_%tc_icarusbnbinfo.root"
    dataTier: "raw"
    compressionLevel: 1
  }

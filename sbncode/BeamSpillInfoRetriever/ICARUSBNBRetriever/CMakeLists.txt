@@ -1,12 +1,12 @@
 find_package(ifbeam)
 find_package(ifdh_art)
 
-cet_build_plugin(SBNDBNBRetriever art::module
+cet_build_plugin(ICARUSBNBRetriever art::module
     LIBRARIES
         sbn_POTTools
+        SQLite::SQLite3
 )
 
 install_headers()
 install_fhicl()
 install_source()
-

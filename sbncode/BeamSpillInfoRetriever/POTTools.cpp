@@ -1,4 +1,4 @@
-#include "SBNDPOTTools.h"
+#include "POTTools.h"
 
 using namespace std;
 
