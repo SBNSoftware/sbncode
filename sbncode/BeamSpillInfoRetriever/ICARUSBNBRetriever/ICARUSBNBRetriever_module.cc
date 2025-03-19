@@ -139,7 +139,7 @@ private:
   int matchMultiWireData(
     art::EventID const& eventID, 
     TriggerInfo_t const& triggerInfo,
-    MWRdata_t const& MWRdata, bool isFirstEventInRun,
+    MWRdata_t const& MWRdata,
     std::vector< sbn::BNBSpillInfo >& beamInfos
     ) const;
 
@@ -333,7 +333,7 @@ sbn::TriggerInfo_t sbn::ICARUSBNBRetriever::extractTriggerInfo(art::Event const&
 int sbn::ICARUSBNBRetriever::matchMultiWireData(
   art::EventID const& eventID,
   TriggerInfo_t const& triggerInfo,
-  MWRdata_t const& MWRdata, bool isFirstEventInRun,
+  MWRdata_t const& MWRdata,
   std::vector< sbn::BNBSpillInfo >& beamInfos
 ) const {
   
@@ -366,16 +366,14 @@ int sbn::ICARUSBNBRetriever::matchMultiWireData(
     // Only continue if these times are matched to our DAQ time
     //mf::LogDebug("ICARUSBNBRetriever") << std::setprecision(19) << "Time # : " <<  i << std::endl;
 
-    if(!isFirstEventInRun){//We already addressed the "first event" above
-      if(times_temps[i] > (triggerInfo.t_current_event)+fTimePad){
-	//mf::LogDebug("ICARUSBNBRetriever") << std::setprecision(19) << "Removed!  : " << times_temps[i] << std::endl;
-	spills_removed++; 
-	continue;} 
-      if(times_temps[i] <= (triggerInfo.t_previous_event)+fTimePad){
-	spills_removed++; 
-	//mf::LogDebug("ICARUSBNBRetriever") << std::setprecision(19) << "Removed!  : " << times_temps[i] << std::endl;
-	continue;}
-    }
+    if(times_temps[i] > (triggerInfo.t_current_event)+fTimePad){
+      //mf::LogDebug("ICARUSBNBRetriever") << std::setprecision(19) << "Removed!  : " << times_temps[i] << std::endl;
+      spills_removed++; 
+      continue;} 
+    if(times_temps[i] <= (triggerInfo.t_previous_event)+fTimePad){
+      spills_removed++; 
+      //mf::LogDebug("ICARUSBNBRetriever") << std::setprecision(19) << "Removed!  : " << times_temps[i] << std::endl;
+      continue;}
 
     //check if this spill is is minbias   
     /*
