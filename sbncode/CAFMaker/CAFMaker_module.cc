@@ -199,7 +199,8 @@ class CAFMaker : public art::EDProducer {
 
   std::string fSourceFile;
   std::uint32_t fSourceFileHash;
-
+ 
+  bool fOverrideRealData;
   bool fFirstInSubRun;
   unsigned int fIndexInFile = SRHeader::NoSourceIndex;
   bool fFirstBlindInSubRun;
@@ -401,6 +402,7 @@ class CAFMaker : public art::EDProducer {
   // Note: we will define isRealData on a per event basis in produce function [using event.isRealData()], at least for now.
 
   fCafFilename = fParams.CAFFilename();
+  fOverrideRealData = fParams.OverrideRealData();
   fFlatCafFilename = fParams.FlatCAFFilename();
 
   // Normally CAFMaker is run wit no output ART stream, so these go
@@ -847,9 +849,18 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
     std::cout << std::endl;
     abort();
   }
-
+  if ( fOverrideRealData ) {
+	// Expects a generator POT summary then...
+	if(auto pot_handle = sr.getHandle<sumdata::POTSummary>(fParams.GenLabel())){
+      		fSubRunPOT = pot_handle->totgoodpot;
+      		fTotalPOT += fSubRunPOT;
+    	}else{
+      		std::cout << "Did not find MC POT info under " << fParams.GenLabel() << std::endl;
+      		if(fParams.StrictMode()) abort();
+    	}
+  }else{
   if(bnb_spill){
-    FillExposure(*bnb_spill, fBNBInfo, fSubRunPOT);
+    		FillExposure(*bnb_spill, fBNBInfo, fSubRunPOT);
     fTotalPOT += fSubRunPOT;
 
     // Find the spill for each event and fill the event map:
@@ -908,10 +919,9 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
                 << std::endl;
       if(fParams.StrictMode()) abort();
     }
-
     // Otherwise, if one label is blank, maybe no POT was the expected result
   }
-
+ }
   std::cout << "POT: " << fSubRunPOT << std::endl;
 
   fFirstInSubRun = true;
@@ -1263,8 +1273,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   bool const firstInFile = (fIndexInFile++ == 0);
 
-  // is this event real data?
-  bool isRealData = evt.isRealData();
+  // is this event real data? -- BH: if fOverrideRealData, treat it as MC. Otherwise, get the info from the art event.
+  bool isRealData = ( fOverrideRealData ? false : evt.isRealData() );
 
   std::unique_ptr<std::vector<caf::StandardRecord>> srcol(
       new std::vector<caf::StandardRecord>);

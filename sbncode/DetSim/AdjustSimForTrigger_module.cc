@@ -22,6 +22,7 @@
 #include "lardataobj/Simulation/AuxDetSimChannel.h"
 #include "lardataobj/Simulation/BeamGateInfo.h"
 #include "lardataobj/Simulation/SimEnergyDeposit.h"
+#include "lardataobj/Simulation/SimEnergyDepositLite.h"
 #include "lardataobj/Simulation/SimPhotons.h"
 
 #include <lardata/DetectorInfoServices/DetectorClocksService.h>
@@ -49,11 +50,13 @@ private:
   art::InputTag fInitAuxDetSimChannelLabel;
   art::InputTag fInitBeamGateInfoLabel;
   art::InputTag fInitSimEnergyDepositLabel;
+  art::InputTag fInitSimEnergyDepositLiteLabel;
   art::InputTag fInitSimPhotonsLabel;
   art::InputTag fInitWaveformLabel;
   bool fShiftAuxDetIDEs;
   bool fShiftBeamGateInfo;
   bool fShiftSimEnergyDeposits;
+  bool fShiftSimEnergyDepositLites;
   bool fShiftSimPhotons;
   bool fShiftWaveforms;
   double fAdditionalOffset;
@@ -66,29 +69,33 @@ AdjustSimForTrigger::AdjustSimForTrigger(fhicl::ParameterSet const& p)
   , fInitAuxDetSimChannelLabel(p.get<art::InputTag>("InitAuxDetSimChannelLabel", "undefined"))
   , fInitBeamGateInfoLabel{p.get<art::InputTag>("InitBeamGateInfoLabel", "undefined")}
   , fInitSimEnergyDepositLabel{p.get<art::InputTag>("InitSimEnergyDepositLabel", "undefined")}
+  , fInitSimEnergyDepositLiteLabel{p.get<art::InputTag>("InitSimEnergyDepositLiteLabel", "undefined")}
   , fInitSimPhotonsLabel{p.get<art::InputTag>("InitSimPhotonsLabel", "undefined")}
   , fInitWaveformLabel(p.get<art::InputTag>("InitWaveformLabel", "undefined"))
   , fShiftAuxDetIDEs{p.get<bool>("ShiftAuxDetIDEs", false)}
   , fShiftBeamGateInfo{p.get<bool>("ShiftBeamGateInfo", false)}
   , fShiftSimEnergyDeposits{p.get<bool>("ShiftSimEnergyDeposits", false)}
+  , fShiftSimEnergyDepositLites{p.get<bool>("ShiftSimEnergyDepositLites", false)}
   , fShiftSimPhotons{p.get<bool>("ShiftSimPhotons", false)}
   , fShiftWaveforms{p.get<bool>("ShiftWaveforms", false)}
   , fAdditionalOffset{p.get<double>("AdditionalOffset", 0.)}
 {
   if (!(fShiftSimEnergyDeposits || fShiftSimPhotons || fShiftWaveforms || fShiftAuxDetIDEs ||
-        fShiftBeamGateInfo)) {
+        fShiftBeamGateInfo || fShiftSimEnergyDepositLites)) {
     throw art::Exception(art::errors::EventProcessorFailure)
       << kModuleName << ": NO SHIFTS ENABLED!\n";
   }
   mf::LogInfo(kModuleName) << std::boolalpha << "SHIFTING AUXDETIDES? " << fShiftAuxDetIDEs << '\n'
                            << "SHIFTING BEAMGATEINFO? " << fShiftBeamGateInfo << '\n'
                            << "SHIFTING SIMENERGYDEPOSITS? " << fShiftSimEnergyDeposits << '\n'
+                           << "SHIFTING SIMENERGYDEPOSITLITES? " << fShiftSimEnergyDepositLites << '\n'
                            << "SHIFTING SIMPHOTONS? " << fShiftSimPhotons << '\n'
                            << "SHIFTING OPDETWAVEFORMS? " << fShiftWaveforms;
 
   if (fShiftAuxDetIDEs) { produces<std::vector<sim::AuxDetSimChannel>>(); }
   if (fShiftBeamGateInfo) { produces<std::vector<sim::BeamGateInfo>>(); }
   if (fShiftSimEnergyDeposits) { produces<std::vector<sim::SimEnergyDeposit>>(); }
+  if (fShiftSimEnergyDepositLites) { produces<std::vector<sim::SimEnergyDepositLite>>(); }
   if (fShiftSimPhotons) { produces<std::vector<sim::SimPhotons>>(); }
   if (fShiftWaveforms) { produces<std::vector<raw::OpDetWaveform>>(); }
 }
@@ -204,6 +211,24 @@ void AdjustSimForTrigger::produce(art::Event& e)
                                                     origID));
     }
     e.put(std::move(pSimEDeps));
+  }
+  // and SimEnergyDepositLite's
+  if (fShiftSimEnergyDepositLites) {
+    auto const& simEDepLites =
+      e.getProduct<std::vector<sim::SimEnergyDepositLite>>(fInitSimEnergyDepositLiteLabel);
+
+    auto pSimEDepLites = std::make_unique<std::vector<sim::SimEnergyDepositLite>>();
+
+    for (auto const& inSimEDepLite : simEDepLites) {
+      double energy = inSimEDepLite.Energy(); 
+      geo::Point_t middlePos = inSimEDepLite.Position();
+      double middleTime = inSimEDepLite.Time() + timeShiftForTrigger_ns;
+      int ID = inSimEDepLite.TrackID();
+      
+      pSimEDepLites->emplace_back(energy, middlePos, middleTime, ID);
+    }
+
+    e.put(std::move(pSimEDepLites));
   }
 
   // Repeat for sim::SimPhotons

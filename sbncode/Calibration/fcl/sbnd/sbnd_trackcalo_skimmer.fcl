@@ -27,7 +27,7 @@ caloskim: {
   module_type: TrackCaloSkimmer
   CALOproducer: "caloskimCalorimetry"
   TRKproducer:  "pandoraTrack"
-  T0producers: ["pandora", "crttrackmatching"]
+  PFPT0producer: "pandora"
   PFPproducer: "pandora"
   G4producer: "largeant"
   SimChannelproducer: "simtpc2d:simpleSC"
