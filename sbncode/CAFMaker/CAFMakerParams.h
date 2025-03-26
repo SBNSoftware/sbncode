@@ -442,6 +442,12 @@ namespace caf
       true
     };
 
+    Atom<string> CVNLabel {
+      Name("CVNLabel"),
+      Comment("Label of CVN scores."),
+      "cvn" 
+    };
+    
   };
 }
 

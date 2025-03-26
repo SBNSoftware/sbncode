@@ -1,4 +1,3 @@
-
 #ifndef CAF_FILLRECO_H
 #define CAF_FILLRECO_H
 
@@ -9,8 +8,7 @@
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 
 // LArSoft includes
-#include "larcore/Geometry/Geometry.h"
-#include "larcorealg/Geometry/GeometryCore.h"
+#include "larcorealg/Geometry/fwd.h"
 
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Shower.h"
@@ -26,6 +24,7 @@
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "lardataobj/RecoBase/MCSFitResult.h"
+#include "larrecodnn/CVN/func/Result.h"
 #include "sbnobj/Common/Reco/Stub.h"
 #include "sbnobj/Common/Reco/RangeP.h"
 #include "sbnobj/Common/Reco/ShowerSelectionVars.h"
@@ -59,7 +58,7 @@ namespace caf
   void FillShowerVars(const recob::Shower& shower,
                       const recob::Vertex* vertex,
                       const std::vector<art::Ptr<recob::Hit>> &hits,
-                      const geo::GeometryCore *geom,
+                      const geo::WireReadoutGeom& wireReadout,
                       unsigned producer,
                       caf::SRShower& srshower,
                       bool allowEmpty = false);
@@ -165,7 +164,6 @@ namespace caf
 
   void FillPlaneChi2PID(const anab::ParticleID &particle_id, caf::SRTrkChi2PID &srpid);
   void FillTrackChi2PID(const std::vector<art::Ptr<anab::ParticleID>> particleIDs,
-                        const geo::GeometryCore *geom,
                         caf::SRTrack& srtrack,
                         bool allowEmpty = false);
 
@@ -190,7 +188,7 @@ namespace caf
   void FillTrackCalo(const std::vector<art::Ptr<anab::Calorimetry>> &calos,
                      const std::vector<art::Ptr<recob::Hit>> &hits,
                      bool fill_calo_points, float fillhit_rrstart, float fillhit_rrend,
-                     const geo::GeometryCore *geom, const detinfo::DetectorPropertiesData &dprop,
+                     const detinfo::DetectorPropertiesData &dprop,
                      caf::SRTrack& srtrack,
                      bool allowEmpty = false);
 
@@ -225,11 +223,14 @@ namespace caf
                   caf::SROpFlash &srflash,
                   bool allowEmpty = false);
   void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,
-		  caf::SRCRTPMTMatch &srmatch,
-		  bool allowEmpty = false);
+		       caf::SRCRTPMTMatch &srmatch,
+		       bool allowEmpty = false);
 
   void FillTPCPMTBarycenterMatch(const sbn::TPCPMTBarycenterMatch *matchInfo,
                            caf::SRSlice& slice);
+
+  void FillCVNScores(const lcvn::Result *cvnResult,
+                     caf::SRSlice& slice);
 
   void FillPFPRazzled(const art::Ptr<sbn::MVAPID> razzled,
                       caf::SRPFP& srpfp,

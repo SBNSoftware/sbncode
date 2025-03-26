@@ -1,6 +1,8 @@
 #include "FillTrue.h"
 
 #include "larcorealg/GeoAlgo/GeoAlgo.h"
+#include "larcorealg/Geometry/GeometryCore.h"
+#include "larcorealg/Geometry/WireReadoutGeom.h"
 #include "larevt/SpaceCharge/SpaceCharge.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "RecoUtils/RecoUtils.h"
@@ -136,7 +138,8 @@ namespace caf {
   // Assumes truth matching and calo-points are filled
   void FillTrackCaloTruth(const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> &id_to_ide_map,
                           const std::vector<simb::MCParticle> &mc_particles,
-                          const geo::GeometryCore *geo,
+                          const geo::GeometryCore& geometry,
+                          const geo::WireReadoutGeom& wireReadout,
                           const detinfo::DetectorClocksData &clockData,
                           const spacecharge::SpaceCharge *sce,
                           caf::SRTrack& srtrack) {
@@ -163,7 +166,7 @@ namespace caf {
     const std::vector<std::pair<geo::WireID, const sim::IDE*>> &match_ides = id_to_ide_map.at(srtrack.truth.p.G4ID);
     std::map<unsigned, std::vector<const sim::IDE *>> chan_2_ides;
     for (auto const &ide_pair: match_ides) {
-      chan_2_ides[geo->PlaneWireToChannel(ide_pair.first)].push_back(ide_pair.second);
+      chan_2_ides[wireReadout.PlaneWireToChannel(ide_pair.first)].push_back(ide_pair.second);
     }
 
     // pre-compute partial ranges
@@ -267,10 +270,11 @@ namespace caf {
         // directly apply the true direction. We include the effect of space charge
         // on the true pitch here
         if (closest_dist >= 0. && direction.Mag() > 1e-4) {
-          geo::PlaneID plane(srtrack.producer, p.tpc, iplane);
-          float angletovert = geo->WireAngleToVertical(geo->View(plane), plane) - 0.5*::util::pi<>();
-          TVector3 loc_mdx_v = loc_nosce_v - direction * (geo->WirePitch(geo->View(plane)) / 2.);
-          TVector3 loc_pdx_v = loc_nosce_v + direction * (geo->WirePitch(geo->View(plane)) / 2.);
+          geo::PlaneID planeid(srtrack.producer, p.tpc, iplane);
+          geo::PlaneGeo const& plane = wireReadout.Plane(planeid);
+          float angletovert = wireReadout.WireAngleToVertical(plane.View(), planeid) - 0.5*::util::pi<>();
+          TVector3 loc_mdx_v = loc_nosce_v - direction * (plane.WirePitch() / 2.);
+          TVector3 loc_pdx_v = loc_nosce_v + direction * (plane.WirePitch() / 2.);
 
           // Convert types for helper functions
           geo::Point_t loc_mdx(loc_mdx_v.X(), loc_mdx_v.Y(), loc_mdx_v.Z());
@@ -278,7 +282,7 @@ namespace caf {
 
           // Map to wires
           if (sce && sce->EnableSimSpatialSCE()) { 
-            int corr = geo->TPC(plane).DriftDir().X();
+            int corr = geometry.TPC(plane.ID()).DriftDir().X();
 
             geo::Vector_t offset_m = sce->GetPosOffsets(loc_mdx);
             offset_m.SetX(offset_m.X()*corr); // convert from drift direction to detector direction
@@ -296,7 +300,7 @@ namespace caf {
           double cosgamma = std::abs(std::sin(angletovert)*dir.Y() + std::cos(angletovert)*dir.Z());
           double pitch;
           if (cosgamma) {
-            pitch = geo->WirePitch(geo->View(plane))/cosgamma;
+            pitch = plane.WirePitch()/cosgamma;
           }
           else {
             pitch = 0.;
@@ -306,7 +310,7 @@ namespace caf {
           geo::Point_t loc_atwires_alongpitch = loc_sce + dir*pitch; 
           geo::Point_t loc_alongpitch;
           if (sce && sce->EnableSimSpatialSCE()) { 
-            geo::Vector_t offset = sce->GetCalPosOffsets(loc_atwires_alongpitch, plane.TPC);
+            geo::Vector_t offset = sce->GetCalPosOffsets(loc_atwires_alongpitch, planeid.TPC);
             loc_alongpitch = loc_atwires_alongpitch + offset;
           }
           else loc_alongpitch = loc_atwires_alongpitch;
@@ -878,13 +882,13 @@ namespace caf {
     return ret;
   }
 
-  std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels, const geo::GeometryCore &geo) {
+  std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels, const geo::WireReadoutGeom &wireReadout) {
     std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> ret;
 
     for (const art::Ptr<sim::SimChannel> sc : simchannels) {
       // Lookup the wire of this channel
       raw::ChannelID_t channel = sc->Channel();
-      std::vector<geo::WireID> maybewire = geo.ChannelToWire(channel);
+      std::vector<geo::WireID> maybewire = wireReadout.ChannelToWire(channel);
       geo::WireID thisWire; // Default constructor makes invalid wire
       if (maybewire.size()) thisWire = maybewire[0];
 
@@ -1359,6 +1363,7 @@ caf::g4_process_ caf::GetG4ProcessID(const std::string &process_name) {
   MATCH_PROCESS(Transportation)
   MATCH_PROCESS(msc)
   MATCH_PROCESS(StepLimiter)
+  MATCH_PROCESS(RadioactiveDecayBase)
   std::cerr << "Error: Process name with no match (" << process_name << ")\n";
   assert(false);
   return caf::kG4UNKNOWN; // unreachable in debug mode

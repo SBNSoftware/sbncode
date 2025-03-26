@@ -25,6 +25,7 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   caf_RecoUtils
                   lardataobj::AnalysisBase
                   lardataobj::RecoBase
+                  larrecodnn::CVN_func
                   larcorealg::Geometry
                   larcore::Geometry_Geometry_service
                   larcorealg::GeoAlgo
