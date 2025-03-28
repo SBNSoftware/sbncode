@@ -61,13 +61,13 @@ void util::FileCatalogMetadataSBN::postBeginJob()
 
   // Add metadata.
 
-  mds->addMetadata("fcl.name", fFCLName);
-  mds->addMetadata(fExperiment + "_project.name", fProjectName);
-  mds->addMetadata(fExperiment + "_project.stage", fProjectStage);
-  mds->addMetadata(fExperiment + "_project.version", fProjectVersion);
-  mds->addMetadata(fExperiment + "_project.software", fProjectSoftware);
-  mds->addMetadata("production.name", fProductionName);
-  mds->addMetadata("production.type", fProductionType);
+  if (!fFCLName.empty()) mds->addMetadata("fcl.name", fFCLName);
+  if (!fProjectName.empty()) mds->addMetadata(fExperiment + "_project.name", fProjectName);
+  if (!fProjectStage.empty()) mds->addMetadata(fExperiment + "_project.stage", fProjectStage);
+  if (!fProjectVersion.empty()) mds->addMetadata(fExperiment + "_project.version", fProjectVersion);
+  if (!fProjectSoftware.empty()) mds->addMetadata(fExperiment + "_project.software", fProjectSoftware);
+  if (!fProductionName.empty()) mds->addMetadata("production.name", fProductionName);
+  if (!fProductionType.empty()) mds->addMetadata("production.type", fProductionType);
   std::ostringstream ostr;
   if(fMerge >= 0) {
     if(fMerge > 0)
