@@ -1469,7 +1469,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
 	  int iparticle=0;
 	  genie::GHepParticle * p = 0;
-	  while( genie_rec->Particle(iparticle) != 0 ) {
+	  while( (genie_rec->Particle(iparticle) != 0) && (iparticle < 250) ) {
 	    p = genie_rec->Particle(iparticle);
 	    fGenieEvtRec_brStdHepPdg[iparticle] = p->Pdg();
 	    fGenieEvtRec_brStdHepStatus[iparticle] = (int) p->Status(); 
