@@ -41,11 +41,11 @@ private:
   std::vector< sbn::BNBSpillInfo > fOutbeamInfos;
   std::vector< sbn::BNBSpillInfo > fOutbeamInfosTotal;
 
-  TriggerInfo_t extractTriggerInfo(art::Event const& e) const;
+  sbn::pot::TriggerInfo_t extractTriggerInfo(art::Event const& e) const;
   void matchMultiWireData(
     art::EventID const& eventID, 
-    TriggerInfo_t const& triggerInfo,
-    MWRdata_t const& MWRdata,
+    sbn::pot::TriggerInfo_t const& triggerInfo,
+    sbn::pot::MWRdata_t const& MWRdata,
     std::vector< sbn::BNBSpillInfo >& beamInfos
     ) const;
   unsigned int TotalBeamSpills;
@@ -79,7 +79,7 @@ void sbn::SBNDBNBZEROBIASRetriever::produce(art::Event & e)
     return;
   }
 
-  TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
+  sbn::pot::TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
 
   if (triggerInfo.t_previous_event == 0) {
     auto p =  std::make_unique< std::vector< sbn::BNBSpillInfo > >();
@@ -89,7 +89,7 @@ void sbn::SBNDBNBZEROBIASRetriever::produce(art::Event & e)
   }
 
   TotalBeamSpills += triggerInfo.number_of_gates_since_previous_event;
-  MWRdata_t const MWRdata = extractSpillTimes(triggerInfo, bfp, bfp_mwr, fTimePad, MWRtoroidDelay, mwrdata);
+  sbn::pot::MWRdata_t const MWRdata = extractSpillTimes(triggerInfo, bfp, bfp_mwr, fTimePad, MWRtoroidDelay, mwrdata);
 
   matchMultiWireData(e.id(), triggerInfo, MWRdata, fOutbeamInfos);
   fOutbeamInfosTotal.insert(fOutbeamInfosTotal.end(),fOutbeamInfos.begin(),fOutbeamInfos.end());
@@ -98,7 +98,7 @@ void sbn::SBNDBNBZEROBIASRetriever::produce(art::Event & e)
   e.put(std::move(p));
 }
 
-sbn::TriggerInfo_t sbn::SBNDBNBZEROBIASRetriever::extractTriggerInfo(art::Event const& e) const {
+sbn::pot::TriggerInfo_t sbn::SBNDBNBZEROBIASRetriever::extractTriggerInfo(art::Event const& e) const {
   // Using TDC for current event, but PTB for previous event
   art::InputTag PTB_itag("daq", "ContainerPTB");
   auto PTB_cont_frags = e.getHandle<artdaq::Fragments>(PTB_itag);
@@ -106,11 +106,11 @@ sbn::TriggerInfo_t sbn::SBNDBNBZEROBIASRetriever::extractTriggerInfo(art::Event 
   art::InputTag TDC_itag("daq", "ContainerTDCTIMESTAMP");
   auto TDC_cont_frags = e.getHandle<artdaq::Fragments>(TDC_itag);
 
-  TriggerInfo_t triggerInfo;
-  PTBInfo_t PTBInfo = extractPTBInfo(PTB_cont_frags, 1);
+  sbn::pot::TriggerInfo_t triggerInfo;
+  sbn::pot::PTBInfo_t PTBInfo = sbn::pot::extractPTBInfo(PTB_cont_frags, 1);
 
   if (TDC_cont_frags) {
-    double TDCTimeStamp = extractTDCTimeStamp(TDC_cont_frags);
+    double TDCTimeStamp = sbn::pot::extractTDCTimeStamp(TDC_cont_frags);
     triggerInfo.t_current_event = TDCTimeStamp - fBESOffset;
   }
   else{
@@ -138,8 +138,8 @@ sbn::TriggerInfo_t sbn::SBNDBNBZEROBIASRetriever::extractTriggerInfo(art::Event 
 
 void sbn::SBNDBNBZEROBIASRetriever::matchMultiWireData(
   art::EventID const& eventID,
-  TriggerInfo_t const& triggerInfo,
-  MWRdata_t const& MWRdata,
+  sbn::pot::TriggerInfo_t const& triggerInfo,
+  sbn::pot::MWRdata_t const& MWRdata,
   std::vector< sbn::BNBSpillInfo >& beamInfos
 ) const {
   
@@ -174,7 +174,7 @@ void sbn::SBNDBNBZEROBIASRetriever::matchMultiWireData(
         spills_removed++; 
         continue;}
 
-      if(BrokenClock(times_temps[i], bfp)){
+      if(sbn::pot::BrokenClock(times_temps[i], bfp)){
         continue;
       }
 

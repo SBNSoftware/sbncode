@@ -38,7 +38,6 @@ public:
     fhicl::Atom<double> BESOffset {
       Name{ "BESOffset" },
       Comment{ "Offset between beam early warning signal and $1D [seconds]" },
-      0.036 // default
       };
    
     fhicl::Atom<std::string> RawDataLabel {
@@ -58,27 +57,27 @@ public:
     
     fhicl::Atom<std::string> Bundle {
       Name{ "Bundle" },
-      Comment{ "" } // explain what this is and which database/table it's looking for
+      Comment{ "Name of the collection of devices to grab from IFbeam for everything except MWRdevices." }
       };
     
     fhicl::Atom<double> TimeWindow {
       Name{ "TimeWindow" },
-      Comment{ "" } // explain what this is, what's for and its unit
+      Comment{ "Window of time in seconds to use for non-mwr ifbeam queries." } 
       };
     
     fhicl::Atom<std::string> MultiWireBundle {
       Name{ "MultiWireBundle" },
-      Comment{ "" } // explain what this is and which database/table it's looking for
+      Comment{ "name of collections of devices to grab from IFbeam for use as MWRdevices." }
       };
     
     fhicl::Atom<double> MWR_TimeWindow {
       Name{ "MWR_TimeWindow" },
-      Comment{ "" } // explain what this is, what's for and its unit
+      Comment{ "Window of time in seconds to use for mwr ifbeam queries." } 
       };
 
     fhicl::Atom<std::string> TriggerDatabaseFile {
       Name{ "TriggerDatabaseFile" },
-      Comment{ "" } // explain what this is, what's for and its unit
+      Comment{ "path of local database of all recorded events and their trigger, in SQLite format" } 
       };
     
 
@@ -126,7 +125,7 @@ private:
   static constexpr double MWRtoroidDelay = -0.035; ///< the same time point is measured _t_ by MWR and _t + MWRtoroidDelay`_ by the toroid [ms]
 
   /// Returns the information of the trigger in the current event.
-  TriggerInfo_t extractTriggerInfo(art::Event const& e) const;
+  sbn::pot::TriggerInfo_t extractTriggerInfo(art::Event const& e) const;
   /**
    * @brief Matches spill times with multiwire chamber data from the database.
    * @param eventID ID of the event the information is associated to
@@ -138,8 +137,8 @@ private:
    */
   int matchMultiWireData(
     art::EventID const& eventID, 
-    TriggerInfo_t const& triggerInfo,
-    MWRdata_t const& MWRdata,
+    sbn::pot::TriggerInfo_t const& triggerInfo,
+    sbn::pot::MWRdata_t const& MWRdata,
     std::vector< sbn::BNBSpillInfo >& beamInfos
     ) const;
 
@@ -264,14 +263,14 @@ void sbn::ICARUSBNBRetriever::produce(art::Event& e)
   
   run_number = e.id().run();
 
-  TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
+  sbn::pot::TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
   
   //We only want to process BNB gates, i.e. type 1 
   if(triggerInfo.gate_type != 1) return;
   // Keep track of the number of beam gates the DAQ thinks 
   //   are in this job
   TotalBeamSpills += triggerInfo.number_of_gates_since_previous_event;
-  MWRdata_t const MWRdata = extractSpillTimes(triggerInfo, bfp, bfp_mwr, fTimePad, MWRtoroidDelay, mwrdata);
+  sbn::pot::MWRdata_t const MWRdata = extractSpillTimes(triggerInfo, bfp, bfp_mwr, fTimePad, MWRtoroidDelay, mwrdata);
   
   int const spill_count = matchMultiWireData(e.id(), triggerInfo, MWRdata, fOutbeamInfos);
   
@@ -283,7 +282,7 @@ void sbn::ICARUSBNBRetriever::produce(art::Event& e)
 }//end iteration over art::Events
 
 
-sbn::TriggerInfo_t sbn::ICARUSBNBRetriever::extractTriggerInfo(art::Event const& e) const {
+sbn::pot::TriggerInfo_t sbn::ICARUSBNBRetriever::extractTriggerInfo(art::Event const& e) const {
   
   //Here we read in the artdaq Fragments and extract three pieces of information:
   // 1. The time of the current event, t_current_event
@@ -293,7 +292,7 @@ sbn::TriggerInfo_t sbn::ICARUSBNBRetriever::extractTriggerInfo(art::Event const&
   auto const & raw_data = e.getProduct< std::vector<artdaq::Fragment> >({ raw_data_label, "ICARUSTriggerV3" });
   auto const & extraTrigInfo = e.getProduct< sbn::ExtraTriggerInfo >("daqTrigger");
 
-  TriggerInfo_t triggerInfo;
+  sbn::pot::TriggerInfo_t triggerInfo;
   
   triggerInfo.WR_to_Spill_conversion = extraTrigInfo.WRtimeToTriggerTime;   
   
@@ -332,8 +331,8 @@ sbn::TriggerInfo_t sbn::ICARUSBNBRetriever::extractTriggerInfo(art::Event const&
 
 int sbn::ICARUSBNBRetriever::matchMultiWireData(
   art::EventID const& eventID,
-  TriggerInfo_t const& triggerInfo,
-  MWRdata_t const& MWRdata,
+  sbn::pot::TriggerInfo_t const& triggerInfo,
+  sbn::pot::MWRdata_t const& MWRdata,
   std::vector< sbn::BNBSpillInfo >& beamInfos
 ) const {
   
@@ -434,7 +433,7 @@ int sbn::ICARUSBNBRetriever::matchMultiWireData(
       
     }//end loop over MWR devices
     
-    sbn::BNBSpillInfo spillInfo = makeBNBSpillInfo(eventID, times_temps[i], MWRdata, matched_MWR, bfp);
+    sbn::BNBSpillInfo spillInfo = sbn::pot::makeBNBSpillInfo(eventID, times_temps[i], MWRdata, matched_MWR, bfp);
 
     beamInfos.push_back(std::move(spillInfo));
 

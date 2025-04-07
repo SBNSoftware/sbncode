@@ -2,11 +2,9 @@
 
 using namespace std;
 
-namespace sbn{
+namespace sbn::pot{
 
-  // Function for extracting the PTB information (current timestamp,
-  // previous timestamp, gate counter). Used in SBND modules only.
-  sbn::PTBInfo_t extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags, int HLT) {
+  sbn::pot::PTBInfo_t extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags, int HLT) {
     bool foundHLT = false;
     PTBInfo_t PTBInfo;
     for (auto const& cont : *cont_frags)
@@ -45,7 +43,6 @@ namespace sbn{
     }
   }
 
-  // Function for extracting the TDC timestamp. Used in SBND modules only.
   double extractTDCTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) {
   
     double TDCTimeStamp = 0;
@@ -62,8 +59,6 @@ namespace sbn{
     return TDCTimeStamp;
   }
 
-  // Collect device information to make BNBSpillInfo object. Used in
-  // ICARUS and SBND modules.
   sbn::BNBSpillInfo makeBNBSpillInfo
     (art::EventID const& eventID, double time, MWRdata_t const& MWRdata, std::vector<int> const& matched_MWR, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp)
   {
@@ -170,9 +165,6 @@ namespace sbn{
     return beamInfo;
   }
 
-  // Returns true if a time in IFBeam corresponds to a broken clock false if
-  // it is a real spill. Check this by seeing if all devices fire at once or
-  // if time is just a single outlier.
   bool BrokenClock(double time, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp)
   {
     double TOR860 = 0; // units e12 protons
@@ -221,8 +213,7 @@ namespace sbn{
     }
   }
 
-  // extract spill times from the IFBeam data base. Used in SBND and ICARUS.
-  sbn::MWRdata_t extractSpillTimes(TriggerInfo_t const& triggerInfo, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp_mwr, double fTimePad, double MWRtoroidDelay, sbn::MWRData mwrdata) {
+  sbn::pot::MWRdata_t extractSpillTimes(TriggerInfo_t const& triggerInfo, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp_mwr, double fTimePad, double MWRtoroidDelay, sbn::MWRData mwrdata) {
     
     // These lines get everything primed within the IFBeamDB.
     try{bfp->FillCache((triggerInfo.t_current_event)+fTimePad);} catch (WebAPIException &we) {};     

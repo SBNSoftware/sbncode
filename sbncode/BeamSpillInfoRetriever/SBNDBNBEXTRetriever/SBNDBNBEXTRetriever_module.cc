@@ -31,7 +31,7 @@ public:
 private:
   // Declare member data here.
   std::vector< sbn::EXTCountInfo > fOutExtInfos;
-  TriggerInfo_t extractTriggerInfo(art::Event const& e) const;
+  sbn::pot::TriggerInfo_t extractTriggerInfo(art::Event const& e) const;
   // input labels
   float TotalEXTCounts;  
 };
@@ -46,7 +46,7 @@ void sbn::SBNDBNBEXTRetriever::produce(art::Event & e)
 {
   art::InputTag PTB_itag("daq", "ContainerPTB");
   auto PTB_cont_frags = e.getHandle<artdaq::Fragments>(PTB_itag);
-  PTBInfo_t PTBInfo = extractPTBInfo(PTB_cont_frags, 4);
+  sbn::pot::PTBInfo_t PTBInfo = sbn::pot::extractPTBInfo(PTB_cont_frags, 4);
   int SingleEventGateCounter = PTBInfo.GateCounter;
  
   TotalEXTCounts += SingleEventGateCounter;
