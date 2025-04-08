@@ -1,0 +1,23 @@
+BEGIN_PROLOG
+
+# From MicroBooNE, ubsim UBOONE_SUITE_v08_00_00_69
+
+ProtonParameters: [
+  {
+    Name:       "fProtonReac"
+    Cut:        "reac"
+    Range:      [10., 2005.]
+    Nominal:    1
+    Sigma:      0.2
+  },
+
+  {
+    Name:       "fProtonElast"
+    Cut:        "elast"
+    Range:      [10.0, 2005.00]
+    Nominal:    1.0
+    Sigma:      0.2
+  }
+]
+
+END_PROLOG 
