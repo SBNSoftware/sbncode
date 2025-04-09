@@ -1,4 +1,4 @@
-art_make_library(
+art_make(
   LIBRARY_NAME sbncode_SBNEventWeight_Calculators_MultiVariateRNG
   LIB_LIBRARIES
     fhiclcpp::fhiclcpp
