@@ -343,19 +343,19 @@ namespace caf
     Atom<art::InputTag> NuGraphSliceHitLabel {
       Name("NuGraphSliceHitLabel"),
       Comment("Label of NuGraph slice hit map."),
-	art::InputTag("nuslhits")
+      "" //Empty by default, please set to e.g. art::InputTag("nuslhits")
     };
 
     Atom<art::InputTag> NuGraphFilterLabel {
       Name("NuGraphFilterLabel"),
       Comment("Label of NuGraph filter."),
-	art::InputTag("NuGraph","filter")
+      "" //Empty by default, please set to e.g. art::InputTag("NuGraph","filter")
     };
 
     Atom<art::InputTag> NuGraphSemanticLabel {
       Name("NuGraphSemanticLabel"),
       Comment("Label of NuGraph semantic."),
-	art::InputTag("NuGraph","semantic")
+      "" //Empty by default, please set to e.g. art::InputTag("NuGraph","semantic")
     };
 
     Atom<string> OpFlashLabel {

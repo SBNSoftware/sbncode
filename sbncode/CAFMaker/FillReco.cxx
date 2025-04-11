@@ -553,7 +553,7 @@ namespace caf
   {
 
     //need to double check that the slice processed by NuGraph is the same under consideration
-    std::cout << "sizes=" << inputHits.size() << " " << sliceHitsMap.size() << " " << ngFilterResult.size() << " " << ngSemanticResult.size() << std::endl;
+    //std::cout << "sizes=" << inputHits.size() << " " << sliceHitsMap.size() << " " << ngFilterResult.size() << " " << ngSemanticResult.size() << std::endl;
     unsigned int nHits = inputHits.size();
     if (nHits==0 || nHits!=sliceHitsMap.size() || inputHits[0].key()!=sliceHitsMap[0]) return;//not the same slice!
 

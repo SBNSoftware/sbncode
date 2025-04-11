@@ -1766,9 +1766,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     std::vector<art::Ptr<anab::FeatureVector<1>>> ng2_filter_vec;
     std::vector<art::Ptr<anab::FeatureVector<5>>> ng2_semantic_vec;
-    art::fill_ptr_vector(ng2_filter_vec,ng2_filter_handle[producer]);
-    art::fill_ptr_vector(ng2_semantic_vec,ng2_semantic_handle[producer]);
-    FillSliceNuGraph(slcHits,*ng2_slice_hit_map_handle[producer],ng2_filter_vec,ng2_semantic_vec,recslc);
+    if (ng2_filter_handle[producer].isValid()) {
+      art::fill_ptr_vector(ng2_filter_vec,ng2_filter_handle[producer]);
+    }
+    if (ng2_semantic_handle[producer].isValid()) {
+      art::fill_ptr_vector(ng2_semantic_vec,ng2_semantic_handle[producer]);
+    }
+    if (ng2_slice_hit_map_handle[producer].isValid()) {
+      FillSliceNuGraph(slcHits,*ng2_slice_hit_map_handle[producer],ng2_filter_vec,ng2_semantic_vec,recslc);
+    }
 
     art::FindManyP<sbn::OpT0Finder> fmOpT0 =
       FindManyPStrict<sbn::OpT0Finder>(sliceList, evt, fParams.OpT0Label() + slice_tag_suff);
@@ -2142,7 +2148,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         FillCNNScores(thisParticle, cnnScores, pfp);
       }
 
-      FillPPFNuGraph(*ng2_slice_hit_map_handle[producer], ng2_filter_vec, ng2_semantic_vec, fmPFPartHits.at(iPart), pfp);
+      if (ng2_slice_hit_map_handle[producer].isValid()) {
+	FillPPFNuGraph(*ng2_slice_hit_map_handle[producer], ng2_filter_vec, ng2_semantic_vec, fmPFPartHits.at(iPart), pfp);
+      }
 
       if (!thisTrack.empty())  { // it has a track!
         assert(thisTrack.size() == 1);
