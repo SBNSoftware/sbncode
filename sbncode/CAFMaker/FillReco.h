@@ -20,6 +20,7 @@
 #include "lardataobj/RecoBase/OpFlash.h"
 #include "lardataobj/RecoBase/OpHit.h"
 #include "lardataobj/AnalysisBase/Calorimetry.h"
+#include "lardataobj/AnalysisBase/MVAOutput.h"
 #include "lardataobj/AnalysisBase/ParticleID.h"
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
@@ -104,6 +105,12 @@ namespace caf
                            const std::vector<art::Ptr<recob::SpacePoint>> &inputPoints,
                            caf::SRSlice &slice);
 
+  void FillSliceNuGraph(const std::vector<art::Ptr<recob::Hit>> &inputHits,
+			const std::vector<unsigned int> &sliceHitsMap,
+			const std::vector<art::Ptr<anab::FeatureVector<1>>> &ngFilterResult,
+			const std::vector<art::Ptr<anab::FeatureVector<5>>> &ngSemanticResult,
+			caf::SRSlice &slice);
+
   bool SelectSlice(const caf::SRSlice &slice, bool cut_clear_cosmic);
 
   void FillTrackVars(const recob::Track& track,
@@ -129,6 +136,13 @@ namespace caf
                      const sbn::PFPCNNScore *cnnscore,
                      caf::SRPFP& srpfp,
                      bool allowEmpty = false);
+
+  void FillPPFNuGraph(const std::vector<unsigned int> &sliceHitsMap,
+		      const std::vector<art::Ptr<anab::FeatureVector<1>>> &ngFilterResult,
+		      const std::vector<art::Ptr<anab::FeatureVector<5>>> &ngSemanticResult,
+		      const std::vector<art::Ptr<recob::Hit>> &pfpHits,
+		      caf::SRPFP& srpfp,
+		      bool allowEmpty= false);
 
   void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
                        const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,

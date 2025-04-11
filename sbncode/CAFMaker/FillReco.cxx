@@ -544,6 +544,26 @@ namespace caf
     }
   }
 
+
+  void FillSliceNuGraph(const std::vector<art::Ptr<recob::Hit>> &inputHits,
+			const std::vector<unsigned int> &sliceHitsMap,
+			const std::vector<art::Ptr<anab::FeatureVector<1>>> &ngFilterResult,
+			const std::vector<art::Ptr<anab::FeatureVector<5>>> &ngSemanticResult,
+			caf::SRSlice &slice)
+  {
+
+    //need to double check that the slice processed by NuGraph is the same under consideration
+    std::cout << "sizes=" << inputHits.size() << " " << sliceHitsMap.size() << " " << ngFilterResult.size() << " " << ngSemanticResult.size() << std::endl;
+    unsigned int nHits = inputHits.size();
+    if (nHits==0 || nHits!=sliceHitsMap.size() || inputHits[0].key()!=sliceHitsMap[0]) return;//not the same slice!
+
+    unsigned int npass = 0;
+    for ( unsigned int i = 0; i < nHits; i++ ) {
+      if (ngFilterResult.at(i)->at(0)>0.5) npass++;
+    }
+    slice.ng_filt_pass_frac = float(npass)/nHits;
+  }
+
   //......................................................................
 
   void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
@@ -948,6 +968,59 @@ namespace caf
     srpfp.cnnscore.michel = cnnscore->pfpMichelScore;
     srpfp.cnnscore.endmichel = cnnscore->pfpEndMichelScore;
     srpfp.cnnscore.nclusters = cnnscore->nClusters;
+  }
+
+  void FillPPFNuGraph(const std::vector<unsigned int> &sliceHitsMap,
+		      const std::vector<art::Ptr<anab::FeatureVector<1>>> &ngFilterResult,
+		      const std::vector<art::Ptr<anab::FeatureVector<5>>> &ngSemanticResult,
+		      const std::vector<art::Ptr<recob::Hit>> &pfpHits,
+		      caf::SRPFP& srpfp,
+		      bool allowEmpty)
+  {
+
+    auto arg_max = [](std::vector<float> const& vec) {
+      return std::distance(vec.begin(), std::max_element(vec.begin(), vec.end()));
+    };
+
+    // the nugraph elements are ordered the same as the sliceHitsMap
+    std::vector<size_t> mappedhits;
+    for (auto& hit : pfpHits) {
+      auto it = std::find(sliceHitsMap.begin(), sliceHitsMap.end(), hit.key());
+      if (it != sliceHitsMap.end()) {
+	size_t index = std::distance(sliceHitsMap.begin(), it);
+	mappedhits.push_back(index);
+      }
+    }
+
+    if (mappedhits.size()>0) {
+      std::vector<float> ng2sempfpcounts(5,0);
+      size_t ng2bkgpfpcount = 0;
+      for (size_t pos : mappedhits) {
+	auto scores = ngSemanticResult.at(pos);
+	std::vector<float> ng2semscores;
+	for (size_t i=0;i<scores->size();i++) ng2semscores.push_back(scores->at(i));
+	size_t sem_label = arg_max(ng2semscores);
+	ng2sempfpcounts[sem_label]++;
+	auto bkgscore = ngFilterResult.at(pos);
+	if (bkgscore->at(0)<0.5) ng2bkgpfpcount++;
+      }
+      srpfp.ng_sem_cat = arg_max(ng2sempfpcounts);
+      srpfp.ng_mip_frac = float(ng2sempfpcounts[0])/pfpHits.size();
+      srpfp.ng_hip_frac = float(ng2sempfpcounts[1])/pfpHits.size();
+      srpfp.ng_shr_frac = float(ng2sempfpcounts[2])/pfpHits.size();
+      srpfp.ng_mhl_frac = float(ng2sempfpcounts[3])/pfpHits.size();
+      srpfp.ng_dif_frac = float(ng2sempfpcounts[4])/pfpHits.size();
+      srpfp.ng_bkg_frac = float(ng2bkgpfpcount)/pfpHits.size();
+    } else {
+      srpfp.ng_sem_cat = -1;
+      srpfp.ng_mip_frac = -1.;
+      srpfp.ng_hip_frac = -1.;
+      srpfp.ng_shr_frac = -1.;
+      srpfp.ng_mhl_frac = -1.;
+      srpfp.ng_dif_frac = -1.;
+      srpfp.ng_bkg_frac = -1.;
+    }
+
   }
 
   void FillHitVars(const recob::Hit& hit,
