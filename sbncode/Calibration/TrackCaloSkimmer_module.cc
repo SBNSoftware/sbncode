@@ -429,10 +429,12 @@ void sbn::TrackCaloSkimmer::analyze(
 
     std::cout << " " << std::endl;
     //std::cout << " simchannels.size " << simchannels.size() << " iscrttagged " << isCRTTagged << " CRTT0" << CRTT0 << std::endl;
-    if ((!simchannels.size() && !isCRTTagged)) continue;
+    if ((!simchannels.size() && !isCRTTagged)) {
+      crtt0 = -1;
+      continue; }
 
-    std::cout << "processing new track with ID = " << trkPtr->ID() << " and time = " << CRTT0 << std::endl;
-    std::cout << " " << std::endl;
+    std::cout << "processing new track with ID = " << trkPtr->ID() << " and time = " << crtt0 << std::endl;
+    std::cout << "whicht0 = " << whicht0 << std::endl;
 
     // Reset the track object
     *fTrack = sbn::TrackInfo();
@@ -463,10 +465,9 @@ void sbn::TrackCaloSkimmer::analyze(
 
     // Fill the truth information if configured
     if (simchannels.size()) FillTrackTruth(clock_data, trkHits, mcparticles, AVs, TPCVols, id_to_ide_map, id_to_truehit_map, dprop, geometry); 
-    //std::cout << " fSelectionTools.size()  "<<  fSelectionTools.size() << std::endl;
-    // Save?
     bool select = false;
     if (!fSelectionTools.size()) select = true;
+    if (!fSelectionTools.size()) std::cout << "selection tools not empty" << std::endl;
 
     // Take the OR of each selection tool
     int i_select = 0;
@@ -480,9 +481,8 @@ void sbn::TrackCaloSkimmer::analyze(
       i_select ++;
     }
     select = true;
-    // Save!
     if (select) {
-      //std::cout << "Track Selected! By tool: " << i_select << std::endl;
+      std::cout << "i_select = " << i_select << std::endl;
       fTree->Fill();
     }
   }

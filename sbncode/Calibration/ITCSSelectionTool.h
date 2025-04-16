@@ -27,19 +27,28 @@ public:
   bool DoSelect(const TrackInfo &t) {
 
     bool has_good_t0 = t.whicht0 >= 0;
+    std::cout << " t.whicht0 = " << t.whicht0 << std::endl;
+
     // Check if the T0 is allowed
     if (!fAllowT0.empty()) {
       if (t.whicht0 >= 0 && ((unsigned)t.whicht0 >= fAllowT0.size() || !fAllowT0[t.whicht0])) {
         has_good_t0 = false;
       }
     }
+    std::cout << " has_good_t0 = " << has_good_t0 
+              << " fRequireT0 = " << fRequireT0 << std::endl;
 
     if (!has_good_t0 && fRequireT0) return false;
 
     bool selected = Select(t) == !fInvert /* implement inversion */;
+    std::cout << " Select(t) = " << Select(t) 
+              << " !fInvert = " << !fInvert << std::endl;
 
     // update index
     fISelect += selected;
+    std::cout << " fISelect = " << fISelect 
+              << " fNPreScale = " << fNPreScale 
+              << " selected = " << selected << std::endl;
 
     return selected && (fISelect % fNPreScale == 0) /* implement prescale */;
   }

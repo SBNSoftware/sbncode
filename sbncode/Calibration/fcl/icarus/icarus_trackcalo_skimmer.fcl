@@ -74,7 +74,7 @@ stopping_selection: {
   NumberTimeSamples: 4096
   MediandQdxRRMax: 5.
   CheckFiducialX: true
-  RequireT0: true
+  RequireT0: false
 }
 
 stopping_selection_not0: @local::stopping_selection
