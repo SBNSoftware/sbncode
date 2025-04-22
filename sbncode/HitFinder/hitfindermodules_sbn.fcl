@@ -51,18 +51,4 @@ gauss_hitfinder:
 # Define sbn version of gaushit finder
 gausshit_sbn: @local::gauss_hitfinder
 
-# Now set parameters for the GaussHitFinderSBN
-# Note these are "default" for ICARUS and will move to a fcl file in icaruscode
-gausshit_sbn.PeakFitter.MinWidth:                                                 1
-gausshit_sbn.PeakFitter.FloatBaseline:                                            false
-gausshit_sbn.HitFinderToolVec.CandidateHitsPlane0:                                @local::candhitfinder_standard
-gausshit_sbn.HitFinderToolVec.CandidateHitsPlane0.Plane:                          0
-gausshit_sbn.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:                   9.
-gausshit_sbn.HitFinderToolVec.CandidateHitsPlane1:                                @local::candhitfinder_standard
-gausshit_sbn.HitFinderToolVec.CandidateHitsPlane1.Plane:                          1
-gausshit_sbn.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:                   9.5
-gausshit_sbn.HitFinderToolVec.CandidateHitsPlane2:                                @local::candhitfinder_standard
-gausshit_sbn.HitFinderToolVec.CandidateHitsPlane2.Plane:                          2
-gausshit_sbn.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:                   9.
-
 END_PROLOG

@@ -44,10 +44,10 @@
 #include "larcore/Geometry/WireReadout.h"
 #include "larcoreobj/SimpleTypesAndConstants/RawTypes.h" // raw::ChannelID_t
 #include "larreco/HitFinder/HitFilterAlg.h"
+#include "lardataobj/RecoBase/Hit.h"
 
 #include "sbnobj/ICARUS/TPC/ChannelROI.h"
-#include "sbnobj/Common/Utilities//HitCreator.h"
-#include "sbnobj/ICARUS/TPC/Hit.h"
+#include "sbncode/HitFinder/HitFinderUtilities/HitCreator.h"
 
 #include "larreco/HitFinder/HitFinderTools/ICandidateHitFinder.h"
 #include "larreco/HitFinder/HitFinderTools/IPeakFitter.h"
@@ -238,7 +238,7 @@ namespace hit {
 
     //store in a thread safe way
     struct hitstruct {
-      sbn::Hit hit_tbb;
+      recob::Hit hit_tbb;
       art::Ptr<recob::ChannelROI> channelROI_tbb;
     };
 
@@ -436,7 +436,7 @@ namespace hit {
               int numHits(0);
 
               // Make a container for what will be the filtered collection
-              std::vector<sbn::Hit> filteredHitVec;
+              std::vector<recob::Hit> filteredHitVec;
 
               float nextpeak(0);
               float prevpeak(0);
@@ -560,7 +560,7 @@ namespace hit {
 
                 if (filteredHitCol) filteredHitVec.push_back(hitcreator.copy());
 
-                const sbn::Hit hit(hitcreator.move());
+                const recob::Hit hit(hitcreator.move());
 
                 // This loop will store ALL hits
                 hitstruct tmp{std::move(hit), channelROI};
@@ -598,7 +598,7 @@ namespace hit {
                   // Find where the pulse heights drop below threshold
                   float threshold(fPulseRatioCuts.at(plane));
 
-                  std::vector<sbn::Hit>::iterator smallHitItr =
+                  std::vector<recob::Hit>::iterator smallHitItr =
                     std::find_if(filteredHitVec.begin(),
                                  filteredHitVec.end(),
                                  [largestPH, threshold](const auto& hit) {

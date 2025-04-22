@@ -1,3 +1,4 @@
+add_subdirectory(HitFinderUtilities)
 
 art_make_library(
 		LIBRARIES
@@ -21,6 +22,7 @@ set(		MODULE_LIBRARIES
 			larreco::RecoAlg
 			sbnobj::ICARUS_TPC
 			sbnobj::Common_Utilities
+			sbncode::HitFinder_HitFinderUtilities
       	    art::Framework_Core
 			art::Framework_Principal
 			art::Framework_Services_Registry
@@ -46,7 +48,9 @@ cet_build_plugin(GaussHitFinderSBN art::module
 				 larreco::CandidateHitFinderTool
 				 larreco::PeakFitterTool
 				)
-
+cet_build_plugin(ChannelROIToWire art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(WireToChannelROI art::module LIBRARIES ${MODULE_LIBRARIES})
+				
 
 install_headers()
 install_fhicl()
