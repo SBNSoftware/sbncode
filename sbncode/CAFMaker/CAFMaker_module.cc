@@ -1654,26 +1654,52 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   // Get all of the OpFlashes
   std::vector<caf::SROpFlash> srflashes;
+  if(fDet == kICARUS)
+  {
+    for (const std::string& pandora_tag_suffix : pandora_tag_suffixes) {
+      art::Handle<std::vector<recob::OpFlash>> flashes_handle;
+      GetByLabelStrict(evt, fParams.OpFlashLabel() + pandora_tag_suffix, flashes_handle);
+      // fill into event
+      if (flashes_handle.isValid()) {
+        const std::vector<recob::OpFlash> &opflashes = *flashes_handle;
+        int cryostat = ( pandora_tag_suffix.find("W") != std::string::npos ) ? 1 : 0;
 
-  for (const std::string& pandora_tag_suffix : pandora_tag_suffixes) {
-    art::Handle<std::vector<recob::OpFlash>> flashes_handle;
-    GetByLabelStrict(evt, fParams.OpFlashLabel() + pandora_tag_suffix, flashes_handle);
-    // fill into event
-    if (flashes_handle.isValid()) {
-      const std::vector<recob::OpFlash> &opflashes = *flashes_handle;
-      int cryostat = ( pandora_tag_suffix.find("W") != std::string::npos ) ? 1 : 0;
+        // get associated OpHits for each OpFlash
+        art::FindMany<recob::OpHit> findManyHits(flashes_handle, evt, fParams.OpFlashLabel() + pandora_tag_suffix);
 
-      // get associated OpHits for each OpFlash
-      art::FindMany<recob::OpHit> findManyHits(flashes_handle, evt, fParams.OpFlashLabel() + pandora_tag_suffix);
+        int iflash=0;
+        for (const recob::OpFlash& flash : opflashes) {
 
-      int iflash=0;
-      for (const recob::OpFlash& flash : opflashes) {
+          std::vector<recob::OpHit const*> const& ophits = findManyHits.at(iflash);
 
-        std::vector<recob::OpHit const*> const& ophits = findManyHits.at(iflash);
+          srflashes.emplace_back();
+          FillICARUSOpFlash(flash, ophits, cryostat, srflashes.back());
+          iflash++;
+        }
+      }
+    }
+  }
+  else if(fDet == kSBND)
+  {
+    std::cout << " Adding flash for SBND" << std::endl;
+    std::vector<std::string> tpc_suffixes_sbnd = {"tpc0", "tpc1"};
 
-        srflashes.emplace_back();
-        FillOpFlash(flash, ophits, cryostat, srflashes.back());
-        iflash++;
+    for (size_t tpc=0; tpc<tpc_suffixes_sbnd.size(); tpc++) {
+      std::cout << " Filling flash information for TPC " << tpc << std::endl;
+      art::Handle<std::vector<recob::OpFlash>> flashes_handle;
+      GetByLabelStrict(evt, fParams.OpFlashLabel() + tpc_suffixes_sbnd[tpc], flashes_handle);
+      // fill into event
+      if (flashes_handle.isValid()) {
+        const std::vector<recob::OpFlash> &opflashes = *flashes_handle;
+        // get associated OpHits for each OpFlash
+        art::FindMany<recob::OpHit> findManyHits(flashes_handle, evt, fParams.OpFlashLabel() + tpc_suffixes_sbnd[tpc]);
+        int iflash=0;
+        for (const recob::OpFlash& flash : opflashes) {
+          std::vector<recob::OpHit const*> const& ophits = findManyHits.at(iflash);
+          srflashes.emplace_back();
+          FillSBNDOpFlash(flash, ophits, tpc, srflashes.back());
+          iflash++;
+        }
       }
     }
   }
