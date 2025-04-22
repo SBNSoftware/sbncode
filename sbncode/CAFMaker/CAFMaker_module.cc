@@ -1681,11 +1681,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   }
   else if(fDet == kSBND)
   {
-    std::cout << " Adding flash for SBND" << std::endl;
     std::vector<std::string> tpc_suffixes_sbnd = {"tpc0", "tpc1"};
 
     for (size_t tpc=0; tpc<tpc_suffixes_sbnd.size(); tpc++) {
-      std::cout << " Filling flash information for TPC " << tpc << std::endl;
       art::Handle<std::vector<recob::OpFlash>> flashes_handle;
       GetByLabelStrict(evt, fParams.OpFlashLabel() + tpc_suffixes_sbnd[tpc], flashes_handle);
       // fill into event
