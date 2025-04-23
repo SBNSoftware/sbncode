@@ -50,6 +50,7 @@ private:
 
     std::vector<art::InputTag>  fWireModuleLabelVec;         ///< vector of modules that made digits
     std::vector<std::string>    fOutInstanceLabelVec;        ///< The output instance labels to apply
+    short int                   fMaxADCScaleFactor;          ///< Maximum scale factor to apply
     bool                        fDiagnosticOutput;           ///< secret diagnostics flag
     size_t                      fEventCount;                 ///< count of event processed
 
@@ -76,6 +77,7 @@ void WireToChannelROI::reconfigure(fhicl::ParameterSet const& pset)
     // Recover the parameters
     fWireModuleLabelVec    = pset.get<std::vector<art::InputTag>>("WireModuleLabelVec",   std::vector<art::InputTag>()={"decon1droi"});
     fOutInstanceLabelVec   = pset.get<std::vector<std::string>>  ("OutInstanceLabelVec",                            {"PHYSCRATEDATA"});
+    fMaxADCScaleFactor     = pset.get<short int                 >("MaxADCScaleFactor",                                            512);
     fDiagnosticOutput      = pset.get< bool                     >("DiagnosticOutput",                                           false);
 
     if (fWireModuleLabelVec.size() != fOutInstanceLabelVec.size()) 
@@ -102,8 +104,6 @@ void WireToChannelROI::endJob()
 //////////////////////////////////////////////////////
 void WireToChannelROI::produce(art::Event& evt)
 {
-    float ADCScaleFactor(recob::ChannelROI::defADCScaleFactor);
-
     // We need to loop through the list of Wire data we have been given
     // This construct from Gianluca Petrillo who invented it and should be given all credit for it! 
     for(auto const& [wireLabel, instanceName] : util::zip(fWireModuleLabelVec, fOutInstanceLabelVec))
@@ -126,6 +126,8 @@ void WireToChannelROI::produce(art::Event& evt)
             // Loop through the input ChannelROI collection
             for(const auto& wire : wireVec)
             {
+                short int ADCScaleFactor(recob::ChannelROI::defADCScaleFactor);
+
                 // Recover the channel and the view
                 raw::ChannelID_t channel = wire.Channel();
 
@@ -139,7 +141,7 @@ void WireToChannelROI::produce(art::Event& evt)
 
                 float maxValue = std::max(-*minMaxPair.first,*minMaxPair.second);
 
-                ADCScaleFactor = std::max(std::min(float(512.),static_cast<float>(std::numeric_limits<short>::max())/maxValue),float(8.));
+                ADCScaleFactor = std::max(short(std::round(std::min(float(fMaxADCScaleFactor),static_cast<float>(std::numeric_limits<short>::max())/maxValue))),ADCScaleFactor);
     
                 // Loop through the ROIs for this channel
                 const recob::Wire::RegionsOfInterest_t& wireROIs = wire.SignalROI();
