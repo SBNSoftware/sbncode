@@ -3,6 +3,7 @@ BEGIN_PROLOG
 simedepfilter_ind1gap: {
   module_type: "FilterSimEnergyDeposits"
   InitSimEnergyDepositLabel: "ionization"
+  InitSimEnergyDepositLiteLabel: "sedlite"
   P1_X: -400 #cm, create a box that spans the full x,y range. Not super-precise.
   P1_Y: -200 #cm, create a box that spans the full x,y range. Not super-precise.
   P1_Z: -2 #cm, one edge of the filtered gap based on the 37 mm total size of the wire gap
