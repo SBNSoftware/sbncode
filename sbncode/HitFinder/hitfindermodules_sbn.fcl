@@ -1,0 +1,54 @@
+// from larreco/RecoAlg:
+#include "hitalgorithms.fcl"
+#include "hitfindermodules.fcl"
+
+BEGIN_PROLOG
+
+# This defines a version of the Gauss Hit Finder that uses as input ChannelROIs instead of Wire
+# In principle all default parameters remain the same. 
+
+gauss_hitfinder:
+{
+    module_type:          "GaussHitFinderSBN"
+    CalDataModuleLabel:   "caldata"
+    MaxMultiHit:          5                  # maximum hits for multi gaussia fit attempt
+    AreaMethod:           0                  # 0 = area by integral, 1 = area by gaussian area formula
+    AreaNorms:            [ 1.0, 1.0, 1.0 ]  # normalizations that put signal area in
+                                             # same scale as peak height.
+    TryNplus1Fits:        false              # Don't try to refit with extra peak if bad chisq
+    LongMaxHits:          [ 25, 25, 25]      # max number hits in long pulse trains
+    LongPulseWidth:       [ 10, 10, 10]      # max widths for hits in long pulse trains
+    Chi2NDF:              500.               # maximum Chisquared / NDF allowed to store fit, if fail
+                                             # will use "long" pulse method to return hit
+    AllHitsInstanceName:  ""                 # If non-null then this will be the instance name of all hits output to event
+                                             # in this case there will be two hit collections, one filtered and one containing all hits
+
+    # Candididate peak finding done by tool, one tool instantiated per plane (but could be other divisions too)
+    HitFinderToolVec:
+    {
+        CandidateHitsPlane0:  @local::candhitfinder_standard  # plane 0
+        CandidateHitsPlane1:  @local::candhitfinder_standard  # plane 1
+        CandidateHitsPlane2:  @local::candhitfinder_standard  # plane 2
+    }
+
+    # Declare the peak fitting tool
+    PeakFitter:           @local::peakfitter_mrqdt
+
+    # The below are for the hit filtering section of the gaushit finder
+    FilterHits:           false              # true = do not keep undesired hits according to settings of HitFilterAlg object
+    HitFilterAlg:
+    {
+        AlgName: "HitFilterAlg"
+        MinPulseHeight: [5.0, 5.0, 5.0]      #minimum hit peak amplitude per plane
+        MinPulseSigma:  [1.0, 1.0, 1.0]      #minimum hit rms per plane
+    }
+                                             # In addition to the filter alg we can also filter hits on the same pulse train
+    PulseHeightCuts:      [3.0,  3.0,  3.0 ] # Minimum pulse height
+    PulseWidthCuts:       [2.0,  1.5,  1.0 ] # Minimum pulse width
+    PulseRatioCuts:       [0.35, 0.40, 0.20] # Ratio of pulse height to width
+}
+
+# Define sbn version of gaushit finder
+gausshit_sbn: @local::gauss_hitfinder
+
+END_PROLOG

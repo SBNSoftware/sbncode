@@ -1,0 +1,21 @@
+cet_make_library(
+  SOURCE
+    HitCreator.cxx
+  LIBRARIES
+    cetlib_except::cetlib_except
+    messagefacility::MF_MessageLogger
+    sbnobj::ICARUS_TPC
+    larcore::Geometry_Geometry_service
+    larcorealg::Geometry
+    lardata::ArtDataHelper
+    lardataobj::AnalysisBase
+    art::Framework_Core
+    art::Framework_Principal
+    art::Framework_Services_Registry
+    art::Persistency_Common
+    art::Persistency_Provenance
+    art::Utilities
+  )
+
+install_headers()
+install_source()
