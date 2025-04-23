@@ -97,6 +97,12 @@ public:
       true // default
     };
 
+    fhicl::Atom<bool> SkipSimChannelTrackIDs{
+      fhicl::Name{"SkipSimChannelTrackIDs"},
+      fhicl::Comment{"Skip G4 track IDs in SimChannels"},
+      false // default
+    };
+
     fhicl::Atom<bool> FillAuxDetSimChannels{
       fhicl::Name{"FillAuxDetSimChannels"},
       fhicl::Comment{"whether to merge AuxDetSimChannels"},
@@ -116,12 +122,6 @@ public:
     fhicl::Atom<bool> FillAuxDetHits{
       fhicl::Name{"FillAuxDetHits"},
       fhicl::Comment{"whether to merge aux det hit collections"},
-      false // default
-    };
-
-    fhicl::Atom<bool> SkipTrackIDOffsets {
-      fhicl::Name{"SkipTrackIDOffsets"},
-      fhicl::Comment{"whether to skip track ID offsets in merge"},
       false // default
     };
 
@@ -162,9 +162,9 @@ private:
   bool const fFillMCParticlesAssociated;
   bool const fFillSimPhotons;
   bool const fFillSimChannels;
+  bool const fSkipSimChannelTrackIDs;
   bool const fFillAuxDetSimChannels;
   bool const fFillSimEnergyDeposits;
-  bool const fSkipTrackIDOffsets;
   std::vector<std::string> const fEnergyDepositionInstances;
   bool const fFillAuxDetHits;
   std::vector<std::string> const fAuxDetHitsInstanceLabels;
@@ -205,11 +205,11 @@ sbn::MergeSimSourcesSBN::MergeSimSourcesSBN(Parameters const& params)
   , fFillMCParticlesAssociated(params().FillMCParticlesAssociated())
   , fFillSimPhotons(params().FillSimPhotons())
   , fFillSimChannels(params().FillSimChannels())
+  , fSkipSimChannelTrackIDs(params().SkipSimChannelTrackIDs())
   , fFillAuxDetSimChannels(params().FillAuxDetSimChannels())
   , fFillSimEnergyDeposits(
       getOptionalValue(params().FillSimEnergyDeposits)
         .value_or(art::ServiceHandle<sim::LArG4Parameters const>()->FillSimEnergyDeposits()))
-  , fSkipTrackIDOffsets(params().SkipTrackIDOffsets())
   , fEnergyDepositionInstances(params().EnergyDepositInstanceLabels())
   , fFillAuxDetHits(params().FillAuxDetHits())
   , fAuxDetHitsInstanceLabels(params().AuxDetHitsInstanceLabels())
@@ -357,7 +357,7 @@ void sbn::MergeSimSourcesSBN::produce(art::Event& e)
 
     if (fFillSimChannels) {
       auto const& input_scCol = e.getProduct<std::vector<sim::SimChannel>>(input_label);
-      MergeUtility.MergeSimChannels(*scCol, input_scCol, i_source, fSkipTrackIDOffsets);
+      MergeUtility.MergeSimChannels(*scCol, input_scCol, i_source, fSkipSimChannelTrackIDs);
     }
 
     if (fFillAuxDetSimChannels) {
@@ -459,6 +459,7 @@ void sbn::MergeSimSourcesSBN::dumpConfiguration() const
   if (fFillMCParticlesAssociated) log << "\n - filling MCParticlesAssociated";
 
   if (fFillSimChannels) log << "\n - filling SimChannels";
+  if (fSkipSimChannelTrackIDs) log << "\n - skipping track IDs in filling SimChannels";
 
   if (fFillAuxDetSimChannels) log << "\n - filling AuxDetSimChannels";
 
