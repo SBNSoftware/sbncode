@@ -1274,7 +1274,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   bool const firstInFile = (fIndexInFile++ == 0);
 
   // is this event real data? -- BH: if fOverrideRealData, treat it as MC. Otherwise, get the info from the art event.
-  bool isRealData = ( fOverrideRealData ? false : evt.isRealData() );
+  bool isRealData = !fOverrideRealData && evt.isRealData();
 
   std::unique_ptr<std::vector<caf::StandardRecord>> srcol(
       new std::vector<caf::StandardRecord>);
