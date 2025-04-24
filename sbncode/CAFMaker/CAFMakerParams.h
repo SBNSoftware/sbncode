@@ -275,7 +275,13 @@ namespace caf
     Atom<string> CRTHitMatchLabel {
       Name("CRTHitMatchLabel"),
       Comment("Base label of track to CRT hit matching producer."),
-      "pandoraTrackCRTHit"
+      "CRTT0Tagging"
+    };
+
+    Atom<string> CRTHitMatchInfoLabel {
+      Name("CRTHitMatchInfoLabel"),
+      Comment("Base label of additional information on track to CRT hit matching producer."),
+      "CRTT0Tagging"
     };
 
     Atom<string> CRTTrackMatchLabel {

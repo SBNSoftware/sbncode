@@ -40,6 +40,7 @@
 #include "sbnobj/SBND/CRT/CRTSpacePoint.hh"
 #include "sbnobj/SBND/CRT/CRTTrack.hh"
 #include "sbnobj/Common/CRT/CRTPMTMatching.hh"
+#include "sbnobj/Common/CRT/CRTHitT0TaggingInfo.hh"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 
@@ -132,6 +133,7 @@ namespace caf
 
   void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
                        const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,
+                       const std::vector<art::Ptr<sbn::crt::CRTHitT0TaggingInfo>> &hitmatchinfo,
                        bool use_ts0,
                        int64_t CRT_T0_reference_time, // ns, signed
                        double CRT_T1_reference_time, // us

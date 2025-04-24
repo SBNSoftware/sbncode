@@ -1926,9 +1926,21 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     // NOTE: The sbn::crt::CRTHit is associated to the T0. It's a bit awkward to
     // access that here, so we do it per-track (see code where fmCRTHitMatch is accessed below)
+   
+    // note: in the ICARUS case we do not need a slice_tag_stuff for CRTHitMatch as it is
+    // common to East and West
+    /*
     art::FindManyP<anab::T0> fmCRTHitMatch =
       FindManyPStrict<anab::T0>(slcTracks, evt,
                fParams.CRTHitMatchLabel() + slice_tag_suff);
+    */
+    art::FindManyP<anab::T0> fmCRTHitMatch =
+      FindManyPStrict<anab::T0>(slcTracks, evt,
+               fParams.CRTHitMatchLabel());
+
+    art::FindManyP<sbn::crt::CRTHitT0TaggingInfo> fmCRTHitMatchInfo =
+      FindManyPStrict<sbn::crt::CRTHitT0TaggingInfo>(slcTracks, evt,
+               fParams.CRTHitMatchInfoLabel());
 
     // TODO: also save the sbn::crt::CRTTrack in the matching so that CAFMaker has access to it
     art::FindManyP<anab::T0> fmCRTTrackMatch =
@@ -2167,14 +2179,20 @@ void CAFMaker::produce(art::Event& evt) noexcept {
               fParams.TrackHitFillRRStartCut(), fParams.TrackHitFillRREndCut(),
               dprop, trk);
         }
+        
         if (fmCRTHitMatch.isValid() && fDet == kICARUS) {
           art::FindManyP<sbn::crt::CRTHit> CRTT02Hit = FindManyPStrict<sbn::crt::CRTHit>
-              (fmCRTHitMatch.at(iPart), evt, fParams.CRTHitMatchLabel() + slice_tag_suff);
+              (fmCRTHitMatch.at(iPart), evt, fParams.CRTHitMatchLabel());
 
           std::vector<art::Ptr<sbn::crt::CRTHit>> crthitmatch;
           if (CRTT02Hit.isValid() && CRTT02Hit.size() == 1) crthitmatch = CRTT02Hit.at(0);
 
-          FillTrackCRTHit(fmCRTHitMatch.at(iPart), crthitmatch, fParams.CRTUseTS0(), CRT_T0_reference_time, CRT_T1_reference_time, trk);
+          std::vector<art::Ptr<sbn::crt::CRTHitT0TaggingInfo>> crthittagginginfo;
+          if(CRTT02Hit.isValid() && CRTT02Hit.size() == 1){
+            crthittagginginfo = fmCRTHitMatchInfo.at(iPart);
+          }
+          
+          FillTrackCRTHit(fmCRTHitMatch.at(iPart), crthitmatch, crthittagginginfo, fParams.CRTUseTS0(), CRT_T0_reference_time, CRT_T1_reference_time, trk);
         }
         // NOTE: SEE TODO AT fmCRTTrackMatch
         if (fmCRTTrackMatch.isValid() && fDet == kICARUS) {

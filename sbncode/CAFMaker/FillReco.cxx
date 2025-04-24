@@ -548,6 +548,7 @@ namespace caf
 
   void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
                        const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,
+                       const std::vector<art::Ptr<sbn::crt::CRTHitT0TaggingInfo>> &hitmatchinfo,
                        bool use_ts0,
                        int64_t CRT_T0_reference_time, // ns, signed
                        double CRT_T1_reference_time, // us
@@ -557,7 +558,16 @@ namespace caf
     if (t0match.size()) {
       assert(t0match.size() == 1);
       srtrack.crthit.distance = t0match[0]->fTriggerConfidence;
+      srtrack.crthit.region = t0match[0]->fID;
+      srtrack.crthit.sys = t0match[0]->fTriggerBits;      
+      srtrack.crthit.deltaX = hitmatchinfo[0]->DeltaX;
+      srtrack.crthit.deltaY = hitmatchinfo[0]->DeltaY;
+      srtrack.crthit.deltaZ = hitmatchinfo[0]->DeltaZ;
+      srtrack.crthit.crossX = hitmatchinfo[0]->CrossX;
+      srtrack.crthit.crossY = hitmatchinfo[0]->CrossY;
+      srtrack.crthit.crossZ = hitmatchinfo[0]->CrossZ;      
       srtrack.crthit.hit.time = t0match[0]->fTime / 1e3; /* ns -> us */
+      srtrack.crthit.hit.plane = t0match[0]->fID;
     }
     if (hitmatch.size()) {
       FillCRTHit(*hitmatch[0], use_ts0, CRT_T0_reference_time, CRT_T1_reference_time, srtrack.crthit.hit, allowEmpty);
