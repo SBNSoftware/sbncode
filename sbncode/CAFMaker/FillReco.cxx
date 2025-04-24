@@ -559,13 +559,15 @@ namespace caf
       assert(t0match.size() == 1);
       srtrack.crthit.distance = t0match[0]->fTriggerConfidence;
       srtrack.crthit.region = t0match[0]->fID;
-      srtrack.crthit.sys = t0match[0]->fTriggerBits;      
-      srtrack.crthit.deltaX = hitmatchinfo[0]->DeltaX;
-      srtrack.crthit.deltaY = hitmatchinfo[0]->DeltaY;
-      srtrack.crthit.deltaZ = hitmatchinfo[0]->DeltaZ;
-      srtrack.crthit.crossX = hitmatchinfo[0]->CrossX;
-      srtrack.crthit.crossY = hitmatchinfo[0]->CrossY;
-      srtrack.crthit.crossZ = hitmatchinfo[0]->CrossZ;      
+      srtrack.crthit.sys = t0match[0]->fTriggerBits;
+      if(hitmatchinfo.size() == 1){
+        srtrack.crthit.deltaX = hitmatchinfo[0]->DeltaX;
+        srtrack.crthit.deltaY = hitmatchinfo[0]->DeltaY;
+        srtrack.crthit.deltaZ = hitmatchinfo[0]->DeltaZ;
+        srtrack.crthit.crossX = hitmatchinfo[0]->CrossX;
+        srtrack.crthit.crossY = hitmatchinfo[0]->CrossY;
+        srtrack.crthit.crossZ = hitmatchinfo[0]->CrossZ;      
+      }
       srtrack.crthit.hit.time = t0match[0]->fTime / 1e3; /* ns -> us */
       srtrack.crthit.hit.plane = t0match[0]->fID;
     }
