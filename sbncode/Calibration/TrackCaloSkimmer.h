@@ -61,8 +61,8 @@
 #include "larsim/MCCheater/ParticleInventoryService.h"
 
 #include "sbnobj/Common/Calibration/TrackCaloSkimmerObj.h"
-#include "sbnobj/Common/CRT/CRTHitT0TaggingInfo.cc"
-#include "sbnobj/Common/CRT/CRTHitT0TaggingTruthInfo.cc"
+#include "sbnobj/Common/CRT/CRTHitT0TaggingInfo.hh"
+#include "sbnobj/Common/CRT/CRTHitT0TaggingTruthInfo.hh"
 
 #include "ITCSSelectionTool.h"
 
