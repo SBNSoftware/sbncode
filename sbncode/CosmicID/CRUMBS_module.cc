@@ -350,26 +350,28 @@ namespace sbn {
         e.getByLabel(fGeneratorModuleLabel, handleMCTruthNu);
         art::FindManyP<simb::MCParticle> truthNuMCPAssn(handleMCTruthNu,e,fMCParticleModuleLabel);
 
-        for (unsigned int i = 0; i < handleMCTruthNu->size(); ++i){
-          const art::Ptr<simb::MCTruth> mcTruth(handleMCTruthNu, i);
-          const simb::MCParticle nu = mcTruth->GetNeutrino().Nu();
+        for(unsigned int i = 0; i < handleMCTruthNu->size(); ++i)
+          {
+            const art::Ptr<simb::MCTruth> mcTruth(handleMCTruthNu, i);
+            const simb::MCParticle nu = mcTruth->GetNeutrino().Nu();
 
-          if(!fTpcGeo.InVolume(nu))
-            genTypeMap[i] = "DirtNu";
-          else
-            genTypeMap[i] = "Nu";
+            if(!fTpcGeo.InVolume(nu))
+              genTypeMap[i] = "DirtNu";
+            else
+              genTypeMap[i] = "Nu";
     
-          const std::vector<art::Ptr<simb::MCParticle> > particles = truthNuMCPAssn.at(mcTruth.key());
+            const std::vector<art::Ptr<simb::MCParticle> > particles = truthNuMCPAssn.at(mcTruth.key());
     
-          for (auto const& particle : particles)
-            {
-              trackIDToGenMap[particle->TrackId()] = i;
-            }
-          ++nNu;
+            for(auto const& particle : particles)
+              {
+                trackIDToGenMap[particle->TrackId()] = i;
+              }
 
-          genCCNCMap[i]   = mcTruth->GetNeutrino().CCNC();
-          genNuTypeMap[i] = mcTruth->GetNeutrino().Nu().PdgCode();
-        }
+            ++nNu;
+
+            genCCNCMap[i]   = mcTruth->GetNeutrino().CCNC();
+            genNuTypeMap[i] = mcTruth->GetNeutrino().Nu().PdgCode();
+          }
       }
 
     if(fProcessCosmics)
@@ -379,22 +381,24 @@ namespace sbn {
 
         art::FindManyP<simb::MCParticle> truthCosmicMCPAssn(handleMCTruthCosmic,e,fMCParticleModuleLabel);
 
-        for (unsigned int i = 0; i < handleMCTruthCosmic->size(); ++i){
-          const art::Ptr<simb::MCTruth> mcTruth(handleMCTruthCosmic, i);
+        for(unsigned int i = 0; i < handleMCTruthCosmic->size(); ++i)
+          {
+            const art::Ptr<simb::MCTruth> mcTruth(handleMCTruthCosmic, i);
 
-          genTypeMap[i + nNu] = "Cosmic";
+            genTypeMap[i + nNu] = "Cosmic";
     
-          const std::vector<art::Ptr<simb::MCParticle> > particles = truthCosmicMCPAssn.at(mcTruth.key());
+            const std::vector<art::Ptr<simb::MCParticle> > particles = truthCosmicMCPAssn.at(mcTruth.key());
     
-          for (auto const& particle : particles)
-            {
-              trackIDToGenMap[particle->TrackId()] = i + nNu;
-            }
-          ++nCos;
+            for(auto const& particle : particles)
+              {
+                trackIDToGenMap[particle->TrackId()] = i + nNu;
+              }
 
-          genCCNCMap[i + nNu]   = -1;
-          genNuTypeMap[i + nNu] = -1;
-        }
+            ++nCos;
+
+            genCCNCMap[i + nNu]   = -1;
+            genNuTypeMap[i + nNu] = -1;
+          }
       }
 
     eventID = e.event();
