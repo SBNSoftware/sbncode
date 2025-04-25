@@ -105,7 +105,7 @@ namespace sbn {
   private:
 
     // Bools to control training
-    bool fTrainingMode, fEvaluateResultInTrainingMode, fProcessNeutrinos, fProcessCosmics, fUseSimpleFlash, fUseOpT0Finder;
+    bool fTrainingMode, fEvaluateResultInTrainingMode, fProcessNeutrinos, fProcessCosmics, fUseSimpleFlash, fUseOpT0Finder, fData;
 
     // Module labels
     std::string fMCParticleModuleLabel, fGeneratorModuleLabel, fCosmicModuleLabel, fPFParticleModuleLabel, fHitModuleLabel, fTrackModuleLabel, fSliceModuleLabel, 
@@ -129,6 +129,10 @@ namespace sbn {
     int ccnc, nutype;
     std::string matchedType;
     double matchedPurity, matchedCompleteness;
+
+    // Score outputs (if output run in training mode)
+    float crumbs_score, crumbs_ccnumuscore, crumbs_ccnuescore, crumbs_ncscore, crumbs_bestscore;
+    int crumbs_bestid;
 
     // Algorithms used for calculating variables
     sbn::TrackStoppingChi2Alg fTrackStoppingChi2Alg;
@@ -174,93 +178,104 @@ namespace sbn {
 
   CRUMBS::CRUMBS(fhicl::ParameterSet const& p)
     : EDProducer{p},
-    fTrainingMode                 (p.get<bool>("TrainingMode",false)),
-    fEvaluateResultInTrainingMode (p.get<bool>("EvaluateResultInTrainingMode",false)),
-    fProcessNeutrinos             (p.get<bool>("ProcessNeutrinos",true)),
-    fProcessCosmics               (p.get<bool>("ProcessCosmics",true)),
-    fUseSimpleFlash               (p.get<bool>("UseSimpleFlash",true)),
-    fUseOpT0Finder                (p.get<bool>("UseOpT0Finder",false)),
-    fMCParticleModuleLabel        (p.get<std::string>("MCParticleModuleLabel","")),
-    fGeneratorModuleLabel         (p.get<std::string>("GeneratorModuleLabel","")),
-    fCosmicModuleLabel            (p.get<std::string>("CosmicModuleLabel","")),
-    fPFParticleModuleLabel        (p.get<std::string>("PFParticleModuleLabel")),
-    fHitModuleLabel               (p.get<std::string>("HitModuleLabel")),
-    fTrackModuleLabel             (p.get<std::string>("TrackModuleLabel")),
-    fSliceModuleLabel             (p.get<std::string>("SliceModuleLabel")),
-    fFlashMatchModuleLabel        (p.get<std::string>("FlashMatchModuleLabel")),
-    fCRTTrackMatchModuleLabel     (p.get<std::string>("CRTTrackMatchModuleLabel")),
-    fCRTSPMatchModuleLabel        (p.get<std::string>("CRTSPMatchModuleLabel")),
-    fCalorimetryModuleLabel       (p.get<std::string>("CalorimetryModuleLabel")),
-    fOpT0ModuleLabel              (p.get<std::string>("OpT0ModuleLabel")),
-    fMVAName                      (p.get<std::string>("MVAName")),
-    fMVAFileName                  (p.get<std::string>("MVAFileName")),
-    fCCNuMuMVAName                (p.get<std::string>("CCNuMuMVAName")),
-    fCCNuMuMVAFileName            (p.get<std::string>("CCNuMuMVAFileName")),
-    fCCNuEMVAName                 (p.get<std::string>("CCNuEMVAName")),
-    fCCNuEMVAFileName             (p.get<std::string>("CCNuEMVAFileName")),
-    fNCMVAName                    (p.get<std::string>("NCMVAName")),
-    fNCMVAFileName                (p.get<std::string>("NCMVAFileName")),
-    fChi2FitParams                (p.get<fhicl::ParameterSet>("Chi2FitParams")),
-    fTrackStoppingChi2Alg(fChi2FitParams)
-    {
-      if(fUseOpT0Finder && fUseSimpleFlash)
-        throw cet::exception("CRUMBS") << "Cannot use both flash matchers, please chose one...";
-      else if(!fUseOpT0Finder && !fUseSimpleFlash)
-        throw cet::exception("CRUMBS") << "Would recommend using one of the flash matchers...";
+      fTrainingMode                 (p.get<bool>("TrainingMode",false)),
+      fEvaluateResultInTrainingMode (p.get<bool>("EvaluateResultInTrainingMode",false)),
+      fProcessNeutrinos             (p.get<bool>("ProcessNeutrinos",true)),
+      fProcessCosmics               (p.get<bool>("ProcessCosmics",true)),
+      fUseSimpleFlash               (p.get<bool>("UseSimpleFlash",true)),
+      fUseOpT0Finder                (p.get<bool>("UseOpT0Finder",false)),
+      fData                         (p.get<bool>("Data",false)),
+      fMCParticleModuleLabel        (p.get<std::string>("MCParticleModuleLabel","")),
+      fGeneratorModuleLabel         (p.get<std::string>("GeneratorModuleLabel","")),
+      fCosmicModuleLabel            (p.get<std::string>("CosmicModuleLabel","")),
+      fPFParticleModuleLabel        (p.get<std::string>("PFParticleModuleLabel")),
+      fHitModuleLabel               (p.get<std::string>("HitModuleLabel")),
+      fTrackModuleLabel             (p.get<std::string>("TrackModuleLabel")),
+      fSliceModuleLabel             (p.get<std::string>("SliceModuleLabel")),
+      fFlashMatchModuleLabel        (p.get<std::string>("FlashMatchModuleLabel")),
+      fCRTTrackMatchModuleLabel     (p.get<std::string>("CRTTrackMatchModuleLabel")),
+      fCRTSPMatchModuleLabel        (p.get<std::string>("CRTSPMatchModuleLabel")),
+      fCalorimetryModuleLabel       (p.get<std::string>("CalorimetryModuleLabel")),
+      fOpT0ModuleLabel              (p.get<std::string>("OpT0ModuleLabel")),
+      fMVAName                      (p.get<std::string>("MVAName")),
+      fMVAFileName                  (p.get<std::string>("MVAFileName")),
+      fCCNuMuMVAName                (p.get<std::string>("CCNuMuMVAName")),
+      fCCNuMuMVAFileName            (p.get<std::string>("CCNuMuMVAFileName")),
+      fCCNuEMVAName                 (p.get<std::string>("CCNuEMVAName")),
+      fCCNuEMVAFileName             (p.get<std::string>("CCNuEMVAFileName")),
+      fNCMVAName                    (p.get<std::string>("NCMVAName")),
+      fNCMVAFileName                (p.get<std::string>("NCMVAFileName")),
+      fChi2FitParams                (p.get<fhicl::ParameterSet>("Chi2FitParams")),
+      fTrackStoppingChi2Alg(fChi2FitParams)
+  {
+    if(fUseOpT0Finder && fUseSimpleFlash)
+      throw cet::exception("CRUMBS") << "Cannot use both flash matchers, please chose one...";
+    else if(!fUseOpT0Finder && !fUseSimpleFlash)
+      throw cet::exception("CRUMBS") << "Would recommend using one of the flash matchers...";
 
-      if(!fTrainingMode || fEvaluateResultInTrainingMode)
-        {
-          produces<std::vector<CRUMBSResult>>();
-          produces<art::Assns<recob::Slice, CRUMBSResult>>();
+    if(!fTrainingMode || fEvaluateResultInTrainingMode)
+      {
+        produces<std::vector<CRUMBSResult>>();
+        produces<art::Assns<recob::Slice, CRUMBSResult>>();
 
-          InitialiseMVAReader(fMVAReader, fMVAName, fMVAFileName);
-          InitialiseMVAReader(fCCNuMuMVAReader, fCCNuMuMVAName, fCCNuMuMVAFileName);
-          InitialiseMVAReader(fCCNuEMVAReader, fCCNuEMVAName, fCCNuEMVAFileName);
-          InitialiseMVAReader(fNCMVAReader, fNCMVAName, fNCMVAFileName);
-        }
+        InitialiseMVAReader(fMVAReader, fMVAName, fMVAFileName);
+        InitialiseMVAReader(fCCNuMuMVAReader, fCCNuMuMVAName, fCCNuMuMVAFileName);
+        InitialiseMVAReader(fCCNuEMVAReader, fCCNuEMVAName, fCCNuEMVAFileName);
+        InitialiseMVAReader(fNCMVAReader, fNCMVAName, fNCMVAFileName);
+      }
 
-      art::ServiceHandle<art::TFileService> tfs;
-      if(fTrainingMode)
-        {
-          fSliceTree = tfs->make<TTree>("SliceTree","Slice data TTree");
+    art::ServiceHandle<art::TFileService> tfs;
+    if(fTrainingMode)
+      {
+        fSliceTree = tfs->make<TTree>("SliceTree","Slice data TTree");
 
-          fSliceTree->Branch("tpc_NuScore",&tpc_NuScore);
-          fSliceTree->Branch("tpc_CRFracHitsInLongestTrack",&tpc_CRFracHitsInLongestTrack);
-          fSliceTree->Branch("tpc_CRLongestTrackDeflection",&tpc_CRLongestTrackDeflection);
-          fSliceTree->Branch("tpc_CRLongestTrackDirY",&tpc_CRLongestTrackDirY);
-          fSliceTree->Branch("tpc_CRNHitsMax",&tpc_CRNHitsMax);
-          fSliceTree->Branch("tpc_NuEigenRatioInSphere",&tpc_NuEigenRatioInSphere);
-          fSliceTree->Branch("tpc_NuNFinalStatePfos",&tpc_NuNFinalStatePfos);
-          fSliceTree->Branch("tpc_NuNHitsTotal",&tpc_NuNHitsTotal);
-          fSliceTree->Branch("tpc_NuNSpacePointsInSphere",&tpc_NuNSpacePointsInSphere);
-          fSliceTree->Branch("tpc_NuVertexY",&tpc_NuVertexY);
-          fSliceTree->Branch("tpc_NuWeightedDirZ",&tpc_NuWeightedDirZ);
-          fSliceTree->Branch("tpc_StoppingChi2CosmicRatio",&tpc_StoppingChi2CosmicRatio);
+        fSliceTree->Branch("tpc_NuScore",&tpc_NuScore);
+        fSliceTree->Branch("tpc_CRFracHitsInLongestTrack",&tpc_CRFracHitsInLongestTrack);
+        fSliceTree->Branch("tpc_CRLongestTrackDeflection",&tpc_CRLongestTrackDeflection);
+        fSliceTree->Branch("tpc_CRLongestTrackDirY",&tpc_CRLongestTrackDirY);
+        fSliceTree->Branch("tpc_CRNHitsMax",&tpc_CRNHitsMax);
+        fSliceTree->Branch("tpc_NuEigenRatioInSphere",&tpc_NuEigenRatioInSphere);
+        fSliceTree->Branch("tpc_NuNFinalStatePfos",&tpc_NuNFinalStatePfos);
+        fSliceTree->Branch("tpc_NuNHitsTotal",&tpc_NuNHitsTotal);
+        fSliceTree->Branch("tpc_NuNSpacePointsInSphere",&tpc_NuNSpacePointsInSphere);
+        fSliceTree->Branch("tpc_NuVertexY",&tpc_NuVertexY);
+        fSliceTree->Branch("tpc_NuWeightedDirZ",&tpc_NuWeightedDirZ);
+        fSliceTree->Branch("tpc_StoppingChi2CosmicRatio",&tpc_StoppingChi2CosmicRatio);
 
-          fSliceTree->Branch("pds_FMTotalScore",&pds_FMTotalScore);
-          fSliceTree->Branch("pds_FMPE",&pds_FMPE);
-          fSliceTree->Branch("pds_FMTime",&pds_FMTime);
+        fSliceTree->Branch("pds_FMTotalScore",&pds_FMTotalScore);
+        fSliceTree->Branch("pds_FMPE",&pds_FMPE);
+        fSliceTree->Branch("pds_FMTime",&pds_FMTime);
 
-          fSliceTree->Branch("pds_OpT0Score",&pds_OpT0Score);
-          fSliceTree->Branch("pds_OpT0MeasuredPE",&pds_OpT0MeasuredPE);
+        fSliceTree->Branch("pds_OpT0Score",&pds_OpT0Score);
+        fSliceTree->Branch("pds_OpT0MeasuredPE",&pds_OpT0MeasuredPE);
 
-          fSliceTree->Branch("crt_TrackScore",&crt_TrackScore);
-          fSliceTree->Branch("crt_SPScore",&crt_SPScore);
-          fSliceTree->Branch("crt_TrackTime",&crt_TrackTime);
-          fSliceTree->Branch("crt_SPTime",&crt_SPTime);
+        fSliceTree->Branch("crt_TrackScore",&crt_TrackScore);
+        fSliceTree->Branch("crt_SPScore",&crt_SPScore);
+        fSliceTree->Branch("crt_TrackTime",&crt_TrackTime);
+        fSliceTree->Branch("crt_SPTime",&crt_SPTime);
 
-          fSliceTree->Branch("eventID",&eventID);
-          fSliceTree->Branch("subRunID",&subRunID);
-          fSliceTree->Branch("runID",&runID);
-          fSliceTree->Branch("sliceID",&sliceID);
-          fSliceTree->Branch("slicePDG",&slicePDG);
-          fSliceTree->Branch("matchedType",&matchedType);
-          fSliceTree->Branch("matchedPurity",&matchedPurity);
-          fSliceTree->Branch("matchedCompleteness",&matchedCompleteness);
-          fSliceTree->Branch("ccnc",&ccnc);
-          fSliceTree->Branch("nutype",&nutype);
-        }
-    }
+        fSliceTree->Branch("eventID",&eventID);
+        fSliceTree->Branch("subRunID",&subRunID);
+        fSliceTree->Branch("runID",&runID);
+        fSliceTree->Branch("sliceID",&sliceID);
+        fSliceTree->Branch("slicePDG",&slicePDG);
+        fSliceTree->Branch("matchedType",&matchedType);
+        fSliceTree->Branch("matchedPurity",&matchedPurity);
+        fSliceTree->Branch("matchedCompleteness",&matchedCompleteness);
+        fSliceTree->Branch("ccnc",&ccnc);
+        fSliceTree->Branch("nutype",&nutype);
+
+        if(fEvaluateResultInTrainingMode)
+          {
+            fSliceTree->Branch("crumbs_score", &crumbs_score);
+            fSliceTree->Branch("crumbs_ccnumuscore", &crumbs_ccnumuscore);
+            fSliceTree->Branch("crumbs_ccnuescore", &crumbs_ccnuescore);
+            fSliceTree->Branch("crumbs_ncscore", &crumbs_ncscore);
+            fSliceTree->Branch("crumbs_bestscore", &crumbs_bestscore);
+            fSliceTree->Branch("crumbs_bestid", &crumbs_bestid);
+          }
+      }
+  }
 
   void CRUMBS::InitialiseMVAReader(TMVA::Reader &mvaReader, std::string &mvaName, std::string &mvaFileName)
   {
@@ -318,6 +333,9 @@ namespace sbn {
     matchedType = "";
     matchedPurity = -999999.; matchedCompleteness = -999999.;
     ccnc = 999999; nutype = 999999;
+
+    crumbs_score = -999999.; crumbs_ccnumuscore = -999999.; crumbs_ccnuescore = -999999.; crumbs_ncscore = -999999;
+    crumbs_bestscore = -999999.; crumbs_bestid = -1;
   }
 
   void CRUMBS::GetMaps(art::Event const& e, std::map<int, int> &trackIDToGenMap, std::map<int, std::string> &genTypeMap, 
@@ -425,13 +443,8 @@ namespace sbn {
         if(primary->PdgCode() == 13 || primary->PdgCode() == 11)
           continue;
 
+        // TPC Variables
         const std::vector<art::Ptr<larpandoraobj::PFParticleMetadata> > pfpMetaVec = pfpMetadataAssoc.at(primary.key());
-        const std::vector<art::Ptr<sbn::SimpleFlashMatch> > pfpFMVec = pfpFMAssoc.at(primary.key());
-        std::vector<art::Ptr<sbn::OpT0Finder> > sliceOpT0Vec = sliceOpT0Assoc.at(slice.key());
-        const std::vector<anab::T0> sliceCRTTrackT0s = this->GetCRTTrackT0s(e, slice, handlePFPs, handleSlices);
-        const std::vector<anab::T0> sliceCRTSPT0s = this->GetCRTSPT0s(e, slice, handlePFPs, handleSlices);
-
-        this->FillCRTVars(sliceCRTTrackT0s, sliceCRTSPT0s);
 
         const art::Ptr<larpandoraobj::PFParticleMetadata> pfpMeta = pfpMetaVec.front();
         std::map<std::string, float> propertiesMap = pfpMeta->GetPropertiesMap();
@@ -439,22 +452,40 @@ namespace sbn {
         this->FillPandoraNuScoreVars(propertiesMap);
 
         tpc_StoppingChi2CosmicRatio = this->GetLongestTrackStoppingChi2Ratio(e, slice, handlePFPs, handleSlices);
-    
-        const art::Ptr<sbn::SimpleFlashMatch> flashmatch = pfpFMVec.front();
-        pds_FMTotalScore = flashmatch->score.total;
-        pds_FMPE = flashmatch->light.pe;
-        pds_FMTime = std::max(flashmatch->time, -100.);
 
-        if(sliceOpT0Vec.size() > 0)
+        // PDS Variables
+        if(pfpFMAssoc.isValid())
           {
-            std::sort(sliceOpT0Vec.begin(), sliceOpT0Vec.end(),
-                      [](auto const& a, auto const& b)
-                      { return a->score > b->score; });
+            const std::vector<art::Ptr<sbn::SimpleFlashMatch> > pfpFMVec = pfpFMAssoc.at(primary.key());
 
-            pds_OpT0Score        = sliceOpT0Vec[0]->score;
-            pds_OpT0MeasuredPE   = isinf(sliceOpT0Vec[0]->measPE) ? -10000 : sliceOpT0Vec[0]->measPE;
+            const art::Ptr<sbn::SimpleFlashMatch> flashmatch = pfpFMVec.front();
+            pds_FMTotalScore = flashmatch->score.total;
+            pds_FMPE = flashmatch->light.pe;
+            pds_FMTime = std::max(flashmatch->time, -100.);
           }
 
+        if(sliceOpT0Assoc.isValid())
+          {
+            std::vector<art::Ptr<sbn::OpT0Finder> > sliceOpT0Vec = sliceOpT0Assoc.at(slice.key());
+
+            if(sliceOpT0Vec.size() > 0)
+              {
+                std::sort(sliceOpT0Vec.begin(), sliceOpT0Vec.end(),
+                          [](auto const& a, auto const& b)
+                          { return a->score > b->score; });
+
+                pds_OpT0Score        = sliceOpT0Vec[0]->score;
+                pds_OpT0MeasuredPE   = isinf(sliceOpT0Vec[0]->measPE) ? -10000 : sliceOpT0Vec[0]->measPE;
+              }
+          }
+
+        // CRT Variables
+        const std::vector<anab::T0> sliceCRTTrackT0s = this->GetCRTTrackT0s(e, slice, handlePFPs, handleSlices);
+        const std::vector<anab::T0> sliceCRTSPT0s = this->GetCRTSPT0s(e, slice, handlePFPs, handleSlices);
+
+        this->FillCRTVars(sliceCRTTrackT0s, sliceCRTSPT0s);
+
+        // Evaluation
         if(!fTrainingMode || fEvaluateResultInTrainingMode)
           {
             const float score       = fMVAReader.EvaluateMVA(fMVAName);
@@ -464,6 +495,16 @@ namespace sbn {
 
             const float bestscore   = (ccnumuscore > ccnuescore && ccnumuscore > ncscore) ? ccnumuscore : (ccnuescore > ncscore) ? ccnuescore : ncscore;
             const int   bestid      = (ccnumuscore > ccnuescore && ccnumuscore > ncscore) ? 14 : (ccnuescore > ncscore) ? 12 : 1;
+
+            if(!fTrainingMode || fEvaluateResultInTrainingMode)
+              {
+                crumbs_score       = score;
+                crumbs_ccnumuscore = ccnumuscore;
+                crumbs_ccnuescore  = ccnuescore;
+                crumbs_ncscore     = ncscore;
+                crumbs_bestscore   = bestscore;
+                crumbs_bestid      = bestid;
+              }
 
             if(fUseSimpleFlash)
               resultsVec->emplace_back(score, ccnumuscore, ccnuescore, ncscore, bestscore, bestid, tpc_CRFracHitsInLongestTrack, tpc_CRLongestTrackDeflection,
@@ -481,21 +522,27 @@ namespace sbn {
             util::CreateAssn(*this, e, *resultsVec, slice, *sliceAssns);
           }
 
+        // Tree Creation
         if(fTrainingMode)
           {
-            std::vector<art::Ptr<recob::Hit> > sliceHits = this->GetAllSliceHits(e, slice, handleSlices);
-
-            int matchedID(-1);
-            this->GetTruthMatching(e, sliceHits, allHits, trackIDToGenMap, matchedID, matchedPurity, matchedCompleteness);
-
-            sliceID = slice.key();
+            sliceID  = slice.key();
             slicePDG = primary->PdgCode();
-            matchedType = genTypeMap[matchedID];
-      
-            ccnc   = genCCNCMap[matchedID];
-            nutype = genNuTypeMap[matchedID];
 
-            fSliceTree->Fill();
+            if(fData)
+              fSliceTree->Fill();
+            else
+              {
+                std::vector<art::Ptr<recob::Hit> > sliceHits = this->GetAllSliceHits(e, slice, handleSlices);
+
+                int matchedID(-1);
+                this->GetTruthMatching(e, sliceHits, allHits, trackIDToGenMap, matchedID, matchedPurity, matchedCompleteness);
+
+                matchedType = genTypeMap[matchedID];
+                ccnc        = genCCNCMap[matchedID];
+                nutype      = genNuTypeMap[matchedID];
+
+                fSliceTree->Fill();
+              }
           }
       }
 
