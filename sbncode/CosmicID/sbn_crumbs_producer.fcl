@@ -4,20 +4,21 @@ crumbs_sbnd:
 {
   module_type:     "CRUMBS"
 
-  MCParticleModuleLabel:		"largeant"
-  GeneratorModuleLabel:			"generator"
-  CosmicModuleLabel:			"corsika"
+  MCParticleModuleLabel:                "largeant"
+  GeneratorModuleLabel:                 "generator"
+  CosmicModuleLabel:                    "corsika"
 
-  PFParticleModuleLabel:		"pandora"
-  HitModuleLabel:			"gaushit"
-  TrackModuleLabel:			"pandoraTrack"
-  SliceModuleLabel:			"pandora"
-  FlashMatchModuleLabel:		"fmatch"
-  CRTTrackMatchModuleLabel:		"crttrackmatching"
-  CRTSPMatchModuleLabel:		"crtspacepointmatching"
-  CalorimetryModuleLabel:		"pandoraCalo"
-  OpT0ModuleLabel:			"opt0finder"
-  
+  PFParticleModuleLabel:                "pandora"
+  HitModuleLabel:                       "gaushit"
+  TrackModuleLabel:                     "pandoraTrack"
+  SliceModuleLabel:                     "pandora"
+  FlashMatchModuleLabel:                "fmatch"
+  CRTTrackMatchModuleLabel:             "crttrackmatching"
+  CRTSPMatchModuleLabel:                "crtspacepointmatching"
+  CalorimetryModuleLabel:               "pandoraCalo"
+  OpT0ModuleLabel:                      "opt0finder"
+  PMTBarycenterMatchModuleLabel:        "tpcpmtbarycentermatching"
+
   MVAName:                              "BDT"
   MVAFileName:                          "CRUMBS/CRUMBS_SBND.weights.xml"
   CCNuMuMVAName:                        "BDT"
@@ -26,7 +27,7 @@ crumbs_sbnd:
   CCNuEMVAFileName:                     "CRUMBS/CRUMBS_CCNuE_SBND.weights.xml"
   NCMVAName:                            "BDT"
   NCMVAFileName:                        "CRUMBS/CRUMBS_NC_SBND.weights.xml"
-    
+
   UseSimpleFlash: false
   UseOpT0Finder:  true
 

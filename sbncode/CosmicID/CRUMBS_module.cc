@@ -40,6 +40,7 @@
 #include "sbnobj/Common/Reco/SimpleFlashMatchVars.h"
 #include "sbnobj/Common/Reco/StoppingChi2Fit.h"
 #include "sbnobj/Common/Reco/OpT0FinderResult.h"
+#include "sbnobj/Common/Reco/TPCPMTBarycenterMatch.h"
 #include "sbncode/LArRecoProducer/TrackStoppingChi2Alg.h"
 #include "sbnobj/SBND/CRT/CRTTrack.hh"
 #include "sbnobj/SBND/CRT/CRTSpacePoint.hh"
@@ -111,7 +112,7 @@ namespace sbn {
 
     // Module labels
     std::string fMCParticleModuleLabel, fGeneratorModuleLabel, fCosmicModuleLabel, fPFParticleModuleLabel, fHitModuleLabel, fTrackModuleLabel, fSliceModuleLabel, 
-      fFlashMatchModuleLabel, fCRTTrackMatchModuleLabel, fCRTSPMatchModuleLabel, fCalorimetryModuleLabel, fOpT0ModuleLabel;
+      fFlashMatchModuleLabel, fCRTTrackMatchModuleLabel, fCRTSPMatchModuleLabel, fCalorimetryModuleLabel, fOpT0ModuleLabel, fPMTBarycenterMatchModuleLabel;
 
     // MVA location and type for loading
     std::string fMVAName, fMVAFileName, fCCNuMuMVAName, fCCNuMuMVAFileName, fCCNuEMVAName, fCCNuEMVAFileName, fNCMVAName, fNCMVAFileName;
@@ -170,6 +171,11 @@ namespace sbn {
     float pds_OpT0Score;                  // the goodness-of-match score
     float pds_OpT0MeasuredPE;             // the measured PE in the flash
 
+    // TPCPMTBarycenterMatch Variables
+    float pds_PMTBarycenterMatchRadius;   // the radial (YZ) distance between the flash and charge centers
+    float pds_PMTBarycenterMatchPE;       // the total number of photoelectrons in the matched flash
+    float pds_PMTBarycenterMatchTime;     // the time of the matched flash
+
     // CRT Track and Hit Matching Variables
     float crt_TrackScore;                // a combination of the DCA and angle between the best matched TPC & CRT tracks
     float crt_SPScore;                   // the best distance from an extrapolated TPC track to a CRT SP [cm]
@@ -180,35 +186,36 @@ namespace sbn {
 
   CRUMBS::CRUMBS(fhicl::ParameterSet const& p)
     : EDProducer{p},
-      fTrainingMode                 (p.get<bool>("TrainingMode",false)),
-      fEvaluateResultInTrainingMode (p.get<bool>("EvaluateResultInTrainingMode",false)),
-      fProcessNeutrinos             (p.get<bool>("ProcessNeutrinos",true)),
-      fProcessCosmics               (p.get<bool>("ProcessCosmics",true)),
-      fUseSimpleFlash               (p.get<bool>("UseSimpleFlash",true)),
-      fUseOpT0Finder                (p.get<bool>("UseOpT0Finder",false)),
-      fData                         (p.get<bool>("Data",false)),
-      fMCParticleModuleLabel        (p.get<std::string>("MCParticleModuleLabel","")),
-      fGeneratorModuleLabel         (p.get<std::string>("GeneratorModuleLabel","")),
-      fCosmicModuleLabel            (p.get<std::string>("CosmicModuleLabel","")),
-      fPFParticleModuleLabel        (p.get<std::string>("PFParticleModuleLabel")),
-      fHitModuleLabel               (p.get<std::string>("HitModuleLabel")),
-      fTrackModuleLabel             (p.get<std::string>("TrackModuleLabel")),
-      fSliceModuleLabel             (p.get<std::string>("SliceModuleLabel")),
-      fFlashMatchModuleLabel        (p.get<std::string>("FlashMatchModuleLabel")),
-      fCRTTrackMatchModuleLabel     (p.get<std::string>("CRTTrackMatchModuleLabel")),
-      fCRTSPMatchModuleLabel        (p.get<std::string>("CRTSPMatchModuleLabel")),
-      fCalorimetryModuleLabel       (p.get<std::string>("CalorimetryModuleLabel")),
-      fOpT0ModuleLabel              (p.get<std::string>("OpT0ModuleLabel")),
-      fMVAName                      (p.get<std::string>("MVAName")),
-      fMVAFileName                  (p.get<std::string>("MVAFileName")),
-      fCCNuMuMVAName                (p.get<std::string>("CCNuMuMVAName")),
-      fCCNuMuMVAFileName            (p.get<std::string>("CCNuMuMVAFileName")),
-      fCCNuEMVAName                 (p.get<std::string>("CCNuEMVAName")),
-      fCCNuEMVAFileName             (p.get<std::string>("CCNuEMVAFileName")),
-      fNCMVAName                    (p.get<std::string>("NCMVAName")),
-      fNCMVAFileName                (p.get<std::string>("NCMVAFileName")),
-      fChi2FitParams                (p.get<fhicl::ParameterSet>("Chi2FitParams")),
-      fTrackStoppingChi2Alg(fChi2FitParams)
+      fTrainingMode                  (p.get<bool>("TrainingMode",false)),
+      fEvaluateResultInTrainingMode  (p.get<bool>("EvaluateResultInTrainingMode",false)),
+      fProcessNeutrinos              (p.get<bool>("ProcessNeutrinos",true)),
+      fProcessCosmics                (p.get<bool>("ProcessCosmics",true)),
+      fUseSimpleFlash                (p.get<bool>("UseSimpleFlash",true)),
+      fUseOpT0Finder                 (p.get<bool>("UseOpT0Finder",false)),
+      fData                          (p.get<bool>("Data",false)),
+      fMCParticleModuleLabel         (p.get<std::string>("MCParticleModuleLabel","")),
+      fGeneratorModuleLabel          (p.get<std::string>("GeneratorModuleLabel","")),
+      fCosmicModuleLabel             (p.get<std::string>("CosmicModuleLabel","")),
+      fPFParticleModuleLabel         (p.get<std::string>("PFParticleModuleLabel")),
+      fHitModuleLabel                (p.get<std::string>("HitModuleLabel")),
+      fTrackModuleLabel              (p.get<std::string>("TrackModuleLabel")),
+      fSliceModuleLabel              (p.get<std::string>("SliceModuleLabel")),
+      fFlashMatchModuleLabel         (p.get<std::string>("FlashMatchModuleLabel")),
+      fCRTTrackMatchModuleLabel      (p.get<std::string>("CRTTrackMatchModuleLabel")),
+      fCRTSPMatchModuleLabel         (p.get<std::string>("CRTSPMatchModuleLabel")),
+      fCalorimetryModuleLabel        (p.get<std::string>("CalorimetryModuleLabel")),
+      fOpT0ModuleLabel               (p.get<std::string>("OpT0ModuleLabel")),
+      fPMTBarycenterMatchModuleLabel (p.get<std::string>("PMTBarycenterMatchModuleLabel")),
+      fMVAName                       (p.get<std::string>("MVAName")),
+      fMVAFileName                   (p.get<std::string>("MVAFileName")),
+      fCCNuMuMVAName                 (p.get<std::string>("CCNuMuMVAName")),
+      fCCNuMuMVAFileName             (p.get<std::string>("CCNuMuMVAFileName")),
+      fCCNuEMVAName                  (p.get<std::string>("CCNuEMVAName")),
+      fCCNuEMVAFileName              (p.get<std::string>("CCNuEMVAFileName")),
+      fNCMVAName                     (p.get<std::string>("NCMVAName")),
+      fNCMVAFileName                 (p.get<std::string>("NCMVAFileName")),
+      fChi2FitParams                 (p.get<fhicl::ParameterSet>("Chi2FitParams")),
+      fTrackStoppingChi2Alg          (fChi2FitParams)
   {
     if(fUseOpT0Finder && fUseSimpleFlash)
       throw cet::exception("CRUMBS") << "Cannot use both flash matchers, please chose one...";
@@ -250,6 +257,10 @@ namespace sbn {
 
         fSliceTree->Branch("pds_OpT0Score",&pds_OpT0Score);
         fSliceTree->Branch("pds_OpT0MeasuredPE",&pds_OpT0MeasuredPE);
+
+        fSliceTree->Branch("pds_PMTBarycenterMatchRadius",&pds_PMTBarycenterMatchRadius);
+        fSliceTree->Branch("pds_PMTBarycenterMatchPE",&pds_PMTBarycenterMatchPE);
+        fSliceTree->Branch("pds_PMTBarycenterMatchTime",&pds_PMTBarycenterMatchTime);
 
         fSliceTree->Branch("crt_TrackScore",&crt_TrackScore);
         fSliceTree->Branch("crt_SPScore",&crt_SPScore);
@@ -329,6 +340,8 @@ namespace sbn {
 
     pds_OpT0Score = -5000.; pds_OpT0MeasuredPE = -10000.;
 
+    pds_PMTBarycenterMatchRadius = -100.; pds_PMTBarycenterMatchPE = -5000.; pds_PMTBarycenterMatchTime = -500.;
+
     crt_TrackScore = -4.; crt_SPScore = -4.; crt_TrackTime = -3000; crt_SPTime = -3000;
 
     sliceID = 999999; slicePDG = 999999;
@@ -360,9 +373,9 @@ namespace sbn {
             if(!VolumeCheck(nu_pos, 0, -10, 0, 0))
               genTypeMap[i] = "DirtNu";
             else if(!VolumeCheck(nu_pos, 20, 5, 10, 50))
-	      genTypeMap[i] = "OutFVNu";
-	    else
-	      genTypeMap[i] = "Nu";
+              genTypeMap[i] = "OutFVNu";
+            else
+              genTypeMap[i] = "Nu";
     
             const std::vector<art::Ptr<simb::MCParticle> > particles = truthNuMCPAssn.at(mcTruth.key());
     
@@ -438,6 +451,7 @@ namespace sbn {
     art::FindManyP<larpandoraobj::PFParticleMetadata> pfpMetadataAssoc(handlePFPs, e, fPFParticleModuleLabel);
     art::FindManyP<sbn::SimpleFlashMatch> pfpFMAssoc(handlePFPs, e, fFlashMatchModuleLabel);
     art::FindManyP<sbn::OpT0Finder> sliceOpT0Assoc(handleSlices, e, fOpT0ModuleLabel);
+    art::FindOneP<sbn::TPCPMTBarycenterMatch> slicePMTBarycenterMatchAssoc(handleSlices, e, fPMTBarycenterMatchModuleLabel);
 
     for(auto const &slice : slices)
       {
@@ -485,6 +499,15 @@ namespace sbn {
                 pds_OpT0Score        = sliceOpT0Vec[0]->score;
                 pds_OpT0MeasuredPE   = isinf(sliceOpT0Vec[0]->measPE) ? -10000 : sliceOpT0Vec[0]->measPE;
               }
+          }
+
+        if(slicePMTBarycenterMatchAssoc.isValid())
+          {
+            const art::Ptr<sbn::TPCPMTBarycenterMatch> pmtBarycenterMatch = slicePMTBarycenterMatchAssoc.at(slice.key());
+
+            pds_PMTBarycenterMatchRadius = pmtBarycenterMatch->radius;
+            pds_PMTBarycenterMatchPE     = pmtBarycenterMatch->flashPEs;
+            pds_PMTBarycenterMatchTime   = pmtBarycenterMatch->flashTime;
           }
 
         // CRT Variables
