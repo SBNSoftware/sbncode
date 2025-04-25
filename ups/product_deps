@@ -254,13 +254,12 @@ libdir	fq_dir		lib
 product			version		qual	flags		<table_format=2>
 genie_xsec		v3_04_00	-
 larcv2			v2_2_6		-
-larsoft			v10_04_04	-
-sbnanaobj		v10_00_00	-
-sbndaq_artdaq_core	v1_10_04	-
+larsoft			v10_05_00	-
+sbnalg		        v10_04_08	-
+sbndaq_artdaq_core	v1_10_06	-
 sbndata			v01_07		-
-sbnobj			v10_00_05	-
 systematicstools	v01_04_04	-
-nusystematics		v1_05_04	-
+nusystematics		v1_05_07	-
 cetmodules		v3_24_01	-	only_for_build
 end_product_list
 ####################################
@@ -317,11 +316,11 @@ end_product_list
 #
 ####################################
 
-qualifier	larsoft		sbnobj		sbnanaobj	sbndaq_artdaq_core  genie_xsec              sbndata  larcv2           systematicstools  nusystematics     notes
-c14:debug	c14:debug	c14:debug	c14:debug	c14:s131:debug     AR2320i00000:e1000:k250  -nq-     c14:debug:p3915  c14:debug	        c14:debug	    -nq-
-c14:prof	c14:prof	c14:prof	c14:prof	c14:s131:prof      AR2320i00000:e1000:k250  -nq-     c14:p3915:prof   c14:prof          c14:prof	    -nq-
-e26:debug	e26:debug	e26:debug	e26:debug	e26:s131:debug     AR2320i00000:e1000:k250  -nq-     debug:e26:p3915  e26:debug	        e26:debug	    -nq-
-e26:prof	e26:prof	e26:prof	e26:prof	e26:s131:prof      AR2320i00000:e1000:k250  -nq-     e26:p3915:prof   e26:prof	        e26:prof	    -nq-
+qualifier	larsoft		sbnalg		sbndaq_artdaq_core  genie_xsec              sbndata  larcv2           systematicstools  nusystematics     notes
+c14:debug	c14:debug	c14:debug	c14:s131:debug     AR2320i00000:e1000:k250  -nq-     c14:debug:p3915  c14:debug	        c14:debug	    -nq-
+c14:prof	c14:prof	c14:prof	c14:s131:prof      AR2320i00000:e1000:k250  -nq-     c14:p3915:prof   c14:prof          c14:prof	    -nq-
+e26:debug	e26:debug	e26:debug	e26:s131:debug     AR2320i00000:e1000:k250  -nq-     debug:e26:p3915  e26:debug	        e26:debug	    -nq-
+e26:prof	e26:prof	e26:prof	e26:s131:prof      AR2320i00000:e1000:k250  -nq-     e26:p3915:prof   e26:prof	        e26:prof	    -nq-
 end_qualifier_list
 ####################################
 
