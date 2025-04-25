@@ -102,6 +102,8 @@ namespace sbn {
 
     int SliceTruthId(std::map<int, float> &purities);
 
+    bool VolumeCheck(const TVector3 &pos, const double &walls = 0., const double &cath = 0., const double &front = 0., const double &back = 0.);
+
   private:
 
     // Bools to control training
@@ -136,7 +138,7 @@ namespace sbn {
 
     // Algorithms used for calculating variables
     sbn::TrackStoppingChi2Alg fTrackStoppingChi2Alg;
-    sbn::TPCGeoAlg fTpcGeo;
+    sbn::TPCGeoAlg fTPCGeo;
 
     // ======================== //
     //  CRUMBS INPUT VARIABLES  //
@@ -353,12 +355,14 @@ namespace sbn {
         for(unsigned int i = 0; i < handleMCTruthNu->size(); ++i)
           {
             const art::Ptr<simb::MCTruth> mcTruth(handleMCTruthNu, i);
-            const simb::MCParticle nu = mcTruth->GetNeutrino().Nu();
+            const TVector3 nu_pos = mcTruth->GetNeutrino().Nu().Position().Vect();
 
-            if(!fTpcGeo.InVolume(nu))
+            if(!VolumeCheck(nu_pos, 0, -10, 0, 0))
               genTypeMap[i] = "DirtNu";
-            else
-              genTypeMap[i] = "Nu";
+            else if(!VolumeCheck(nu_pos, 20, 5, 10, 50))
+	      genTypeMap[i] = "OutFVNu";
+	    else
+	      genTypeMap[i] = "Nu";
     
             const std::vector<art::Ptr<simb::MCParticle> > particles = truthNuMCPAssn.at(mcTruth.key());
     
@@ -850,6 +854,16 @@ namespace sbn {
       return -4.f;
   
     return longestTrackFit.pol0Chi2 / longestTrackFit.expChi2;
+  }
+
+  bool CRUMBS::VolumeCheck(const TVector3 &pos, const double &walls, const double &cath, const double &front, const double &back)
+  {
+    const bool xedges = pos.X() < (fTPCGeo.MaxX() - walls) && pos.X() > (fTPCGeo.MinX() + walls);
+    const bool yedges = pos.Y() < (fTPCGeo.MaxY() - walls) && pos.Y() > (fTPCGeo.MinY() + walls);
+    const bool zedges = pos.Z() < (fTPCGeo.MaxZ() - back)  && pos.Z() > (fTPCGeo.MinZ() + front);
+    const bool caths  = pos.X() > (fTPCGeo.CpaWidth() / 2. + cath) || pos.X() < -(fTPCGeo.CpaWidth() / 2. + cath);
+
+    return xedges && yedges && zedges && caths;
   }
 }
 
