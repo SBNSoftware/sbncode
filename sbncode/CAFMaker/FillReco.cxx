@@ -546,6 +546,7 @@ namespace caf
 
   //......................................................................
 
+
   void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
                        const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,
                        const std::vector<art::Ptr<sbn::crt::CRTHitT0TaggingInfo>> &hitmatchinfo,
@@ -555,6 +556,12 @@ namespace caf
                        caf::SRTrack &srtrack,
                        bool allowEmpty)
   {
+    // Francesco Poppi: In the current implementation, hitmatch and hitmatchinfo are
+    // vectors of pointers, but currently they are vector of size 1.
+    // The reason behind the current implementation is that we only store the 
+    // best CRT candidate in the selection, eventually, we can store a vector
+    // of "good" candidates and fill additional infos for all of them.
+    // This is a TODO.
     if (t0match.size()) {
       assert(t0match.size() == 1);
       srtrack.crthit.distance = t0match[0]->fTriggerConfidence;
