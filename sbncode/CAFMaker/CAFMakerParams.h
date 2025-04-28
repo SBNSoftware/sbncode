@@ -44,6 +44,10 @@ namespace caf
     Atom<bool> SaveGENIEEventRecord { Name("SaveGENIEEventRecord"),
       Comment("Whether to produce GENIE event record to the output file"), false
     };
+    
+    Atom<bool> OverrideRealData { Name("OverrideRealData"),
+	      Comment("when true, some algorithms (e.g. PoT count) treat events as MC rather than real data -- e.g. set it if the event is an overlay"), false
+    };
 
     Atom<float> PrescaleFactor { Name("PrescaleFactor"),
 	Comment("Factor by which to prescale unblind events"), 10

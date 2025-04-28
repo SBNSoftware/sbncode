@@ -234,7 +234,7 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
 
   // Hits (ICARUS style)
   art::FindManyP<anab::T0> fmT0CRTHit(tracks, e, fCRTHitT0producer);
-  art::FindManyP<sbn::crt::CRTHitT0TaggingInfo> fmCRTHitT0TaggingInfo(PFParticleList, e, fCRTHitT0producer);
+  art::FindManyP<sbn::crt::CRTHitT0TaggingInfo> fmCRTHitT0TaggingInfo(tracks, e, fCRTHitT0producer);
 
   // Track - associated data
   art::FindManyP<recob::Track> fmTracks(PFParticleList, e, fTRKproducer);
