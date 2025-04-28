@@ -446,6 +446,9 @@ namespace caf
       slice.crumbs_result.pds.fmtime = crumbs->pds_FMTime;
       slice.crumbs_result.pds.opt0score = crumbs->pds_OpT0Score;
       slice.crumbs_result.pds.opt0measuredpe = crumbs->pds_OpT0MeasuredPE;
+      slice.crumbs_result.pds.pmtbarycentermatchradius = crumbs->pds_PMTBarycenterMatchRadius;
+      slice.crumbs_result.pds.pmtbarycentermatchpe = crumbs->pds_PMTBarycenterMatchPE;
+      slice.crumbs_result.pds.pmtbarycentermatchtime = crumbs->pds_PMTBarycenterMatchTime;
       slice.crumbs_result.crt.trackscore = crumbs->crt_TrackScore;
       slice.crumbs_result.crt.spscore = crumbs->crt_SPScore;
       slice.crumbs_result.crt.tracktime = crumbs->crt_TrackTime;
