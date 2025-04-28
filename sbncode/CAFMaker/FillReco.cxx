@@ -179,7 +179,7 @@ namespace caf
   }
 
 
-  void FillOpFlash(const recob::OpFlash &flash,
+  void FillICARUSOpFlash(const recob::OpFlash &flash,
                   std::vector<recob::OpHit const*> const& hits,
                   int cryo, 
                   caf::SROpFlash &srflash,
@@ -224,6 +224,41 @@ namespace caf
     if ( flash.hasXCenter() ) {
       srflash.center.SetX( flash.XCenter() );
       srflash.width.SetX( flash.XWidth() );
+    }
+  }
+
+  void FillSBNDOpFlash(const recob::OpFlash &flash,
+    std::vector<recob::OpHit const*> const& hits,
+    int tpc, 
+    caf::SROpFlash &srflash,
+    bool allowEmpty) {
+
+    srflash.setDefault();
+
+    srflash.time = flash.Time();
+    srflash.timewidth = flash.TimeWidth();
+
+    double firstTime = std::numeric_limits<double>::max();
+    for(const auto& hit: hits){
+    double const hitTime = hit->HasStartTime()? hit->StartTime(): hit->PeakTime();
+    if (firstTime > hitTime)
+    firstTime = hitTime;
+    }
+    srflash.firsttime = firstTime;
+    srflash.tpc = tpc;
+
+    srflash.totalpe = flash.TotalPE();
+    srflash.fasttototal = flash.FastToTotal();
+    srflash.onbeamtime = flash.OnBeamTime();
+
+    srflash.center.SetXYZ( -9999.f, flash.YCenter(), flash.ZCenter() );
+    srflash.width.SetXYZ( -9999.f, flash.YWidth(), flash.ZWidth() );
+
+    // Checks if ( recob::OpFlash.XCenter() != std::numeric_limits<double>::max() )
+    // See LArSoft OpFlash.h at https://nusoft.fnal.gov/larsoft/doxsvn/html/OpFlash_8h_source.html
+    if ( flash.hasXCenter() ) {
+    srflash.center.SetX( flash.XCenter() );
+    srflash.width.SetX( flash.XWidth() );
     }
   }
 
