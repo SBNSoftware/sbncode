@@ -505,9 +505,12 @@ namespace sbn {
           {
             const art::Ptr<sbn::TPCPMTBarycenterMatch> pmtBarycenterMatch = slicePMTBarycenterMatchAssoc.at(slice.key());
 
-            pds_PMTBarycenterMatchRadius = pmtBarycenterMatch->radius;
-            pds_PMTBarycenterMatchPE     = pmtBarycenterMatch->flashPEs;
-            pds_PMTBarycenterMatchTime   = pmtBarycenterMatch->flashTime;
+            if(pmtBarycenterMatch)
+              {
+                pds_PMTBarycenterMatchRadius = pmtBarycenterMatch->radius;
+                pds_PMTBarycenterMatchPE     = pmtBarycenterMatch->flashPEs;
+                pds_PMTBarycenterMatchTime   = pmtBarycenterMatch->flashTime;
+              }
           }
 
         // CRT Variables
