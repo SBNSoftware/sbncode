@@ -46,7 +46,7 @@ namespace caf
     };
     
     Atom<bool> OverrideRealData { Name("OverrideRealData"),
-	      Comment("Whether to ignore things aimed at real data -- e.g. if instead the event in an overlay"), false
+	      Comment("when true, some algorithms (e.g. PoT count) treat events as MC rather than real data -- e.g. set it if the event is an overlay"), false
     };
 
     Atom<float> PrescaleFactor { Name("PrescaleFactor"),
