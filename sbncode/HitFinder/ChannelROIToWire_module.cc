@@ -141,7 +141,7 @@ void ChannelROIToWire::produce(art::Event& evt)
 
                     std::vector<float> dataVec(range.data().size());
 
-                    for(size_t binIdx = 0; binIdx < range.data().size(); binIdx++) dataVec[binIdx] = std::round(range.data()[binIdx] * ADCScaleFactor);
+                    for(size_t binIdx = 0; binIdx < range.data().size(); binIdx++) dataVec[binIdx] = std::round(range.data()[binIdx] / ADCScaleFactor);
 
                     ROIVec.add_range(startTick, std::move(dataVec));
                 }
