@@ -96,6 +96,7 @@
 #include "lardataobj/RecoBase/Shower.h"
 #include "lardataobj/RecoBase/MCSFitResult.h"
 #include "lardataobj/RecoBase/Cluster.h"
+#include "lardataobj/AnalysisBase/MVAOutput.h"
 
 #include "nusimdata/SimulationBase/MCFlux.h"
 #include "nusimdata/SimulationBase/MCTruth.h"

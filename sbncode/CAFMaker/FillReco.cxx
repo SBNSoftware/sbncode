@@ -978,10 +978,6 @@ namespace caf
 		      bool allowEmpty)
   {
 
-    auto arg_max = [](std::vector<float> const& vec) {
-      return std::distance(vec.begin(), std::max_element(vec.begin(), vec.end()));
-    };
-
     // the nugraph elements are ordered the same as the sliceHitsMap
     std::vector<size_t> mappedhits;
     for (auto& hit : pfpHits) {
@@ -996,20 +992,23 @@ namespace caf
       std::vector<float> ng2sempfpcounts(5,0);
       size_t ng2bkgpfpcount = 0;
       for (size_t pos : mappedhits) {
-	auto scores = ngSemanticResult.at(pos);
-	std::vector<float> ng2semscores;
-	for (size_t i=0;i<scores->size();i++) ng2semscores.push_back(scores->at(i));
-	size_t sem_label = arg_max(ng2semscores);
-	ng2sempfpcounts[sem_label]++;
 	auto bkgscore = ngFilterResult.at(pos);
-	if (bkgscore->at(0)<0.5) ng2bkgpfpcount++;
+	if (bkgscore->at(0)<0.5) {
+	  ng2bkgpfpcount++;
+	} else {
+	  auto scores = ngSemanticResult.at(pos);
+	  std::vector<float> ng2semscores;
+	  for (size_t i=0;i<scores->size();i++) ng2semscores.push_back(scores->at(i));
+	  size_t sem_label = std::distance(ng2semscores.begin(), std::max_element(ng2semscores.begin(), ng2semscores.end()));//arg_max(ng2semscores);
+	  ng2sempfpcounts[sem_label]++;
+	}
       }
-      srpfp.ng_sem_cat = arg_max(ng2sempfpcounts);
-      srpfp.ng_mip_frac = float(ng2sempfpcounts[0])/pfpHits.size();
-      srpfp.ng_hip_frac = float(ng2sempfpcounts[1])/pfpHits.size();
-      srpfp.ng_shr_frac = float(ng2sempfpcounts[2])/pfpHits.size();
-      srpfp.ng_mhl_frac = float(ng2sempfpcounts[3])/pfpHits.size();
-      srpfp.ng_dif_frac = float(ng2sempfpcounts[4])/pfpHits.size();
+      srpfp.ng_sem_cat = std::distance(ng2sempfpcounts.begin(), std::max_element(ng2sempfpcounts.begin(), ng2sempfpcounts.end()));//arg_max(ng2sempfpcounts);
+      srpfp.ng_mip_frac = (pfpHits.size()>ng2bkgpfpcount ? float(ng2sempfpcounts[0])/(pfpHits.size()-ng2bkgpfpcount) : -1.);
+      srpfp.ng_hip_frac = (pfpHits.size()>ng2bkgpfpcount ? float(ng2sempfpcounts[1])/(pfpHits.size()-ng2bkgpfpcount) : -1.);
+      srpfp.ng_shr_frac = (pfpHits.size()>ng2bkgpfpcount ? float(ng2sempfpcounts[2])/(pfpHits.size()-ng2bkgpfpcount) : -1.);
+      srpfp.ng_mhl_frac = (pfpHits.size()>ng2bkgpfpcount ? float(ng2sempfpcounts[3])/(pfpHits.size()-ng2bkgpfpcount) : -1.);
+      srpfp.ng_dif_frac = (pfpHits.size()>ng2bkgpfpcount ? float(ng2sempfpcounts[4])/(pfpHits.size()-ng2bkgpfpcount) : -1.);
       srpfp.ng_bkg_frac = float(ng2bkgpfpcount)/pfpHits.size();
     } else {
       srpfp.ng_sem_cat = -1;
