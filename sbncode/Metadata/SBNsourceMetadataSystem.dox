@@ -1,0 +1,367 @@
+/** @page SBNsourceMetadataSystem Source code and execution environment metadata system in SBN code
+@author Gianluca Petrillo (petrillo@slac.stanford.edu)
+
+
+At highest level, the plugin `SaveJobEnvironment` allows storage of metadata
+into the _art_/ROOT and `TFileService` files, and the output module
+`DumpJobEnvironment` prints the information saved in a _art_/ROOT file on
+console.
+
+The system to achieve that result is quite convoluted, and this documentation
+will describe that in detail.
+
+
+Which information is extracted
+===============================
+
+The extraction algorithm, `sbn::JobEnvironmentInfoExtractor`, includes
+information ("metadata") about:
+ * The execution environment of the job:
+     * the complete dump of environment variables (except the ones identified as
+       shell functions); when using UPS, this can be used to track the version
+       of the products (UPS packages) set up during the job.
+ * The GIT version of the repositories used during the build process of the
+   code for some selected source code repositories.
+ * Information from the software being executed:
+     * _art_ process name;
+     * _art_ version.
+
+This information is extracted for each _art_ process; since typically each final
+output file is the result of a sequence of jobs, the output files will contain
+multiple metadata sets, for each of the input and job that ended into the file
+data.
+
+
+How the information is stored for later use
+============================================
+
+The goal of the system is to save the metadata into each output file, so that it
+is always known wherever the data is.
+
+Our current data system includes four output carriers:
+ 1. _art_/ROOT files, managed directly by _art_ and with a rigid format;
+ 2. `TFileService` supplemental ROOT file, also managed by _art_ but with a
+    format that is freer;
+ 3. LArCV files shipped to SPINE reconstruction framework;
+ 4. Common Analysis Format (CAF), managed by SBN via a _art_ module.
+
+At the moment of writing (at the inception of this system), the metadata is only
+written into the _art_/ROOT and the `TFileService` output files.
+
+In addition, the system needs a way to store some of the information that would
+not be available at run time: an example is the version of the software included
+in the build, which is usually a GIT tag that does not survive to the
+distributed binary code.
+The options of where to keep this information include: as a executable code
+(library) that software can link to and call/read; FHiCL configuration that jobs
+can include; simple text files that jobs can read.
+
+There are limitations and shortcomings in each of the options.
+The choice of this system was to include the version into an executable library.
+The reason why the text file was not chosen is that it requires a convention of
+where the file can be found, which is not trivial given the relocation of
+distributed code.
+The reason why FHiCL configuration was not preferred is that only _art_/ROOT
+files automatically include that information. In addition, each job
+configuration needs to know _exactly_ which repositories are being included,
+since FHiCL parser does not tolerate missing information. The first limitation
+can be worked around, for example with the experimental `icaruscode` module
+`SaveConfigurationIntoTFile`, which was never fully completed or tested.
+The selected option, library code, has ways to address these issues. There is
+already a tracking system in place for the libraries, and _art_ has a "factory"
+system that can find by name libraries (plug-ins) to be loaded dynamically.
+As for the comparison with FHiCL, the code can be configured to look for a large
+number of repository libraries, and if one is missing, the resulting error
+(for example a thrown C++ exception) can be programmatically caught and handled.
+The limitation of this option will be discussed later in this section.
+
+The difficulty of this system is that it needs to connect very heterogeneous
+information sources, which never available all at the same time.
+The source repository is available only in the build stage, while the execution
+environment is present only... well, during the job execution.
+The strategy is then to create one shared library for each repository, with
+a standard name (`RepositoryVersion_\<repository\>`), with the repository
+version information, and to have some modular software that can read these
+libraries, collect their information in a single place and then write it.
+This is how it was implemented for the single repository named <reponame>:
+ 1. CMake discovers the name of the repository from its remote source
+    (`git remote origin get-url`).
+ 2. CMake executes a `git describe` call (`git` executable must be available).
+ 3. CMake generates a C++ header and source file via `configure_file()` starting
+    from two template files (`GITrepoVersion.{h,cxx}.in`), and creates the
+    source files `RepositoryVersion_<reponame>.{h,cxx}`.
+ 4. CMake creates the local directory library as usual
+    (e.g. `art_make_library`), which will include the two generated files too.
+ 5. The two generated files are added to the list of files to install.
+
+This happens in the source directory that is going to be hosting the library, by
+convention `<packagename>/Metadata` (e.g. in `sbncode/Metadata/CMakeLists.txt`).
+The first three steps are collected in macros saved in `SBNutils.cmake`, which
+must be included.
+
+A relevant question with this method is where the `SBNutils.cmake` macro library
+should be hosted. The chosen repository must be at the root of the dependencies
+of all the repositories that we need to version, but there is not such a root:
+`sbnobj` (hosting _art_/ROOT data products) depends only on `lardataobj`, and
+`sbnanaobj` (CAF data objects) depends only on ROOT (so, ironically, the root
+dependency in our source tree _is_ in fact ROOT, but unfortunately it does not
+make sense to add this infrastructure in there). The practical workaround to
+this riddle is to duplicate the macro file, which obvious maintenance
+consequences.
+
+@note An **important limitation** of this system is that the information is
+      extracted by CMake, when the build system decides to run CMake and when
+      CMake decides to (re)generate the files -- which may be never: at the
+      moment of writing, the details are not yet clear.
+      To make sure that the GIT versions are correct, the only safe way is to
+      zap the area (`mrb z`) and build everything from scratch. This is always
+      a good idea anyway after one thinks the code is ready for prime time.
+      Again, remember: after code is committed to GIT, an integral rebuild is
+      likely needed for the code version metadata to reflect the new repository
+      status.
+
+@note The presence of an actual library do be dynamically linked to is necessary
+      and can't be replaced by inline definitions in the header files.
+      The reason is that the system needs to support some level of delegation
+      (see the next section) where a package needs to provide information of
+      a different one which can't on its own. For example, `sbnobj` can extract
+      and store its own version, but it lacks the dependencies necessary to
+      provide it to _art_. Therefore, `sbncode` will be in charge of saving
+      `sbnobj` metadata in addition to its own. Given this structure, if
+      `sbnobj` version is stored in a header, `sbncode` will learn it at compile
+      time and keep it hard-coded. It is possible though that the job loads an
+      updated `sbnobj` instead of the one used during `sbncode` build, in which
+      case `sbncode` would still report the version hard-coded at the time of
+      its own build. 
+      This practice is prone to many issues (the scenario described here
+      outlines a common one) and should be avoided; however, the metadata system
+      implemented here is a diagnostic tools and as such should be designed to
+      be more resilient than average.
+
+
+How to arrange a repository with a version library
+---------------------------------------------------
+
+1. `SBNutils.cmake` needs to be included. It is stored, willy-nilly, in
+   `sbnobj`. The most obvious option is to add things into the main
+   `CMakeLists.txt` file of the repository; namely:
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cmake}
+   find_package( sbnobj REQUIRED )
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   in the `find_package` section not present already, and
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cmake}
+   include(SBNutils)
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   just after the inclusion of CETmodules/_art_ macro files and definitely
+   _before_ the `add_subdirectory()` calls.
+2. Check the directory `<packagename>/Metadata`.
+    1. If it does not exist or does not contain a `CMakeLists.txt`:
+        1. create it, and add the line
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cmake}
+           add_subdirectory(Metadata)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+           to the `<packagename>/CMakeLists.txt` (in the same directory where
+           the new `Metadata` directory is);
+        2. copy into there from `sbnobj/Metadata` the file `CMakeLists.txt`,
+           which should be portable enough; or add lines as below.
+    2. If it does exist, add to its `CMakeLists.txt`:
+        1. at the top of the file (before the build commands):
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cmake}
+           GenerateRepoVersionSource(${CMAKE_PROJECT_NAME})
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+           which calls the source generation macro from SBNutils;
+        2. at the end add to the usual `install_Xxxx()` calls these ones:
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cmake}
+           install_headers(LIST "${CMAKE_CURRENT_BINARY_DIR}/${${CMAKE_PROJECT_NAME}_GIT_REPO_VERSION_SOURCE}.h")
+           install_source(LIST "${CMAKE_CURRENT_BINARY_DIR}/${${CMAKE_PROJECT_NAME}_GIT_REPO_VERSION_SOURCE}.cxx")
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+           which add the `.cxx` and `.h` files to the files to install;
+        3. make sure that there is a `art_make_library()` call or equivalent
+           build command in the file; if there is none, or if there are only
+           plugin or dictionary build calls (`e.g. `cet_build_plugin()`), add
+           explicitly a
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cmake}
+           art_make_library()
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+           or a more explicit (and _art_-independent)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cmake}
+           cet_make_library(
+             SOURCE
+               "${${CMAKE_PROJECT_NAME}_GIT_REPO_VERSION_SOURCE}.h"
+               "${${CMAKE_PROJECT_NAME}_GIT_REPO_VERSION_SOURCE}.cxx"
+             )
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+           which will create a library with only the source file generated here.
+3. Copy into there from `sbnobj/Metadata` the files `GITrepoVersion.{h,cxx}.in`.
+   Or write some custom ones (but remember that the _art_ tool needs the
+   implementation details).
+
+Note that in principle every `${CMAKE_PROJECT_NAME}` above can be replaced with
+the actual CMake project name, hard-coded (e.g. `sbncode`). The only drawback is
+that such lines need a further editing when copied into other repositories.
+
+
+
+How the information is extracted and serialized in the output
+==============================================================
+
+When a job is executed, the version of all the repositories should ideally be
+loaded and then saved into all the relevant output files.
+The strategy for _art_ jobs (`lar`) is no less complex than the one described in
+the previous paragraph. The choice was to save the information into a _art_ data
+product.
+Among the complications:
+ * The data product should be stored to have the least possible duplication.
+ * Metadata from the input files needs to be propagated into the output files;
+   and there can be multiple input files, multiple output files, and not in a
+   one-to-one correspondence.
+
+This is the general strategy:
+
+ 1. Metadata is stored into a _results-level data product_, which is an
+    output-file-level data product (as opposed to run-level, subrun-level or
+    event-level) bound to the output module (e.g. `RootOutput`).
+    The class of the data product is defined in `sbnobj`.
+ 2. A plugin will take care of writing the metadata as a data product. This
+    plugin is specific to output modules like `RootOutput` and is somehow
+    different, but similar, to _art_ modules. The plugin has also the task of
+    attempting to collect the relevant information from all the possible
+    source repositories, as listed in the FHiCL configuration of the plugin.
+    If the information from a source repository is not available, that source is
+    simply not included in the metadata. The output plugin is defined in
+    `sbncode`, which is the lowest _art_-aware repository under our control.
+ 3. The plugin, called `SaveJobEnvironment`, calls an extractor utility,
+    `sbn::JobEnvironmentInfoExtractor`, which utilizes _art_ tools to
+    dynamically load information from all the source repositories.
+    Tools have conventional names (`<reponame>RepositoryVersion`).
+ 4. Each tool is given the chance to provide arbitrary metadata, but they are
+    expected to fill in with the name and version of their repository.
+
+The factorization of the extractor utility from the output plugin allows to use
+the utility also on other contexts, for example when running CAF maker. However,
+because of the use of the _art_ tool infrastructure, it stills requires _art_ to
+be functional. In addition, some of the information is extracted from _art_
+itself (e.g. the process name), so _art_ is also necessary as information source
+if the full information is desired.
+
+A limitation of the _art_-tool-based strategy is that the repository containing
+the tool must depend on _art_. Several source repositories do not fulfil this
+requirement, by design; e.g. `sbnobj` and `icarusalg`. These repositories still
+need to be instrumented with CMake instructions to generate the repository
+version library (repositories which do not create libraries are very rare), and
+one of the plugins of the dependent repositories must be in charge of reading
+the version of these repositories together with their own. So for example
+`sbnobj` will generate a `sbnobj_Metadata` library, and _art_ tool
+`sbnobjRepositoryVersion` in `sbncode` will link to both `sbncode::Metadata`
+for the version of `sbncode`, and to `sbnobj::Metadata` for the version of
+non-art-aware repository it depends on, `sbnobj`. Since the dependencies of
+each repository are known and quite stable, the tool can hard-code them.
+In addition, if a dependency is _art_-aware, the tool can take care of the
+dependency subtree for that dependency recursively, by call the tool of that
+dependency (duplicate metadata entries will be expected to be the same anyway).
+
+
+### Results-level products
+
+Results-level products were introduced in _art_ as a mean to have data products
+spanning multiple runs. While some interface is similar to the other principals
+(`art::Event`, `art::Run`), their usage and accessibility is deeply different.
+
+The key point is this: **only output modules can access Results-level data
+products** (not only `RootOutput` specifically).
+This comes with a list of obvious and explicit clumsiness: there is no such a
+thing like an _art_ module writing a Results-level data product. In fact, no
+such a thing like an _art_ module _reading_ that data product either.
+The `DumpJobEnvironment` facility offered here is in fact an _output module_:
+producer and analysis modules can't learn the versions that the version
+data products in the input files hold. They can however use the same algorithm
+as `SaveJobEnvironment` uses (that is another output plugin) to extract the
+versions it then saved in the Results-type data product: the information
+extraction algorithm is factorized as `sbn::JobEnvironmentInfoExtractor` and its
+return type is a class `sbn::JobEnvironmentInfo` (`sbnobj`) well suited to be
+a _art_ data product.
+
+
+
+How to arrange a repository with the tool
+------------------------------------------
+
+The tools will depend on the repository version libraries of the current package
+and its dependencies, and on _art_. It is recommended to place their source code
+in the same directory as the repository version library.
+Step by step:
+
+ 1. Utilize the `<packagename>/Metadata` directory where the version library
+    source code should already be. In that case, the name of that library for
+    linking will be `<packagename>::Metadata`.
+ 2. Create the tool source `<repositoryname>RepositoryVersion_tool.cc` by
+    copying the source code from
+    `sbncode/Metadata/sbncodeRepositoryVersion_tool.cc` or
+    `icaruscode/Metadata/icaruscodeRepositoryVersion_tool.cc`.
+ 3. Add to the `CMakeLists.txt` file instructions to build the tool:
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cmake}
+    cet_build_plugin(<packagename>RepositoryVersion art::tool
+      LIBRARIES
+        <packagename>::Metadata
+        sbncode::Metadata
+        sbnobj::Common_Metadata
+      )
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Additional libraries may be needed for the dependencies.
+ 4. Customize the tool source.
+     * If this repository _has_ dependent non-art repositories, add them to the
+       tool (the one in `icaruscode`, `icaruscodeRepositoryVersion`, already
+       shows how, with `icarusalg`): link to the dependent version libraries,
+       and add metadata entries for them.
+     * If this repository _is_ a dependency of another _art_-aware repository,
+       considering updating the tool in that repository to load this one and
+       store information from it. The tool in `icaruscode`,
+       `icaruscodeRepositoryVersion`, shows how (with `sbncode`).
+ 5. In the relevant configurations of the output plugin `SaveJobEnvironment`,
+    add the name of the repository the tool is covering (the `<repositoryname>`
+    above).
+
+
+How metadata can be accessed from the input files
+==================================================
+
+The plugin `SaveJobEnvironment` can write the metadata into the _art_/ROOT file
+and into the `TFileService` output file.
+
+The metadata in the _art_/ROOT file is stored as a Results-level data product,
+and can therefore be read only by output modules. That does mean that producer
+and analyzer _art_ modules will not be able to access that metadata.
+However, an output module `DumpJobEnvironment` is provided that dumps the full
+metadata on console output (configurable via `message` service).
+The configuration of that module is as simple as:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+outputs.metadataDumper: {
+  module_type: "DumpJobEnvironment"
+}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+and, as usual, `metadataDumper` must be added in one of the end paths in the
+`physics` configuration table. This type of configuration is provided in
+`sbncode` as `dump_jobmetadata.fcl`.
+
+Metadata saved into a `TFileService` ROOT file will be in the main ROOT
+directory of the file. See the documentation of `SaveJobEnvironment` plugin
+for the details.
+
+
+
+Future improvements
+====================
+
+* Currently the metadata seen from all input so far is stored into the current
+  output file; it may happen then that an output file stores metadata from an
+  input file that was already closed when the output file started been filled.
+  That metadata has no reason to reside in that output file.
+* There is going to be a large amount of duplication: all input files likely
+  have almost identical metadata, but we save each individually. A system to
+  collect the shared metadata in a single list may be desirable to reduce the
+  metadata size.
+* If there is demand, the system can be extended to create also a FHiCL
+  configuration with the version of the repository.
+
+
+ */
