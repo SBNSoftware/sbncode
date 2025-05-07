@@ -44,6 +44,10 @@ namespace caf
     Atom<bool> SaveGENIEEventRecord { Name("SaveGENIEEventRecord"),
       Comment("Whether to produce GENIE event record to the output file"), false
     };
+    
+    Atom<bool> OverrideRealData { Name("OverrideRealData"),
+	      Comment("when true, some algorithms (e.g. PoT count) treat events as MC rather than real data -- e.g. set it if the event is an overlay"), false
+    };
 
     Atom<float> PrescaleFactor { Name("PrescaleFactor"),
 	Comment("Factor by which to prescale unblind events"), 10
@@ -272,6 +276,12 @@ namespace caf
       Name("CRTHitMatchLabel"),
       Comment("Base label of track to CRT hit matching producer."),
       "pandoraTrackCRTHit"
+    };
+
+    Atom<string> CRTHitMatchInfoLabel {
+      Name("CRTHitMatchInfoLabel"),
+      Comment("Base label of additional information on track to CRT hit matching producer."),
+      "CRTT0Tagging"
     };
 
     Atom<string> CRTTrackMatchLabel {
