@@ -137,7 +137,7 @@ namespace caf
                      caf::SRPFP& srpfp,
                      bool allowEmpty = false);
 
-  void FillPPFNuGraph(const std::vector<unsigned int> &sliceHitsMap,
+  void FillPFPNuGraph(const std::vector<unsigned int> &sliceHitsMap,
 		      const std::vector<art::Ptr<anab::FeatureVector<1>>> &ngFilterResult,
 		      const std::vector<art::Ptr<anab::FeatureVector<5>>> &ngSemanticResult,
 		      const std::vector<art::Ptr<recob::Hit>> &pfpHits,

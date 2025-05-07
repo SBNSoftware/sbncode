@@ -2150,7 +2150,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       }
 
       if (ng2_slice_hit_map_handle[producer].isValid()) {
-	FillPPFNuGraph(*ng2_slice_hit_map_handle[producer], ng2_filter_vec, ng2_semantic_vec, fmPFPartHits.at(iPart), pfp);
+	FillPFPNuGraph(*ng2_slice_hit_map_handle[producer], ng2_filter_vec, ng2_semantic_vec, fmPFPartHits.at(iPart), pfp);
       }
 
       if (!thisTrack.empty())  { // it has a track!
