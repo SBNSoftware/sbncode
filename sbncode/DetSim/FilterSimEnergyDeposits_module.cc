@@ -18,6 +18,7 @@
 #include "larcorealg/Geometry/BoxBoundedGeo.h"
 
 #include "lardataobj/Simulation/SimEnergyDeposit.h"
+#include "lardataobj/Simulation/SimEnergyDepositLite.h"
 
 #include <memory>
 
@@ -43,6 +44,7 @@ private:
   // Declare member data here.
 
   art::InputTag fInitSimEnergyDepositLabel;
+  art::InputTag fInitSimEnergyDepositLiteLabel;
   geo::BoxBoundedGeo fBox;
   static constexpr auto kModuleName = "FilterSimEnergyDeposit";
   double ShiftX(double z) const;
@@ -56,6 +58,7 @@ private:
 FilterSimEnergyDeposits::FilterSimEnergyDeposits(fhicl::ParameterSet const& p)
   : EDProducer{p}
   , fInitSimEnergyDepositLabel{p.get<art::InputTag>("InitSimEnergyDepositLabel", "undefined")}
+  , fInitSimEnergyDepositLiteLabel{p.get<art::InputTag>("InitSimEnergyDepositLiteLabel", "undefined")}
   , fBox{p.get<double>("P1_X"), p.get<double>("P2_X"),
 	 p.get<double>("P1_Y"), p.get<double>("P2_Y"),
 	 p.get<double>("P1_Z"), p.get<double>("P2_Z")}
@@ -66,6 +69,9 @@ FilterSimEnergyDeposits::FilterSimEnergyDeposits(fhicl::ParameterSet const& p)
   // Call appropriate produces<>() functions here.
   // Call appropriate consumes<>() for any products to be retrieved by this module.
   produces<std::vector<sim::SimEnergyDeposit>>();
+
+  
+  if (fInitSimEnergyDepositLiteLabel != "undefined") { produces<std::vector<sim::SimEnergyDepositLite>>(); }
 }
 
 
@@ -126,6 +132,27 @@ void FilterSimEnergyDeposits::produce(art::Event& e)
 					       origID));
   }
   e.put(std::move(pSimEDeps));
+
+  // also futz with the SimEnergyDepositLite's if configured to
+  if (fInitSimEnergyDepositLiteLabel == "undefined") return;
+
+  auto const& simEDepLites =
+    e.getProduct<std::vector<sim::SimEnergyDepositLite>>(fInitSimEnergyDepositLiteLabel);
+  auto pSimEDepLites = std::make_unique<std::vector<sim::SimEnergyDepositLite>>();
+  pSimEDepLites->reserve(simEDepLites.size());
+
+  for (auto const& inSimEDepLite : simEDepLites) {
+    geo::Point_t middlePos = inSimEDepLite.Position();
+    if(fBox.ContainsPosition(middlePos))
+      continue;
+    double energy = inSimEDepLite.Energy();
+    double middleTime = inSimEDepLite.Time();
+    int ID = inSimEDepLite.TrackID();
+
+    pSimEDepLites->emplace_back(energy, middlePos, middleTime, ID);
+  }
+
+  e.put(std::move(pSimEDepLites));
 }
 
 DEFINE_ART_MODULE(FilterSimEnergyDeposits)
