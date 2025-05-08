@@ -180,7 +180,7 @@ namespace caf
   }
 
 
-  void FillOpFlash(const recob::OpFlash &flash,
+  void FillICARUSOpFlash(const recob::OpFlash &flash,
                   std::vector<recob::OpHit const*> const& hits,
                   int cryo, 
                   caf::SROpFlash &srflash,
@@ -225,6 +225,41 @@ namespace caf
     if ( flash.hasXCenter() ) {
       srflash.center.SetX( flash.XCenter() );
       srflash.width.SetX( flash.XWidth() );
+    }
+  }
+
+  void FillSBNDOpFlash(const recob::OpFlash &flash,
+    std::vector<recob::OpHit const*> const& hits,
+    int tpc, 
+    caf::SROpFlash &srflash,
+    bool allowEmpty) {
+
+    srflash.setDefault();
+
+    srflash.time = flash.Time();
+    srflash.timewidth = flash.TimeWidth();
+
+    double firstTime = std::numeric_limits<double>::max();
+    for(const auto& hit: hits){
+    double const hitTime = hit->HasStartTime()? hit->StartTime(): hit->PeakTime();
+    if (firstTime > hitTime)
+    firstTime = hitTime;
+    }
+    srflash.firsttime = firstTime;
+    srflash.tpc = tpc;
+
+    srflash.totalpe = flash.TotalPE();
+    srflash.fasttototal = flash.FastToTotal();
+    srflash.onbeamtime = flash.OnBeamTime();
+
+    srflash.center.SetXYZ( -9999.f, flash.YCenter(), flash.ZCenter() );
+    srflash.width.SetXYZ( -9999.f, flash.YWidth(), flash.ZWidth() );
+
+    // Checks if ( recob::OpFlash.XCenter() != std::numeric_limits<double>::max() )
+    // See LArSoft OpFlash.h at https://nusoft.fnal.gov/larsoft/doxsvn/html/OpFlash_8h_source.html
+    if ( flash.hasXCenter() ) {
+    srflash.center.SetX( flash.XCenter() );
+    srflash.width.SetX( flash.XWidth() );
     }
   }
 
@@ -566,18 +601,37 @@ namespace caf
 
   //......................................................................
 
+
   void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
                        const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,
+                       const std::vector<art::Ptr<sbn::crt::CRTHitT0TaggingInfo>> &hitmatchinfo,
                        bool use_ts0,
                        int64_t CRT_T0_reference_time, // ns, signed
                        double CRT_T1_reference_time, // us
                        caf::SRTrack &srtrack,
                        bool allowEmpty)
   {
+    // Francesco Poppi: In the current implementation, hitmatch and hitmatchinfo are
+    // vectors of pointers, but currently they are vector of size 1.
+    // The reason behind the current implementation is that we only store the 
+    // best CRT candidate in the selection, eventually, we can store a vector
+    // of "good" candidates and fill additional infos for all of them.
+    // This is a TODO.
     if (t0match.size()) {
       assert(t0match.size() == 1);
       srtrack.crthit.distance = t0match[0]->fTriggerConfidence;
+      srtrack.crthit.region = t0match[0]->fID;
+      srtrack.crthit.sys = t0match[0]->fTriggerBits;
+      if(hitmatchinfo.size() == 1){
+        srtrack.crthit.deltaX = hitmatchinfo[0]->DeltaX;
+        srtrack.crthit.deltaY = hitmatchinfo[0]->DeltaY;
+        srtrack.crthit.deltaZ = hitmatchinfo[0]->DeltaZ;
+        srtrack.crthit.crossX = hitmatchinfo[0]->CrossX;
+        srtrack.crthit.crossY = hitmatchinfo[0]->CrossY;
+        srtrack.crthit.crossZ = hitmatchinfo[0]->CrossZ;      
+      }
       srtrack.crthit.hit.time = t0match[0]->fTime / 1e3; /* ns -> us */
+      srtrack.crthit.hit.plane = t0match[0]->fID;
     }
     if (hitmatch.size()) {
       FillCRTHit(*hitmatch[0], use_ts0, CRT_T0_reference_time, CRT_T1_reference_time, srtrack.crthit.hit, allowEmpty);
