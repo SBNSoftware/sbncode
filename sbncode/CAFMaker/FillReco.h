@@ -20,6 +20,7 @@
 #include "lardataobj/RecoBase/OpFlash.h"
 #include "lardataobj/RecoBase/OpHit.h"
 #include "lardataobj/AnalysisBase/Calorimetry.h"
+#include "lardataobj/AnalysisBase/MVAOutput.h"
 #include "lardataobj/AnalysisBase/ParticleID.h"
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
@@ -105,6 +106,22 @@ namespace caf
                            const std::vector<art::Ptr<recob::SpacePoint>> &inputPoints,
                            caf::SRSlice &slice);
 
+  /**
+   * @brief Fills the results from NuGraph at slice level
+   * @param inputHits (pointers to) the hits associated to the slice
+   * @param sliceHitsMap maps position of hits in collection input to NuGraph (slice only) to the one input to Pandora (all gaus hits)
+   * @param ngFilterResult NuGraph filter result, for each hit
+   * @param ngSemanticResult NuGraph semnatic result, for each hit (MIP track, HIP, shower, Michel electron, diffuse activity)
+   * @param[out] slice the destination slice object
+   *
+   * Hits with filter value (`ngFilterResult`) lower than `ng_filter_cut` are counted as background.
+   */
+  void FillSliceNuGraph(const std::vector<art::Ptr<recob::Hit>> &inputHits,
+			const std::vector<unsigned int> &sliceHitsMap,
+			const std::vector<art::Ptr<anab::FeatureVector<1>>> &ngFilterResult,
+			const std::vector<art::Ptr<anab::FeatureVector<5>>> &ngSemanticResult,
+			caf::SRSlice &slice);
+
   bool SelectSlice(const caf::SRSlice &slice, bool cut_clear_cosmic);
 
   void FillTrackVars(const recob::Track& track,
@@ -130,6 +147,23 @@ namespace caf
                      const sbn::PFPCNNScore *cnnscore,
                      caf::SRPFP& srpfp,
                      bool allowEmpty = false);
+
+  /**
+   * @brief Fills the results from NuGraph at slice level
+   * @param sliceHitsMap maps position of hits in collection input to NuGraph (slice only) to the one input to Pandora (all gaus hits)
+   * @param ngFilterResult NuGraph filter result, for each hit
+   * @param ngSemanticResult NuGraph semnatic result, for each hit (MIP track, HIP, shower, Michel electron, diffuse activity)
+   * @param pfpHits Vector of hits associated to the PFParticle
+   * @param[out] srpfp the destination PFParticle object
+   *
+   * Hits with filter value (`ngFilterResult`) lower than `ng_filter_cut` are counted as background.
+   */
+  void FillPFPNuGraph(const std::vector<unsigned int> &sliceHitsMap,
+		      const std::vector<art::Ptr<anab::FeatureVector<1>>> &ngFilterResult,
+		      const std::vector<art::Ptr<anab::FeatureVector<5>>> &ngSemanticResult,
+		      const std::vector<art::Ptr<recob::Hit>> &pfpHits,
+		      caf::SRPFP& srpfp,
+		      bool allowEmpty= false);
 
   void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
                        const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,
