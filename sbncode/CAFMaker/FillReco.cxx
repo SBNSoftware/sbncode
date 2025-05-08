@@ -1058,11 +1058,12 @@ namespace caf
 	}
       }
       srpfp.ngscore.sem_cat = SRNuGraphScore::NuGraphCategory(std::distance(ng2sempfpcounts.begin(), std::max_element(ng2sempfpcounts.begin(), ng2sempfpcounts.end())));//arg_max(ng2sempfpcounts);
-      srpfp.ngscore.mip_frac = (pfpHits.size()>ng2bkgpfpcount ? float(ng2sempfpcounts[0])/(pfpHits.size()-ng2bkgpfpcount) : -1.);
-      srpfp.ngscore.hip_frac = (pfpHits.size()>ng2bkgpfpcount ? float(ng2sempfpcounts[1])/(pfpHits.size()-ng2bkgpfpcount) : -1.);
-      srpfp.ngscore.shr_frac = (pfpHits.size()>ng2bkgpfpcount ? float(ng2sempfpcounts[2])/(pfpHits.size()-ng2bkgpfpcount) : -1.);
-      srpfp.ngscore.mhl_frac = (pfpHits.size()>ng2bkgpfpcount ? float(ng2sempfpcounts[3])/(pfpHits.size()-ng2bkgpfpcount) : -1.);
-      srpfp.ngscore.dif_frac = (pfpHits.size()>ng2bkgpfpcount ? float(ng2sempfpcounts[4])/(pfpHits.size()-ng2bkgpfpcount) : -1.);
+      size_t nonBkgHits = (pfpHits.size() > ng2bkgpfpcount ? pfpHits.size()-ng2bkgpfpcount : 0);
+      srpfp.ngscore.mip_frac = (nonBkgHits>0 ? float(ng2sempfpcounts[0])/nonBkgHits : -1.);
+      srpfp.ngscore.hip_frac = (nonBkgHits>0 ? float(ng2sempfpcounts[1])/nonBkgHits : -1.);
+      srpfp.ngscore.shr_frac = (nonBkgHits>0 ? float(ng2sempfpcounts[2])/nonBkgHits : -1.);
+      srpfp.ngscore.mhl_frac = (nonBkgHits>0 ? float(ng2sempfpcounts[3])/nonBkgHits : -1.);
+      srpfp.ngscore.dif_frac = (nonBkgHits>0 ? float(ng2sempfpcounts[4])/nonBkgHits : -1.);
       srpfp.ngscore.bkg_frac = float(ng2bkgpfpcount)/pfpHits.size();
     } else {
       srpfp.ngscore.sem_cat = SRNuGraphScore::NuGraphCategory::Unset;
