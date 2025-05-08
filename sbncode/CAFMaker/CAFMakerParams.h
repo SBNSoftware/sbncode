@@ -350,6 +350,24 @@ namespace caf
       "" //Empty by default, configured in icaruscode cafmaker_defs
     };
 
+    Atom<art::InputTag> NuGraphSliceHitLabel {
+      Name("NuGraphSliceHitLabel"),
+      Comment("Label of NuGraph slice hit map."),
+      "" //Empty by default, please set to e.g. art::InputTag("nuslhits")
+    };
+
+    Atom<art::InputTag> NuGraphFilterLabel {
+      Name("NuGraphFilterLabel"),
+      Comment("Label of NuGraph filter."),
+      "" //Empty by default, please set to e.g. art::InputTag("NuGraph","filter")
+    };
+
+    Atom<art::InputTag> NuGraphSemanticLabel {
+      Name("NuGraphSemanticLabel"),
+      Comment("Label of NuGraph semantic."),
+      "" //Empty by default, please set to e.g. art::InputTag("NuGraph","semantic")
+    };
+
     Atom<string> OpFlashLabel {
       Name("OpFlashLabel"),
       Comment("Label of PMT flash."),
