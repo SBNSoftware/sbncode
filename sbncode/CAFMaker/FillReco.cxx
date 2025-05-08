@@ -12,6 +12,7 @@
 
 namespace caf
 {
+  const float ng_filter_cut = 0.5;
 
   //......................................................................
   bool SelectSlice(const caf::SRSlice &slice, bool cut_clear_cosmic) {
@@ -544,7 +545,6 @@ namespace caf
     }
   }
 
-
   void FillSliceNuGraph(const std::vector<art::Ptr<recob::Hit>> &inputHits,
 			const std::vector<unsigned int> &sliceHitsMap,
 			const std::vector<art::Ptr<anab::FeatureVector<1>>> &ngFilterResult,
@@ -559,7 +559,7 @@ namespace caf
 
     unsigned int npass = 0;
     for ( unsigned int i = 0; i < nHits; i++ ) {
-      if (ngFilterResult.at(i)->at(0)>0.5) npass++;
+      if (ngFilterResult.at(i)->at(0)>=ng_filter_cut) npass++;
     }
     slice.ng_filt_pass_frac = float(npass)/nHits;
   }
@@ -992,32 +992,32 @@ namespace caf
       std::vector<float> ng2sempfpcounts(5,0);
       size_t ng2bkgpfpcount = 0;
       for (size_t pos : mappedhits) {
-	auto bkgscore = ngFilterResult.at(pos);
-	if (bkgscore->at(0)<0.5) {
+	auto const& bkgscore = ngFilterResult.at(pos);
+	if (bkgscore->at(0)<ng_filter_cut) {
 	  ng2bkgpfpcount++;
 	} else {
-	  auto scores = ngSemanticResult.at(pos);
+	  auto const& scores = ngSemanticResult.at(pos);
 	  std::vector<float> ng2semscores;
 	  for (size_t i=0;i<scores->size();i++) ng2semscores.push_back(scores->at(i));
 	  size_t sem_label = std::distance(ng2semscores.begin(), std::max_element(ng2semscores.begin(), ng2semscores.end()));//arg_max(ng2semscores);
 	  ng2sempfpcounts[sem_label]++;
 	}
       }
-      srpfp.ng_sem_cat = std::distance(ng2sempfpcounts.begin(), std::max_element(ng2sempfpcounts.begin(), ng2sempfpcounts.end()));//arg_max(ng2sempfpcounts);
-      srpfp.ng_mip_frac = (pfpHits.size()>ng2bkgpfpcount ? float(ng2sempfpcounts[0])/(pfpHits.size()-ng2bkgpfpcount) : -1.);
-      srpfp.ng_hip_frac = (pfpHits.size()>ng2bkgpfpcount ? float(ng2sempfpcounts[1])/(pfpHits.size()-ng2bkgpfpcount) : -1.);
-      srpfp.ng_shr_frac = (pfpHits.size()>ng2bkgpfpcount ? float(ng2sempfpcounts[2])/(pfpHits.size()-ng2bkgpfpcount) : -1.);
-      srpfp.ng_mhl_frac = (pfpHits.size()>ng2bkgpfpcount ? float(ng2sempfpcounts[3])/(pfpHits.size()-ng2bkgpfpcount) : -1.);
-      srpfp.ng_dif_frac = (pfpHits.size()>ng2bkgpfpcount ? float(ng2sempfpcounts[4])/(pfpHits.size()-ng2bkgpfpcount) : -1.);
-      srpfp.ng_bkg_frac = float(ng2bkgpfpcount)/pfpHits.size();
+      srpfp.ngscore.sem_cat = SRNuGraphScore::NuGraphCategory(std::distance(ng2sempfpcounts.begin(), std::max_element(ng2sempfpcounts.begin(), ng2sempfpcounts.end())));//arg_max(ng2sempfpcounts);
+      srpfp.ngscore.mip_frac = (pfpHits.size()>ng2bkgpfpcount ? float(ng2sempfpcounts[0])/(pfpHits.size()-ng2bkgpfpcount) : -1.);
+      srpfp.ngscore.hip_frac = (pfpHits.size()>ng2bkgpfpcount ? float(ng2sempfpcounts[1])/(pfpHits.size()-ng2bkgpfpcount) : -1.);
+      srpfp.ngscore.shr_frac = (pfpHits.size()>ng2bkgpfpcount ? float(ng2sempfpcounts[2])/(pfpHits.size()-ng2bkgpfpcount) : -1.);
+      srpfp.ngscore.mhl_frac = (pfpHits.size()>ng2bkgpfpcount ? float(ng2sempfpcounts[3])/(pfpHits.size()-ng2bkgpfpcount) : -1.);
+      srpfp.ngscore.dif_frac = (pfpHits.size()>ng2bkgpfpcount ? float(ng2sempfpcounts[4])/(pfpHits.size()-ng2bkgpfpcount) : -1.);
+      srpfp.ngscore.bkg_frac = float(ng2bkgpfpcount)/pfpHits.size();
     } else {
-      srpfp.ng_sem_cat = -1;
-      srpfp.ng_mip_frac = -1.;
-      srpfp.ng_hip_frac = -1.;
-      srpfp.ng_shr_frac = -1.;
-      srpfp.ng_mhl_frac = -1.;
-      srpfp.ng_dif_frac = -1.;
-      srpfp.ng_bkg_frac = -1.;
+      srpfp.ngscore.sem_cat = SRNuGraphScore::NuGraphCategory::Unset;
+      srpfp.ngscore.mip_frac = -1.;
+      srpfp.ngscore.hip_frac = -1.;
+      srpfp.ngscore.shr_frac = -1.;
+      srpfp.ngscore.mhl_frac = -1.;
+      srpfp.ngscore.dif_frac = -1.;
+      srpfp.ngscore.bkg_frac = -1.;
     }
 
   }
