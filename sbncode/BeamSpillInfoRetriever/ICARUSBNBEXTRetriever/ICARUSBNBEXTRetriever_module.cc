@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////
-// Class:       BNBEXTRetriever
+// Class:       ICARUSBNBEXTRetriever
 // Plugin Type: producer 
-// File:        BNBEXTRetriever_module.cc
+// File:        ICARUSBNBEXTRetriever_module.cc
 //
 // Created by hand Thurs June 24th 2021 by J. Zennamo (FNAL)
 //
@@ -36,10 +36,10 @@
 #include <time.h>
 
 namespace sbn {
-  class BNBEXTRetriever;
+  class ICARUSBNBEXTRetriever;
 }
 
-class sbn::BNBEXTRetriever : public art::EDProducer {
+class sbn::ICARUSBNBEXTRetriever : public art::EDProducer {
 public:
   
   struct Config {
@@ -57,15 +57,15 @@ public:
   using Parameters = art::EDProducer::Table<Config>;
   
   
-  explicit BNBEXTRetriever(Parameters const& params);
+  explicit ICARUSBNBEXTRetriever(Parameters const& params);
   // The compiler-generated destructor is fine for non-base
   // classes without bare pointers or other resource use.
 
   // Plugins should not be copied or assigned.
-  BNBEXTRetriever(BNBEXTRetriever const&) = delete;
-  BNBEXTRetriever(BNBEXTRetriever&&) = delete;
-  BNBEXTRetriever& operator=(BNBEXTRetriever const&) = delete;
-  BNBEXTRetriever& operator=(BNBEXTRetriever&&) = delete;
+  ICARUSBNBEXTRetriever(ICARUSBNBEXTRetriever const&) = delete;
+  ICARUSBNBEXTRetriever(ICARUSBNBEXTRetriever&&) = delete;
+  ICARUSBNBEXTRetriever& operator=(ICARUSBNBEXTRetriever const&) = delete;
+  ICARUSBNBEXTRetriever& operator=(ICARUSBNBEXTRetriever&&) = delete;
 
   // Required functions.
   void produce(art::Event& e) override;
@@ -85,7 +85,7 @@ private:
 };
 
 
-sbn::BNBEXTRetriever::BNBEXTRetriever(Parameters const& params)
+sbn::ICARUSBNBEXTRetriever::ICARUSBNBEXTRetriever(Parameters const& params)
   : EDProducer{params},
   raw_data_label_(params().RawDataLabel())
 {
@@ -97,7 +97,7 @@ sbn::BNBEXTRetriever::BNBEXTRetriever(Parameters const& params)
   scale_factor = 0;
 }
 
-void sbn::BNBEXTRetriever::produce(art::Event& e)
+void sbn::ICARUSBNBEXTRetriever::produce(art::Event& e)
 {
   
   //Here we read in the artdaq Fragments and extract three pieces of information:
@@ -152,7 +152,7 @@ void sbn::BNBEXTRetriever::produce(art::Event& e)
 } //end loop over events
 
 
-void sbn::BNBEXTRetriever::beginSubRun(art::SubRun& sr)
+void sbn::ICARUSBNBEXTRetriever::beginSubRun(art::SubRun& sr)
 {
   TotalEXTCounts = 0;
   totalMinBias = 0;
@@ -162,7 +162,7 @@ void sbn::BNBEXTRetriever::beginSubRun(art::SubRun& sr)
 }
 
 //____________________________________________________________________________                                                                                                                                                                                     
-void sbn::BNBEXTRetriever::endSubRun(art::SubRun& sr)
+void sbn::ICARUSBNBEXTRetriever::endSubRun(art::SubRun& sr)
 {
   // We will add all of the EXTCountInfo data-products to the 
   // art::SubRun so it persists 
@@ -186,4 +186,4 @@ void sbn::BNBEXTRetriever::endSubRun(art::SubRun& sr)
   return;
 }
 
-DEFINE_ART_MODULE(sbn::BNBEXTRetriever)    
+DEFINE_ART_MODULE(sbn::ICARUSBNBEXTRetriever)    
