@@ -1182,6 +1182,7 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
     fTrack->mcs_angles_UI.push_back(mcsUI->scatterAngles().at(ja));
 
   fTrack->mcs_stop = mcsIF3D->GeoStopCheck();
+  fTrack->mcs_isdelta = mcsIF3D->IsDelta();
 
   fTrack->mcs_sigma3p_3D   = mcsIF3D->sigma3P();
   fTrack->mcs_sigma3p_2DI1 = mcsIF2DI1->sigma3P();
