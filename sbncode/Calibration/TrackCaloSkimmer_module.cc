@@ -258,43 +258,43 @@ void sbn::TrackCaloSkimmer::analyze(
   art::fill_ptr_vector(MCSresultsUI, MCS_handleUI);
 
   //mcs icarus algorithm, final cut, 3d
-  art::ValidHandle<std::vector<recob::MCSFitResult>> MCS_handleIF3D = e.getValidHandle<std::vector<recob::MCSFitResult>>(fMCSproducerIF3D);
-  std::vector<art::Ptr<recob::MCSFitResult>> MCSresultsIF3D;
+  art::ValidHandle<std::vector<recob::MCSFitResultGS>> MCS_handleIF3D = e.getValidHandle<std::vector<recob::MCSFitResultGS>>(fMCSproducerIF3D);
+  std::vector<art::Ptr<recob::MCSFitResultGS>> MCSresultsIF3D;
   art::fill_ptr_vector(MCSresultsIF3D, MCS_handleIF3D);
 
   //mcs icarus algorithm, final cut, 2d induction1
-  art::ValidHandle<std::vector<recob::MCSFitResult>> MCS_handleIF2DI1 = e.getValidHandle<std::vector<recob::MCSFitResult>>(fMCSproducerIF2DI1);
-  std::vector<art::Ptr<recob::MCSFitResult>> MCSresultsIF2DI1;
+  art::ValidHandle<std::vector<recob::MCSFitResultGS>> MCS_handleIF2DI1 = e.getValidHandle<std::vector<recob::MCSFitResultGS>>(fMCSproducerIF2DI1);
+  std::vector<art::Ptr<recob::MCSFitResultGS>> MCSresultsIF2DI1;
   art::fill_ptr_vector(MCSresultsIF2DI1, MCS_handleIF2DI1);
 
   //mcs icarus algorithm, final cut, 2d induction2
-  art::ValidHandle<std::vector<recob::MCSFitResult>> MCS_handleIF2DI2 = e.getValidHandle<std::vector<recob::MCSFitResult>>(fMCSproducerIF2DI2);
-  std::vector<art::Ptr<recob::MCSFitResult>> MCSresultsIF2DI2;
+  art::ValidHandle<std::vector<recob::MCSFitResultGS>> MCS_handleIF2DI2 = e.getValidHandle<std::vector<recob::MCSFitResultGS>>(fMCSproducerIF2DI2);
+  std::vector<art::Ptr<recob::MCSFitResultGS>> MCSresultsIF2DI2;
   art::fill_ptr_vector(MCSresultsIF2DI2, MCS_handleIF2DI2);
 
   //mcs icarus algorithm, final cut, 2d collection
-  art::ValidHandle<std::vector<recob::MCSFitResult>> MCS_handleIF2DC = e.getValidHandle<std::vector<recob::MCSFitResult>>(fMCSproducerIF2DC);
-  std::vector<art::Ptr<recob::MCSFitResult>> MCSresultsIF2DC;
+  art::ValidHandle<std::vector<recob::MCSFitResultGS>> MCS_handleIF2DC = e.getValidHandle<std::vector<recob::MCSFitResultGS>>(fMCSproducerIF2DC);
+  std::vector<art::Ptr<recob::MCSFitResultGS>> MCSresultsIF2DC;
   art::fill_ptr_vector(MCSresultsIF2DC, MCS_handleIF2DC);
 
   //mcs icarus algorithm, initial cut, 3d
-  art::ValidHandle<std::vector<recob::MCSFitResult>> MCS_handleII3D = e.getValidHandle<std::vector<recob::MCSFitResult>>(fMCSproducerII3D);
-  std::vector<art::Ptr<recob::MCSFitResult>> MCSresultsII3D;
+  art::ValidHandle<std::vector<recob::MCSFitResultGS>> MCS_handleII3D = e.getValidHandle<std::vector<recob::MCSFitResultGS>>(fMCSproducerII3D);
+  std::vector<art::Ptr<recob::MCSFitResultGS>> MCSresultsII3D;
   art::fill_ptr_vector(MCSresultsII3D, MCS_handleII3D);
 
   //mcs icarus algorithm, initial cut, 2d induction1
-  art::ValidHandle<std::vector<recob::MCSFitResult>> MCS_handleII2DI1 = e.getValidHandle<std::vector<recob::MCSFitResult>>(fMCSproducerII2DI1);
-  std::vector<art::Ptr<recob::MCSFitResult>> MCSresultsII2DI1;
+  art::ValidHandle<std::vector<recob::MCSFitResultGS>> MCS_handleII2DI1 = e.getValidHandle<std::vector<recob::MCSFitResultGS>>(fMCSproducerII2DI1);
+  std::vector<art::Ptr<recob::MCSFitResultGS>> MCSresultsII2DI1;
   art::fill_ptr_vector(MCSresultsII2DI1, MCS_handleII2DI1);
 
   //mcs icarus algorithm, initial cut, 2d induction2
-  art::ValidHandle<std::vector<recob::MCSFitResult>> MCS_handleII2DI2 = e.getValidHandle<std::vector<recob::MCSFitResult>>(fMCSproducerII2DI2);
-  std::vector<art::Ptr<recob::MCSFitResult>> MCSresultsII2DI2;
+  art::ValidHandle<std::vector<recob::MCSFitResultGS>> MCS_handleII2DI2 = e.getValidHandle<std::vector<recob::MCSFitResultGS>>(fMCSproducerII2DI2);
+  std::vector<art::Ptr<recob::MCSFitResultGS>> MCSresultsII2DI2;
   art::fill_ptr_vector(MCSresultsII2DI2, MCS_handleII2DI2);
 
   //mcs icarus algorithm, initial cut, 2d collection
-  art::ValidHandle<std::vector<recob::MCSFitResult>> MCS_handleII2DC = e.getValidHandle<std::vector<recob::MCSFitResult>>(fMCSproducerII2DC);
-  std::vector<art::Ptr<recob::MCSFitResult>> MCSresultsII2DC;
+  art::ValidHandle<std::vector<recob::MCSFitResultGS>> MCS_handleII2DC = e.getValidHandle<std::vector<recob::MCSFitResultGS>>(fMCSproducerII2DC);
+  std::vector<art::Ptr<recob::MCSFitResultGS>> MCSresultsII2DC;
   art::fill_ptr_vector(MCSresultsII2DC, MCS_handleII2DC);
 
   //range momentum
@@ -367,14 +367,14 @@ void sbn::TrackCaloSkimmer::analyze(
 
     art::Ptr<recob::MCSFitResult> mcsResultUF = MCSresultsUF.at(trkPtr.key());
     art::Ptr<recob::MCSFitResult> mcsResultUI = MCSresultsUI.at(trkPtr.key());
-    art::Ptr<recob::MCSFitResult> mcsResultIF3D = MCSresultsIF3D.at(trkPtr.key());
-    art::Ptr<recob::MCSFitResult> mcsResultIF2DI1 = MCSresultsIF2DI1.at(trkPtr.key());
-    art::Ptr<recob::MCSFitResult> mcsResultIF2DI2 = MCSresultsIF2DI2.at(trkPtr.key());
-    art::Ptr<recob::MCSFitResult> mcsResultIF2DC = MCSresultsIF2DC.at(trkPtr.key());
-    art::Ptr<recob::MCSFitResult> mcsResultII3D = MCSresultsII3D.at(trkPtr.key());
-    art::Ptr<recob::MCSFitResult> mcsResultII2DI1 = MCSresultsII2DI1.at(trkPtr.key());
-    art::Ptr<recob::MCSFitResult> mcsResultII2DI2 = MCSresultsII2DI2.at(trkPtr.key());
-    art::Ptr<recob::MCSFitResult> mcsResultII2DC = MCSresultsII2DC.at(trkPtr.key());
+    art::Ptr<recob::MCSFitResultGS> mcsResultIF3D = MCSresultsIF3D.at(trkPtr.key());
+    art::Ptr<recob::MCSFitResultGS> mcsResultIF2DI1 = MCSresultsIF2DI1.at(trkPtr.key());
+    art::Ptr<recob::MCSFitResultGS> mcsResultIF2DI2 = MCSresultsIF2DI2.at(trkPtr.key());
+    art::Ptr<recob::MCSFitResultGS> mcsResultIF2DC = MCSresultsIF2DC.at(trkPtr.key());
+    art::Ptr<recob::MCSFitResultGS> mcsResultII3D = MCSresultsII3D.at(trkPtr.key());
+    art::Ptr<recob::MCSFitResultGS> mcsResultII2DI1 = MCSresultsII2DI1.at(trkPtr.key());
+    art::Ptr<recob::MCSFitResultGS> mcsResultII2DI2 = MCSresultsII2DI2.at(trkPtr.key());
+    art::Ptr<recob::MCSFitResultGS> mcsResultII2DC = MCSresultsII2DC.at(trkPtr.key());
 
     art::Ptr<sbn::RangeP> rangeP = rangePs.at(trkPtr.key());
     art::FindManyP<recob::SpacePoint> fmtrkHitSPs(trkHits, e, fPFPproducer);
@@ -1129,14 +1129,14 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
   const std::vector<art::Ptr<anab::Calorimetry>> &calo,
 	const art::Ptr<recob::MCSFitResult> &mcsUF,
   const art::Ptr<recob::MCSFitResult> &mcsUI,
-	const art::Ptr<recob::MCSFitResult> &mcsIF3D,
-  const art::Ptr<recob::MCSFitResult> &mcsIF2DI1,
-  const art::Ptr<recob::MCSFitResult> &mcsIF2DI2,
-  const art::Ptr<recob::MCSFitResult> &mcsIF2DC,
-	const art::Ptr<recob::MCSFitResult> &mcsII3D,
-  const art::Ptr<recob::MCSFitResult> &mcsII2DI1,
-  const art::Ptr<recob::MCSFitResult> &mcsII2DI2,
-  const art::Ptr<recob::MCSFitResult> &mcsII2DC,
+	const art::Ptr<recob::MCSFitResultGS> &mcsIF3D,
+  const art::Ptr<recob::MCSFitResultGS> &mcsIF2DI1,
+  const art::Ptr<recob::MCSFitResultGS> &mcsIF2DI2,
+  const art::Ptr<recob::MCSFitResultGS> &mcsIF2DC,
+	const art::Ptr<recob::MCSFitResultGS> &mcsII3D,
+  const art::Ptr<recob::MCSFitResultGS> &mcsII2DI1,
+  const art::Ptr<recob::MCSFitResultGS> &mcsII2DI2,
+  const art::Ptr<recob::MCSFitResultGS> &mcsII2DC,
   const art::Ptr<sbn::RangeP> &rangeP,
   const std::map<geo::WireID, art::Ptr<raw::RawDigit>> &rawdigits,
   const std::vector<GlobalTrackInfo> &tracks,
@@ -1171,76 +1171,273 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
 
   fTrack->range_p = rangeP->range_p;
   
-  fTrack->mcs_pbest_uf = mcsUF->fwdMomentum();
-  fTrack->mcs_perr_uf = mcsUF->fwdMomUncertainty();
+  fTrack->mcs_pbest_UF = mcsUF->fwdMomentum();
+  fTrack->mcs_perr_UF  = mcsUF->fwdMomUncertainty();
+  fTrack->mcs_pbest_UI = mcsUI->fwdMomentum();
+  fTrack->mcs_perr_UI  = mcsUI->fwdMomUncertainty();
+
   for (size_t ja = 0; ja < mcsUF->scatterAngles().size(); ja++)
-    fTrack->mcs_angles_uf.push_back(mcsUF->scatterAngles().at(ja));
-
-  fTrack->mcs_pbest_ui = mcsUI->fwdMomentum();
-  fTrack->mcs_perr_ui = mcsUI->fwdMomUncertainty();
+    fTrack->mcs_angles_UF.push_back(mcsUF->scatterAngles().at(ja));
   for (size_t ja = 0; ja < mcsUI->scatterAngles().size(); ja++)
-    fTrack->mcs_angles_ui.push_back(mcsUI->scatterAngles().at(ja));
+    fTrack->mcs_angles_UI.push_back(mcsUI->scatterAngles().at(ja));
 
-  fTrack->mcs_pbest_if3d = mcsIF3D->fwdMomentum();
-  fTrack->mcs_perr_if3d = mcsIF3D->fwdMomUncertainty();
-  fTrack->mcs_d3p_3d = mcsIF3D->fwdLogLikelihood();
-  for (size_t ja = 0; ja < mcsIF3D->scatterAngles().size(); ja++)
-    fTrack->mcs_angles_if3d.push_back(mcsIF3D->scatterAngles().at(ja));
-  for (size_t ja = 0; ja < mcsIF3D->segmentRadLengths().size(); ja++)
-    fTrack->mcs_seghits_i3d.push_back(mcsIF3D->segmentRadLengths().at(ja));
+  fTrack->mcs_stop = mcsIF3D->GeoStopCheck();
 
-  fTrack->mcs_pbest_if2di1 = mcsIF2DI1->fwdMomentum();
-  fTrack->mcs_perr_if2di1 = mcsIF2DI1->fwdMomUncertainty();
-  fTrack->mcs_d3p_2di1 = mcsIF2DI1->fwdLogLikelihood();
-  fTrack->mcs_l1di1 = mcsIF2DI1->bwdMomentum();
-  fTrack->mcs_l2di1 = mcsIF2DI1->bwdMomUncertainty();
-  fTrack->mcs_l3di1 = mcsIF2DI1->bwdLogLikelihood();
-  for (size_t ja = 0; ja < mcsIF2DI1->scatterAngles().size(); ja++)
-    fTrack->mcs_angles_if2di1.push_back(mcsIF2DI1->scatterAngles().at(ja));
-  for (size_t ja = 0; ja < mcsIF2DI1->segmentRadLengths().size(); ja++)
-    fTrack->mcs_seghits_i2di1.push_back(mcsIF2DI1->segmentRadLengths().at(ja));
+  fTrack->mcs_sigma3p_3D   = mcsIF3D->sigma3P();
+  fTrack->mcs_sigma3p_2DI1 = mcsIF2DI1->sigma3P();
+  fTrack->mcs_sigma3p_2DI2 = mcsIF2DI2->sigma3P();
+  fTrack->mcs_sigma3p_2DC  = mcsIF2DC->sigma3P();
+  
+  fTrack->mcs_c2atrange_IF3D = mcsIF3D->C2AtRange();
+  fTrack->mcs_c2atrange_IF2DI1 = mcsIF2DI1->C2AtRange();
+  fTrack->mcs_c2atrange_IF2DI2 = mcsIF2DI2->C2AtRange();
+  fTrack->mcs_c2atrange_IF2DC = mcsIF2DC->C2AtRange();
+  fTrack->mcs_c2atrange_II3D = mcsII3D->C2AtRange();
+  fTrack->mcs_c2atrange_II2DI1 = mcsII2DI1->C2AtRange();
+  fTrack->mcs_c2atrange_II2DI2 = mcsII2DI2->C2AtRange();
+  fTrack->mcs_c2atrange_II2DC = mcsII2DC->C2AtRange();
 
-  fTrack->mcs_pbest_if2di2 = mcsIF2DI2->fwdMomentum();
-  fTrack->mcs_perr_if2di2 = mcsIF2DI2->fwdMomUncertainty();
-  fTrack->mcs_d3p_2di2 = mcsIF2DI2->fwdLogLikelihood();
-  fTrack->mcs_l1di2 = mcsIF2DI2->bwdMomentum();
-  fTrack->mcs_l2di2 = mcsIF2DI2->bwdMomUncertainty();
-  fTrack->mcs_l3di2 = mcsIF2DI2->bwdLogLikelihood();
-  for (size_t ja = 0; ja < mcsIF2DI2->scatterAngles().size(); ja++)
-    fTrack->mcs_angles_if2di2.push_back(mcsIF2DI2->scatterAngles().at(ja));
-  for (size_t ja = 0; ja < mcsIF2DI2->segmentRadLengths().size(); ja++)
-    fTrack->mcs_seghits_i2di2.push_back(mcsIF2DI2->segmentRadLengths().at(ja));
+  fTrack->mcs_l1DI1 = mcsIF2DI1->length1D();
+  fTrack->mcs_l2DI1 = mcsIF2DI1->length2D();
+  fTrack->mcs_l3DI1 = mcsIF2DI1->length3D();
+  fTrack->mcs_l1DI2 = mcsIF2DI2->length1D();
+  fTrack->mcs_l2DI2 = mcsIF2DI2->length2D();
+  fTrack->mcs_l3DI2 = mcsIF2DI2->length3D();
+  fTrack->mcs_l1DC  = mcsIF2DC->length1D();
+  fTrack->mcs_l2DC  = mcsIF2DC->length2D();
+  fTrack->mcs_l3DC  = mcsIF2DC->length3D();
 
-  fTrack->mcs_pbest_if2dc = mcsIF2DC->fwdMomentum();
-  fTrack->mcs_perr_if2dc = mcsIF2DC->fwdMomUncertainty();
-  fTrack->mcs_d3p_2dc = mcsIF2DC->fwdLogLikelihood();
-  fTrack->mcs_l1dc = mcsIF2DC->bwdMomentum();
-  fTrack->mcs_l2dc = mcsIF2DC->bwdMomUncertainty();
-  fTrack->mcs_l3dc = mcsIF2DC->bwdLogLikelihood();
-  for (size_t ja = 0; ja < mcsIF2DC->scatterAngles().size(); ja++)
-    fTrack->mcs_angles_if2dc.push_back(mcsIF2DC->scatterAngles().at(ja));
-  for (size_t ja = 0; ja < mcsIF2DC->segmentRadLengths().size(); ja++)
-    fTrack->mcs_seghits_i2dc.push_back(mcsIF2DC->segmentRadLengths().at(ja));
+  fTrack->mcs_pbest_IF3D  = mcsIF3D->bestMomentum();
+  fTrack->mcs_perr_IF3D   = mcsIF3D->errorMomentum();
+  fTrack->mcs_pmin_IF3D   = mcsIF3D->minMomentum();
+  fTrack->mcs_pmax_IF3D   = mcsIF3D->maxMomentum();
+  fTrack->mcs_alpha_IF3D  = mcsIF3D->alphaFit();
+  fTrack->mcs_dalpha_IF3D = mcsIF3D->alphaFitErr();
+  fTrack->mcs_beta_IF3D   = mcsIF3D->betaFit();
+  fTrack->mcs_dbeta_IF3D  = mcsIF3D->betaFitErr();
+  for (size_t ja = 0; ja < mcsIF3D->testMomentum().size(); ja++)
+    fTrack->mcs_ptest_IF3D.push_back(mcsIF3D->testMomentum().at(ja));
+  for (size_t ja = 0; ja < mcsIF3D->C2Function().size(); ja++)
+    fTrack->mcs_c2function_IF3D.push_back(mcsIF3D->C2Function().at(ja));
+  for (size_t ja = 0; ja < mcsIF3D->segmentLengths().size(); ja++)
+    fTrack->mcs_seglens_IF3D.push_back(mcsIF3D->segmentLengths().at(ja));
+  for (size_t ja = 0; ja < mcsIF3D->segmentCumLengths().size(); ja++)
+    fTrack->mcs_cumseglens_IF3D.push_back(mcsIF3D->segmentCumLengths().at(ja));
+  for (size_t ja = 0; ja < mcsIF3D->segmentHits().size(); ja++)
+    fTrack->mcs_seghits_IF3D.push_back(mcsIF3D->segmentHits().at(ja));
+  for (size_t ja = 0; ja < mcsIF3D->segmentCumHits().size(); ja++)
+    fTrack->mcs_cumseghits_IF3D.push_back(mcsIF3D->segmentCumHits().at(ja));
+  for (size_t ja = 0; ja < mcsIF3D->expectedLinAngles().size(); ja++)
+    fTrack->mcs_dthetalinexp_IF3D.push_back(mcsIF3D->expectedLinAngles().at(ja));
+  for (size_t ja = 0; ja < mcsIF3D->measuredLinAngles().size(); ja++)
+    fTrack->mcs_dthetalin_IF3D.push_back(mcsIF3D->measuredLinAngles().at(ja));
+  for (size_t ja = 0; ja < mcsIF3D->expectedPolyAngles().size(); ja++)
+    fTrack->mcs_dthetapolyexp_IF3D.push_back(mcsIF3D->expectedPolyAngles().at(ja));
+  for (size_t ja = 0; ja < mcsIF3D->measuredPolyAngles().size(); ja++)
+    fTrack->mcs_dthetapoly_IF3D.push_back(mcsIF3D->measuredPolyAngles().at(ja));
 
-  fTrack->mcs_pbest_ii3d = mcsII3D->fwdMomentum();
-  fTrack->mcs_perr_ii3d = mcsII3D->fwdMomUncertainty();
-  for (size_t ja = 0; ja < mcsII3D->scatterAngles().size(); ja++)
-    fTrack->mcs_angles_ii3d.push_back(mcsII3D->scatterAngles().at(ja));
+  fTrack->mcs_pbest_IF2DI1  = mcsIF2DI1->bestMomentum();
+  fTrack->mcs_perr_IF2DI1   = mcsIF2DI1->errorMomentum();
+  fTrack->mcs_pmin_IF2DI1   = mcsIF2DI1->minMomentum();
+  fTrack->mcs_pmax_IF2DI1   = mcsIF2DI1->maxMomentum();
+  fTrack->mcs_alpha_IF2DI1  = mcsIF2DI1->alphaFit();
+  fTrack->mcs_dalpha_IF2DI1 = mcsIF2DI1->alphaFitErr();
+  fTrack->mcs_beta_IF2DI1   = mcsIF2DI1->betaFit();
+  fTrack->mcs_dbeta_IF2DI1  = mcsIF2DI1->betaFitErr();
+  for (size_t ja = 0; ja < mcsIF2DI1->testMomentum().size(); ja++)
+    fTrack->mcs_ptest_IF2DI1.push_back(mcsIF2DI1->testMomentum().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DI1->C2Function().size(); ja++)
+    fTrack->mcs_c2function_IF2DI1.push_back(mcsIF2DI1->C2Function().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DI1->segmentLengths().size(); ja++)
+    fTrack->mcs_seglens_IF2DI1.push_back(mcsIF2DI1->segmentLengths().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DI1->segmentCumLengths().size(); ja++)
+    fTrack->mcs_cumseglens_IF2DI1.push_back(mcsIF2DI1->segmentCumLengths().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DI1->segmentHits().size(); ja++)
+    fTrack->mcs_seghits_IF2DI1.push_back(mcsIF2DI1->segmentHits().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DI1->segmentCumHits().size(); ja++)
+    fTrack->mcs_cumseghits_IF2DI1.push_back(mcsIF2DI1->segmentCumHits().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DI1->expectedLinAngles().size(); ja++)
+    fTrack->mcs_dthetalinexp_IF2DI1.push_back(mcsIF2DI1->expectedLinAngles().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DI1->measuredLinAngles().size(); ja++)
+    fTrack->mcs_dthetalin_IF2DI1.push_back(mcsIF2DI1->measuredLinAngles().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DI1->expectedPolyAngles().size(); ja++)
+    fTrack->mcs_dthetapolyexp_IF2DI1.push_back(mcsIF2DI1->expectedPolyAngles().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DI1->measuredPolyAngles().size(); ja++)
+    fTrack->mcs_dthetapoly_IF2DI1.push_back(mcsIF2DI1->measuredPolyAngles().at(ja));
 
-  fTrack->mcs_pbest_ii2di1 = mcsII2DI1->fwdMomentum();
-  fTrack->mcs_perr_ii2di1 = mcsII2DI1->fwdMomUncertainty();
-  for (size_t ja = 0; ja < mcsII2DI1->scatterAngles().size(); ja++)
-    fTrack->mcs_angles_ii2di1.push_back(mcsII2DI1->scatterAngles().at(ja));
+  fTrack->mcs_pbest_IF2DI2  = mcsIF2DI2->bestMomentum();
+  fTrack->mcs_perr_IF2DI2   = mcsIF2DI2->errorMomentum();
+  fTrack->mcs_pmin_IF2DI2   = mcsIF2DI2->minMomentum();
+  fTrack->mcs_pmax_IF2DI2   = mcsIF2DI2->maxMomentum();
+  fTrack->mcs_alpha_IF2DI2  = mcsIF2DI2->alphaFit();
+  fTrack->mcs_dalpha_IF2DI2 = mcsIF2DI2->alphaFitErr();
+  fTrack->mcs_beta_IF2DI2   = mcsIF2DI2->betaFit();
+  fTrack->mcs_dbeta_IF2DI2  = mcsIF2DI2->betaFitErr();
+  for (size_t ja = 0; ja < mcsIF2DI2->testMomentum().size(); ja++)
+    fTrack->mcs_ptest_IF2DI2.push_back(mcsIF2DI2->testMomentum().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DI2->C2Function().size(); ja++)
+    fTrack->mcs_c2function_IF2DI2.push_back(mcsIF2DI2->C2Function().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DI2->segmentLengths().size(); ja++)
+    fTrack->mcs_seglens_IF2DI2.push_back(mcsIF2DI2->segmentLengths().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DI2->segmentCumLengths().size(); ja++)
+    fTrack->mcs_cumseglens_IF2DI2.push_back(mcsIF2DI2->segmentCumLengths().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DI2->segmentHits().size(); ja++)
+    fTrack->mcs_seghits_IF2DI2.push_back(mcsIF2DI2->segmentHits().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DI2->segmentCumHits().size(); ja++)
+    fTrack->mcs_cumseghits_IF2DI2.push_back(mcsIF2DI2->segmentCumHits().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DI2->expectedLinAngles().size(); ja++)
+    fTrack->mcs_dthetalinexp_IF2DI2.push_back(mcsIF2DI2->expectedLinAngles().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DI2->measuredLinAngles().size(); ja++)
+    fTrack->mcs_dthetalin_IF2DI2.push_back(mcsIF2DI2->measuredLinAngles().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DI2->expectedPolyAngles().size(); ja++)
+    fTrack->mcs_dthetapolyexp_IF2DI2.push_back(mcsIF2DI2->expectedPolyAngles().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DI2->measuredPolyAngles().size(); ja++)
+    fTrack->mcs_dthetapoly_IF2DI2.push_back(mcsIF2DI2->measuredPolyAngles().at(ja));
 
-  fTrack->mcs_pbest_ii2di2 = mcsII2DI2->fwdMomentum();
-  fTrack->mcs_perr_ii2di2 = mcsII2DI2->fwdMomUncertainty();
-  for (size_t ja = 0; ja < mcsII2DI2->scatterAngles().size(); ja++)
-    fTrack->mcs_angles_ii2di2.push_back(mcsII2DI2->scatterAngles().at(ja));
+  fTrack->mcs_pbest_IF2DC  = mcsIF2DC->bestMomentum();
+  fTrack->mcs_perr_IF2DC   = mcsIF2DC->errorMomentum();
+  fTrack->mcs_pmin_IF2DC   = mcsIF2DC->minMomentum();
+  fTrack->mcs_pmax_IF2DC   = mcsIF2DC->maxMomentum();
+  fTrack->mcs_alpha_IF2DC  = mcsIF2DC->alphaFit();
+  fTrack->mcs_dalpha_IF2DC = mcsIF2DC->alphaFitErr();
+  fTrack->mcs_beta_IF2DC   = mcsIF2DC->betaFit();
+  fTrack->mcs_dbeta_IF2DC  = mcsIF2DC->betaFitErr();
+  for (size_t ja = 0; ja < mcsIF2DC->testMomentum().size(); ja++)
+    fTrack->mcs_ptest_IF2DC.push_back(mcsIF2DC->testMomentum().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DC->C2Function().size(); ja++)
+    fTrack->mcs_c2function_IF2DC.push_back(mcsIF2DC->C2Function().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DC->segmentLengths().size(); ja++)
+    fTrack->mcs_seglens_IF2DC.push_back(mcsIF2DC->segmentLengths().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DC->segmentCumLengths().size(); ja++)
+    fTrack->mcs_cumseglens_IF2DC.push_back(mcsIF2DC->segmentCumLengths().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DC->segmentHits().size(); ja++)
+    fTrack->mcs_seghits_IF2DC.push_back(mcsIF2DC->segmentHits().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DC->segmentCumHits().size(); ja++)
+    fTrack->mcs_cumseghits_IF2DC.push_back(mcsIF2DC->segmentCumHits().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DC->expectedLinAngles().size(); ja++)
+    fTrack->mcs_dthetalinexp_IF2DC.push_back(mcsIF2DC->expectedLinAngles().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DC->measuredLinAngles().size(); ja++)
+    fTrack->mcs_dthetalin_IF2DC.push_back(mcsIF2DC->measuredLinAngles().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DC->expectedPolyAngles().size(); ja++)
+    fTrack->mcs_dthetapolyexp_IF2DC.push_back(mcsIF2DC->expectedPolyAngles().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DC->measuredPolyAngles().size(); ja++)
+    fTrack->mcs_dthetapoly_IF2DC.push_back(mcsIF2DC->measuredPolyAngles().at(ja));
 
-  fTrack->mcs_pbest_ii2dc = mcsII2DC->fwdMomentum();
-  fTrack->mcs_perr_ii2dc = mcsII2DC->fwdMomUncertainty();
-  for (size_t ja = 0; ja < mcsII2DC->scatterAngles().size(); ja++)
-    fTrack->mcs_angles_ii2dc.push_back(mcsII2DC->scatterAngles().at(ja));
+  fTrack->mcs_pbest_II3D  = mcsII3D->bestMomentum();
+  fTrack->mcs_perr_II3D   = mcsII3D->errorMomentum();
+  fTrack->mcs_pmin_II3D   = mcsII3D->minMomentum();
+  fTrack->mcs_pmax_II3D   = mcsII3D->maxMomentum();
+  fTrack->mcs_alpha_II3D  = mcsII3D->alphaFit();
+  fTrack->mcs_dalpha_II3D = mcsII3D->alphaFitErr();
+  fTrack->mcs_beta_II3D   = mcsII3D->betaFit();
+  fTrack->mcs_dbeta_II3D  = mcsII3D->betaFitErr();
+  for (size_t ja = 0; ja < mcsII3D->testMomentum().size(); ja++)
+    fTrack->mcs_ptest_II3D.push_back(mcsII3D->testMomentum().at(ja));
+  for (size_t ja = 0; ja < mcsII3D->C2Function().size(); ja++)
+    fTrack->mcs_c2function_II3D.push_back(mcsII3D->C2Function().at(ja));
+  for (size_t ja = 0; ja < mcsII3D->segmentLengths().size(); ja++)
+    fTrack->mcs_seglens_II3D.push_back(mcsII3D->segmentLengths().at(ja));
+  for (size_t ja = 0; ja < mcsII3D->segmentCumLengths().size(); ja++)
+    fTrack->mcs_cumseglens_II3D.push_back(mcsII3D->segmentCumLengths().at(ja));
+  for (size_t ja = 0; ja < mcsII3D->segmentHits().size(); ja++)
+    fTrack->mcs_seghits_II3D.push_back(mcsII3D->segmentHits().at(ja));
+  for (size_t ja = 0; ja < mcsII3D->segmentCumHits().size(); ja++)
+    fTrack->mcs_cumseghits_II3D.push_back(mcsII3D->segmentCumHits().at(ja));
+  for (size_t ja = 0; ja < mcsII3D->expectedLinAngles().size(); ja++)
+    fTrack->mcs_dthetalinexp_II3D.push_back(mcsII3D->expectedLinAngles().at(ja));
+  for (size_t ja = 0; ja < mcsII3D->measuredLinAngles().size(); ja++)
+    fTrack->mcs_dthetalin_II3D.push_back(mcsII3D->measuredLinAngles().at(ja));
+  for (size_t ja = 0; ja < mcsII3D->expectedPolyAngles().size(); ja++)
+    fTrack->mcs_dthetapolyexp_II3D.push_back(mcsII3D->expectedPolyAngles().at(ja));
+  for (size_t ja = 0; ja < mcsII3D->measuredPolyAngles().size(); ja++)
+    fTrack->mcs_dthetapoly_II3D.push_back(mcsII3D->measuredPolyAngles().at(ja));
+
+  fTrack->mcs_pbest_II2DI1  = mcsII2DI1->bestMomentum();
+  fTrack->mcs_perr_II2DI1   = mcsII2DI1->errorMomentum();
+  fTrack->mcs_pmin_II2DI1   = mcsII2DI1->minMomentum();
+  fTrack->mcs_pmax_II2DI1   = mcsII2DI1->maxMomentum();
+  fTrack->mcs_alpha_II2DI1  = mcsII2DI1->alphaFit();
+  fTrack->mcs_dalpha_II2DI1 = mcsII2DI1->alphaFitErr();
+  fTrack->mcs_beta_II2DI1   = mcsII2DI1->betaFit();
+  fTrack->mcs_dbeta_II2DI1  = mcsII2DI1->betaFitErr();
+  for (size_t ja = 0; ja < mcsII2DI1->testMomentum().size(); ja++)
+    fTrack->mcs_ptest_II2DI1.push_back(mcsII2DI1->testMomentum().at(ja));
+  for (size_t ja = 0; ja < mcsII2DI1->C2Function().size(); ja++)
+    fTrack->mcs_c2function_II2DI1.push_back(mcsII2DI1->C2Function().at(ja));
+  for (size_t ja = 0; ja < mcsII2DI1->segmentLengths().size(); ja++)
+    fTrack->mcs_seglens_II2DI1.push_back(mcsII2DI1->segmentLengths().at(ja));
+  for (size_t ja = 0; ja < mcsII2DI1->segmentCumLengths().size(); ja++)
+    fTrack->mcs_cumseglens_II2DI1.push_back(mcsII2DI1->segmentCumLengths().at(ja));
+  for (size_t ja = 0; ja < mcsII2DI1->segmentHits().size(); ja++)
+    fTrack->mcs_seghits_II2DI1.push_back(mcsII2DI1->segmentHits().at(ja));
+  for (size_t ja = 0; ja < mcsII2DI1->segmentCumHits().size(); ja++)
+    fTrack->mcs_cumseghits_II2DI1.push_back(mcsII2DI1->segmentCumHits().at(ja));
+  for (size_t ja = 0; ja < mcsII2DI1->expectedLinAngles().size(); ja++)
+    fTrack->mcs_dthetalinexp_II2DI1.push_back(mcsII2DI1->expectedLinAngles().at(ja));
+  for (size_t ja = 0; ja < mcsII2DI1->measuredLinAngles().size(); ja++)
+    fTrack->mcs_dthetalin_II2DI1.push_back(mcsII2DI1->measuredLinAngles().at(ja));
+  for (size_t ja = 0; ja < mcsII2DI1->expectedPolyAngles().size(); ja++)
+    fTrack->mcs_dthetapolyexp_II2DI1.push_back(mcsII2DI1->expectedPolyAngles().at(ja));
+  for (size_t ja = 0; ja < mcsII2DI1->measuredPolyAngles().size(); ja++)
+    fTrack->mcs_dthetapoly_II2DI1.push_back(mcsII2DI1->measuredPolyAngles().at(ja));
+
+  fTrack->mcs_pbest_II2DI2  = mcsII2DI2->bestMomentum();
+  fTrack->mcs_perr_II2DI2   = mcsII2DI2->errorMomentum();
+  fTrack->mcs_pmin_II2DI2   = mcsII2DI2->minMomentum();
+  fTrack->mcs_pmax_II2DI2   = mcsII2DI2->maxMomentum();
+  fTrack->mcs_alpha_II2DI2  = mcsII2DI2->alphaFit();
+  fTrack->mcs_dalpha_II2DI2 = mcsII2DI2->alphaFitErr();
+  fTrack->mcs_beta_II2DI2   = mcsII2DI2->betaFit();
+  fTrack->mcs_dbeta_II2DI2  = mcsII2DI2->betaFitErr();
+  for (size_t ja = 0; ja < mcsII2DI2->testMomentum().size(); ja++)
+    fTrack->mcs_ptest_II2DI2.push_back(mcsII2DI2->testMomentum().at(ja));
+  for (size_t ja = 0; ja < mcsII2DI2->C2Function().size(); ja++)
+    fTrack->mcs_c2function_II2DI2.push_back(mcsII2DI2->C2Function().at(ja));
+  for (size_t ja = 0; ja < mcsII2DI2->segmentLengths().size(); ja++)
+    fTrack->mcs_seglens_II2DI2.push_back(mcsII2DI2->segmentLengths().at(ja));
+  for (size_t ja = 0; ja < mcsII2DI2->segmentCumLengths().size(); ja++)
+    fTrack->mcs_cumseglens_II2DI2.push_back(mcsII2DI2->segmentCumLengths().at(ja));
+  for (size_t ja = 0; ja < mcsII2DI2->segmentHits().size(); ja++)
+    fTrack->mcs_seghits_II2DI2.push_back(mcsII2DI2->segmentHits().at(ja));
+  for (size_t ja = 0; ja < mcsII2DI2->segmentCumHits().size(); ja++)
+    fTrack->mcs_cumseghits_II2DI2.push_back(mcsII2DI2->segmentCumHits().at(ja));
+  for (size_t ja = 0; ja < mcsII2DI2->expectedLinAngles().size(); ja++)
+    fTrack->mcs_dthetalinexp_II2DI2.push_back(mcsII2DI2->expectedLinAngles().at(ja));
+  for (size_t ja = 0; ja < mcsII2DI2->measuredLinAngles().size(); ja++)
+    fTrack->mcs_dthetalin_II2DI2.push_back(mcsII2DI2->measuredLinAngles().at(ja));
+  for (size_t ja = 0; ja < mcsII2DI2->expectedPolyAngles().size(); ja++)
+    fTrack->mcs_dthetapolyexp_II2DI2.push_back(mcsII2DI2->expectedPolyAngles().at(ja));
+  for (size_t ja = 0; ja < mcsII2DI2->measuredPolyAngles().size(); ja++)
+    fTrack->mcs_dthetapoly_II2DI2.push_back(mcsII2DI2->measuredPolyAngles().at(ja));
+
+  fTrack->mcs_pbest_II2DC  = mcsII2DC->bestMomentum();
+  fTrack->mcs_perr_II2DC   = mcsII2DC->errorMomentum();
+  fTrack->mcs_pmin_II2DC   = mcsII2DC->minMomentum();
+  fTrack->mcs_pmax_II2DC   = mcsII2DC->maxMomentum();
+  fTrack->mcs_alpha_II2DC  = mcsII2DC->alphaFit();
+  fTrack->mcs_dalpha_II2DC = mcsII2DC->alphaFitErr();
+  fTrack->mcs_beta_II2DC   = mcsII2DC->betaFit();
+  fTrack->mcs_dbeta_II2DC  = mcsII2DC->betaFitErr();
+  for (size_t ja = 0; ja < mcsII2DC->testMomentum().size(); ja++)
+    fTrack->mcs_ptest_II2DC.push_back(mcsII2DC->testMomentum().at(ja));
+  for (size_t ja = 0; ja < mcsII2DC->C2Function().size(); ja++)
+    fTrack->mcs_c2function_II2DC.push_back(mcsII2DC->C2Function().at(ja));
+  for (size_t ja = 0; ja < mcsII2DC->segmentLengths().size(); ja++)
+    fTrack->mcs_seglens_II2DC.push_back(mcsII2DC->segmentLengths().at(ja));
+  for (size_t ja = 0; ja < mcsII2DC->segmentCumLengths().size(); ja++)
+    fTrack->mcs_cumseglens_II2DC.push_back(mcsII2DC->segmentCumLengths().at(ja));
+  for (size_t ja = 0; ja < mcsII2DC->segmentHits().size(); ja++)
+    fTrack->mcs_seghits_II2DC.push_back(mcsII2DC->segmentHits().at(ja));
+  for (size_t ja = 0; ja < mcsII2DC->segmentCumHits().size(); ja++)
+    fTrack->mcs_cumseghits_II2DC.push_back(mcsII2DC->segmentCumHits().at(ja));
+  for (size_t ja = 0; ja < mcsII2DC->expectedLinAngles().size(); ja++)
+    fTrack->mcs_dthetalinexp_II2DC.push_back(mcsII2DC->expectedLinAngles().at(ja));
+  for (size_t ja = 0; ja < mcsII2DC->measuredLinAngles().size(); ja++)
+    fTrack->mcs_dthetalin_II2DC.push_back(mcsII2DC->measuredLinAngles().at(ja));
+  for (size_t ja = 0; ja < mcsII2DC->expectedPolyAngles().size(); ja++)
+    fTrack->mcs_dthetapolyexp_II2DC.push_back(mcsII2DC->expectedPolyAngles().at(ja));
+  for (size_t ja = 0; ja < mcsII2DC->measuredPolyAngles().size(); ja++)
+    fTrack->mcs_dthetapoly_II2DC.push_back(mcsII2DC->measuredPolyAngles().at(ja));
 
   if (hits.size() > 0) {
     fTrack->cryostat = hits[0]->WireID().Cryostat;

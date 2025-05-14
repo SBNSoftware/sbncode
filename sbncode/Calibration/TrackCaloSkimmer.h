@@ -44,7 +44,9 @@
 #include "lardataobj/AnalysisBase/Calorimetry.h"
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
+
 #include "lardataobj/RecoBase/MCSFitResult.h"
+#include "icaruscode/TPC/Tracking/MCS/MCSFitResultGS.h"
 
 #include "lardataobj/RawData/RawDigit.h"
 
@@ -128,14 +130,14 @@ private:
     const std::vector<art::Ptr<anab::Calorimetry>> &calo,
     const art::Ptr<recob::MCSFitResult> &mcsUF,
     const art::Ptr<recob::MCSFitResult> &mcsUI,
-    const art::Ptr<recob::MCSFitResult> &mcsIF3D,
-    const art::Ptr<recob::MCSFitResult> &mcsIF2DI1,
-    const art::Ptr<recob::MCSFitResult> &mcsIF2DI2,
-    const art::Ptr<recob::MCSFitResult> &mcsIF2DC,
-    const art::Ptr<recob::MCSFitResult> &mcsII3D,
-    const art::Ptr<recob::MCSFitResult> &mcsII2DI1,
-    const art::Ptr<recob::MCSFitResult> &mcsII2DI2,
-    const art::Ptr<recob::MCSFitResult> &mcsII2DC,
+    const art::Ptr<recob::MCSFitResultGS> &mcsIF3D,
+    const art::Ptr<recob::MCSFitResultGS> &mcsIF2DI1,
+    const art::Ptr<recob::MCSFitResultGS> &mcsIF2DI2,
+    const art::Ptr<recob::MCSFitResultGS> &mcsIF2DC,
+    const art::Ptr<recob::MCSFitResultGS> &mcsII3D,
+    const art::Ptr<recob::MCSFitResultGS> &mcsII2DI1,
+    const art::Ptr<recob::MCSFitResultGS> &mcsII2DI2,
+    const art::Ptr<recob::MCSFitResultGS> &mcsII2DC,
     const art::Ptr<sbn::RangeP> &range,
     const std::map<geo::WireID, art::Ptr<raw::RawDigit>> &rawdigits,
     const std::vector<GlobalTrackInfo> &tracks,
