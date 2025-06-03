@@ -202,7 +202,6 @@ namespace caf
         sbn::timing::SelectFirstOpHitByTime(hit,startmap,risemap); 
     }
     srflash.rwmtime = getFlashBunchTime(risemap, RWMTimes);
-    std::cout << "Flash at Time " << flash.Time() << " has " << startmap.size() << " opHit channels, flashTime_rwm = " <<  srflash.rwmtime << " \n";
     srflash.firsttime = firstTime;
 
     srflash.cryo = cryo; // 0 in SBND, 0/1 for E/W in ICARUS
