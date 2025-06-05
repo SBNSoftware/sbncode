@@ -193,13 +193,13 @@ namespace caf
     srflash.timewidth = flash.TimeWidth();
 
     double firstTime = std::numeric_limits<double>::max();
-    std::map<int, double> startmap, risemap;
+    std::map<int, double> risemap;
     for(const auto& hit: hits){
       double const hitTime = hit->HasStartTime()? hit->StartTime(): hit->PeakTime();
       if (firstTime > hitTime)
         firstTime = hitTime;
       if (!RWMTimes.empty())
-        sbn::timing::SelectFirstOpHitByTime(hit,startmap,risemap); 
+        sbn::timing::SelectFirstOpHitByTime(hit,risemap); 
     }
     srflash.rwmtime = getFlashBunchTime(risemap, RWMTimes);
     srflash.firsttime = firstTime;
