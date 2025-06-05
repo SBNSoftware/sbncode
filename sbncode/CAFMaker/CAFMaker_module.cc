@@ -1670,7 +1670,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   {
     //Get all of the special PMT Beam Signals (to use as an opFlash reference time below)
     art::Handle<std::vector<sbn::timing::PMTBeamSignal>> PMTBeamSignal_handle;
-    GetByLabelStrict(evt, fParams.PMTBeamSignalLabel(), PMTBeamSignal_handle);
+    GetByLabelIfExists(evt, fParams.PMTBeamSignalLabel(), PMTBeamSignal_handle);
   
     for (const std::string& pandora_tag_suffix : pandora_tag_suffixes) {
       art::Handle<std::vector<recob::OpFlash>> flashes_handle;
