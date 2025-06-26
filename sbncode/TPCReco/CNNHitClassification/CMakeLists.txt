@@ -17,6 +17,25 @@ cet_build_plugin(CNNID art::EDProducer
     cetlib_except::cetlib_except
 )
 
+cet_build_plugin(CNNVertexID art::EDProducer
+  LIBRARIES PRIVATE
+    larrecodnn::ImagePatternAlgs_Tensorflow_PointIdAlg
+    lardata::ArtDataHelper
+    lardata::DetectorClocksService
+    lardata::DetectorPropertiesService
+    lardata::AssociationUtil
+    lardataobj::RecoBase
+    sbnobj::Common_Reco
+    larcoreobj::SimpleTypesAndConstants
+    art::Framework_Services_System_TriggerNamesService_service
+    art::Framework_Services_Registry
+    canvas::canvas
+    messagefacility::MF_MessageLogger
+    fhiclcpp::types
+    fhiclcpp::fhiclcpp
+    cetlib_except::cetlib_except
+)
+
 # cet_build_plugin(CheckCNNScoreAllHits art::EDProducer
 #   LIBRARIES PRIVATE
 #     larrecodnn::ImagePatternAlgs_Tensorflow_PointIdAlg
