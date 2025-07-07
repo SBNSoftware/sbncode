@@ -9,6 +9,9 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
 #include "sbncode/BeamSpillInfoRetriever/SBNDPOTTools.h"
+//#include "sbncode/BeamSpillInfoRetriever/getFOM.cpp"
+#include "sbncode/BeamSpillInfoRetriever/getFOM.h"
+
 
 namespace sbn {
   class SBNDBNBRetriever;
@@ -35,7 +38,10 @@ private:
   double fBESOffset;
   std::string fDeviceUsedForTiming;
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp;
+  std::unique_ptr<ifbeam_ns::BeamFolder> offsets;
+  std::unique_ptr<ifbeam_ns::BeamFolder> vp873;
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp_mwr;
+
   sbn::MWRData mwrdata;
   art::ServiceHandle<ifbeam_ns::IFBeam> ifbeam_handle;
   static constexpr double MWRtoroidDelay = -0.035; ///< the same time point is measured _t_ by MWR and _t + MWRtoroidDelay`_ by the toroid [ms]
@@ -62,6 +68,12 @@ sbn::SBNDBNBRetriever::SBNDBNBRetriever(fhicl::ParameterSet const & params)
   bfp_mwr->set_epsilon(0.5);
   bfp_mwr->setValidWindow(3605);
   TotalBeamSpills = 0;
+  vp873 = ifbeam_handle->getBeamFolder(params.get<std::string>("VP873Bundle"), params.get<std::string>("URL"), std::stod(params.get<std::string>("TimeWindow" ) ));
+  vp873->set_epsilon(0.02);
+ 
+  offsets = ifbeam_handle->getBeamFolder(params.get<std::string>("OffsetBundle"), params.get<std::string>("URL"), std::stod(params.get<std::string>("TimeWindow" ) ));
+  offsets->set_epsilon(600);
+
 }
 
 void sbn::SBNDBNBRetriever::produce(art::Event & e)
@@ -210,7 +222,14 @@ int sbn::SBNDBNBRetriever::matchMultiWireData(
       
     }//end loop over MWR devices
     
-    sbn::BNBSpillInfo spillInfo = makeBNBSpillInfo(eventID, times_temps[i], MWRdata, matched_MWR, bfp);
+    sbn::BNBSpillInfo spillInfo = makeBNBSpillInfo(eventID, times_temps[i], MWRdata, matched_MWR, bfp, offsets, vp873);
+
+    double spillFOM = sbn::getFOM(spillInfo);
+
+    spillInfo.FOM = spillFOM;
+
+    std::cout << spillInfo.HP875 << "," <<spillInfo.HP875Offset << "," << spillInfo.HPTG2 << "," << spillInfo.HPTG2Offset << "," << spillInfo.VP873 << "," << spillInfo.VP873Offset << ","  << spillInfo.VP875 << "," << spillInfo.VP875Offset  << "," <<  spillInfo.VPTG1 << "," << spillInfo.VPTG1Offset << "," << spillInfo.VPTG2 << "," << spillInfo.VPTG2Offset << " | Figure of Merit:  " << spillInfo.FOM  << std::endl;
+
 
     beamInfos.push_back(std::move(spillInfo));
 

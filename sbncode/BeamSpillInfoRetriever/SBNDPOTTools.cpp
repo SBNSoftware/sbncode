@@ -65,7 +65,7 @@ namespace sbn{
   // Collect device information to make BNBSpillInfo object. Used in
   // ICARUS and SBND modules.
   sbn::BNBSpillInfo makeBNBSpillInfo
-    (art::EventID const& eventID, double time, MWRdata_t const& MWRdata, std::vector<int> const& matched_MWR, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp)
+  (art::EventID const& eventID, double time, MWRdata_t const& MWRdata, std::vector<int> const& matched_MWR, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp,  const std::unique_ptr<ifbeam_ns::BeamFolder> & offsets,const  std::unique_ptr<ifbeam_ns::BeamFolder> & vp873)
   {
     
     auto const& [ MWR_times, unpacked_MWR ] = MWRdata; // alias
@@ -87,8 +87,19 @@ namespace sbn{
     double BTJT2 = 0; // units Deg C
     double THCURR = 0; // units kiloAmps
     
+
+    double VP873 = 0; //units mm; not in the first IFBeam query bunch
+    double HP875Offset =0;//units mm; make a another separate IFBeam query bunch for offsets
+    double VP875Offset =0;//units mm
+    double VP873Offset =0;//units mm
+    double HPTG1Offset =0;//units mm
+    double HPTG2Offset =0;//units mm
+    double VPTG1Offset =0;//units mm
+    double VPTG2Offset =0;//units mm
+
     double TOR860_time = 0; // units s
     
+
     // Here we request all the devices
     // since sometimes devices fail to report we'll
     // allow each to throw an exception but still move forward
@@ -107,6 +118,21 @@ namespace sbn{
     try{bfp->GetNamedData(time, "E:VPTG2",&VPTG2);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
     try{bfp->GetNamedData(time, "E:BTJT2",&BTJT2);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
     try{bfp->GetNamedData(time, "E:THCURR",&THCURR);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+
+
+    
+    try{bfp->GetNamedData(time, "E:VP873",&VP873);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    
+    try{offsets->GetNamedData(time, "E_VP873S",&VP873Offset);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{offsets->GetNamedData(time, "E_HP875S",&HP875Offset);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{offsets->GetNamedData(time, "E_VP875S",&VP875Offset);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{offsets->GetNamedData(time, "E_HPTG1S",&HPTG1Offset);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{offsets->GetNamedData(time, "E_HPTG2S",&HPTG2Offset);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{offsets->GetNamedData(time, "E_VPTG1S",&VPTG1Offset);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{offsets->GetNamedData(time, "E_VPTG2S",&VPTG2Offset);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+
+
+
   
     //crunch the times 
     unsigned long int time_closest_int = (int) TOR860_time;
@@ -129,6 +155,16 @@ namespace sbn{
     beamInfo.THCURR = THCURR;
     beamInfo.spill_time_s = time_closest_int;
     beamInfo.spill_time_ns = time_closest_ns;    
+    beamInfo.VP873 = VP873;
+    beamInfo.VP873Offset = VP873Offset;
+    beamInfo.HP875Offset = HP875Offset;
+    beamInfo.VP875Offset = VP875Offset;
+    beamInfo.HPTG1Offset = HPTG1Offset;
+    beamInfo.HPTG2Offset = HPTG2Offset;
+    beamInfo.VPTG1Offset = VPTG1Offset;
+    beamInfo.VPTG2Offset = VPTG2Offset;
+
+       
   
     for(auto const& MWRdata: unpacked_MWR){
       std::ignore = MWRdata;
@@ -331,4 +367,8 @@ namespace sbn{
     
     return { std::move(MWR_times), std::move(unpacked_MWR) };
   }
+
 }
+
+
+
