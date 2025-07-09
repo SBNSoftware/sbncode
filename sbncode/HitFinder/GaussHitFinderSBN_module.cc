@@ -407,7 +407,7 @@ namespace hit {
                   // This hit parameters
                   double ROIsumADC =
                     std::accumulate(range.begin() + firstTick, range.begin() + lastTick, 0.);
-                  double peakSigma = (lastTick - firstTick) / 3.;  // Set the width...
+                  double peakSigma = (lastTick - firstTick) / 6.;  // set "sigma" at half the pulse width divided by 3
                   double peakAmp = 0.3989 * ROIsumADC / peakSigma; // Use gaussian formulation
                   double peakMean = (firstTick + lastTick) / 2.;
 
