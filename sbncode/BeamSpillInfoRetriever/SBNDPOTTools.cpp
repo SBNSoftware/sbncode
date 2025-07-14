@@ -98,7 +98,8 @@ namespace sbn{
     double VPTG2Offset =0;//units mm
 
     double TOR860_time = 0; // units s
-    
+
+    double FOM =0; 
 
     // Here we request all the devices
     // since sometimes devices fail to report we'll
@@ -163,6 +164,7 @@ namespace sbn{
     beamInfo.HPTG2Offset = HPTG2Offset;
     beamInfo.VPTG1Offset = VPTG1Offset;
     beamInfo.VPTG2Offset = VPTG2Offset;
+    beamInfo.FOM = FOM;
 
        
   
@@ -202,7 +204,11 @@ namespace sbn{
     // information, so we'll write it to the SubRun
     
     beamInfo.event = eventID.event(); // the rest of ID is known by art::SubRun
-   
+    
+    //for(size_t m=0; m< beamInfo.M875BB.size(); m++){
+    //std::cout << "M875BB:  " <<beamInfo.M875BB[m] << " | M876BB: " << beamInfo.M876BB[m] << " | MMTBB: " << beamInfo.MMBTBB[m] <<std::endl;
+    //}
+    
     return beamInfo;
   }
 
