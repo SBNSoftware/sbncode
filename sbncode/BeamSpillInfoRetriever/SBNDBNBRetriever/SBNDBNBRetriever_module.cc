@@ -11,6 +11,7 @@
 #include "sbncode/BeamSpillInfoRetriever/SBNDPOTTools.h"
 //#include "sbncode/BeamSpillInfoRetriever/getFOM.cpp"
 #include "sbncode/BeamSpillInfoRetriever/getFOM.h"
+#include <fstream>
 
 
 namespace sbn {
@@ -223,12 +224,19 @@ int sbn::SBNDBNBRetriever::matchMultiWireData(
     }//end loop over MWR devices
     
     sbn::BNBSpillInfo spillInfo = makeBNBSpillInfo(eventID, times_temps[i], MWRdata, matched_MWR, bfp, offsets, vp873);
-
+    
     double spillFOM = sbn::getFOM(spillInfo);
-
+    
     spillInfo.FOM = spillFOM;
+    std::cout << "Figure of Merit:  " << spillFOM << std::endl;
 
-    std::cout << spillInfo.HP875 << "," <<spillInfo.HP875Offset << "," << spillInfo.HPTG2 << "," << spillInfo.HPTG2Offset << "," << spillInfo.VP873 << "," << spillInfo.VP873Offset << ","  << spillInfo.VP875 << "," << spillInfo.VP875Offset  << "," <<  spillInfo.VPTG1 << "," << spillInfo.VPTG1Offset << "," << spillInfo.VPTG2 << "," << spillInfo.VPTG2Offset << " | Figure of Merit:  " << spillInfo.FOM  << std::endl;
+    std::ofstream outfile("FOM.txt", std::ios::app); 
+    outfile << spillInfo.FOM << std::endl; 
+    outfile.close();
+
+
+
+    //std::cout << spillInfo.HP875 << "," <<spillInfo.HP875Offset << "," << spillInfo.HPTG2 << "," << spillInfo.HPTG2Offset << "," << spillInfo.VP873 << "," << spillInfo.VP873Offset << ","  << spillInfo.VP875 << "," << spillInfo.VP875Offset  << "," <<  spillInfo.VPTG1 << "," << spillInfo.VPTG1Offset << "," << spillInfo.VPTG2 << "," << spillInfo.VPTG2Offset << " | Figure of Merit:  " << spillInfo.FOM  << std::endl;
 
 
     beamInfos.push_back(std::move(spillInfo));

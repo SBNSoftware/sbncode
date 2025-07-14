@@ -3,11 +3,17 @@
 #include <math.h>
 #include "TH1D.h"
 #include "TF1.h"
+#include <vector>
+#include <iostream>
+#include "TCanvas.h"
+
 
 using namespace std;
 
 
 namespace sbn {
+  
+  bool onePlot = true;
 
   float getFOM(BNBSpillInfo & spill )
   //float getFOM2( const ub_BeamHeader& bh, const std::vector<ub_BeamData>& bd, const bnb::bnbAutoTune settings, bool useAutoTune)
@@ -37,8 +43,8 @@ namespace sbn {
     //int useHTG = bnb::kTG1;
     //int useVTG = bnb::kTG1;
     
-    int useHTG = 1;
-    int useVTG = 1;
+    int useHTG = 0;
+    int useVTG = 0;
     
     
     //if(useAutoTune){
@@ -83,6 +89,37 @@ namespace sbn {
     std::vector<double> mw876(spill.M876BB.begin(), spill.M876BB.end());
     std::vector<double> mwtgt(spill.MMBTBB.begin(), spill.MMBTBB.end());
     
+    //std::cout << "MWR 875 Size: " << mw875.size() << "  | MWR876 Size:  " << mw876.size() << "  |  MWTGT Size: " << mwtgt.size() << std::endl;  
+    //for (size_t m =0; m< mw875.size() ; m++){
+    //std::cout << "MWR 875: " << mw875[m] << "  | MWR876: " << mw876[m] << "  |  MWTGT: " << mwtgt[m] << std::endl;  
+    //}
+    
+    /*
+    if (onePlot){
+      TH1D* MWRx =new TH1D("MWRx","MWRx",48,-12,12);
+      TCanvas *c1 = new TCanvas("c1", "c1", 800, 600);
+
+      TH1D* MWRy =new TH1D("MWRy","MWRy",48,-12,12);
+      TCanvas *c2 = new TCanvas("c2", "c2", 800, 600);
+
+      
+      for(int w =0 ; w< 48; w++){
+	MWRx->SetBinContent(w+1, -mw875[w]);
+	MWRx->SetBinContent(w+1, -mw875[w+48]);
+      }
+
+      c1->cd();
+      MWRx->Draw("HIST");
+      c1->Draw();
+
+      c2->cd();
+      MWRy->Draw("HIST");
+      c2->Draw();
+
+      onePlot =false;
+    }
+    */
+    
     //std::vector<double> mw875 = spill.M875BB;
     //std::vector<double> mw876 = spill.M876BB;
     //std::vector<double> mwtgt = spill.MMBTBB;
@@ -96,6 +133,11 @@ namespace sbn {
     hptg2.push_back(spill.HPTG2);
     vptg2.push_back(spill.VPTG2);
     
+
+
+    //std::cout << spill.HP875 << "," <<spill.HP875Offset << "," << spill.HPTG2 << "," << spill.HPTG2Offset << "," << spill.VP873 << "," << spill.VP873Offset << ","  << spill.VP875 << "," << spill.VP875Offset  << "," <<  spill.VPTG1 << "," << spill.VPTG1Offset << "," << spill.VPTG2 << "," << spill.VPTG2Offset << " | Figure of Merit:  " << spill.FOM  << std::endl;
+
+
     /*
       for(auto& bdata : bd) {        // get toroid, BPM, and multiwire data
       if(bdata.getDeviceName().find("E:TOR860") != std::string::npos) {        // get E:TOR860 reading
@@ -269,8 +311,11 @@ namespace sbn {
       //failed getting  multiwire data
       return 4;
     }
-    fom=1-pow(10,sbn::calcFOM(horpos,horang,verpos,verang,tor,tgtsx,tgtsy));
+    //std::cout << "FOM before power: " << sbn::calcFOM(horpos,horang,verpos,verang,tor,tgtsx,tgtsy)  << ", " << horpos << ", " << horang << ", " << verpos << ", " << verang << ", " << tor << ", " << tgtsx << ", " << tgtsy<< std::endl;
     
+    //std::cout << "Tgtsx: " << tgtsx << " | Tgtsy: " << tgtsy << std::endl;
+    fom=1-pow(10,sbn::calcFOM(horpos,horang,verpos,verang,tor,tgtsx,tgtsy));
+    //std::cout << "FOM: " <<fom << std::endl;
     return fom;
   }
   
@@ -392,6 +437,13 @@ bnb::bnbAutoTune bmd::getSettings(const bmd::autoTunes& history, const uint64_t 
       hProf->Fit("gaus","Q0","",-12+first_x*0.5,-12+last_x*0.5);
       x   =hProf->GetFunction("gaus")->GetParameter(1);
       sx  =hProf->GetFunction("gaus")->GetParameter(2);
+      //std::cout << "sx value: " << sx << std::endl;
+      // if ( sx > 50.){
+      // 	for (size_t m =0; m< 48 ; m++){
+      // 	  std::cout << "Bad MWData: " << mwdata[m]  << std::endl;  
+      // 	}
+      //}
+
       chi2=hProf->GetFunction("gaus")->GetChisquare()/hProf->GetFunction("gaus")->GetNDF();
     } else {
       x=99999;
@@ -404,6 +456,9 @@ bnb::bnbAutoTune bmd::getSettings(const bmd::autoTunes& history, const uint64_t 
   
   double calcFOM(double horpos, double horang, double verpos, double verang, double ppp, double tgtsx, double tgtsy)
   {
+    ppp = ppp / pow(10,12);
+
+
     //code from MiniBooNE AnalysisFramework with the addition of scaling the beam profile to match tgtsx, tgtsy
     //form DQ_BeamLine_twiss_init.F
     double bx  =  4.68;
@@ -449,6 +504,15 @@ bnb::bnbAutoTune bmd::getSettings(const bmd::autoTunes& history, const uint64_t 
     sigma1[3][2] =  sigma1[2][3];
     sigma1[5][2] =  sigma1[2][5];
     sigma1[5][3] =  sigma1[3][5];
+
+    
+
+    for (int fi =0; fi <6; fi++){
+      for(int la =0; la<6; la++){
+	//std::cout << "sigma1[" << fi << "][" << la << "] = " << sigma1[fi][la] << "  | ppp: " << ppp << std::endl;
+      }
+    }
+
     double begtocnt[6][6]={
       { 0.65954,  0.43311,  0.00321,  0.10786, 0.00000,  1.97230},
       { 0.13047,  1.60192,  0.00034,  0.00512, 0.00000,  1.96723},
@@ -494,18 +558,22 @@ bnb::bnbAutoTune bmd::getSettings(const bmd::autoTunes& history, const uint64_t 
 		 cx, cy, sx, sy, rho);
     double scalex=tgtsx/sx;
     double scaley=tgtsy/sy;
+    //std::cout << "Scalex: " << scalex << "  | Scaley: " << scaley << " | sx: " << sx << " | sy: " << sy << " | tgtsx: " << tgtsx << " | tgtsy: " << tgtsy << std::endl;
     double fom_a=sbn::func_intbivar(cx, cy, sx*scalex, sy*scaley, rho);
     //swim to center of target
     sbn::swimBNB(centroid1,sigma1,
 		 identity, begtocnt,
 		 cx, cy, sx, sy, rho);
     double fom_b=sbn::func_intbivar(cx, cy, sx*scalex, sy*scaley, rho);
+    //std::cout << "After Scalex: " << scalex << "  | Scaley: " << scaley << " | sx: " << sx << " | sy: " << sy << " | tgtsx: " << tgtsx << " | tgtsy: " << tgtsy  << " | rho: " << rho << std::endl;
     //swim to downstream of target
     sbn::swimBNB(centroid1,sigma1,
 		 cnttodns, begtodns,
 		 cx, cy, sx, sy, rho);
     double fom_c=sbn::func_intbivar(cx, cy, sx*scalex, sy*scaley, rho);
     // add a guard for double precision
+    //std::cout << "Foma,b,c: " << fom_a << ", " << fom_b << ", " << fom_c << std::endl;
+    
     if(fom_a <= -10000. || fom_b <= -10000. || fom_c <= -10000) return -10000.;
     double fom2=fom_a*0.6347 +
       fom_b*0.2812 +
@@ -532,8 +600,8 @@ bnb::bnbAutoTune bmd::getSettings(const bmd::autoTunes& history, const uint64_t 
       for (int j = 0;j<6;j++) {
 	for (int k = 0;k<6;k++) {
 	  for (int m = 0;m<6;m++) {
-	    sigma2[i][m] = sigma2[i][m] +
-	      xfers[i][j]*sigma1[j][k]*xfers[m][k];
+	    sigma2[i][m] = sigma2[i][m] + xfers[i][j]*sigma1[j][k]*xfers[m][k];
+	    //std::cout << "sigma2: " << sigma2[i][m] << " = " << sigma2[i][m]<< " + " << xfers[i][j] << " * " << sigma1[j][k] << " * " << xfers[m][k] << std::endl; 
 	  }
 	}
       }
@@ -542,13 +610,14 @@ bnb::bnbAutoTune bmd::getSettings(const bmd::autoTunes& history, const uint64_t 
     sx  = sqrt(sigma2[0][0])*1000.0;
     sy  = sqrt(sigma2[2][2])*1000.0;
     rho = sigma2[0][2]/sqrt(sigma2[0][0]*sigma2[2][2]);
-    //  cout<<"Swim "<<sx<<"\t"<<sy<<"\t"<<rho<<endl;
+    //cout<<"Swim "<<sx<<"\t"<<sy<<"\t"<<rho<<endl;
   }
   
   
   
   double func_intbivar(const double cx, const double cy, const double sx, const double sy, const double rho )
   {
+    //std::cout << cx << ", " << cy << ", " << sx << ", " << sy << ", " << rho << std::endl;
     //integrate beam overlap with target cylinder
     double x0  =  cx;
     double y0  =  cy;
@@ -574,6 +643,7 @@ bnb::bnbAutoTune bmd::getSettings(const bmd::autoTunes& history, const uint64_t 
 	  double z = tx*tx - 2.0*rho*tx*ty + ty*ty;
 	  double t = exp(-z/(2.0*(1.0-rho2)));
 	  sum = sum + t;
+	  //std::cout << " t: " << t << " z: " << z << std::endl;
 	}
 	//      cout << i<<"\t"<<j<<"\t"<<x<<"\t"<<y<<"\t"<<sum<<endl;
 	y = y + dy;
@@ -581,6 +651,9 @@ bnb::bnbAutoTune bmd::getSettings(const bmd::autoTunes& history, const uint64_t 
       x = x + dx;
     }
     sum = sum*dx*dy/(2.0*3.14159*sx*sy*sqrt(1.0-rho2));
+
+    //std::cout << sum << ", " << dx << ", " << dy  << ", " << rho2<< std::endl;
+
     // add a guard for double precision
     if(sum >= 1.) return -10000.;
     return log10(1-sum);
