@@ -1,6 +1,6 @@
 #include "icarusbnbspillinfo.fcl"
 
-process_name: ICARUSBNBInfoGen
+process_name: BNBInfoGen
 
 services:{
   
