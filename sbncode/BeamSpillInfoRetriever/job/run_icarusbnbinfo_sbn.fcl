@@ -38,7 +38,7 @@ physics: {
 outputs: {
  out1: {
    module_type: RootOutput
-   fileName: "%ifb_%tc_icarusbnbinfo.root"
+   fileName: "%ifb_%tc_bnbinfo.root"
    dataTier: "raw"
    compressionLevel: 1
  }
