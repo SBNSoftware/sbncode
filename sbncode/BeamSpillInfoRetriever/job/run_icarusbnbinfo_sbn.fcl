@@ -31,7 +31,7 @@ physics: {
    icarusbnbinfo: @local::icarusbnbspillinfo
  }
 
- simulate: [icarusbnbinfo ]
+ simulate: [ bnbinfo ]
  stream1: [ out1 ]
 }
 
