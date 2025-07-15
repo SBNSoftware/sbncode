@@ -28,7 +28,7 @@ source: {
 
 physics: {
  producers: {
-   icarusbnbinfo: @local::icarusbnbspillinfo
+   bnbinfo: @local::icarusbnbspillinfo
  }
 
  simulate: [ bnbinfo ]
