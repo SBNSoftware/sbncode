@@ -69,7 +69,6 @@ FilterSimEnergyDeposits::FilterSimEnergyDeposits(fhicl::ParameterSet const& p)
   // Call appropriate produces<>() functions here.
   // Call appropriate consumes<>() for any products to be retrieved by this module.
   produces<std::vector<sim::SimEnergyDeposit>>();
-
   
   if (fInitSimEnergyDepositLiteLabel != "undefined") { produces<std::vector<sim::SimEnergyDepositLite>>(); }
 }
