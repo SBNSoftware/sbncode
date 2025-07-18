@@ -105,6 +105,7 @@ void FilterSimEnergyDeposits::produce(art::Event& e)
     const int numelectrons = sedep.NumElectrons();
     const double syratio = sedep.ScintYieldRatio();
     const double energy = sedep.Energy();
+    geo::Point_t start = sedep.Start();
     geo::Point_t end = sedep.End();
     if (TPC) {
       auto const& wireReadout = art::ServiceHandle<geo::WireReadout const>()->Get();
