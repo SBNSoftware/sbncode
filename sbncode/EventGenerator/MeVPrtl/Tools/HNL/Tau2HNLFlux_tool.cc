@@ -94,6 +94,19 @@ double hnl_momentum(double tau_mass, double pion_mass, double hnl_mass) {
     -2 * pion_mass * pion_mass * hnl_mass * hnl_mass) / ( 2 * tau_mass );
 }
 
+/* Polarization of a HNL emerging from a two body meson decay (M-> l N)
+   m_l is the mass of the lepton and m_M the mass of the parent meson
+   See arXiv:2109.10358 for more details.
+   Due to crossing symmetry the polarization of the tau -> m N gives the same result */
+double PolHNL(double m_HNL, double m_l, double m_M)
+{
+  double yl = m_l / m_M;
+  double yHNL =  m_HNL / m_M;
+  double numterm = (yl*yl - yHNL * yHNL) * sqrt(pow(yHNL,4) + (1.0 - yl * yl)*(1.0 - yl * yl) - 2.0 * yHNL * yHNL * (1.0 + yl * yl));
+  double denterm = pow(yl,4) + pow(yHNL,4) - 2.0 * yl * yl * yHNL * yHNL - yl * yl - yHNL * yHNL;
+  return numterm / denterm;
+}
+
 double BranchingRatio(double hnl_mass, double u4) {
   double Gfermi = Constants::Instance().Gfermi;
   double Vud2 = Constants::Instance().abs_Vud_squared;
@@ -196,6 +209,18 @@ bool Tau2HNLFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux &hn
 
   // equivalent neutrino energy -- doesn't apply here
   hnl.equiv_enu = -1;
+
+
+// Get the HNL Polarization 
+  double meson_mass = Constants::Instance().kplus_mass;
+  if(abs(hnl.meson_pdg) == 321) {
+    meson_mass = Constants::Instance().kplus_mass;
+  }else if(abs(hnl.meson_pdg) == 211) {
+    meson_mass = Constants::Instance().piplus_mass;
+  }
+  
+
+  hnl.polarization = PolHNL(fM , Constants::Instance().tau_mass, meson_mass);
 
   return true;
 }

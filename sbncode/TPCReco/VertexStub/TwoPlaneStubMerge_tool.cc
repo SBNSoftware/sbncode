@@ -43,13 +43,13 @@ public:
     TwoPlaneStubMerge(fhicl::ParameterSet const &pset);
 
     std::vector<sbn::StubInfo> Merge(const std::vector<sbn::StubInfo> &stubs,
-       const geo::GeometryCore *geo, 
+       const geo::WireReadoutGeom &wireReadout,
        const spacecharge::SpaceCharge *sce, 
        const detinfo::DetectorClocksData &dclock,
        const detinfo::DetectorPropertiesData &dprop) override;
 
     sbn::StubInfo MergeStubs(const sbn::StubInfo &A, const sbn::StubInfo &B,
-      const geo::GeometryCore *geo,
+      const geo::WireReadoutGeom &wireReadout,
       const spacecharge::SpaceCharge *sce,
       const detinfo::DetectorPropertiesData &dprop);
 
@@ -84,7 +84,7 @@ bool TwoPlaneStubMerge::SortStubs(const sbn::StubInfo &A, const sbn::StubInfo &B
 }
 
 sbn::StubInfo TwoPlaneStubMerge::MergeStubs(const sbn::StubInfo &A, const sbn::StubInfo &B,
-    const geo::GeometryCore *geo,
+    const geo::WireReadoutGeom& wireReadout,
     const spacecharge::SpaceCharge *sce,
     const detinfo::DetectorPropertiesData &dprop) {
   sbn::StubInfo ret; 
@@ -107,7 +107,7 @@ sbn::StubInfo TwoPlaneStubMerge::MergeStubs(const sbn::StubInfo &A, const sbn::S
   // Vertex should be the same between the two
   ret.stub.vtx = A.stub.vtx;
   // The real thing -- combine the two positions to get a new endpoint
-  ret.stub.end = sbn::TwoStubEndPosition(best, othr, geo, sce, dprop);
+  ret.stub.end = sbn::TwoStubEndPosition(best, othr, wireReadout, sce, dprop);
 
   // Save the EField at the start and end point
   ret.stub.efield_vtx = sbn::GetEfield(dprop, sce, ret.stub.vtx, ret.vhit_hit->WireID(), false);
@@ -136,7 +136,7 @@ sbn::StubInfo TwoPlaneStubMerge::MergeStubs(const sbn::StubInfo &A, const sbn::S
 }
 
 std::vector<sbn::StubInfo> TwoPlaneStubMerge::Merge(const std::vector<sbn::StubInfo> &stubs,
-    const geo::GeometryCore *geo, 
+    const geo::WireReadoutGeom &wireReadout,
     const spacecharge::SpaceCharge *sce,
     const detinfo::DetectorClocksData &dclock,
     const detinfo::DetectorPropertiesData &dprop) {
@@ -186,7 +186,7 @@ std::vector<sbn::StubInfo> TwoPlaneStubMerge::Merge(const std::vector<sbn::StubI
     const MergeInfo &thismrg = merges[i_mrg];
     if (thismrg.toff < fMaxMergeTOff && thismrg.qoff < fMaxMergeQOff) {
       if (!hasmerged.count(thismrg.i) && !hasmerged.count(thismrg.j)) { 
-        ret.push_back(MergeStubs(stubs[thismrg.i], stubs[thismrg.j], geo, sce, dprop));
+        ret.push_back(MergeStubs(stubs[thismrg.i], stubs[thismrg.j], wireReadout, sce, dprop));
         hasmerged.insert(thismrg.i);
         hasmerged.insert(thismrg.j);
       }

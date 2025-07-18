@@ -45,7 +45,7 @@
 #include "lardataobj/AnalysisBase/ParticleID.h"
 
 #include "larcore/CoreUtils/ServiceUtil.h"
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 
 #include "larsim/MCCheater/BackTrackerService.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
@@ -799,8 +799,6 @@ namespace sbn {
 
   void Razzled::FillShowerMetrics(const art::Ptr<recob::Shower> &shower, const std::vector<art::Ptr<recob::Hit>> &hits)
   {
-    const geo::GeometryCore* geom = lar::providerFrom<geo::Geometry>();
-
     const float length = shower->Length();
     shw_openAngle      = TMath::RadToDeg() * shower->OpenAngle();
     if(shw_openAngle < 0)
@@ -818,9 +816,10 @@ namespace sbn {
 
     std::array<float, 3> showerPlanePitches = { -1.f, -1.f, -1.f };
 
-    for(geo::PlaneGeo const& plane : geom->Iterate<geo::PlaneGeo>())
+    auto const& wireReadout = art::ServiceHandle<geo::WireReadout const>()->Get();
+    for(geo::PlaneGeo const& plane : wireReadout.Iterate<geo::PlaneGeo>())
       {
-        const float angleToVert = geom->WireAngleToVertical(plane.View(), plane.ID()) - 0.5 * M_PI;
+        const float angleToVert = wireReadout.WireAngleToVertical(plane.View(), plane.ID()) - 0.5 * M_PI;
         const float cosgamma    = std::abs(std::sin(angleToVert) * shower->Direction().Y() + std::cos(angleToVert) * shower->Direction().Z());
 
         showerPlanePitches[plane.ID().Plane] = plane.WirePitch() / cosgamma;

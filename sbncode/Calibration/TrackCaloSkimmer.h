@@ -54,15 +54,16 @@
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
-#include "larcore/Geometry/Geometry.h"
-#include "larcore/CoreUtils/ServiceUtil.h"
-#include "larcorealg/Geometry/GeometryCore.h"
+#include "larcorealg/Geometry/fwd.h"
 
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "larsim/MCCheater/BackTrackerService.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
 
 #include "sbnobj/Common/Calibration/TrackCaloSkimmerObj.h"
+#include "sbnobj/Common/CRT/CRTHitT0TaggingInfo.hh"
+#include "sbnobj/Common/CRT/CRTHitT0TaggingTruthInfo.hh"
+
 #include "ITCSSelectionTool.h"
 
 namespace sbn {
@@ -92,6 +93,16 @@ public:
   }
 
 private:
+
+  struct T0TimingInfo {
+    double  t0Pandora;
+    double  t0CRTTrack;
+    double  t0CRTHit;
+    bool    hasT0Pandora;
+    bool    hasT0CRTTrack;
+    bool    hasT0CRTHit;
+  };
+
   // Internal data struct
   struct GlobalTrackInfo {
     geo::Point_t start;
@@ -119,7 +130,7 @@ private:
 
   // Fill vars
   void FillTrack(const recob::Track &track, 
-    const recob::PFParticle &pfp, float t0, 
+    const recob::PFParticle &pfp, const T0TimingInfo &t0Info,
     const std::vector<art::Ptr<recob::Hit>> &hits,
     const std::vector<const recob::TrackHitMeta*> &thms,
     const std::vector<art::Ptr<recob::SpacePoint>> &sps,
@@ -127,9 +138,11 @@ private:
     const std::map<geo::WireID, art::Ptr<raw::RawDigit>> &rawdigits,
     const std::vector<GlobalTrackInfo> &tracks,
     const geo::GeometryCore *geo,
+    const geo::WireReadoutGeom *wireReadout,
     const detinfo::DetectorClocksData &clock_data,
     const cheat::BackTrackerService *bt_serv,
-    const sbn::EDet det);
+    const sbn::EDet det,
+    const detinfo::DetectorPropertiesData &dprop);
 
   void FillTrackDaughterRays(const recob::Track &trk,
     const recob::PFParticle &pfp, 
@@ -137,6 +150,7 @@ private:
     const art::FindManyP<recob::SpacePoint> &PFParticleSPs);
 
   void FillTrackEndHits(const geo::GeometryCore *geometry,
+                        const geo::WireReadoutGeom *wireReadout,
     const detinfo::DetectorPropertiesData &dprop,
     const recob::Track &track,
     const std::vector<art::Ptr<recob::Hit>> &allHits,
@@ -150,25 +164,34 @@ private:
     const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map,
     const std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map,
     const detinfo::DetectorPropertiesData &dprop,
-    const geo::GeometryCore *geo);
+    const geo::GeometryCore *geo,
+    const geo::WireReadoutGeom *wireReadout);
 
   TrackHitInfo MakeHit(const recob::Hit &hit,
     unsigned hkey,
     const recob::TrackHitMeta &thm,
     const recob::Track &trk,
+    const T0TimingInfo &t0Info,
     const art::Ptr<recob::SpacePoint> &sp,
     const std::vector<art::Ptr<anab::Calorimetry>> &calo,
     const geo::GeometryCore *geo,
+    const geo::WireReadoutGeom *wireReadout,
     const detinfo::DetectorClocksData &dclock,
-    const cheat::BackTrackerService *bt_serv);
+    const cheat::BackTrackerService *bt_serv,
+    const detinfo::DetectorPropertiesData &dprop);
+  void FillTrackCRTHitInfo(const std::vector<art::Ptr<sbn::crt::CRTHitT0TaggingInfo>> &tag);
 
+  // helpers
   void DoTailFit();
+  bool PointIsContained(const std::vector<geo::BoxBoundedGeo> &vols, geo::Point_t p);
 
   // config
 
   // tags
   art::InputTag fPFPproducer;
-  std::vector<art::InputTag> fT0producers;
+  art::InputTag fPFPT0producer;
+  art::InputTag fCRTTrackT0producer;
+  art::InputTag fCRTHitT0producer;
   art::InputTag fCALOproducer;
   art::InputTag fTRKproducer;
   art::InputTag fTRKHMproducer;
@@ -186,7 +209,14 @@ private:
   bool fFillTrackEndHits;
   float fTrackEndHitWireBox;
   float fTrackEndHitTimeBox;
-
+  bool fIncludeCRTHitTagging;
+  bool fIncludeTopCRT;
+  bool fIncludeSideCRT;
+  double fTopCRTDistanceCutStopping;
+  double fTopCRTDistanceCutPassing;
+  double fSideCRTDistanceCutStopping;
+  double fSideCRTDistanceCutPassing;  
+  
   // tools
   std::vector<std::unique_ptr<sbn::ITCSSelectionTool>> fSelectionTools;
 

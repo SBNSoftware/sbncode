@@ -28,8 +28,7 @@ services:
   }
   message:      { debugModules: ["*"] destinations: { debugmsg:{type: "cout" threshold: "INFO"} } }
   TimeTracker:  { printSummary: true }
-  AuxDetExptGeoHelperInterface: { service_provider: "sbndcode/CRT/CRTGeometryHelper" }
-  ExptGeoHelperInterface:    @local::sbnd_geometry_helper
+  WireReadout:               @local::sbnd_wire_readout
   Geometry:                  @local::sbnd_geo
   AuxDetGeometry:            @local::sbnd_auxdetgeo
   LArPropertiesService:      @local::standard_properties
@@ -105,5 +104,3 @@ physics.producers.areahitCalo.CaloAlg.CalAreaConstants: [0.0194, 0.0178, 0.0198]
 
 physics.producers.areahitPid.CalorimetryModuleLabel: areahitCalo
 physics.producers.areahitPid.TrackModuleLabel: pandoraTrack
-
-

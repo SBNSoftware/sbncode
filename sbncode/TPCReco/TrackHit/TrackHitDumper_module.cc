@@ -81,7 +81,7 @@ void sbn::TrackHitDumper::analyze(art::Event const& e)
       std::cout << "Hit on wire: " << hit.WireID() << " channel: " << hit.Channel() << " view: " << hit.View() << std::endl;
       std::cout << "Hit amp: " << hit.PeakAmplitude() << " RMS: " << hit.RMS() << " width: " << hit.SigmaPeakAmplitude();
       std::cout << " from: " << hit.StartTick() << " to: " << hit.EndTick() <<  " center: " << hit.PeakTime() << std::endl;
-      std::cout << "area: " << hit.Integral() << " sim ADC: " << hit.SummedADC() << std::endl;
+      std::cout << "area: " << hit.Integral() << " sim ADC: " << hit.ROISummedADC() << std::endl;
     }
   }
 

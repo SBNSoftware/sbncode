@@ -1,0 +1,353 @@
+#
+# File:    genie_beam_settings.fcl
+# Purpose: GENIE event generator settings for BNB neutrino interactions
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    December 4, 2024
+# Version: 1.0
+# 
+# This file includes configurations for the beam time structure (in GenieHelper
+# format) and for the `GENIEGen` LArSoft module interface to GENIE generator.
+#
+# A "default" configuration is provided which is supposed to be the current one,
+# and others can be added for variations or as legacy or period-specific
+# configurations.
+#
+# A template for an actual GENIEGen configuration is:
+#     
+#     physics.producers.generator: {
+#       @table::sbn_genie_BNB_base  # from genie_beam_settings.fcl
+#       
+#       # flux configuration
+#       [...]
+#       
+#       TopVolume: [...]
+#       
+#     }
+#     
+#
+# Changes
+# --------
+# 
+# 20241204 (petrillo@slac.stanford.edu) [v1.0]
+#   original version, inspired by SBND `genie_sbnd.fcl` v09_93_01
+#
+
+
+BEGIN_PROLOG
+
+################################################################################
+### beam time structure
+### 
+#
+# Explanation of the SpillTimeConfig configuration parameter
+# -----------------------------------------------------------
+# 
+# This documentation reflects the configuration string of
+# `evgb::EvtTimeFNALBeam` class in `nugen` `v1_00_01` (`nutools` `v3_02_00`).
+# It is parsed by `evgb::EvtTimeFNALBeam::Config()` (the first word,
+# representing the name of the algorithm, is stripped by the caller,
+# `evgb::GENIEHelper`).
+# The configuration string is, well, a single string, sequence of
+# case-insensitive words separated by blanks (space, tabulation or new line)
+# or selected punctuation (comma, equal sign and more).
+# Parameters are parsed in sequence and the latter overrides the previous.
+# Parameters may appear in any order, except for the algorithm name which must
+# be the first.
+# 
+# * `evgb::EvtTimeFNALBeam`: the algorithm name; `evgb::EvtTimeFNALBeam`
+#     describes a beam spill structured in a contiguous sequence of "batches",
+#     each one with a substructure of "buckets". Some batches can be "disabled",
+#     and some of the buckets at the end of each batch may be empty.
+#     Each bucket has a Gaussian time distribution. See the content of
+#     `nugen/EventGeneratorBase/GENIE/EvtTime*.h` for other possible algorithms.
+# * `intentsity <INT 1> <INT 2> ...  <INT M>` describes the relative intensity
+#     of the batches in the spill, and at the same time it defines the number
+#     _M_ of batches in the spill. A standard setting is to have all the batches
+#     (6 for NuMI, just 1 for BnB) set to `1.0`; `GENIEHelper` will take care of
+#     normalizing the numbers to a sum of 1.
+# * `sigma` or `FWHM` [ns]: the RMS or full width at half maximum peak of the
+#     time structure of a single bucket. The time distribution is always
+#     Gaussian (if specified as FWHM, it is converted to RMS for a Gaussian
+#     distribution).
+# * `dtbucket` [ns]: the time between the peak of two consecutive buckets.
+#     The default value (18.83 ns) assumes an extraction rate of 53.103 MHz,
+#     which is NuMI; BNB is 52.8 MHz.
+# * `nperbatch`, `nfilled`: the number of buckets in each spill, and the number
+#     of those which have actual protons in them. The default values include
+#     84 buckets, of which 81 are filled and the remaining 3, always at the end
+#     of the spill ("notch") are empty.
+# * `global` [ns]: offset of the start of the spill (i.e. the time of the peak
+#     of the first bucket of the first batch) with respect to the start
+#     of the generator time scale (see `detinfo::DetectorClocks`).
+# * `Booster`, `NuMI`: presets including all the above in hard-coded fashion;
+#     avoid using these to have better control and awareness of the settings.
+#
+
+### = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+### BNB beam time structure
+### 
+#
+# Parameters for BNB Fiscal Year 2024 runs:
+#  - 84 buckets, the first 81 of which filled
+#  - bucket step: 18.936 ns (measured by MicroBooNE and ICARUS, SBN DocDB 34793)
+#  - width: Gaussian with sigma 1.308 ns (?)
+#  - no global time offset
+#
+beam_structure_BNB_2024: {
+  
+  # enable bunched structure
+  AddGenieVtxTime: true
+  
+  # structure parameters
+  SpillTimeConfig: "
+    evgb::EvtTimeFNALBeam booster
+    nperbatch  84
+    nfilled    81
+    intensity  1.0
+    dtbucket  18.936
+    sigma      1.308
+    global     0.0
+    "
+  
+  GlobalTimeOffset: 0  # presumably [ns]
+  
+} # beam_structure_BNB_2024
+
+
+#
+# "default"
+#
+beam_structure_BNB: @local::beam_structure_BNB_2024
+
+
+
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### beam parameters: BNB
+### 
+#
+# Parameters for BNB Fiscal Year 2024 runs.
+#
+beam_parameters_BNB_2024: {
+  
+  # beam structure
+  @table::beam_structure_BNB_2024
+  
+  BeamName: "booster"
+  
+} # beam_parameters_BNB_2024
+
+
+#
+# "default"
+#
+beam_parameters_BNB: @local::beam_parameters_BNB_2024
+
+
+
+### = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+### NuMI beam time structure
+### 
+#
+# Parameters for NuMI Fiscal Year 2024 runs:
+#  - 84 buckets, the first 81 of which filled, for six equally intense batches
+#  - bucket step: 18.831 ns (measured by ICARUS, SBN DocDB 34988)
+#  - width: Gaussian with sigma 0.75 ns (?)
+#  - no global time offset
+#
+beam_structure_NuMI_2024: {
+  
+  # enable bunched structure
+  AddGenieVtxTime: true
+  
+  # structure parameters
+  SpillTimeConfig: "
+    evgb::EvtTimeFNALBeam numi
+    nperbatch  84
+    nfilled    81
+    intensity  1.0 1.0 1.0 1.0 1.0 1.0
+    dtbucket   18.8313277969
+    sigma      0.75
+    global     0.0
+    "
+  
+  GlobalTimeOffset: 0  # presumably [ns]
+  
+} # beam_structure_NuMI_2024
+
+
+#
+# "default"
+#
+beam_structure_NuMI: @local::beam_structure_NuMI_2024
+
+
+
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### beam parameters: NuMI
+### 
+#
+# Parameters for NuMI Fiscal Year 2024 runs.
+#
+beam_parameters_NuMI_2024: {
+  
+  # beam structure
+  @table::beam_structure_NuMI_2024
+  
+  BeamName: "booster"
+  
+} # beam_parameters_NuMI_2024
+
+
+#
+# "default"
+#
+beam_parameters_NuMI: @local::beam_parameters_NuMI_2024
+
+
+
+################################################################################
+###
+### Base configuration for SBN GENIE generations
+###
+#
+# This configuration includes:
+#  * default GENIE generator and tunes from environment variable
+#  * BNB beam with 5x10^12 PoT/spill, allowing multiple interactions per spill
+#      and skipping events which would have zero interactions
+#  * the default BNB time structure (bunched)
+#  * all neutrino flavours as from the input flux, with no mixing
+#  * the reduced ("small") set of neutrino-nucleus cross section splines
+#  * large generation geometry (volDetEnclosure)
+#
+# Users must specify/override:
+#  * the neutrino flux configuration
+#  * the simulation volume (`TopVolume` parameter)
+#
+sbn_genie_BNB_base: {
+
+  module_type: "GENIEGen"
+
+  ###
+  ### beam parameters
+  ###
+  
+  @table::beam_parameters_BNB
+
+  
+  ###
+  ### neutrino flux parameters
+  ###
+
+  DetectorLocation: "MINOS-NearDet"  # location name for flux window
+  
+  #
+  # no flavour mixing by default
+  #
+  GenFlavors:    [ 12, 14, -12, -14 ]
+  MixerBaseline:   0
+  MixerConfig:    "none"
+  
+
+  ###
+  ### interaction configuration
+  ###
+  #
+  # GENIE event generator list and tune (the latter is left to the default,
+  #   which is to take it from GENIE_XSEC_TUNE environment variable)
+  EventGeneratorList: "Default"
+  
+  XSecTable: "gxspl-FNALsmall.xml"
+  
+  #
+  # Generation volume:#
+  # no user-defined fiducial cut at GENIE level
+  # (see e.g. https://code-doc.larsoft.org/docs/latest/html/classevgb_1_1GENIEHelper.html#a1c11b9039f4d0db1bc673b2ac390392e)
+  #
+  FiducialCut: "none"
+  
+  # generate neutrino interactions over the whole `volDetEnclosure` volume
+  TopVolume: "volDetEnclosure"
+  
+  #
+  # GenieHelper can either generate a fixed number of interactions per event
+  # (misnamed `EventsPerSpill`) or stochastically extract how many interactions
+  # per event using the number of protons on target per event (POTPerSpill);
+  # one and only one of them can be non-zero.
+  # 
+  # Here we choose 5 x 10^12 protons on target per spill, which is the nominal
+  # intensity used in the SBN proposal paper but has never been really met
+  # in reality, especially when running in parallel with NuMI
+  # (average being closer to 3.5 or 4 x 10^12).
+  # 
+  # We can also keep events that happen to have no neutrino interaction at all;
+  # this may be useful when generating overlaid neutrino + cosmic background
+  # data-like samples, but for the far detector this is a very inefficient
+  # generation; here we disable it.
+  #
+  EventsPerSpill:  @erase
+  POTPerSpill:     5e12
+  PassEmptySpills: false  # required
+  
+  
+  ###
+  ### module behaviour
+  ###
+  #
+  # verbosity controls
+  #
+  ProductionMode: "yes"
+  DebugFlags:      0
+  GHepPrintLevel: -1  # -1 = no print, ... 13 = plenty
+  
+  #
+  # mandatory, unused parameters
+  #
+  # this would customise the vertex position plot range
+  DefinedVtxHistRange: false
+  VtxPosHistRange: []
+  # this is deprecated but still mandatory
+  Environment: []
+  # these would be used if we had a histogram-based flux
+  BeamCenter:    [ 0, 0, 0 ]
+  BeamDirection: [ 0, 0, 1 ]
+  
+} # sbn_genie_BNB_base
+
+
+################################################################################
+###
+### Base configuration for NuMI GENIE generations
+###
+#
+# This configuration includes:
+#  * same settings as for BNB
+#  * NuMI beam with 4x10^13 PoT/spill
+#  * the default NuMI time structure (bunched)
+#
+# Users must specify/override:
+#  * the neutrino flux configuration
+#  * possibly the simulation volume (`TopVolume` parameter)
+#
+sbn_genie_NuMI_base: {
+  @table::sbn_genie_BNB_base
+  
+  ###
+  ### beam parameters
+  ###
+  
+  @table::beam_parameters_NuMI
+
+  #
+  # Beam intensity: we choose 6 x 10^13 protons on target per spill, which was
+  # the nominal intensity used when the SBN proposal paper was redacted,
+  # but in reality we observed the typical intensity to be closer to 4 x 10^13.
+  # 
+  POTPerSpill:     6e13
+  
+} # sbn_genie_NuMI_base
+
+
+################################################################################
+
+
+END_PROLOG

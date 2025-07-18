@@ -27,6 +27,7 @@
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/SpacePoint.h"
 #include "lardataobj/RecoBase/Cluster.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "larcorealg/Geometry/GeometryCore.h"
@@ -83,8 +84,8 @@ private:
   calo::CalorimetryAlg fCaloAlg;
 
   // helpers
-  geo::Point_t PositionAtWires(const geo::Point_t &p, const geo::GeometryCore *geo, const spacecharge::SpaceCharge *sce);
-  geo::Point_t PositionAbsolute(const geo::Point_t &p, const geo::GeometryCore *geo, const spacecharge::SpaceCharge *sce);
+  geo::Point_t PositionAtWires(const geo::Point_t &p, const geo::GeometryCore& geom, const spacecharge::SpaceCharge *sce);
+  geo::Point_t PositionAbsolute(const geo::Point_t &p, const geo::GeometryCore& geom, const geo::WireReadoutGeom &wireReadout, const spacecharge::SpaceCharge *sce);
   double Normalize(double dQdx, const art::Event &e, const recob::Hit &h, const geo::Point_t &location, const geo::Vector_t &direction, double t0);
 };
 
@@ -112,10 +113,10 @@ sbn::VertexChargeVacuum::VertexChargeVacuum(fhicl::ParameterSet const& p)
   produces<art::Assns<recob::Vertex, sbn::VertexHit>>();
 }
 
-std::array<float, 2> HitVector(const recob::Hit &hit, const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop) {
+std::array<float, 2> HitVector(const recob::Hit &hit, const geo::WireReadoutGeom &wireReadout, const detinfo::DetectorPropertiesData &dprop) {
   float wire_distance = hit.WireID().Wire;
   // convert to cm
-  float wire_distance_cm = wire_distance * geo->WirePitch();
+  float wire_distance_cm = wire_distance * wireReadout.Plane(geo::PlaneID::first()).WirePitch();
   // and the time difference
   float time_distance = hit.PeakTime();
   // convert to cm
@@ -124,29 +125,29 @@ std::array<float, 2> HitVector(const recob::Hit &hit, const geo::GeometryCore *g
   return {wire_distance_cm, time_distance_cm};
 }
 
-std::array<float, 2> VertexVector(const recob::Vertex &vert, const geo::PlaneID &plane, const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop) {
-  return {(float)(geo->WireCoordinate(vert.position(), plane) * geo->WirePitch()), (float)vert.position().X()};
+std::array<float, 2> VertexVector(const recob::Vertex &vert, const geo::PlaneID &plane, const geo::WireReadoutGeom &wireReadout, const detinfo::DetectorPropertiesData &dprop) {
+  return {(float)(wireReadout.Plane(plane).WireCoordinate(vert.position()) * wireReadout.Plane(geo::PlaneID::first()).WirePitch()), (float)vert.position().X()};
 }
 
-float Vert2HitDistance(const recob::Hit &hit, const recob::Vertex &vert, const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop) {
-  std::array<float, 2> vert_v = VertexVector(vert, hit.WireID(), geo, dprop);
-  std::array<float, 2> hit_v = HitVector(hit, geo, dprop);
+float Vert2HitDistance(const recob::Hit &hit, const recob::Vertex &vert, const geo::WireReadoutGeom &wireReadout, const detinfo::DetectorPropertiesData &dprop) {
+  std::array<float, 2> vert_v = VertexVector(vert, hit.WireID(), wireReadout, dprop);
+  std::array<float, 2> hit_v = HitVector(hit, wireReadout, dprop);
 
   return sqrt((vert_v[0] - hit_v[0]) * (vert_v[0] - hit_v[0]) + (vert_v[1] - hit_v[1]) * (vert_v[1] - hit_v[1]));
 }
 
 // local helper function: Get the mean direction of a set of hits away from a vertex (projected on a plane)
 std::array<float, 2> HitDirection(const std::vector<art::Ptr<recob::Hit>> &hits, const recob::Vertex &vert,
-               const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop) {
+               const geo::WireReadoutGeom &wireReadout, const detinfo::DetectorPropertiesData &dprop) {
   if (!hits.size()) return {0., 0.};
 
   geo::Vector_t avg(0., 0., 0.);
 
-  std::array<float, 2> vert_v = VertexVector(vert, hits[0]->WireID(), geo, dprop);
+  std::array<float, 2> vert_v = VertexVector(vert, hits[0]->WireID(), wireReadout, dprop);
   geo::Point_t vert_p(vert_v[0], vert_v[1], 0.);
 
   for (const art::Ptr<recob::Hit> &h: hits) {
-    std::array<float, 2> hit_v = HitVector(*h, geo, dprop);
+    std::array<float, 2> hit_v = HitVector(*h, wireReadout, dprop);
     geo::Point_t hit_p(hit_v[0], hit_v[1], 0.);
     avg += (hit_p - vert_p).Unit(); 
   }
@@ -157,8 +158,8 @@ std::array<float, 2> HitDirection(const std::vector<art::Ptr<recob::Hit>> &hits,
 }
 
 float TrackDirectionParallel(const recob::Track &trk, const geo::PlaneID &plane,
-               const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop) {
-  double angleToVert = geo->WireAngleToVertical(geo->View(plane), plane) - 0.5*::util::pi<>();
+               const geo::WireReadoutGeom &wireReadout, const detinfo::DetectorPropertiesData &dprop) {
+  double angleToVert = wireReadout.WireAngleToVertical(wireReadout.Plane(plane).View(), plane) - 0.5*::util::pi<>();
   double cosgamma = std::abs(std::sin(angleToVert)*trk.StartDirection().y() + std::cos(angleToVert)*trk.StartDirection().z());
 
   float ret = sqrt(cosgamma * cosgamma + trk.StartDirection().x() * trk.StartDirection().x());
@@ -168,14 +169,14 @@ float TrackDirectionParallel(const recob::Track &trk, const geo::PlaneID &plane,
 }
 
 geo::Point_t PlaceHitAlongTrack(const recob::Track &trk, const recob::Vertex &vert, const recob::Hit &hit,
-               const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop) {
+               const geo::WireReadoutGeom &wireReadout, const detinfo::DetectorPropertiesData &dprop) {
   // project the vertex onto the hit Plane
-  std::array<float, 2> v_plane = VertexVector(vert, hit.WireID(), geo, dprop); 
+  std::array<float, 2> v_plane = VertexVector(vert, hit.WireID(), wireReadout, dprop);
 
   // also get the 2d hit location
-  std::array<float, 2> h_plane = HitVector(hit, geo, dprop);
+  std::array<float, 2> h_plane = HitVector(hit, wireReadout, dprop);
 
-  float t_dir_parallel_plane = TrackDirectionParallel(trk, hit.WireID(), geo, dprop);
+  float t_dir_parallel_plane = TrackDirectionParallel(trk, hit.WireID(), wireReadout, dprop);
 
   // Get the distance from the vertex to the hit on the plane.
   //
@@ -202,15 +203,15 @@ geo::Point_t PlaceHitAlongTrack(const recob::Track &trk, const recob::Vertex &ve
   return vert.position() + trk_dir * dist_3d;
 }
 
-geo::Point_t sbn::VertexChargeVacuum::PositionAtWires(const geo::Point_t &p, const geo::GeometryCore *geo, const spacecharge::SpaceCharge *sce) {
-  geo::TPCID tpc = geo->FindTPCAtPosition(p);
+geo::Point_t sbn::VertexChargeVacuum::PositionAtWires(const geo::Point_t &p, const geo::GeometryCore& geom, const spacecharge::SpaceCharge *sce) {
+  geo::TPCGeo const* tpc = geom.PositionToTPCptr(p);
 
-  if (tpc && fPositionsAreSCECorrected) return sbn::GetLocationAtWires(sce, geo, p, tpc);
+  if (tpc && fPositionsAreSCECorrected) return sbn::GetLocationAtWires(sce, p, tpc->DriftDir());
   return p; 
 }
 
-geo::Point_t sbn::VertexChargeVacuum::PositionAbsolute(const geo::Point_t &p, const geo::GeometryCore *geo, const spacecharge::SpaceCharge *sce) {
-  geo::TPCID tpc = geo->FindTPCAtPosition(p);
+geo::Point_t sbn::VertexChargeVacuum::PositionAbsolute(const geo::Point_t &p, const geo::GeometryCore& geom, const geo::WireReadoutGeom &wireReadout, const spacecharge::SpaceCharge *sce) {
+  geo::TPCID tpc = geom.FindTPCAtPosition(p);
 
   if (tpc && !fPositionsAreSCECorrected) return sbn::GetLocation(sce, p, tpc);
   return p;
@@ -250,6 +251,7 @@ void sbn::VertexChargeVacuum::produce(art::Event& evt)
 
   // collect services
   const geo::GeometryCore *geo = lar::providerFrom<geo::Geometry>();
+  auto const& wireReadout = art::ServiceHandle<geo::WireReadout>()->Get();
   auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
   auto const dprop =
     art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clock_data);
@@ -309,13 +311,13 @@ void sbn::VertexChargeVacuum::produce(art::Event& evt)
     //
     // In some cases we want the wire-position and in other we want the true-position.
     // To be explicit, create two different vertexes for these two different cases
-    recob::Vertex vert_absolute(PositionAbsolute(vert.position(), geo, sce),
+    recob::Vertex vert_absolute(PositionAbsolute(vert.position(), *geo, wireReadout, sce),
             vert.covariance(), 
             vert.chi2(),
             vert.ndof(),
             vert.ID());
 
-    recob::Vertex vert_atwires(PositionAtWires(vert.position(), geo, sce),
+    recob::Vertex vert_atwires(PositionAtWires(vert.position(), *geo, sce),
             vert.covariance(), 
             vert.chi2(),
             vert.ndof(),
@@ -357,7 +359,7 @@ void sbn::VertexChargeVacuum::produce(art::Event& evt)
       for (unsigned i_hit = 0; i_hit < hits.size(); i_hit++) {
         const recob::Hit &hit = *hits[i_hit];
         if (hit.WireID().Plane == i_plane) {
-          if (Vert2HitDistance(hit, vert_atwires, geo, dprop) < fHitVacuumRadius) {
+          if (Vert2HitDistance(hit, vert_atwires, wireReadout, dprop) < fHitVacuumRadius) {
             nearbyHits.push_back(hits[i_hit]);
           }
         }
@@ -372,8 +374,8 @@ void sbn::VertexChargeVacuum::produce(art::Event& evt)
 
 	sbn::VertexHit vhit;
         vhit.wire = hit.WireID();
-	vhit.proj_dist_to_vertex = Vert2HitDistance(hit, vert_atwires, geo, dprop);
-        vhit.vtxw = geo->WireCoordinate(vert_atwires.position(), hit.WireID());
+        vhit.proj_dist_to_vertex = Vert2HitDistance(hit, vert_atwires, wireReadout, dprop);
+        vhit.vtxw = wireReadout.Plane(hit.WireID()).WireCoordinate(vert_atwires.position());
         vhit.vtxx = vert_atwires.position().x();
         vhit.vtxXYZ = vert_absolute.position();
 
@@ -395,7 +397,7 @@ void sbn::VertexChargeVacuum::produce(art::Event& evt)
         if (hit_sp.size()) {
           const recob::SpacePoint sp = *hit_sp.at(0);
           spID = sp.ID();
-          spXYZ = PositionAbsolute(sp.position(), geo, sce);
+          spXYZ = PositionAbsolute(sp.position(), *geo, wireReadout, sce);
           has_xyz = true;
         }
         // No Space-Point. If configured, see if we can look up a point along the assigned track
@@ -414,7 +416,7 @@ void sbn::VertexChargeVacuum::produce(art::Event& evt)
             const std::vector<art::Ptr<recob::Track>> &pfptrack = pfparticleTracks.at(matchingPFP.key()); 
             if (pfptrack.size()) {
               const recob::Track &thisTrack = *pfptrack.at(0);
-              spXYZ = PositionAbsolute(PlaceHitAlongTrack(thisTrack, vert_atwires, hit, geo, dprop), geo, sce); 
+              spXYZ = PositionAbsolute(PlaceHitAlongTrack(thisTrack, vert_atwires, hit, wireReadout, dprop), *geo, wireReadout, sce);
               has_xyz = true;
             }
           }
@@ -428,7 +430,7 @@ void sbn::VertexChargeVacuum::produce(art::Event& evt)
 
           // Compute the pitch. Since we have used the corrected vertex and Space-Point position, the
           // pt and dir here are space-charge corrected regardless of the input configuration
-          vhit.pitch = sbn::GetPitch(geo, sce, spXYZ, dir, hit.View(), hit.WireID(), fCorrectSCE, true); 
+          vhit.pitch = sbn::GetPitch(wireReadout, sce, spXYZ, dir, hit.View(), hit.WireID(), fCorrectSCE, true);
 
           vhit.dqdx = vhit.charge / vhit.pitch;
 

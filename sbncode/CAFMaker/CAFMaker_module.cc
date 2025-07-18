@@ -87,20 +87,23 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 // LArSoft includes
+#include "larcore/Geometry/WireReadout.h"
+#include "larcore/Geometry/Geometry.h"
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Slice.h"
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/Vertex.h"
 #include "lardataobj/RecoBase/Shower.h"
 #include "lardataobj/RecoBase/MCSFitResult.h"
+#include "lardataobj/RecoBase/Cluster.h"
+#include "lardataobj/AnalysisBase/MVAOutput.h"
 
 #include "nusimdata/SimulationBase/MCFlux.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCNeutrino.h"
 #include "nusimdata/SimulationBase/GTruth.h"
 
-#include "fhiclcpp/ParameterSetRegistry.h"
-
+#include "sbnobj/Common/CRT/CRTHitT0TaggingInfo.hh"
 #include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlTruth.h"
 #include "sbnobj/Common/Reco/RangeP.h"
 #include "sbnobj/Common/SBNEventWeight/EventWeightMap.h"
@@ -119,6 +122,9 @@
 // GENIE
 #include "Framework/EventGen/EventRecord.h"
 #include "Framework/Ntuple/NtpMCEventRecord.h"
+#include "Framework/Conventions/Units.h"
+#include "Framework/GHEP/GHepParticle.h"
+
 #include "nugen/EventGeneratorBase/GENIE/GENIE2ART.h"
 
 #include "canvas/Persistency/Provenance/ProcessConfiguration.h"
@@ -196,7 +202,8 @@ class CAFMaker : public art::EDProducer {
 
   std::string fSourceFile;
   std::uint32_t fSourceFileHash;
-
+ 
+  bool fOverrideRealData;
   bool fFirstInSubRun;
   unsigned int fIndexInFile = SRHeader::NoSourceIndex;
   bool fFirstBlindInSubRun;
@@ -245,6 +252,27 @@ class CAFMaker : public art::EDProducer {
   TTree                   * fFlatGenieTree = 0;
   bool fSaveGENIEEventRecord;
   unsigned int fGenieEventCounter;
+
+  //TBits      * fGenieEvtRec_brEvtFlags  = 0; ////< Generator-specific event flags
+  //TObjString * fGenieEvtRec_brEvtCode   = 0; ////< Generator-specific string with 'event code'
+  int          fGenieEvtRec_brEvtNum    = 0; ////< Event number
+  double       fGenieEvtRec_brEvtXSec   = 0.0; ////< Cross section for selected event (1e-38 cm2)
+  double       fGenieEvtRec_brEvtDXSec  = 0.0; ////< Cross section for selected event kinematics (1e-38 cm2 / {K^n})
+  unsigned int fGenieEvtRec_brEvtKPS    = 0; ////< Kinematic phase space variables. See $GENIE/src/Framework/Conventions/KinePhaseSpace.h -> KinePhaseSpace_t
+  double       fGenieEvtRec_brEvtWght   = 0.0; ////< Weight for that event
+  double       fGenieEvtRec_brEvtProb   = 0.0; ////< Probability for that event (given cross section, path lengths, etc)
+  double       fGenieEvtRec_brEvtVtx[4] = {0.0}; ////< Event vertex position in detector coord syst (SI)
+  int          fGenieEvtRec_brStdHepN   = 0; ////< Number of particles in particle array
+  int          fGenieEvtRec_brStdHepPdg   [250] = {0}; ////< Pdg codes (& generator specific codes for pseudoparticles)
+  int          fGenieEvtRec_brStdHepStatus[250] = {0}; ////< Generator-specific status code
+  int          fGenieEvtRec_brStdHepRescat[250] = {0}; ////< Hadron transport model-specific rescattering code
+  double       fGenieEvtRec_brStdHepX4    [250][4] = {{0.0}}; ////< 4-x (x, y, z, t) of particle in hit nucleus frame (fm)
+  double       fGenieEvtRec_brStdHepP4    [250][4] = {{0.0}}; ////< 4-p (px,py,pz,E) of particle in LAB frame (GeV)
+  double       fGenieEvtRec_brStdHepPolz  [250][3] = {{0.0}}; ////< Polarization vector
+  int          fGenieEvtRec_brStdHepFd    [250] = {0}; ////< First daughter
+  int          fGenieEvtRec_brStdHepLd    [250] = {0}; ////< Last  daughter
+  int          fGenieEvtRec_brStdHepFm    [250] = {0}; ////< First mother
+  int          fGenieEvtRec_brStdHepLm    [250] = {0}; ////< Last  mother
 
   flat::Flat<caf::StandardRecord>* fFlatRecord = 0;
   flat::Flat<caf::StandardRecord>* fFlatRecordb = 0;
@@ -377,6 +405,7 @@ class CAFMaker : public art::EDProducer {
   // Note: we will define isRealData on a per event basis in produce function [using event.isRealData()], at least for now.
 
   fCafFilename = fParams.CAFFilename();
+  fOverrideRealData = fParams.OverrideRealData();
   fFlatCafFilename = fParams.FlatCAFFilename();
 
   // Normally CAFMaker is run wit no output ART stream, so these go
@@ -823,9 +852,18 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
     std::cout << std::endl;
     abort();
   }
-
+  if ( fOverrideRealData ) {
+	// Expects a generator POT summary then...
+	if(auto pot_handle = sr.getHandle<sumdata::POTSummary>(fParams.GenLabel())){
+      		fSubRunPOT = pot_handle->totgoodpot;
+      		fTotalPOT += fSubRunPOT;
+    	}else{
+      		std::cout << "Did not find MC POT info under " << fParams.GenLabel() << std::endl;
+      		if(fParams.StrictMode()) abort();
+    	}
+  }else{
   if(bnb_spill){
-    FillExposure(*bnb_spill, fBNBInfo, fSubRunPOT);
+    		FillExposure(*bnb_spill, fBNBInfo, fSubRunPOT);
     fTotalPOT += fSubRunPOT;
 
     // Find the spill for each event and fill the event map:
@@ -884,10 +922,9 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
                 << std::endl;
       if(fParams.StrictMode()) abort();
     }
-
     // Otherwise, if one label is blank, maybe no POT was the expected result
   }
-
+ }
   std::cout << "POT: " << fSubRunPOT << std::endl;
 
   fFirstInSubRun = true;
@@ -1049,7 +1086,32 @@ void CAFMaker::InitializeOutfiles()
 
     if (fSaveGENIEEventRecord){
       fFlatGenieTree = new TTree( "GenieEvtRecTree", "GenieEvtRecTree" );
-      fFlatGenieTree->Branch("GenieEvtRec", &fFlatGenieEvtRec);
+      //fFlatGenieTree->Branch("GenieEvtRec", &fFlatGenieEvtRec);
+
+      // Flatten the event record.
+      // Follows the convention of the GENIE numi_rootracker (see $GENIE/src/Apps/gNtpConv.cxx).
+      //fFlatGenieTree->Branch("GenieEvtRec.EvtFlags", "TBits", fGenieEvtRec_brEvtFlags, 32000, 1);
+      //fFlatGenieTree->Branch("GenieEvtRec.EvtCode", "TObjString", fGenieEvtRec_brEvtCode, 32000, 1);
+
+      fFlatGenieTree->Branch("GenieEvtRec.EvtNum",   &fGenieEvtRec_brEvtNum,   "GenieEvtRec.EvtNum/I"    );
+      fFlatGenieTree->Branch("GenieEvtRec.EvtXSec",  &fGenieEvtRec_brEvtXSec,  "GenieEvtRec.EvtXSec/D"   );
+      fFlatGenieTree->Branch("GenieEvtRec.EvtDXSec", &fGenieEvtRec_brEvtDXSec, "GenieEvtRec.EvtDXSec/D"  );
+      fFlatGenieTree->Branch("GenieEvtRec.EvtKPS",   &fGenieEvtRec_brEvtKPS,   "GenieEvtRec.EvtKPS/i"    );
+      fFlatGenieTree->Branch("GenieEvtRec.EvtWght",  &fGenieEvtRec_brEvtWght,  "GenieEvtRec.EvtWght/D"   );
+      fFlatGenieTree->Branch("GenieEvtRec.EvtProb",  &fGenieEvtRec_brEvtProb,  "GenieEvtRec.EvtProb/D"   );
+      fFlatGenieTree->Branch("GenieEvtRec.EvtVtx",    fGenieEvtRec_brEvtVtx,   "GenieEvtRec.EvtVtx[4]/D" );
+      fFlatGenieTree->Branch("GenieEvtRec.StdHepN",  &fGenieEvtRec_brStdHepN,  "GenieEvtRec.StdHepN/I"   );
+      fFlatGenieTree->Branch("GenieEvtRec.StdHepPdg",    fGenieEvtRec_brStdHepPdg,    "GenieEvtRec.StdHepPdg[GenieEvtRec.StdHepN]/I"     );
+      fFlatGenieTree->Branch("GenieEvtRec.StdHepStatus", fGenieEvtRec_brStdHepStatus, "GenieEvtRec.StdHepStatus[GenieEvtRec.StdHepN]/I"  );
+      fFlatGenieTree->Branch("GenieEvtRec.StdHepRescat", fGenieEvtRec_brStdHepRescat, "GenieEvtRec.StdHepRescat[GenieEvtRec.StdHepN]/I"  );
+      fFlatGenieTree->Branch("GenieEvtRec.StdHepX4",     fGenieEvtRec_brStdHepX4,     "GenieEvtRec.StdHepX4[GenieEvtRec.StdHepN][4]/D"   );
+      fFlatGenieTree->Branch("GenieEvtRec.StdHepP4",     fGenieEvtRec_brStdHepP4,     "GenieEvtRec.StdHepP4[GenieEvtRec.StdHepN][4]/D"   );
+      fFlatGenieTree->Branch("GenieEvtRec.StdHepPolz",   fGenieEvtRec_brStdHepPolz,   "GenieEvtRec.StdHepPolz[GenieEvtRec.StdHepN][3]/D" );
+      fFlatGenieTree->Branch("GenieEvtRec.StdHepFd",     fGenieEvtRec_brStdHepFd,     "GenieEvtRec.StdHepFd[GenieEvtRec.StdHepN]/I"      );
+      fFlatGenieTree->Branch("GenieEvtRec.StdHepLd",     fGenieEvtRec_brStdHepLd,     "GenieEvtRec.StdHepLd[GenieEvtRec.StdHepN]/I"      );
+      fFlatGenieTree->Branch("GenieEvtRec.StdHepFm",     fGenieEvtRec_brStdHepFm,     "GenieEvtRec.StdHepFm[GenieEvtRec.StdHepN]/I"      );
+      fFlatGenieTree->Branch("GenieEvtRec.StdHepLm",     fGenieEvtRec_brStdHepLm,     "GenieEvtRec.StdHepLm[GenieEvtRec.StdHepN]/I"      );
+
       fFlatGenieTree->Branch("GENIEEntry", &fGenieEventCounter, "GENIE/i");
       fFlatGenieTree->Branch("SourceFileHash", &fSourceFileHash, "SourceFileHash/i");
     }
@@ -1213,8 +1275,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   bool const firstInFile = (fIndexInFile++ == 0);
 
-  // is this event real data?
-  bool isRealData = evt.isRealData();
+  // is this event real data? -- BH: if fOverrideRealData, treat it as MC. Otherwise, get the info from the art event.
+  bool isRealData = !fOverrideRealData && evt.isRealData();
 
   std::unique_ptr<std::vector<caf::StandardRecord>> srcol(
       new std::vector<caf::StandardRecord>);
@@ -1301,7 +1363,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
   auto const dprop =
     art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clock_data);
-  const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
+  const geo::GeometryCore* geom = lar::providerFrom<geo::Geometry>();
+  const geo::WireReadoutGeom &wireReadout =
+    art::ServiceHandle<geo::WireReadout>()->Get();
 
   auto const *sce = lar::providerFrom<spacecharge::SpaceChargeService>();
 
@@ -1329,7 +1393,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   if ( !isRealData ) {
     art::ServiceHandle<cheat::BackTrackerService> bt_serv;
 
-    id_to_ide_map = PrepSimChannels(simchannels, *geometry);
+    id_to_ide_map = PrepSimChannels(simchannels, wireReadout);
     id_to_truehit_map = PrepTrueHits(hits, clock_data, *bt_serv);
     id_to_hit_energy_map = SetupIDHitEnergyMap(hits, clock_data, *bt_serv);
   }
@@ -1393,7 +1457,46 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           fGenieTree->Fill();
         }
         if(fFlatGenieTree){
-          fFlatGenieEvtRec->Fill(fGenieEventCounter, genie_rec);
+          //fFlatGenieEvtRec->Fill(fGenieEventCounter, genie_rec);
+	  fGenieEvtRec_brEvtNum   = fGenieEventCounter;
+	  fGenieEvtRec_brEvtXSec  = genie_rec->XSec() * (1e+38/genie::units::cm2);
+	  fGenieEvtRec_brEvtDXSec = genie_rec->DiffXSec() * (1e+38/genie::units::cm2);
+	  fGenieEvtRec_brEvtKPS   = genie_rec->DiffXSecVars();
+	  fGenieEvtRec_brEvtWght  = genie_rec->Weight();
+	  fGenieEvtRec_brEvtProb  = genie_rec->Probability();
+	  fGenieEvtRec_brEvtVtx[0] = genie_rec->Vertex()->X();
+	  fGenieEvtRec_brEvtVtx[1] = genie_rec->Vertex()->Y();
+	  fGenieEvtRec_brEvtVtx[2] = genie_rec->Vertex()->Z();
+	  fGenieEvtRec_brEvtVtx[3] = genie_rec->Vertex()->T();
+
+	  int iparticle=0;
+	  genie::GHepParticle * p = 0;
+	  while( (genie_rec->Particle(iparticle) != 0) && (iparticle < 250) ) {
+	    p = genie_rec->Particle(iparticle);
+	    fGenieEvtRec_brStdHepPdg[iparticle] = p->Pdg();
+	    fGenieEvtRec_brStdHepStatus[iparticle] = (int) p->Status(); 
+	    fGenieEvtRec_brStdHepRescat[iparticle] = p->RescatterCode(); 
+	    fGenieEvtRec_brStdHepX4    [iparticle][0] = p->X4()->X(); 
+	    fGenieEvtRec_brStdHepX4    [iparticle][1] = p->X4()->Y(); 
+	    fGenieEvtRec_brStdHepX4    [iparticle][2] = p->X4()->Z(); 
+	    fGenieEvtRec_brStdHepX4    [iparticle][3] = p->X4()->T(); 
+	    fGenieEvtRec_brStdHepP4    [iparticle][0] = p->P4()->Px(); 
+	    fGenieEvtRec_brStdHepP4    [iparticle][1] = p->P4()->Py(); 
+	    fGenieEvtRec_brStdHepP4    [iparticle][2] = p->P4()->Pz(); 
+	    fGenieEvtRec_brStdHepP4    [iparticle][3] = p->P4()->E(); 
+	    if(p->PolzIsSet()) {
+	      fGenieEvtRec_brStdHepPolz  [iparticle][0] = TMath::Sin(p->PolzPolarAngle()) * TMath::Cos(p->PolzAzimuthAngle());
+	      fGenieEvtRec_brStdHepPolz  [iparticle][1] = TMath::Sin(p->PolzPolarAngle()) * TMath::Sin(p->PolzAzimuthAngle());
+	      fGenieEvtRec_brStdHepPolz  [iparticle][2] = TMath::Cos(p->PolzPolarAngle());
+	    }
+	    fGenieEvtRec_brStdHepFd    [iparticle] = p->FirstDaughter(); 
+	    fGenieEvtRec_brStdHepLd    [iparticle] = p->LastDaughter(); 
+	    fGenieEvtRec_brStdHepFm    [iparticle] = p->FirstMother(); 
+	    fGenieEvtRec_brStdHepLm    [iparticle] = p->LastMother(); 
+	    iparticle++;
+	  }
+	  fGenieEvtRec_brStdHepN = iparticle;
+	  
           fFlatGenieTree->Fill();
         }
       }
@@ -1563,26 +1666,50 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   // Get all of the OpFlashes
   std::vector<caf::SROpFlash> srflashes;
+  if(fDet == kICARUS)
+  {
+    for (const std::string& pandora_tag_suffix : pandora_tag_suffixes) {
+      art::Handle<std::vector<recob::OpFlash>> flashes_handle;
+      GetByLabelStrict(evt, fParams.OpFlashLabel() + pandora_tag_suffix, flashes_handle);
+      // fill into event
+      if (flashes_handle.isValid()) {
+        const std::vector<recob::OpFlash> &opflashes = *flashes_handle;
+        int cryostat = ( pandora_tag_suffix.find("W") != std::string::npos ) ? 1 : 0;
 
-  for (const std::string& pandora_tag_suffix : pandora_tag_suffixes) {
-    art::Handle<std::vector<recob::OpFlash>> flashes_handle;
-    GetByLabelStrict(evt, fParams.OpFlashLabel() + pandora_tag_suffix, flashes_handle);
-    // fill into event
-    if (flashes_handle.isValid()) {
-      const std::vector<recob::OpFlash> &opflashes = *flashes_handle;
-      int cryostat = ( pandora_tag_suffix.find("W") != std::string::npos ) ? 1 : 0;
+        // get associated OpHits for each OpFlash
+        art::FindMany<recob::OpHit> findManyHits(flashes_handle, evt, fParams.OpFlashLabel() + pandora_tag_suffix);
 
-      // get associated OpHits for each OpFlash
-      art::FindMany<recob::OpHit> findManyHits(flashes_handle, evt, fParams.OpFlashLabel() + pandora_tag_suffix);
+        int iflash=0;
+        for (const recob::OpFlash& flash : opflashes) {
 
-      int iflash=0;
-      for (const recob::OpFlash& flash : opflashes) {
+          std::vector<recob::OpHit const*> const& ophits = findManyHits.at(iflash);
 
-        std::vector<recob::OpHit const*> const& ophits = findManyHits.at(iflash);
+          srflashes.emplace_back();
+          FillICARUSOpFlash(flash, ophits, cryostat, srflashes.back());
+          iflash++;
+        }
+      }
+    }
+  }
+  else if(fDet == kSBND)
+  {
+    std::vector<std::string> tpc_suffixes_sbnd = {"tpc0", "tpc1"};
 
-        srflashes.emplace_back();
-        FillOpFlash(flash, ophits, cryostat, srflashes.back());
-        iflash++;
+    for (size_t tpc=0; tpc<tpc_suffixes_sbnd.size(); tpc++) {
+      art::Handle<std::vector<recob::OpFlash>> flashes_handle;
+      GetByLabelStrict(evt, fParams.OpFlashLabel() + tpc_suffixes_sbnd[tpc], flashes_handle);
+      // fill into event
+      if (flashes_handle.isValid()) {
+        const std::vector<recob::OpFlash> &opflashes = *flashes_handle;
+        // get associated OpHits for each OpFlash
+        art::FindMany<recob::OpHit> findManyHits(flashes_handle, evt, fParams.OpFlashLabel() + tpc_suffixes_sbnd[tpc]);
+        int iflash=0;
+        for (const recob::OpFlash& flash : opflashes) {
+          std::vector<recob::OpHit const*> const& ophits = findManyHits.at(iflash);
+          srflashes.emplace_back();
+          FillSBNDOpFlash(flash, ophits, tpc, srflashes.back());
+          iflash++;
+        }
       }
     }
   }
@@ -1603,6 +1730,17 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         slice_tag_indices.push_back(i_tag);
       }
     }
+  }
+
+  // nu graph
+  std::vector< art::Handle<std::vector<unsigned int>> > ng2_slice_hit_map_handle(pandora_tag_suffixes.size());
+  std::vector< art::Handle<std::vector<anab::FeatureVector<1>>> > ng2_filter_handle(pandora_tag_suffixes.size());
+  std::vector< art::Handle<std::vector<anab::FeatureVector<5>>> > ng2_semantic_handle(pandora_tag_suffixes.size());
+  for (unsigned i_tag = 0; i_tag < pandora_tag_suffixes.size(); i_tag++) {
+    const std::string &pandora_tag_suffix = pandora_tag_suffixes[i_tag];
+    GetByLabelIfExists(evt, fParams.NuGraphSliceHitLabel().encode() + pandora_tag_suffix, ng2_slice_hit_map_handle[i_tag]);
+    GetByLabelIfExists(evt, fParams.NuGraphFilterLabel().label() + pandora_tag_suffix + ":" + fParams.NuGraphFilterLabel().instance(), ng2_filter_handle[i_tag]);
+    GetByLabelIfExists(evt, fParams.NuGraphSemanticLabel().label() + pandora_tag_suffix + ":" + fParams.NuGraphSemanticLabel().instance(), ng2_semantic_handle[i_tag]);
   }
 
   // The Standard Record
@@ -1661,6 +1799,18 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       }
     }
 
+    std::vector<art::Ptr<anab::FeatureVector<1>>> ng2_filter_vec;
+    std::vector<art::Ptr<anab::FeatureVector<5>>> ng2_semantic_vec;
+    if (ng2_filter_handle[producer].isValid()) {
+      art::fill_ptr_vector(ng2_filter_vec,ng2_filter_handle[producer]);
+    }
+    if (ng2_semantic_handle[producer].isValid()) {
+      art::fill_ptr_vector(ng2_semantic_vec,ng2_semantic_handle[producer]);
+    }
+    if (ng2_slice_hit_map_handle[producer].isValid()) {
+      FillSliceNuGraph(slcHits,*ng2_slice_hit_map_handle[producer],ng2_filter_vec,ng2_semantic_vec,recslc);
+    }
+
     art::FindManyP<sbn::OpT0Finder> fmOpT0 =
       FindManyPStrict<sbn::OpT0Finder>(sliceList, evt, fParams.OpT0Label() + slice_tag_suff);
     std::vector<art::Ptr<sbn::OpT0Finder>> slcOpT0;
@@ -1677,6 +1827,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     const sbn::TPCPMTBarycenterMatch *barycenterMatch
       = foTPCPMTBarycenterMatch.isValid()? foTPCPMTBarycenterMatch.at(0).get(): nullptr;
 
+    art::FindOneP<lcvn::Result> foCVNResult =
+      FindOnePStrict<lcvn::Result>(sliceList, evt,
+          fParams.CVNLabel() + slice_tag_suff);
+    const lcvn::Result *cvnResult
+      = foCVNResult.isValid()? foCVNResult.at(0).get(): nullptr;
+    
     art::FindManyP<larpandoraobj::PFParticleMetadata> fmPFPMeta =
       FindManyPStrict<larpandoraobj::PFParticleMetadata>(fmPFPart, evt,
                fParams.PFParticleLabel() + slice_tag_suff);
@@ -1700,6 +1856,25 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     art::FindManyP<recob::PFParticle> fmSpacePointPFPs =
       FindManyPStrict<recob::PFParticle>(slcSpacePoints, evt, fParams.PFParticleLabel() + slice_tag_suff);
+
+    art::FindManyP<recob::Cluster> fmPFPClusters =
+      FindManyPStrict<recob::Cluster>(fmPFPart, evt, fParams.PFParticleLabel() + slice_tag_suff);
+
+    std::vector<std::vector<art::Ptr<recob::Hit>>> fmPFPartHits;
+    // make Ptr's to clusters for cluster -> other object associations
+    if (fmPFPClusters.isValid()) {
+      for (size_t ipf=0; ipf<fmPFPart.size();++ipf) {
+	std::vector<art::Ptr<recob::Hit>> pfphits;
+	std::vector<art::Ptr<recob::Cluster>> pfclusters = fmPFPClusters.at(ipf);
+	art::FindManyP<recob::Hit> fmCluHits = FindManyPStrict<recob::Hit>(pfclusters, evt, fParams.PFParticleLabel() + slice_tag_suff);
+	for (size_t icl=0; icl<fmCluHits.size();icl++) {
+	  for (auto hit : fmCluHits.at(icl)) {
+	    pfphits.push_back(hit);
+	  }
+	}
+	fmPFPartHits.push_back(pfphits);
+      }
+    }
 
     art::FindManyP<recob::Shower> fmShower =
       FindManyPStrict<recob::Shower>(fmPFPart, evt, fParams.RecoShowerLabel() + slice_tag_suff);
@@ -1819,9 +1994,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     // NOTE: The sbn::crt::CRTHit is associated to the T0. It's a bit awkward to
     // access that here, so we do it per-track (see code where fmCRTHitMatch is accessed below)
+   
     art::FindManyP<anab::T0> fmCRTHitMatch =
       FindManyPStrict<anab::T0>(slcTracks, evt,
-               fParams.CRTHitMatchLabel() + slice_tag_suff);
+               fParams.CRTHitMatchLabel());
+
+    art::FindManyP<sbn::crt::CRTHitT0TaggingInfo> fmCRTHitMatchInfo =
+      FindManyPStrict<sbn::crt::CRTHitT0TaggingInfo>(slcTracks, evt,
+               fParams.CRTHitMatchInfoLabel());
 
     // TODO: also save the sbn::crt::CRTTrack in the matching so that CAFMaker has access to it
     art::FindManyP<anab::T0> fmCRTTrackMatch =
@@ -1902,7 +2082,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceOpT0Finder(slcOpT0, recslc);
     FillSliceBarycenter(slcHits, slcSpacePoints, recslc);
     FillTPCPMTBarycenterMatch(barycenterMatch, recslc);
-
+    FillCVNScores(cvnResult, recslc);
+    
     // select slice
     if (!SelectSlice(recslc, fParams.CutClearCosmic())) continue;
 
@@ -2007,6 +2188,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         FillCNNScores(thisParticle, cnnScores, pfp);
       }
 
+      if (ng2_slice_hit_map_handle[producer].isValid()) {
+	FillPFPNuGraph(*ng2_slice_hit_map_handle[producer], ng2_filter_vec, ng2_semantic_vec, fmPFPartHits.at(iPart), pfp);
+      }
+
       if (!thisTrack.empty())  { // it has a track!
         assert(thisTrack.size() == 1);
 
@@ -2042,7 +2227,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         FillTrackRangeP(*thisTrack[0], rangePs, trk);
 
         if (fmChi2PID.isValid()) {
-           FillTrackChi2PID(fmChi2PID.at(iPart), lar::providerFrom<geo::Geometry>(), trk);
+           FillTrackChi2PID(fmChi2PID.at(iPart), trk);
         }
         if (fmScatterClosestApproach.isValid() && fmScatterClosestApproach.at(iPart).size()==1) {
            FillTrackScatterClosestApproach(fmScatterClosestApproach.at(iPart).front(), trk);
@@ -2057,16 +2242,21 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           FillTrackCalo(fmCalo.at(iPart), fmTrackHit.at(iPart),
               (fParams.FillHitsNeutrinoSlices() && NeutrinoSlice) || fParams.FillHitsAllSlices(),
               fParams.TrackHitFillRRStartCut(), fParams.TrackHitFillRREndCut(),
-              lar::providerFrom<geo::Geometry>(), dprop, trk);
+              dprop, trk);
         }
+        
         if (fmCRTHitMatch.isValid() && fDet == kICARUS) {
           art::FindManyP<sbn::crt::CRTHit> CRTT02Hit = FindManyPStrict<sbn::crt::CRTHit>
-              (fmCRTHitMatch.at(iPart), evt, fParams.CRTHitMatchLabel() + slice_tag_suff);
+              (fmCRTHitMatch.at(iPart), evt, fParams.CRTHitMatchLabel());
 
           std::vector<art::Ptr<sbn::crt::CRTHit>> crthitmatch;
-          if (CRTT02Hit.isValid() && CRTT02Hit.size() == 1) crthitmatch = CRTT02Hit.at(0);
-
-          FillTrackCRTHit(fmCRTHitMatch.at(iPart), crthitmatch, fParams.CRTUseTS0(), CRT_T0_reference_time, CRT_T1_reference_time, trk);
+          std::vector<art::Ptr<sbn::crt::CRTHitT0TaggingInfo>> crthittagginginfo;
+          if(CRTT02Hit.isValid() && CRTT02Hit.size() == 1){
+            crthitmatch = CRTT02Hit.at(0);
+            crthittagginginfo = fmCRTHitMatchInfo.at(iPart);
+          }          
+          
+          FillTrackCRTHit(fmCRTHitMatch.at(iPart), crthitmatch, crthittagginginfo, fParams.CRTUseTS0(), CRT_T0_reference_time, CRT_T1_reference_time, trk);
         }
         // NOTE: SEE TODO AT fmCRTTrackMatch
         if (fmCRTTrackMatch.isValid() && fDet == kICARUS) {
@@ -2095,7 +2285,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
             FillTrackTruth(fmTrackHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, trk);
             // Hit truth information corresponding to Calo-Points
             // Assumes truth matching and calo-points are filled
-            if (mc_particles.isValid() && fParams.FillTrackCaloTruth()) FillTrackCaloTruth(id_to_ide_map, *mc_particles, geometry, clock_data, sce, trk);
+            if (mc_particles.isValid() && fParams.FillTrackCaloTruth()) FillTrackCaloTruth(id_to_ide_map, *mc_particles, *geom, wireReadout, clock_data, sce, trk);
           }
         }
       } // thisTrack exists
@@ -2104,7 +2294,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         assert(thisShower.size() == 1);
 
         SRShower& shw = pfp.shw;
-        FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, shw);
+        FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), wireReadout, producer, shw);
 
         // We may have many residuals per shower depending on how many showers ar in the slice
         if (fmShowerRazzle.isValid() && fmShowerRazzle.at(iPart).size()==1) {

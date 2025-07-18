@@ -18,7 +18,7 @@ services:
   FileCatalogMetadata:     @local::art_file_catalog_mc
   UBEventWeight: @local::microboone_eventweight_service
   Geometry: @local::microboone_geo
-  ExptGeoHelperInterface: @local::microboone_geometry_helper
+  WireReadout: @local::microboone_wire_readout
   IFDH: {}
 }
 

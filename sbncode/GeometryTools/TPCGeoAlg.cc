@@ -1,5 +1,8 @@
 #include "TPCGeoAlg.h"
 
+#include "larcore/Geometry/Geometry.h"
+#include "larcore/CoreUtils/ServiceUtil.h"
+
 namespace sbn{
 
 // Constructor - get values from the geometry service
@@ -111,10 +114,9 @@ int TPCGeoAlg::DriftDirectionFromHits(std::vector<art::Ptr<recob::Hit>> hits){
 
   // Work out the drift direction
   geo::TPCID tpcID = hits[0]->WireID().asTPCID();
-  const geo::TPCGeo& tpcGeo = fGeometryService->GetElement(tpcID);
-  double driftDirection = tpcGeo.DetectDriftDirection();
-  if(std::abs(driftDirection) != 1) driftDirection = 0;
-  return driftDirection;
+  auto const [axis, sign] = fGeometryService->TPC(tpcID).DriftAxisWithSign();
+  if(axis != geo::Coordinate::X) return 0;
+  return to_int(sign);
 }
 
 // Work out the drift limits for a collection of hits
@@ -127,7 +129,7 @@ std::pair<double, double> TPCGeoAlg::XLimitsFromHits(std::vector<art::Ptr<recob:
 
   // Work out the drift direction
   geo::TPCID tpcID = hits[0]->WireID().asTPCID();
-  const geo::TPCGeo& tpcGeo = fGeometryService->GetElement(tpcID);
+  const geo::TPCGeo& tpcGeo = fGeometryService->TPC(tpcID);
   return std::make_pair(tpcGeo.MinX(), tpcGeo.MaxX());
 }
 

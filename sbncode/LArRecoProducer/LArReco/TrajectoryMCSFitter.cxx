@@ -33,7 +33,7 @@ recob::MCSFitResult TrajectoryMCSFitter::fitMcs(const recob::TrackTrajectory& tr
       if (segradlengths[p]<-100. || segradlengths[p-1]<-100.) {
         dtheta.push_back(-999.);
       } 
-      if (!breakpointsgood[p] || !breakpointsgood[p-1]) {
+      else if (!breakpointsgood[p] || !breakpointsgood[p-1]) {
         dtheta.push_back(-999.);
       }
       else { 
@@ -106,7 +106,7 @@ void TrajectoryMCSFitter::breakTrajInSegments(const recob::TrackTrajectory& traj
   }
   //then add last segment
   if (thislen>0.) {
-    auto endpointpos = traj.LocationAtPoint(nextValid);
+    auto endpointpos = traj.LocationAtPoint(traj.LastValidPoint());
     bool endpointposgood = isInVolume(fiducialVolumes, endpointpos) && !isInVolume(excludeVolumes, endpointpos);
     breakpoints.push_back(traj.LastValidPoint()+1);
     breakpointsgood.push_back(endpointposgood);

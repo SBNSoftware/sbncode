@@ -18,9 +18,9 @@
 #include "Geant4/G4EmExtraPhysics.hh"
 #include "Geant4/G4IonPhysics.hh"
 #include "Geant4/G4StoppingPhysics.hh"
-#include "Geant4/G4HadronElasticPhysicsHP.hh"
+#include "Geant4/G4HadronElasticPhysics.hh"
 // #include "Geant4/G4NeutronTrackingCut.hh"
-#include "Geant4/G4HadronPhysicsQGSP_BERT_HP.hh"
+#include "Geant4/G4HadronPhysicsQGSP_BERT.hh"
 
 
 // Register this new physics list
@@ -48,10 +48,10 @@ SBN_QGSP_BERT_NNC::SBN_QGSP_BERT_NNC(G4int ver)
   RegisterPhysics( new G4DecayPhysics(ver) );
 
    // Hadron Elastic scattering
-  RegisterPhysics( new G4HadronElasticPhysicsHP(ver) );
+  RegisterPhysics( new G4HadronElasticPhysics(ver) );
 
   // Hadron Physics
-  RegisterPhysics( new G4HadronPhysicsQGSP_BERT_HP(ver));
+  RegisterPhysics( new G4HadronPhysicsQGSP_BERT(ver));
 
   // Stopping Physics
   RegisterPhysics( new G4StoppingPhysics(ver) );
