@@ -20,6 +20,7 @@
 #include "lardataobj/RecoBase/OpFlash.h"
 #include "lardataobj/RecoBase/OpHit.h"
 #include "lardataobj/AnalysisBase/Calorimetry.h"
+#include "lardataobj/AnalysisBase/MVAOutput.h"
 #include "lardataobj/AnalysisBase/ParticleID.h"
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
@@ -40,6 +41,7 @@
 #include "sbnobj/SBND/CRT/CRTSpacePoint.hh"
 #include "sbnobj/SBND/CRT/CRTTrack.hh"
 #include "sbnobj/Common/CRT/CRTPMTMatching.hh"
+#include "sbnobj/Common/CRT/CRTHitT0TaggingInfo.hh"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 
@@ -104,6 +106,22 @@ namespace caf
                            const std::vector<art::Ptr<recob::SpacePoint>> &inputPoints,
                            caf::SRSlice &slice);
 
+  /**
+   * @brief Fills the results from NuGraph at slice level
+   * @param inputHits (pointers to) the hits associated to the slice
+   * @param sliceHitsMap maps position of hits in collection input to NuGraph (slice only) to the one input to Pandora (all gaus hits)
+   * @param ngFilterResult NuGraph filter result, for each hit
+   * @param ngSemanticResult NuGraph semnatic result, for each hit (MIP track, HIP, shower, Michel electron, diffuse activity)
+   * @param[out] slice the destination slice object
+   *
+   * Hits with filter value (`ngFilterResult`) lower than `ng_filter_cut` are counted as background.
+   */
+  void FillSliceNuGraph(const std::vector<art::Ptr<recob::Hit>> &inputHits,
+			const std::vector<unsigned int> &sliceHitsMap,
+			const std::vector<art::Ptr<anab::FeatureVector<1>>> &ngFilterResult,
+			const std::vector<art::Ptr<anab::FeatureVector<5>>> &ngSemanticResult,
+			caf::SRSlice &slice);
+
   bool SelectSlice(const caf::SRSlice &slice, bool cut_clear_cosmic);
 
   void FillTrackVars(const recob::Track& track,
@@ -130,8 +148,26 @@ namespace caf
                      caf::SRPFP& srpfp,
                      bool allowEmpty = false);
 
+  /**
+   * @brief Fills the results from NuGraph at slice level
+   * @param sliceHitsMap maps position of hits in collection input to NuGraph (slice only) to the one input to Pandora (all gaus hits)
+   * @param ngFilterResult NuGraph filter result, for each hit
+   * @param ngSemanticResult NuGraph semnatic result, for each hit (MIP track, HIP, shower, Michel electron, diffuse activity)
+   * @param pfpHits Vector of hits associated to the PFParticle
+   * @param[out] srpfp the destination PFParticle object
+   *
+   * Hits with filter value (`ngFilterResult`) lower than `ng_filter_cut` are counted as background.
+   */
+  void FillPFPNuGraph(const std::vector<unsigned int> &sliceHitsMap,
+		      const std::vector<art::Ptr<anab::FeatureVector<1>>> &ngFilterResult,
+		      const std::vector<art::Ptr<anab::FeatureVector<5>>> &ngSemanticResult,
+		      const std::vector<art::Ptr<recob::Hit>> &pfpHits,
+		      caf::SRPFP& srpfp,
+		      bool allowEmpty= false);
+
   void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
                        const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,
+                       const std::vector<art::Ptr<sbn::crt::CRTHitT0TaggingInfo>> &hitmatchinfo,
                        bool use_ts0,
                        int64_t CRT_T0_reference_time, // ns, signed
                        double CRT_T1_reference_time, // us
@@ -217,11 +253,18 @@ namespace caf
                         caf::SRSBNDCRTTrack &srsbndcrttrack,
                         bool allowEmpty = false);
 
-  void FillOpFlash(const recob::OpFlash &flash,
+  void FillICARUSOpFlash(const recob::OpFlash &flash,
                   std::vector<recob::OpHit const*> const& hits,
                   int cryo,
                   caf::SROpFlash &srflash,
                   bool allowEmpty = false);
+
+  void FillSBNDOpFlash(const recob::OpFlash &flash,
+                  std::vector<recob::OpHit const*> const& hits,
+                  int tpc,
+                  caf::SROpFlash &srflash,
+                  bool allowEmpty = false);
+                  
   void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,
 		       caf::SRCRTPMTMatch &srmatch,
 		       bool allowEmpty = false);

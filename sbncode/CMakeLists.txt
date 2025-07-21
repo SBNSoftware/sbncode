@@ -21,6 +21,7 @@ add_subdirectory(CosmicID)
 add_subdirectory(DetSim)
 add_subdirectory(Cluster3D)
 add_subdirectory(WireMod)
+add_subdirectory(HitFinder)
 
 # Supera
 #
