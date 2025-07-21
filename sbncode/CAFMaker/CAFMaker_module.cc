@@ -1051,7 +1051,6 @@ void CAFMaker::InitializeOutfiles()
 
   }     
 
-
   if(fParams.CreateFlatCAF()){
     mf::LogInfo("CAFMaker") << "Output flat filename is " << fFlatCafFilename;
 
