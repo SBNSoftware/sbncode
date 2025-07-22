@@ -15,7 +15,16 @@ NeutronParameters: [
     Range:      [10.0, 2005.00]
     Nominal:    1.0
     Sigma:      0.2
+  },
+
+  {
+    Name:       "fNeutronTotal"
+    Cut:        "total"
+    Range:      [10.0, 2005.00]
+    Nominal:    1.0
+    Sigma:      0.2
   }
+
 ]
 
 END_PROLOG 

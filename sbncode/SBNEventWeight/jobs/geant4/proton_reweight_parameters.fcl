@@ -17,6 +17,14 @@ ProtonParameters: [
     Range:      [10.0, 2005.00]
     Nominal:    1.0
     Sigma:      0.2
+  },
+
+  {
+    Name:       "fProtonTotal"
+    Cut:        "total"
+    Range:      [10., 2005.]
+    Nominal:    1
+    Sigma:      0.2
   }
 ]
 

@@ -61,8 +61,10 @@ sbn_eventweight_geant4: {
     material: @local::LAr
     random_seed: 60
     parameters: @local::ProtonParameters
-    mode: multisim
-    number_of_multisims: 1000
+    mode: multisigma
+    number_of_sigmas: 3
+    #mode: multisim
+    #number_of_multisims: 1000
     fracsfile: "$SBNDATA_DIR/systematics/reint/g4_fracs_proton.root"
     makeoutputtree: true
     pdg_to_reweight: 2212
@@ -74,8 +76,10 @@ sbn_eventweight_geant4: {
     material: @local::LAr
     random_seed: 60
     parameters: @local::NeutronParameters
-    mode: multisim
-    number_of_multisims: 1000
+    mode: multisigma
+    number_of_sigmas: 3
+    #mode: multisim
+    #number_of_multisims: 1000
     fracsfile: "$SBNDATA_DIR/systematics/reint/g4_fracs_proton.root"
     makeoutputtree: true
     pdg_to_reweight: 2112
@@ -87,6 +91,7 @@ sbn_eventweight_geant4: {
     material: @local::LAr
     random_seed: 60
     parameters: @local::KPlusParameters
+    #mode: pm1sigma
     mode: multisim
     number_of_multisims: 1000
     fracsfile: "$SBNDATA_DIR/systematics/reint/g4_fracs_proton.root"
@@ -100,6 +105,7 @@ sbn_eventweight_geant4: {
     material: @local::LAr
     random_seed: 60
     parameters: @local::KMinusParameters
+    #mode: pm1sigma
     mode: multisim
     number_of_multisims: 1000
     fracsfile: "$SBNDATA_DIR/systematics/reint/g4_fracs_proton.root"

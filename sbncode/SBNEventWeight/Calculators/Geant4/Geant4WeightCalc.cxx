@@ -61,7 +61,8 @@ private:
   CLHEP::RandGaussQ* fGaussRandom;  //!< Random number generator
   fhicl::ParameterSet fMaterial; //!< Detector material, i.e. LAr
   // std::map<int, ParticleDef> fParticles;  //!< Particles to reweight
-  unsigned fNsims;  //!< Number of multisims
+  unsigned fNsims;  //!< Number of universes (multisim mode)
+  unsigned fNsigmas; //!< Number of sigmas (multisigma mode)
   int fPdg; //!< PDG value for particles that a given weight calculator should apply to. Note that for now this module can only handle weights for one particle species at a time.
   // float fXSUncertainty;  //!< Flat cross section uncertainty
   G4ReweighterFactory fRWFactory; //!< Base class to handle all Geant4Reweighters
@@ -115,6 +116,7 @@ void Geant4WeightCalc::Configure(fhicl::ParameterSet const& p,
   std::string FracsFileName = pset.get< std::string >( "fracsfile" );
   std::vector< fhicl::ParameterSet > FitParSets = pset.get< std::vector< fhicl::ParameterSet > >("parameters");
   fNsims = pset.get<int> ("number_of_multisims", 0);
+  fNsigmas =  pset.get<int> ("number_of_sigmas", 0);
   fPdg = pset.get<int> ("pdg_to_reweight");
   fMaterial = pset.get<fhicl::ParameterSet> ("material");
   fDebug = pset.get<bool> ("debug",false);
@@ -171,6 +173,7 @@ void Geant4WeightCalc::Configure(fhicl::ParameterSet const& p,
   std::vector<double> FitParSigmas;
   std::map<std::string, double> theNominals;
 
+  std::cout << "Configuring parameter: " << GetFullName() << " with mode: " << mode << std::endl;
   fParameterSet.Configure(GetFullName(), mode, fNsims);
 
   for (size_t i_parset=0; i_parset<n_parsets; ++i_parset){
@@ -188,6 +191,7 @@ void Geant4WeightCalc::Configure(fhicl::ParameterSet const& p,
     fParameterSet.AddParameter(theName, theSigma);
   }
 
+  //DEPRECATED
   if (mode=="pm1sigma"){
     // pm1sigma mode: 0 = +1sigma, 1 = -1sigma of a single parameter. All other parameters at nominal
     for (size_t i_parset=0; i_parset<n_parsets; ++i_parset){
@@ -208,6 +212,7 @@ void Geant4WeightCalc::Configure(fhicl::ParameterSet const& p,
       UniverseVals.push_back(tmp_vals_m1sigma);
     } // end loop over parsets (i)
   } // pm1sigma
+
   else if (mode=="multisim"){
     // multisim mode: parameter values sample within the given uncertainty for all parameters simultaneously
     // Loop over universes j
@@ -222,6 +227,18 @@ void Geant4WeightCalc::Configure(fhicl::ParameterSet const& p,
       UniverseVals.push_back(tmp_vals);
     } // loop over Nsims (j)
   } // multisim
+
+  if (mode=="multisigma"){
+    // pm1sigma mode: 0 = +1sigma, 1 = -1sigma of a single parameter. All other parameters at nominal
+    for (size_t i_parset=0; i_parset<n_parsets; ++i_parset){
+      for ( int i_sigma = -1*fNsigmas; i_sigma < int(fNsigmas+1); i_sigma++ ) {
+        std::map<std::string, double> tmp_vals(theNominals);
+        tmp_vals[FitParNames.at(i_parset)] = FitParNominals.at(i_parset) + i_sigma*FitParSigmas.at(i_parset);
+        UniverseVals.push_back(tmp_vals);
+      } // ened loop over sigmas
+    } // end loop over parsets (i)
+  } // multisigma
+
   else{
     // Anything else mode: Set parameters to user-defined nominal value
     UniverseVals.push_back(theNominals);
