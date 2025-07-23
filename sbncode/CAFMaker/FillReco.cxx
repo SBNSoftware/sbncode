@@ -918,8 +918,8 @@ namespace caf
       // Pfo Characterisation features
       srpfp.pfochar.setDefault();
 
-      CopyPropertyIfSet(propertiesMap, "LArThreeDChargeFeatureTool_EndFraction",             srpfp.pfochar.chgendfrac);
-      CopyPropertyIfSet(propertiesMap, "LArThreeDChargeFeatureTool_FractionalSpread",        srpfp.pfochar.chgfracspread);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDChargeFeatureTool_ICARUS_EndFraction",      srpfp.pfochar.chgendfrac);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDChargeFeatureTool_ICARUS_FractionalSpread", srpfp.pfochar.chgfracspread);
       CopyPropertyIfSet(propertiesMap, "LArThreeDLinearFitFeatureTool_DiffStraightLineMean", srpfp.pfochar.linfitdiff);
       CopyPropertyIfSet(propertiesMap, "LArThreeDLinearFitFeatureTool_Length",               srpfp.pfochar.linfitlen);
       CopyPropertyIfSet(propertiesMap, "LArThreeDLinearFitFeatureTool_MaxFitGapLength",      srpfp.pfochar.linfitgaplen);
@@ -928,9 +928,9 @@ namespace caf
       CopyPropertyIfSet(propertiesMap, "LArThreeDPCAFeatureTool_SecondaryPCARatio",          srpfp.pfochar.pca2ratio);
       CopyPropertyIfSet(propertiesMap, "LArThreeDPCAFeatureTool_TertiaryPCARatio",           srpfp.pfochar.pca3ratio);
       CopyPropertyIfSet(propertiesMap, "LArThreeDVertexDistanceFeatureTool_VertexDistance",  srpfp.pfochar.vtxdist);
-      CopyPropertyIfSet(propertiesMap, "LArConeChargeFeatureTool_HaloTotalRatio",            srpfp.pfochar.halototratio);
-      CopyPropertyIfSet(propertiesMap, "LArConeChargeFeatureTool_Concentration",             srpfp.pfochar.concentration);
-      CopyPropertyIfSet(propertiesMap, "LArConeChargeFeatureTool_Conicalness",               srpfp.pfochar.conicalness);
+      CopyPropertyIfSet(propertiesMap, "LArConeChargeFeatureTool_ICARUS_HaloTotalRatio",     srpfp.pfochar.halototratio);
+      CopyPropertyIfSet(propertiesMap, "LArConeChargeFeatureTool_ICARUS_Concentration",      srpfp.pfochar.concentration);
+      CopyPropertyIfSet(propertiesMap, "LArConeChargeFeatureTool_ICARUS_Conicalness",        srpfp.pfochar.conicalness);
     }
     if (t0) {
       srpfp.t0 = t0->Time() / 1e3; /* ns -> us */
