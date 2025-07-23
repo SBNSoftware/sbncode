@@ -1,0 +1,18 @@
+BEGIN_PROLOG
+
+# LAr parameters for geant4reweight, stolen out of the ND-Lar 2x2 implementation
+# A more complete solution would be to get this info out of the geometry instead...
+
+LAr: {
+  Name: "liquidArgon"
+  Density: 1.390
+  Components: [
+    {
+      Z:    18
+      Mass: 39.95
+      Fraction: 1.
+    }
+  ]
+}
+
+END_PROLOG
