@@ -1140,15 +1140,10 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
     fTrack->start.x = track.Start().X();
     fTrack->end.x = track.End().X();
   } else if (t0Info.hasT0CRTTrack) {
+    int driftDir = geo->TPC(hits[0]->WireID()).DriftDir().X();
     const double driftv(dprop.DriftVelocity(dprop.Efield(), dprop.Temperature()));
-    // Comment from Francesco: I am not sure of the below formula.
-    // SBND has two TPCs with a common cathode like ICARUS, the driftvelocity
-    // returns the absolute value, but the displacement (basically the + below)
-    // depends on the TPC, in one case is + and in the other is negative.
-    // In this way the displacement is always in the same direction, working for
-    // one TPC, but not for the other.
-    fTrack->start.x = track.Start().X() + driftv*t0Info.t0CRTTrack*1e-3;
-    fTrack->end.x = track.End().X() + driftv*t0Info.t0CRTTrack*1e-3;
+    fTrack->start.x = track.Start().X() + driftDir*driftv*t0Info.t0CRTTrack*1e-3;
+    fTrack->end.x = track.End().X() + driftDir*driftv*t0Info.t0CRTTrack*1e-3;
   } else if (t0Info.hasT0CRTHit){ 
     // If the track does not have a a Pandora T0, the tracks will always be either on the left or (ex Or) right of the cathode. 
     int driftDir = geo->TPC(hits[0]->WireID()).DriftDir().X();
