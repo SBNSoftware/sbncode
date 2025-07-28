@@ -457,7 +457,7 @@ bnb::bnbAutoTune bmd::getSettings(const bmd::autoTunes& history, const uint64_t 
   double calcFOM(double horpos, double horang, double verpos, double verang, double ppp, double tgtsx, double tgtsy)
   {
     ppp = ppp / pow(10,12);
-
+    
 
     //code from MiniBooNE AnalysisFramework with the addition of scaling the beam profile to match tgtsx, tgtsy
     //form DQ_BeamLine_twiss_init.F
