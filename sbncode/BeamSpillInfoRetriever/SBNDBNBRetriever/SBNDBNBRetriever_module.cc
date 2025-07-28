@@ -231,7 +231,7 @@ int sbn::SBNDBNBRetriever::matchMultiWireData(
     std::cout << "Figure of Merit:  " << spillFOM << std::endl;
 
     std::ofstream outfile("FOM.txt", std::ios::app); 
-    outfile << spillInfo.FOM << std::endl; 
+    outfile << spillInfo.FOM  << std::endl; 
     outfile.close();
 
 
