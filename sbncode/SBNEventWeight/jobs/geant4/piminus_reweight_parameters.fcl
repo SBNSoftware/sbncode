@@ -1,6 +1,6 @@
 BEGIN_PROLOG
 
-# From MicroBooNE, ubsim UBOONE_SUITE_v08_00_00_69
+## PiMinus available process keys: "abs", "cex", "prod", "dcex", "inel"
 
 PiMinusParameters: [ 
   {
@@ -52,15 +52,8 @@ PiMinusParameters: [
     Range:      [10.0, 2005.00]
     Nominal:    1.0
     Sigma:      0.2
-  },
-
-  {
-    Name:       "fPiMinusElast"
-    Cut:        "elast"
-    Range:      [10.0, 2005.00]
-    Nominal:    1.0
-    Sigma:      0.2
   }
+    
 ]
 
 END_PROLOG

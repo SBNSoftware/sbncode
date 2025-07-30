@@ -1,30 +1,15 @@
 BEGIN_PROLOG
 
-NeutronParameters: [
-  {
-    Name:       "fNeutronReac"
-    Cut:        "reac"
-    Range:      [10., 2005.]
-    Nominal:    1
-    Sigma:      0.2
-  },
+## Neutron available process keys: "total"
 
-  {
-    Name:       "fNeutronElast"
-    Cut:        "elast"
-    Range:      [10.0, 2005.00]
-    Nominal:    1.0
-    Sigma:      0.2
-  },
-
+NeutronParameters: [ 
   {
     Name:       "fNeutronTotal"
     Cut:        "total"
-    Range:      [10.0, 2005.00]
+    Range:      [10.0, 2005.0]
     Nominal:    1.0
     Sigma:      0.2
   }
-
 ]
 
 END_PROLOG 
