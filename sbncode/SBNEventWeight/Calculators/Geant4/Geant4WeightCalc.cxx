@@ -300,7 +300,11 @@ std::vector<float> Geant4WeightCalc::GetWeight(art::Event& e, size_t itruth ) {
 
     double mass = 0.;
     if( TMath::Abs(p_PDG) == 211 ) mass = 139.57;
+    else if ( p_PDG == 111 ) mass = 134.9768;
     else if( p_PDG == 2212 ) mass = 938.28;
+    else if ( p_PDG == 2112 ) mass = 939.565;
+    else if ( TMath::Abs(p_PDG) == 321) mass = 493.677;
+    else if ( p_PDG == 311) mass = 497.61;
 
     // We only want to record weights for one type of particle (defined by fPDG from the fcl file), so skip other particles
     if (p_PDG == fPdg){
