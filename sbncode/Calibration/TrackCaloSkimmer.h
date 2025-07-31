@@ -183,7 +183,8 @@ private:
     const geo::WireReadoutGeom *wireReadout,
     const detinfo::DetectorClocksData &dclock,
     const cheat::BackTrackerService *bt_serv,
-    const detinfo::DetectorPropertiesData &dprop);
+    const detinfo::DetectorPropertiesData &dprop,
+    const float &xshift);
   void FillTrackCRTHitInfo(const std::vector<art::Ptr<sbn::crt::CRTHitT0TaggingInfo>> &tag);
 
   // helpers
