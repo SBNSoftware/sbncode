@@ -16,6 +16,7 @@ namespace caf
     template<class T> using Atom = fhicl::Atom<T>;
     template<class T> using Sequence = fhicl::Sequence<T>;
     template<class T> using Table = fhicl::Table<T>;
+    template<class T> using OptionalTable = fhicl::OptionalTable<T>;
     using Comment  = fhicl::Comment;
     using Name     = fhicl::Name;
     using string   = std::string;
@@ -505,7 +506,7 @@ namespace caf
       };
     };
 
-    Table<PFOCharLabels_t> PFOCharLabels {
+    OptionalTable<PFOCharLabels_t> PFOCharLabels {
       Name("PFOCharLabels"),
       Comment("Provide tool names for the Pandora track/shower discrimination BDT variables.")
     };

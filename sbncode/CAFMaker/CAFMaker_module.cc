@@ -2098,20 +2098,22 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       }
 
       const larpandoraobj::PFParticleMetadata *pfpMeta = (fmPFPMeta.at(iPart).empty()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
+      caf::CAFMakerParams::PFOCharLabels_t const& pfoCharParams
+        = fParams.PFOCharLabels().value_or(caf::CAFMakerParams::PFOCharLabels_t{});
       const caf::PFOCharLabelsStruct pfoCharLabels {
-        fParams.PFOCharLabels().EndFractionName(),
-        fParams.PFOCharLabels().FractionalSpreadName(),
-        fParams.PFOCharLabels().DiffStraightLineMeanName(),
-        fParams.PFOCharLabels().LengthName(),
-        fParams.PFOCharLabels().MaxFitGapLengthName(),
-        fParams.PFOCharLabels().SlidingLinearFitRMSName(),
-        fParams.PFOCharLabels().AngleDiffName(),
-        fParams.PFOCharLabels().SecondaryPCARatioName(),
-        fParams.PFOCharLabels().TertiaryPCARatioName(),
-        fParams.PFOCharLabels().VertexDistanceName(),
-        fParams.PFOCharLabels().HaloTotalRatioName(),
-        fParams.PFOCharLabels().ConcentrationName(),
-        fParams.PFOCharLabels().ConicalnessName()
+        pfoCharParams.EndFractionName(),
+        pfoCharParams.FractionalSpreadName(),
+        pfoCharParams.DiffStraightLineMeanName(),
+        pfoCharParams.LengthName(),
+        pfoCharParams.MaxFitGapLengthName(),
+        pfoCharParams.SlidingLinearFitRMSName(),
+        pfoCharParams.AngleDiffName(),
+        pfoCharParams.SecondaryPCARatioName(),
+        pfoCharParams.TertiaryPCARatioName(),
+        pfoCharParams.VertexDistanceName(),
+        pfoCharParams.HaloTotalRatioName(),
+        pfoCharParams.ConcentrationName(),
+        pfoCharParams.ConicalnessName()
       };
       FillPFPVars(thisParticle, primary, pfpMeta, thisPFPT0, pfp, pfoCharLabels);
 
