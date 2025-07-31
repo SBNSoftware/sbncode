@@ -11,7 +11,6 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "TrackCaloSkimmer.h"
-#include "sbnobj/SBND/CRT/CRTTrack.hh"
 
 #include "art/Utilities/make_tool.h"
 
@@ -70,6 +69,7 @@ sbn::TrackCaloSkimmer::TrackCaloSkimmer(fhicl::ParameterSet const& p)
   fPFPproducer  = p.get< art::InputTag > ("PFPproducer","pandoraGausCryo0");
   fPFPT0producer = p.get< art::InputTag > ("PFPT0producer", "pandoraGausCryo0");
   fCRTTrackT0producer = p.get< art::InputTag >("CRTTrackT0producer", "crttrackmatching");
+  fCRTSpacePointT0producer = p.get< art::InputTag >("CRTSpacePointT0producer", "crtspacepointmatching");
   fCRTHitT0producer = p.get< art::InputTag >("CRTHitT0producer", "CRTT0Tagging");
 
   fCALOproducer = p.get< art::InputTag > ("CALOproducer");
@@ -231,6 +231,8 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
   //
   // Tracks (SBND style)
   art::FindManyP<sbnd::crt::CRTTrack, anab::T0> fmT0CRTTrack(tracks, e, fCRTTrackT0producer);
+  // SpacePoints (SBND style)
+  art::FindManyP<sbnd::crt::CRTSpacePoint, anab::T0> fmT0CRTSpacePoint(tracks, e, fCRTSpacePointT0producer);
 
   // Hits (ICARUS style)
   art::FindManyP<anab::T0> fmT0CRTHit(tracks, e, fCRTHitT0producer);
@@ -345,8 +347,9 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
     }
 
     // Collect T0s
-    bool hasT0 = false, hasPFPT0 = false, hasCRTTrackT0 = false, hasCRTHitT0 = false;
+    bool hasT0 = false, hasPFPT0 = false, hasCRTTrackT0 = false, hasCRTHitT0 = false, hasCRTSpacePointT0 = false;
     int whicht0 = -1;
+    float crtMatchingScore = std::numeric_limits<float>::signaling_NaN();
 
     double t0PFP = std::numeric_limits<float>::signaling_NaN();
     if (fmT0PFP.isValid() && fmT0PFP.at(p_pfp.key()).size()) {
@@ -356,12 +359,23 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
     }
 
     double t0CRTTrack = std::numeric_limits<float>::signaling_NaN();
+    double t0CRTTrackScore = std::numeric_limits<float>::signaling_NaN();
     if (fmT0CRTTrack.isValid() && fmT0CRTTrack.at(trkPtr.key()).size()) {
       t0CRTTrack = fmT0CRTTrack.data(trkPtr.key()).at(0)->Time();
+      t0CRTTrackScore = fmT0CRTTrack.data(trkPtr.key()).at(0)->TriggerConfidence();
       hasCRTTrackT0 = true;
     }
 
+    double t0CRTSpacePoint = std::numeric_limits<float>::signaling_NaN();
+    double t0CRTSpacePointScore = std::numeric_limits<float>::signaling_NaN();
+    if (fmT0CRTSpacePoint.isValid() && fmT0CRTSpacePoint.at(trkPtr.key()).size()) {
+      t0CRTSpacePoint = fmT0CRTSpacePoint.data(trkPtr.key()).at(0)->Time();
+      t0CRTSpacePointScore = fmT0CRTSpacePoint.data(trkPtr.key()).at(0)->TriggerConfidence();
+      hasCRTSpacePointT0 = true;
+    }
+
     double t0CRTHit = std::numeric_limits<float>::signaling_NaN();
+    double t0CRTHitScore = std::numeric_limits<float>::signaling_NaN();
     if (fIncludeCRTHitTagging && fmT0CRTHit.isValid() && fmT0CRTHit.at(trkPtr.key()).size()) {
       const sbn::crt::CRTHitT0TaggingInfo &tag = *fmCRTHitT0TaggingInfo.at(trkPtr.key()).at(0);
       double time = fmT0CRTHit.at(trkPtr.key()).at(0)->Time();
@@ -384,23 +398,41 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
 
       if (!crtHitSysRejected && !crtHitDistanceRejected) {
         t0CRTHit = time;
+        t0CRTHitScore = tag.Distance;
         hasCRTHitT0 = true;
       }
     }
 
-    T0TimingInfo thisTrackTimingInfo = {t0PFP, t0CRTTrack, t0CRTHit, hasPFPT0, hasCRTTrackT0, hasCRTHitT0};
-    hasT0 = hasPFPT0 || hasCRTTrackT0 || hasCRTHitT0;
-
     // "whicht0" should reflect the T0 used for the reconstruction of the drift coordinate.
-    if(!hasT0) whicht0 = -1 ;
+    if(!hasT0) whicht0 = -1;
     // In this way, if a track is T0 tagged from PFP and CRT tagged, which T0 reflects the PFP Tag.
-    else if (hasPFPT0) whicht0 = 0 ;
-    else if (hasCRTTrackT0) whicht0 = 1 ;
-    else if (hasCRTHitT0) whicht0 = 2 ;
+    else if (hasPFPT0) whicht0 = 0;
+    else if (hasCRTTrackT0)
+      {
+	whicht0 = 1;
+	crtMatchingScore = t0CRTTrackScore;
+      }
+    else if (hasCRTHitT0)
+      {
+	whicht0 = 2;
+	crtMatchingScore = t0CRTHitScore;
+      }
+    else if (hasCRTSpacePointT0)
+      {
+	whicht0 = 3;
+	crtMatchingScore = t0CRTSpacePointScore;
+      }
+
+    T0TimingInfo thisTrackTimingInfo = {t0PFP, t0CRTTrack, t0CRTHit, t0CRTSpacePoint, hasPFPT0, hasCRTTrackT0, hasCRTHitT0, hasCRTSpacePointT0, crtMatchingScore};
+    hasT0 = hasPFPT0 || hasCRTTrackT0 || hasCRTHitT0 || hasCRTSpacePointT0;
 
     if (fRequireT0 && !hasT0) continue;
 
-    if (fVerbose) std::cout << "Processing new track! ID: " << trkPtr->ID() << " time: " << t0PFP << " timeCRTTrack: " << t0CRTTrack << " timeCRTHit "<<t0CRTHit<<std::endl;
+    if (fVerbose) std::cout << "Processing new track! ID: " << trkPtr->ID() << "\n"
+                            << "\tPandora time: " << t0PFP << "\n"
+                            << "\tCRTTrack (SBND) time: " << t0CRTTrack << "\n"
+                            << "\tCRTHit (ICARUS) time: " << t0CRTHit << "\n"
+                            << "\tCRTSpacePoint (SBND) time: " << t0CRTSpacePoint << std::endl;
 
     // Reset the track object
     *fTrack = sbn::TrackInfo();
@@ -1124,6 +1156,8 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
   fTrack->t0PFP = t0Info.t0Pandora;
   fTrack->t0CRTTrack = t0Info.t0CRTTrack;
   fTrack->t0CRTHit = t0Info.t0CRTHit;
+  fTrack->t0CRTSpacePoint = t0Info.t0CRTSpacePoint;
+  fTrack->crtMatchingScore = t0Info.crtMatchingScore;
   fTrack->id = track.ID();
   fTrack->clear_cosmic_muon = pfp.Parent() == recob::PFParticle::kPFParticlePrimary;
 
@@ -1135,22 +1169,40 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
   fTrack->dir.x = track.StartDirection().X();
   fTrack->dir.y = track.StartDirection().Y();
   fTrack->dir.z = track.StartDirection().Z(); 
-  //If track is only CRTt0 tagged, undo the assumed trigger correction
-  if (t0Info.hasT0Pandora) {
-    fTrack->start.x = track.Start().X();
-    fTrack->end.x = track.End().X();
-  } else if (t0Info.hasT0CRTTrack) {
-    int driftDir = geo->TPC(hits[0]->WireID()).DriftDir().X();
-    const double driftv(dprop.DriftVelocity(dprop.Efield(), dprop.Temperature()));
-    fTrack->start.x = track.Start().X() + driftDir*driftv*t0Info.t0CRTTrack*1e-3;
-    fTrack->end.x = track.End().X() + driftDir*driftv*t0Info.t0CRTTrack*1e-3;
-  } else if (t0Info.hasT0CRTHit){ 
-    // If the track does not have a a Pandora T0, the tracks will always be either on the left or (ex Or) right of the cathode. 
-    int driftDir = geo->TPC(hits[0]->WireID()).DriftDir().X();
-    const double driftv(dprop.DriftVelocity(dprop.Efield(), dprop.Temperature()));
-    fTrack->start.x = track.Start().X() + driftDir*driftv*t0Info.t0CRTHit*1e-3;
-    fTrack->end.x = track.End().X() + driftDir*driftv*t0Info.t0CRTHit*1e-3;
-  }
+
+  if(t0Info.hasT0Pandora)
+    {
+      fTrack->start.x = track.Start().X();
+      fTrack->end.x = track.End().X();
+    }
+  else
+    {
+      // If CRT T0 tagged we can shift the x positions appropriately
+      int driftDir = geo->TPC(hits[0]->WireID()).DriftDir().X();
+      const double driftv(dprop.DriftVelocity(dprop.Efield(), dprop.Temperature()));
+
+      if(t0Info.hasT0CRTTrack)
+	{
+	  const double xshift = driftDir*driftv*t0Info.t0CRTTrack*1e-3;
+	  fTrack->start.x = track.Start().X() + xshift;
+	  fTrack->end.x = track.End().X() + xshift;
+	  fTrack->xShiftCRT = xshift;
+	}
+      else if(t0Info.hasT0CRTHit)
+	{
+	  const double xshift = driftDir*driftv*t0Info.t0CRTHit*1e-3;
+	  fTrack->start.x = track.Start().X() + xshift;
+	  fTrack->end.x = track.End().X() + xshift;
+	  fTrack->xShiftCRT = xshift;
+	}
+      else if(t0Info.hasT0CRTSpacePoint)
+	{
+	  const double xshift = driftDir*driftv*t0Info.t0CRTSpacePoint*1e-3;
+	  fTrack->start.x = track.Start().X() + xshift;
+	  fTrack->end.x = track.End().X() + xshift;
+	  fTrack->xShiftCRT = xshift;
+	}
+    }
 
   if (hits.size() > 0) {
     fTrack->cryostat = hits[0]->WireID().Cryostat;
