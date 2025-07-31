@@ -1210,7 +1210,7 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
 
   // Fill each hit
   for (unsigned i_hit = 0; i_hit < hits.size(); i_hit++) {
-    sbn::TrackHitInfo hinfo = MakeHit(*hits[i_hit], hits[i_hit].key(), *thms[i_hit], track, t0Info, sps[i_hit], calo, geo, wireReadout, clock_data, bt_serv, dprop);
+    sbn::TrackHitInfo hinfo = MakeHit(*hits[i_hit], hits[i_hit].key(), *thms[i_hit], track, t0Info, sps[i_hit], calo, geo, wireReadout, clock_data, bt_serv, dprop, fTrack->xShiftCRT);
     if (hinfo.h.plane == 0) {
       fTrack->hits0.push_back(hinfo);
     }
@@ -1377,7 +1377,8 @@ sbn::TrackHitInfo sbn::TrackCaloSkimmer::MakeHit(const recob::Hit &hit,
     const geo::WireReadoutGeom *wireReadout,
     const detinfo::DetectorClocksData &dclock,
     const cheat::BackTrackerService *bt_serv,
-    const detinfo::DetectorPropertiesData &dprop) {
+    const detinfo::DetectorPropertiesData &dprop,
+    const float &xshift) {
 
   // TrackHitInfo to save
   sbn::TrackHitInfo hinfo;
@@ -1452,13 +1453,29 @@ sbn::TrackHitInfo sbn::TrackCaloSkimmer::MakeHit(const recob::Hit &hit,
     }
   }
 
-  // This is needed to reconstrut drift coordinate using a different Time
-  int driftDir = geo->TPC(hit.WireID()).DriftDir().X();
-  const double driftv(dprop.DriftVelocity(dprop.Efield(), dprop.Temperature()));
-  double anodeDistance = std::numeric_limits<float>::signaling_NaN();
-  if(t0Info.hasT0CRTHit) anodeDistance = (hit.PeakTime()-dclock.Time2Tick(dclock.TriggerTime())-t0Info.t0CRTHit*1e-3/dclock.TPCClock().TickPeriod())*dclock.TPCClock().TickPeriod()*driftv;
-  double wirePlaneX = wireReadout->Plane(geo::PlaneID(hit.WireID().Cryostat, hit.WireID().TPC, hit.WireID().Plane)).GetCenter().X();
-  double recoX = wirePlaneX - driftDir*anodeDistance;
+  // If T0 provided CRT then we should appropriately shift the drift position (already done for pandora T0)
+  double recoX = std::numeric_limits<float>::signaling_NaN();
+
+  if(!t0Info.hasT0Pandora && (t0Info.hasT0CRTTrack || t0Info.hasT0CRTHit || t0Info.hasT0CRTSpacePoint))
+    {
+      int driftDir = geo->TPC(hit.WireID()).DriftDir().X();
+      const double driftv(dprop.DriftVelocity(dprop.Efield(), dprop.Temperature()));
+
+      double time = std::numeric_limits<float>::signaling_NaN();
+
+      if(t0Info.hasT0CRTTrack)
+	time = t0Info.t0CRTTrack*1e-3;
+      else if(t0Info.hasT0CRTHit)
+	time = t0Info.t0CRTHit*1e-3;
+      else if(t0Info.hasT0CRTSpacePoint)
+	time = t0Info.t0CRTSpacePoint*1e-3;
+
+      double anodeDistance = (hit.PeakTime()-dclock.Time2Tick(dclock.TriggerTime())-time/dclock.TPCClock().TickPeriod())*dclock.TPCClock().TickPeriod()*driftv;
+      double wirePlaneX = wireReadout->Plane(geo::PlaneID(hit.WireID().Cryostat, hit.WireID().TPC, hit.WireID().Plane)).GetCenter().X();
+
+      recoX = wirePlaneX - driftDir*anodeDistance;
+    }
+
   // Information from the TrackHitMeta
   bool badhit = (thm.Index() == std::numeric_limits<unsigned int>::max()) ||
                     (!trk.HasValidPoint(thm.Index()));
@@ -1471,7 +1488,7 @@ sbn::TrackHitInfo sbn::TrackCaloSkimmer::MakeHit(const recob::Hit &hit,
 
     // The tp X coordinate is reconstructed only if it does not have a PandoraT0.
     hinfo.tp.x = loc.X();
-    if(t0Info.hasT0CRTHit && !t0Info.hasT0Pandora && !isnan(hinfo.tp.x)) hinfo.tp.x = recoX;
+    if((t0Info.hasT0CRTTrack || t0Info.hasT0CRTHit || t0Info.hasT0CRTSpacePoint) && !t0Info.hasT0Pandora && !isnan(hinfo.tp.x)) hinfo.tp.x = recoX;
     hinfo.tp.y = loc.Y();
     hinfo.tp.z = loc.Z();
 
@@ -1503,7 +1520,7 @@ sbn::TrackHitInfo sbn::TrackCaloSkimmer::MakeHit(const recob::Hit &hit,
   if (sp) {
     hinfo.h.sp.x = sp->position().x();
     // If the track has a Pandora T0, do not displace, track is already reconstructed at the correct position
-    if(t0Info.hasT0CRTHit && !t0Info.hasT0Pandora) hinfo.h.sp.x = sp->position().x() + driftDir*driftv*t0Info.t0CRTHit*1e-3;
+    if((t0Info.hasT0CRTTrack || t0Info.hasT0CRTHit || t0Info.hasT0CRTSpacePoint) && !t0Info.hasT0Pandora) hinfo.h.sp.x = sp->position().x() + xshift;
     hinfo.h.sp.y = sp->position().y();
     hinfo.h.sp.z = sp->position().z();
     hinfo.h.hasSP = true;
