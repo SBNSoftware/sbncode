@@ -63,6 +63,8 @@
 #include "sbnobj/Common/Calibration/TrackCaloSkimmerObj.h"
 #include "sbnobj/Common/CRT/CRTHitT0TaggingInfo.hh"
 #include "sbnobj/Common/CRT/CRTHitT0TaggingTruthInfo.hh"
+#include "sbnobj/SBND/CRT/CRTTrack.hh"
+#include "sbnobj/SBND/CRT/CRTSpacePoint.hh"
 
 #include "ITCSSelectionTool.h"
 
@@ -98,9 +100,12 @@ private:
     double  t0Pandora;
     double  t0CRTTrack;
     double  t0CRTHit;
+    double  t0CRTSpacePoint;
     bool    hasT0Pandora;
     bool    hasT0CRTTrack;
     bool    hasT0CRTHit;
+    bool    hasT0CRTSpacePoint;
+    double  crtMatchingScore;
   };
 
   // Internal data struct
@@ -192,6 +197,7 @@ private:
   art::InputTag fPFPT0producer;
   art::InputTag fCRTTrackT0producer;
   art::InputTag fCRTHitT0producer;
+  art::InputTag fCRTSpacePointT0producer;
   art::InputTag fCALOproducer;
   art::InputTag fTRKproducer;
   art::InputTag fTRKHMproducer;
