@@ -424,6 +424,92 @@ namespace caf
       25.
     };
 
+    struct PFOCharLabels_t {
+      Atom<string> EndFractionName {
+        Name("EndFractionName"),
+        Comment("Provide the tool name for the EndFraction BDT variable."),
+        "LArThreeDChargeFeatureTool_EndFraction"
+      };
+
+      Atom<string> FractionalSpreadName {
+        Name("FractionalSpreadName"),
+        Comment("Provide the tool name for the FractionalSpread BDT variable."),
+        "LArThreeDChargeFeatureTool_FractionalSpread"
+      };
+
+      Atom<string> DiffStraightLineMeanName {
+        Name("DiffStraightLineMeanName"),
+        Comment("Provide the tool name for the DiffStraightLineMean BDT variable."),
+        "LArThreeDChargeFeatureTool_DiffStraightLineMean"
+      };
+
+      Atom<string> LengthName {
+        Name("LengthName"),
+        Comment("Provide the tool name for the Length BDT variable."),
+        "LArThreeDChargeFeatureTool_Length"
+      };
+
+      Atom<string> MaxFitGapLengthName {
+        Name("MaxFitGapLengthName"),
+        Comment("Provide the tool name for the MaxFitGapLength BDT variable."),
+        "LArThreeDChargeFeatureTool_MaxFitGapLength"
+      };
+
+      Atom<string> SlidingLinearFitRMSName {
+        Name("SlidingLinearFitRMSName"),
+        Comment("Provide the tool name for the SlidingLinearFitRMS BDT variable."),
+        "LArThreeDChargeFeatureTool_SlidingLinearFitRMS"
+      };
+
+      Atom<string> AngleDiffName {
+        Name("AngleDiffName"),
+        Comment("Provide the tool name for the AngleDiff BDT variable."),
+        "LArThreeDChargeFeatureTool_AngleDiff"
+      };
+
+      Atom<string> SecondaryPCARatioName {
+        Name("SecondaryPCARatioName"),
+        Comment("Provide the tool name for the SecondaryPCARatio BDT variable."),
+        "LArThreeDChargeFeatureTool_SecondaryPCARatio"
+      };
+
+      Atom<string> TertiaryPCARatioName {
+        Name("TertiaryPCARatioName"),
+        Comment("Provide the tool name for the TertiaryPCARatio BDT variable."),
+        "LArThreeDChargeFeatureTool_TertiaryPCARatio"
+      };
+
+      Atom<string> VertexDistanceName {
+        Name("VertexDistanceName"),
+        Comment("Provide the tool name for the VertexDistance BDT variable."),
+        "LArThreeDChargeFeatureTool_VertexDistanceName"
+      };
+
+      Atom<string> HaloTotalRatioName {
+        Name("HaloTotalRatioName"),
+        Comment("Provide the tool name for the HaloTotalRatio BDT variable."),
+        "LArThreeDChargeFeatureTool_HaloTotalRatioName"
+      };
+
+      Atom<string> ConcentrationName {
+        Name("ConcentrationName"),
+        Comment("Provide the tool name for the Concentration BDT variable."),
+        "LArThreeDChargeFeatureTool_Concentration"
+
+      };
+
+      Atom<string> ConicalnessName {
+        Name("ConicalnessName"),
+        Comment("Provide the tool name for the Conicalness BDT variable."),
+        "LArThreeDChargeFeatureTool_Conicalness"
+      };
+    };
+
+    Table<PFOCharLabels_t> PFOCharLabels {
+      Name("PFOCharLabels"),
+      Comment("Provide tool names for the Pandora track/shower discrimination BDT variables.")
+    };
+
     Atom<bool> ReferencePMTFromTriggerToBeam {
       Name("ReferencePMTFromTriggerToBeam"),
       Comment("Whether to switch the reference time of PMT reco from 'trigger' to 'beam spill' time."),

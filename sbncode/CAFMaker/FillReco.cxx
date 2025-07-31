@@ -895,6 +895,7 @@ namespace caf
                    const larpandoraobj::PFParticleMetadata *pfpMeta,
                    const art::Ptr<anab::T0> t0,
                    caf::SRPFP& srpfp,
+                   const PFOCharLabelsStruct& pfoCharLabels,
                    bool allowEmpty)
   {
     srpfp.id = particle.Self();
@@ -918,19 +919,19 @@ namespace caf
       // Pfo Characterisation features
       srpfp.pfochar.setDefault();
 
-      CopyPropertyIfSet(propertiesMap, "LArThreeDChargeFeatureTool_ICARUS_EndFraction",      srpfp.pfochar.chgendfrac);
-      CopyPropertyIfSet(propertiesMap, "LArThreeDChargeFeatureTool_ICARUS_FractionalSpread", srpfp.pfochar.chgfracspread);
-      CopyPropertyIfSet(propertiesMap, "LArThreeDLinearFitFeatureTool_DiffStraightLineMean", srpfp.pfochar.linfitdiff);
-      CopyPropertyIfSet(propertiesMap, "LArThreeDLinearFitFeatureTool_Length",               srpfp.pfochar.linfitlen);
-      CopyPropertyIfSet(propertiesMap, "LArThreeDLinearFitFeatureTool_MaxFitGapLength",      srpfp.pfochar.linfitgaplen);
-      CopyPropertyIfSet(propertiesMap, "LArThreeDLinearFitFeatureTool_SlidingLinearFitRMS",  srpfp.pfochar.linfitrms);
-      CopyPropertyIfSet(propertiesMap, "LArThreeDOpeningAngleFeatureTool_AngleDiff",         srpfp.pfochar.openanglediff);
-      CopyPropertyIfSet(propertiesMap, "LArThreeDPCAFeatureTool_SecondaryPCARatio",          srpfp.pfochar.pca2ratio);
-      CopyPropertyIfSet(propertiesMap, "LArThreeDPCAFeatureTool_TertiaryPCARatio",           srpfp.pfochar.pca3ratio);
-      CopyPropertyIfSet(propertiesMap, "LArThreeDVertexDistanceFeatureTool_VertexDistance",  srpfp.pfochar.vtxdist);
-      CopyPropertyIfSet(propertiesMap, "LArConeChargeFeatureTool_ICARUS_HaloTotalRatio",     srpfp.pfochar.halototratio);
-      CopyPropertyIfSet(propertiesMap, "LArConeChargeFeatureTool_ICARUS_Concentration",      srpfp.pfochar.concentration);
-      CopyPropertyIfSet(propertiesMap, "LArConeChargeFeatureTool_ICARUS_Conicalness",        srpfp.pfochar.conicalness);
+      CopyPropertyIfSet(propertiesMap, pfoCharLabels.EndFractionName,           srpfp.pfochar.chgendfrac);
+      CopyPropertyIfSet(propertiesMap, pfoCharLabels.FractionalSpreadName,      srpfp.pfochar.chgfracspread);
+      CopyPropertyIfSet(propertiesMap, pfoCharLabels.DiffStraightLineMeanName,  srpfp.pfochar.linfitdiff);
+      CopyPropertyIfSet(propertiesMap, pfoCharLabels.LengthName,                srpfp.pfochar.linfitlen);
+      CopyPropertyIfSet(propertiesMap, pfoCharLabels.MaxFitGapLengthName,       srpfp.pfochar.linfitgaplen);
+      CopyPropertyIfSet(propertiesMap, pfoCharLabels.SlidingLinearFitRMSName,   srpfp.pfochar.linfitrms);
+      CopyPropertyIfSet(propertiesMap, pfoCharLabels.AngleDiffName,             srpfp.pfochar.openanglediff);
+      CopyPropertyIfSet(propertiesMap, pfoCharLabels.SecondaryPCARatioName,     srpfp.pfochar.pca2ratio);
+      CopyPropertyIfSet(propertiesMap, pfoCharLabels.TertiaryPCARatioName,      srpfp.pfochar.pca3ratio);
+      CopyPropertyIfSet(propertiesMap, pfoCharLabels.VertexDistanceName,        srpfp.pfochar.vtxdist);
+      CopyPropertyIfSet(propertiesMap, pfoCharLabels.HaloTotalRatioName,        srpfp.pfochar.halototratio);
+      CopyPropertyIfSet(propertiesMap, pfoCharLabels.ConcentrationName,         srpfp.pfochar.concentration);
+      CopyPropertyIfSet(propertiesMap, pfoCharLabels.ConicalnessName,           srpfp.pfochar.conicalness);
     }
     if (t0) {
       srpfp.t0 = t0->Time() / 1e3; /* ns -> us */
