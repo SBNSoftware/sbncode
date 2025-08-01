@@ -173,7 +173,7 @@ void sbn::ICARUSBNBEXTRetriever::endSubRun(art::SubRun& sr)
     std::cout << "FAILED! " << std::endl;
   // probably want to throw an exception here
 
-  for(auto ExtInfo : fOutExtInfos){
+  for(auto &ExtInfo : fOutExtInfos){
     
     ExtInfo.gates_since_last_trigger *= scale_factor;
     

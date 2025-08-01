@@ -95,6 +95,8 @@
 #include "lardataobj/RecoBase/Vertex.h"
 #include "lardataobj/RecoBase/Shower.h"
 #include "lardataobj/RecoBase/MCSFitResult.h"
+#include "lardataobj/RecoBase/Cluster.h"
+#include "lardataobj/AnalysisBase/MVAOutput.h"
 
 #include "nusimdata/SimulationBase/MCFlux.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
@@ -1049,7 +1051,6 @@ void CAFMaker::InitializeOutfiles()
 
   }     
 
-
   if(fParams.CreateFlatCAF()){
     mf::LogInfo("CAFMaker") << "Output flat filename is " << fFlatCafFilename;
 
@@ -1731,6 +1732,17 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
   }
 
+  // nu graph
+  std::vector< art::Handle<std::vector<unsigned int>> > ng2_slice_hit_map_handle(pandora_tag_suffixes.size());
+  std::vector< art::Handle<std::vector<anab::FeatureVector<1>>> > ng2_filter_handle(pandora_tag_suffixes.size());
+  std::vector< art::Handle<std::vector<anab::FeatureVector<5>>> > ng2_semantic_handle(pandora_tag_suffixes.size());
+  for (unsigned i_tag = 0; i_tag < pandora_tag_suffixes.size(); i_tag++) {
+    const std::string &pandora_tag_suffix = pandora_tag_suffixes[i_tag];
+    GetByLabelIfExists(evt, fParams.NuGraphSliceHitLabel().encode() + pandora_tag_suffix, ng2_slice_hit_map_handle[i_tag]);
+    GetByLabelIfExists(evt, fParams.NuGraphFilterLabel().label() + pandora_tag_suffix + ":" + fParams.NuGraphFilterLabel().instance(), ng2_filter_handle[i_tag]);
+    GetByLabelIfExists(evt, fParams.NuGraphSemanticLabel().label() + pandora_tag_suffix + ":" + fParams.NuGraphSemanticLabel().instance(), ng2_semantic_handle[i_tag]);
+  }
+
   // The Standard Record
   // Branch entry definition -- contains list of slices, CRT information, and truth information
   StandardRecord rec;
@@ -1787,6 +1799,18 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       }
     }
 
+    std::vector<art::Ptr<anab::FeatureVector<1>>> ng2_filter_vec;
+    std::vector<art::Ptr<anab::FeatureVector<5>>> ng2_semantic_vec;
+    if (ng2_filter_handle[producer].isValid()) {
+      art::fill_ptr_vector(ng2_filter_vec,ng2_filter_handle[producer]);
+    }
+    if (ng2_semantic_handle[producer].isValid()) {
+      art::fill_ptr_vector(ng2_semantic_vec,ng2_semantic_handle[producer]);
+    }
+    if (ng2_slice_hit_map_handle[producer].isValid()) {
+      FillSliceNuGraph(slcHits,*ng2_slice_hit_map_handle[producer],ng2_filter_vec,ng2_semantic_vec,recslc);
+    }
+
     art::FindManyP<sbn::OpT0Finder> fmOpT0 =
       FindManyPStrict<sbn::OpT0Finder>(sliceList, evt, fParams.OpT0Label() + slice_tag_suff);
     std::vector<art::Ptr<sbn::OpT0Finder>> slcOpT0;
@@ -1832,6 +1856,25 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     art::FindManyP<recob::PFParticle> fmSpacePointPFPs =
       FindManyPStrict<recob::PFParticle>(slcSpacePoints, evt, fParams.PFParticleLabel() + slice_tag_suff);
+
+    art::FindManyP<recob::Cluster> fmPFPClusters =
+      FindManyPStrict<recob::Cluster>(fmPFPart, evt, fParams.PFParticleLabel() + slice_tag_suff);
+
+    std::vector<std::vector<art::Ptr<recob::Hit>>> fmPFPartHits;
+    // make Ptr's to clusters for cluster -> other object associations
+    if (fmPFPClusters.isValid()) {
+      for (size_t ipf=0; ipf<fmPFPart.size();++ipf) {
+	std::vector<art::Ptr<recob::Hit>> pfphits;
+	std::vector<art::Ptr<recob::Cluster>> pfclusters = fmPFPClusters.at(ipf);
+	art::FindManyP<recob::Hit> fmCluHits = FindManyPStrict<recob::Hit>(pfclusters, evt, fParams.PFParticleLabel() + slice_tag_suff);
+	for (size_t icl=0; icl<fmCluHits.size();icl++) {
+	  for (auto hit : fmCluHits.at(icl)) {
+	    pfphits.push_back(hit);
+	  }
+	}
+	fmPFPartHits.push_back(pfphits);
+      }
+    }
 
     art::FindManyP<recob::Shower> fmShower =
       FindManyPStrict<recob::Shower>(fmPFPart, evt, fParams.RecoShowerLabel() + slice_tag_suff);
@@ -2143,6 +2186,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       if (fmCNNScores.isValid()) {
         const sbn::PFPCNNScore *cnnScores = fmCNNScores.at(iPart).at(0).get();
         FillCNNScores(thisParticle, cnnScores, pfp);
+      }
+
+      if (ng2_slice_hit_map_handle[producer].isValid()) {
+	FillPFPNuGraph(*ng2_slice_hit_map_handle[producer], ng2_filter_vec, ng2_semantic_vec, fmPFPartHits.at(iPart), pfp);
       }
 
       if (!thisTrack.empty())  { // it has a track!
