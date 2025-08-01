@@ -1,0 +1,32 @@
+#include "icarusbnbextcountinfo.fcl"
+
+process_name: ICARUSBNBEXTInfoGen
+
+services:{
+  IFBeam:{}
+}
+
+
+source: {
+
+}
+
+physics: {
+ producers: {
+   icarusbnbextinfo: @local::icarusbnbextcountinfo
+ }
+
+ simulate: [icarusbnbextinfo ]
+ stream1: [ out1 ]
+
+}
+
+outputs: {
+ out1: {
+   module_type: RootOutput
+   fileName: "%ifb_%tc_icarusbnbextinfo.root"
+   dataTier: "raw"
+   compressionLevel: 1
+ }
+}
+
