@@ -403,6 +403,8 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
       }
     }
 
+    hasT0 = hasPFPT0 || hasCRTTrackT0 || hasCRTHitT0 || hasCRTSpacePointT0;
+
     // "whicht0" should reflect the T0 used for the reconstruction of the drift coordinate.
     if(!hasT0) whicht0 = -1;
     // In this way, if a track is T0 tagged from PFP and CRT tagged, which T0 reflects the PFP Tag.
@@ -424,7 +426,6 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
       }
 
     T0TimingInfo thisTrackTimingInfo = {t0PFP, t0CRTTrack, t0CRTHit, t0CRTSpacePoint, hasPFPT0, hasCRTTrackT0, hasCRTHitT0, hasCRTSpacePointT0, crtMatchingScore};
-    hasT0 = hasPFPT0 || hasCRTTrackT0 || hasCRTHitT0 || hasCRTSpacePointT0;
 
     if (fRequireT0 && !hasT0) continue;
 
