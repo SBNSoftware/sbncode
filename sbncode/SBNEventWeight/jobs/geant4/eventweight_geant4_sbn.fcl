@@ -138,7 +138,6 @@ sbn_eventweight_geant4: {
 # - Sigma defines the 1-sigma range for multisims and unisims. Currently the
 #   code can only accept a single value for sigma, giving symmetric
 #   uncertainty bounds: nominal-sigma and nominal+sigma 
-#   [Only in use for fitting purposes, instead range defined through input files - Jul 2025]
 # - Cut must be one of the following:
 #      "total" <- total scattering cross section, pulled from Geant4
 #      "abs" <- absorption cross section (pi+ and pi- only at the moment -- Oct 2019)

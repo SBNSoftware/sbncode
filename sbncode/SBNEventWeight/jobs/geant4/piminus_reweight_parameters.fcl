@@ -4,15 +4,15 @@ BEGIN_PROLOG
 
 PiMinusParameters: [ 
   {
-    Name:       "fPiMinusReacLow"
-    Cut:        "reac"
+    Name:       "fPiMinusInelLow"
+    Cut:        "inel"
     Range:      [10., 200.]
     Nominal:    1
     Sigma:      0.2
   } ,
   {
-    Name:       "fPiMinusReacHigh"
-    Cut:        "reac"
+    Name:       "fPiMinusInelHigh"
+    Cut:        "inel"
     Range:      [700., 2005.]
     Nominal:    1.0
     Sigma:      0.2
@@ -21,7 +21,6 @@ PiMinusParameters: [
   {
     Name:       "fPiMinusAbs"
     Cut:        "abs"
-    # Range:      [200.0, 700.00]
     Range:      [10.0, 2005.00]
     Nominal:    1.0
     Sigma:      0.2
@@ -30,7 +29,6 @@ PiMinusParameters: [
   {
     Name:       "fPiMinusCex"
     Cut:        "cex"
-    # Range:      [200.0, 700.00]
     Range:      [10.0, 2005.00]
     Nominal:    1.0
     Sigma:      0.2
@@ -39,7 +37,6 @@ PiMinusParameters: [
   {
     Name:       "fPiMinusDCex"
     Cut:        "dcex"
-    # Range:      [200.0, 700.00]
     Range:      [10.0, 2005.00]
     Nominal:    1.0
     Sigma:      0.2
@@ -48,7 +45,6 @@ PiMinusParameters: [
   {
     Name:       "fPiMinusPiProd"
     Cut:        "prod"
-    # Range:      [200.0, 700.00]
     Range:      [10.0, 2005.00]
     Nominal:    1.0
     Sigma:      0.2

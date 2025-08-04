@@ -186,6 +186,8 @@ void Geant4WeightCalc::Configure(fhicl::ParameterSet const& p,
     FitParNominals.push_back(theNominal);
     FitParSigmas.push_back(theSigma);
 
+    if (fDebug) std::cout << "Name: " << theName << ", Nominal: " << theNominal << ", Sigma: " << theSigma << std::endl;
+
     theNominals[theName] = theNominal;
 
     fParameterSet.AddParameter(theName, theSigma);
@@ -514,8 +516,7 @@ std::vector<float> Geant4WeightCalc::GetWeight(art::Event& e, size_t itruth ) {
         }
         std::cout << std::endl;
       }
-
-    } // if ( ( TMath::Abs(p_PDG) == 211 || p_PDG == 2212 ) )
+    }
     if (fMakeOutputTrees) fOutTree_Particle->Fill();
   } // loop over mcparticles (i)
   if (fMakeOutputTrees) fOutTree_MCTruth->Fill();
