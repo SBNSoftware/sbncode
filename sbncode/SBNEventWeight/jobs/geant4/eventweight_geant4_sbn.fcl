@@ -40,7 +40,7 @@ sbn_eventweight_geant4: {
     fracsfile: "$SBNDATA_DIR/systematics/reint/g4_fracs_piplus.root"
     makeoutputtree: true
     pdg_to_reweight: 211
-    debug: true
+    debug: false
   }
 
   reinteractions_piminus: {
@@ -53,7 +53,7 @@ sbn_eventweight_geant4: {
     fracsfile: "$SBNDATA_DIR/systematics/reint/g4_fracs_piminus.root"
     makeoutputtree: true
     pdg_to_reweight: -211
-    debug: true
+    debug: false
   }
 
   reinteractions_proton: {
@@ -68,7 +68,7 @@ sbn_eventweight_geant4: {
     fracsfile: "$SBNDATA_DIR/systematics/reint/g4_fracs_proton.root" # dummy file, cross section pulled directly from Geant4
     makeoutputtree: true
     pdg_to_reweight: 2212
-    debug: true
+    debug: false
   }
 
   reinteractions_neutron: {
@@ -83,7 +83,7 @@ sbn_eventweight_geant4: {
     fracsfile: "$SBNDATA_DIR/systematics/reint/g4_fracs_proton.root" # dummy file, cross section pulled directly from Geant4
     makeoutputtree: true
     pdg_to_reweight: 2112
-    debug: true
+    debug: false
   }
 
   reinteractions_kplus: {
@@ -97,7 +97,7 @@ sbn_eventweight_geant4: {
     fracsfile: "$SBNDATA_DIR/systematics/reint/g4_fracs_proton.root" # dummy file, cross section pulled directly from Geant4
     makeoutputtree: true
     pdg_to_reweight: 321
-    debug: true
+    debug: false
   }
 
   reinteractions_kminus: {
@@ -111,7 +111,7 @@ sbn_eventweight_geant4: {
     fracsfile: "$SBNDATA_DIR/systematics/reint/g4_fracs_proton.root" # dummy file, cross section pulled directly from Geant4
     makeoutputtree: true
     pdg_to_reweight: -321
-    debug: true
+    debug: false
   }
 
 }
