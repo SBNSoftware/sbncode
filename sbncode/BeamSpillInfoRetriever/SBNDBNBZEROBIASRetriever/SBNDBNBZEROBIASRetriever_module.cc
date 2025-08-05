@@ -9,6 +9,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
 #include "sbncode/BeamSpillInfoRetriever/SBNDPOTTools.h"
+#include "sbncode/BeamSpillInfoRetriever/getFOM.h"
 
 namespace sbn {
   class SBNDBNBZEROBIASRetriever;
@@ -226,6 +227,9 @@ void sbn::SBNDBNBZEROBIASRetriever::matchMultiWireData(
   }//end loop over MWR devices
     
   sbn::BNBSpillInfo spillInfo = makeBNBSpillInfo(eventID, times_temps[i], MWRdata, matched_MWR, bfp, offsets, vp873);
+  double spillFOM = sbn::getFOM(spillInfo);
+  spillInfo.FOM = spillFOM;
+  
   beamInfos.push_back(std::move(spillInfo));
 
   // We do not write these to the art::Events because 

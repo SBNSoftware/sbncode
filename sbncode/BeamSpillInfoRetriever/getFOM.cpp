@@ -1,3 +1,11 @@
+//#############################################################################################
+// Script: Figure of Merit for BNB Spills using SBND information adapted from MicroBooNE FOM
+//
+// Author: Max Dubnowski
+// Contact: maxdub@sas.upenn.edu or sbn slack
+//
+//###############################################################################################
+
 #include "getFOM.h"
 #include <iostream>
 #include <math.h>
@@ -16,21 +24,8 @@ namespace sbn {
   bool onePlot = true;
 
   float getFOM(BNBSpillInfo & spill )
-  //float getFOM2( const ub_BeamHeader& bh, const std::vector<ub_BeamData>& bd, const bnb::bnbAutoTune settings, bool useAutoTune)
   {
     double fom=0;
-    
-    
-    
-    
-    
-    // ========================================= I believe all of this can be replaced with the BNBSpillInfo which I fill already ============================================
-    
-    
-    
-    
-    
-
 
     double hp875_offset= spill.HP875Offset;
     double vp875_offset= spill.VP875Offset;
@@ -38,31 +33,11 @@ namespace sbn {
     double vptg1_offset= spill.VPTG1Offset;
     double hptg2_offset= spill.HPTG2Offset;
     double vptg2_offset= spill.VPTG2Offset;
-    
-    
-    //int useHTG = bnb::kTG1;
-    //int useVTG = bnb::kTG1;
-    
+        
+    //Decides which position monitor to check first
     int useHTG = 0;
     int useVTG = 0;
     
-    
-    //if(useAutoTune){
-    // bnb::bnbOffsets data = settings.getData();
-    // hp875_offset = data.hp875;
-    // vp875_offset = data.vp875;
-    // hptg1_offset = data.hptg1;
-    // vptg1_offset = data.vptg1;
-    // hptg2_offset = data.hptg2;
-    // vptg2_offset = data.vptg2;
-    //useHTG = settings.getHTG();
-    //useVTG = settings.getVTG();
-    //}
-    
-    
-    
-    //double hptg2_offset= +0.79;
-    //double vptg2_offset= +1.02;
     double hp875_zpos= 202.116104;
     double vp875_zpos= 202.3193205;
     double hptg1_zpos= 204.833267;
@@ -89,40 +64,6 @@ namespace sbn {
     std::vector<double> mw876(spill.M876BB.begin(), spill.M876BB.end());
     std::vector<double> mwtgt(spill.MMBTBB.begin(), spill.MMBTBB.end());
     
-    //std::cout << "MWR 875 Size: " << mw875.size() << "  | MWR876 Size:  " << mw876.size() << "  |  MWTGT Size: " << mwtgt.size() << std::endl;  
-    //for (size_t m =0; m< mw875.size() ; m++){
-    //std::cout << "MWR 875: " << mw875[m] << "  | MWR876: " << mw876[m] << "  |  MWTGT: " << mwtgt[m] << std::endl;  
-    //}
-    
-    /*
-    if (onePlot){
-      TH1D* MWRx =new TH1D("MWRx","MWRx",48,-12,12);
-      TCanvas *c1 = new TCanvas("c1", "c1", 800, 600);
-
-      TH1D* MWRy =new TH1D("MWRy","MWRy",48,-12,12);
-      TCanvas *c2 = new TCanvas("c2", "c2", 800, 600);
-
-      
-      for(int w =0 ; w< 48; w++){
-	MWRx->SetBinContent(w+1, -mw875[w]);
-	MWRx->SetBinContent(w+1, -mw875[w+48]);
-      }
-
-      c1->cd();
-      MWRx->Draw("HIST");
-      c1->Draw();
-
-      c2->cd();
-      MWRy->Draw("HIST");
-      c2->Draw();
-
-      onePlot =false;
-    }
-    */
-    
-    //std::vector<double> mw875 = spill.M875BB;
-    //std::vector<double> mw876 = spill.M876BB;
-    //std::vector<double> mwtgt = spill.MMBTBB;
     
     tor860.push_back(spill.TOR860);
     tor875.push_back(spill.TOR875);
@@ -133,56 +74,6 @@ namespace sbn {
     hptg2.push_back(spill.HPTG2);
     vptg2.push_back(spill.VPTG2);
     
-
-
-    //std::cout << spill.HP875 << "," <<spill.HP875Offset << "," << spill.HPTG2 << "," << spill.HPTG2Offset << "," << spill.VP873 << "," << spill.VP873Offset << ","  << spill.VP875 << "," << spill.VP875Offset  << "," <<  spill.VPTG1 << "," << spill.VPTG1Offset << "," << spill.VPTG2 << "," << spill.VPTG2Offset << " | Figure of Merit:  " << spill.FOM  << std::endl;
-
-
-    /*
-      for(auto& bdata : bd) {        // get toroid, BPM, and multiwire data
-      if(bdata.getDeviceName().find("E:TOR860") != std::string::npos) {        // get E:TOR860 reading
-      tor860 = bdata.getData();
-      continue;
-      } else if(bdata.getDeviceName().find("E:TOR875") != std::string::npos) {        // get E:TOR875 reading
-      tor875 = bdata.getData();
-      continue;
-      }        else if(bdata.getDeviceName().find("E:HP875") != std::string::npos) {        // get E:HP875 reading
-      hp875 = bdata.getData();
-      continue;
-      }        else if(bdata.getDeviceName().find("E:VP875") != std::string::npos) {        // get E:VP875 reading
-      vp875 = bdata.getData();
-      continue;
-      }        else if(bdata.getDeviceName().find("E:HPTG1") != std::string::npos) {        // get E:HPTG1 reading
-      hptg1 = bdata.getData();
-      continue;
-      } else if(bdata.getDeviceName().find("E:VPTG1") != std::string::npos) {        // get E:VPTG1 reading
-      vptg1 = bdata.getData();
-      continue;
-      }        else if(bdata.getDeviceName().find("E:HPTG2") != std::string::npos) {        // get E:HPTG1 reading
-      hptg2 = bdata.getData();
-      continue;
-      } else if(bdata.getDeviceName().find("E:VPTG2") != std::string::npos) {        // get E:VPTG1 reading
-      vptg2 = bdata.getData();
-      continue;
-      } else if(bdata.getDeviceName().find("E:M875BB") != std::string::npos) {        // get horizontal and vertical target multiwire reading
-      mw875.resize(96);
-      for (int ii=0;ii<96;ii++)
-      mw875[ii]=bdata.getData()[ii];
-      continue;
-      } else if(bdata.getDeviceName().find("E:M876BB") != std::string::npos) {        // get horizontal and vertical target multiwire reading
-      mw876.resize(96);
-      for (int ii=0;ii<96;ii++)
-      mw876[ii]=bdata.getData()[ii];
-      continue;
-      } else if(bdata.getDeviceName().find("E:MMBTBB") != std::string::npos) {        // get horizontal and vertical target multiwire reading
-      mwtgt.resize(96);
-      for (int ii=0;ii<96;ii++)
-      mwtgt[ii]=bdata.getData()[ii];
-      continue;
-      }
-      }
-    */
-    
     double tor;
     if (tor860.size()>0)
       tor=tor860[0];
@@ -190,15 +81,7 @@ namespace sbn {
       tor=tor875[0];
     else
       return -1;
-    
-    
-    
-    
-    // ==================================================================== Replace with BNBSpillInfo ====================================================================================
-    
-    
-    
-    
+        
     
     //when creating ntuples for pot counting script the variables are filled with -999
     //this could create a difference when passing events with FOM>1 since
@@ -211,7 +94,6 @@ namespace sbn {
     if (vptg1.size()==0) vptg1.push_back(-999);
     if (vp875.size()==0) vp875.push_back(-999);
     double horang,horpos;
-    //if(useHTG == bnb::kTG1){
     if(useHTG == 1){
       if (hptg1.size()>0 && hp875.size()>0) {
 	horang=((hptg1[0]-hptg1_offset)-(hp875[0]-hp875_offset))/(hptg1_zpos-hp875_zpos);
@@ -224,7 +106,6 @@ namespace sbn {
 	return 2;
       }
     }
-    //else if(useHTG == bnb::kTG2){
     else if(useHTG == 0){
       if (hptg2.size()>0 && hp875.size()>0) {
 	horang=((hptg2[0]-hptg2_offset)-(hp875[0]-hp875_offset))/(hptg2_zpos-hp875_zpos);
@@ -240,7 +121,6 @@ namespace sbn {
     else { return 2; }
     double verang,verpos;
     if(useVTG == 1){
-      //if(useVTG == bnb::kTG1){
       if (vptg1.size()>0 && vp875.size()>0) {
 	verang=((vptg1[0]-vptg1_offset)-(vp875[0]-vp875_offset))/(vptg1_zpos-vp875_zpos);
 	verpos=(vp875[0]-vp875_offset)+verang*(target_center_zpos-vp875_zpos);
@@ -253,7 +133,6 @@ namespace sbn {
       }
     }
     else if(useVTG == 0){
-      //else if(useVTG == bnb::kTG2){
       if (vptg2.size()>0 && vp875.size()>0) {
 	verang=((vptg2[0]-vptg2_offset)-(vp875[0]-vp875_offset))/(vptg2_zpos-vp875_zpos);
 	verpos=(vp875[0]-vp875_offset)+verang*(target_center_zpos-vp875_zpos);
@@ -311,99 +190,12 @@ namespace sbn {
       //failed getting  multiwire data
       return 4;
     }
-    //std::cout << "FOM before power: " << sbn::calcFOM(horpos,horang,verpos,verang,tor,tgtsx,tgtsy)  << ", " << horpos << ", " << horang << ", " << verpos << ", " << verang << ", " << tor << ", " << tgtsx << ", " << tgtsy<< std::endl;
     
-    //std::cout << "Tgtsx: " << tgtsx << " | Tgtsy: " << tgtsy << std::endl;
     fom=1-pow(10,sbn::calcFOM(horpos,horang,verpos,verang,tor,tgtsx,tgtsy));
-    //std::cout << "FOM: " <<fom << std::endl;
     return fom;
   }
   
-  /*
-    bmd::autoTunes bmd::cacheAutoTuneHistory()
-    {
-    bmd::autoTunes history;
-    bnb::bnbAutoTune item;
-    // run1-3 parameters
-    item.setEntry(202435254, 132, 313, bnb::bnbOffsets{-3.4, 1.48, 0.46, 0.39, -1., -1.}, bnb::kTG1, bnb::kTG1);
-    history.push_back(item);
-    // run4a (misaligned beam)
-    item.setEntry(203988466, 174, 315, bnb::bnbOffsets{-3.4, 1.48, 0.46, -1., -1., 1.84}, bnb::kTG1, bnb::kTG2);
-    history.push_back(item);
-    item.setEntry(204211306, 174, 316, bnb::bnbOffsets{-3.4, 1.48, -1., -1., 1.07, 1.84}, bnb::kTG2, bnb::kTG2);
-    history.push_back(item);
-    // run4b-4d parameters (same as run1-3)
-    item.setEntry(215107286, 410, 313, bnb::bnbOffsets{-3.4, 1.48, 0.46, 0.39, -1., -1.}, bnb::kTG1, bnb::kTG1);
-    history.push_back(item);
-    // item.setEntry(232368446, 268, 316, bnb::bnbOffsets{-3.4, 1.48, -1., -1., 1.07, 1.84}, bnb::kTG2, bnb::kTG2);
-  // history.push_back(item);
-  // item.setEntry(232368986, 268, 313, bnb::bnbOffsets{-3.4, 1.48, 0.46, 0.39, -1., -1.}, bnb::kTG1, bnb::kTG1);
-  // history.push_back(item);
-  // before run 5
-  item.setEntry(247063273, 276, 316, bnb::bnbOffsets{-3.4, 1.48, -1., -1., 1.07, 1.84}, bnb::kTG2, bnb::kTG2);
-  history.push_back(item);
-  // run5a parameters used on Nov 4th
-  item.setEntry(247501553, 130, 317, bnb::bnbOffsets{-3.4, 1.48, -1., -1., 1.07, -3.15}, bnb::kTG2, bnb::kTG2);
-  history.push_back(item);
-  // parameters being tested in the autotune from Nov5th - Nov 10th (not used because not parameters not reflected in BPM readings)
-  // item.setEntry(247573532, 305, 318, bnb::bnbOffsets{-3.4, 1.48, -1., -1., 1.07, -0.03}, bnb::kTG2, bnb::kTG2);
-  // history.push_back(item);
-  // item.setEntry(247576952, 304, 319, bnb::bnbOffsets{-3.4, 1.48, -1., -0.03, 1.07, -1.}, bnb::kTG2, bnb::kTG1);
-  // history.push_back(item);
-  // item.setEntry(247577492, 304, 320, bnb::bnbOffsets{-3.4, 1.48, -1., -3.15, 1.07, -1.}, bnb::kTG2, bnb::kTG1);
-  // history.push_back(item);
-  // item.setEntry(247587752, 304, 322, bnb::bnbOffsets{-3.4, 1.48, -1., -1., 1.07, 0.}, bnb::kTG2, bnb::kTG2);
-  // history.push_back(item);
-  // item.setEntry(248020832, 304, 320, bnb::bnbOffsets{-3.4, 1.48, -1., -3.15, 1.07, -1.}, bnb::kTG2, bnb::kTG1);
-  // history.push_back(item);
-  // item.setEntry(248458772, 304, 322, bnb::bnbOffsets{-3.4, 1.48, -1., -1., 1.07, 0.}, bnb::kTG2, bnb::kTG2);
-  // history.push_back(item);
-  // later run5 data (after target scan)
-  item.setEntry(248792844, 573, 323, bnb::bnbOffsets{-1.20, 1.30, -1., -1., -0.4, 0.1}, bnb::kTG2, bnb::kTG2);
-  history.push_back(item);
-  return history;
-}
 
-
-bnb::bnbAutoTune bmd::getSettings(const bmd::autoTunes& history, const ub_BeamHeader& bh)
-{
-  if(*(history.end()-1) <= bh) return *(history.end()-1);
-  if(*(history.begin()) >= bh) return *(history.begin());
-  for(auto it = history.begin(); it != history.end()-1; ++it){
-    auto curr = *it;
-    auto following = *(it+1);
-    if((curr <= bh) && (following > bh)) return curr;
-  }
-  bnb::bnbAutoTune ret = bnb::bnbAutoTune();
-  return ret;
-}
-
-bnb::bnbAutoTune bmd::getSettings(const bmd::autoTunes& history, const raw::BeamInfo& bi)
-{
-  if(*(history.end()-1) <= bi) return *(history.end()-1);
-  if(*(history.begin()) >= bi) return *(history.begin());
-  for(auto it = history.begin(); it != history.end()-1; ++it){
-    auto curr = *it;
-    auto following = *(it+1);
-    if((curr <= bi) && (following > bi)) return curr;
-  }
-  bnb::bnbAutoTune ret = bnb::bnbAutoTune();
-  return ret;
-}
-
-bnb::bnbAutoTune bmd::getSettings(const bmd::autoTunes& history, const uint64_t utctstamp)
-{
-  if(*(history.end()-1) <= utctstamp) return *(history.end()-1);
-  if(*(history.begin()) >= utctstamp) return *(history.begin());
-  for(auto it = history.begin(); it != history.end()-1; ++it){
-    auto curr = *it;
-    auto following = *(it+1);
-    if((curr <= utctstamp) && (following > utctstamp)) return curr;
-  }
-  bnb::bnbAutoTune ret = bnb::bnbAutoTune();
-  return ret;
-}
-*/
 
     void processBNBprofile(const double* mwdata, double &x, double& sx, double& chi2)
   {
@@ -437,12 +229,6 @@ bnb::bnbAutoTune bmd::getSettings(const bmd::autoTunes& history, const uint64_t 
       hProf->Fit("gaus","Q0","",-12+first_x*0.5,-12+last_x*0.5);
       x   =hProf->GetFunction("gaus")->GetParameter(1);
       sx  =hProf->GetFunction("gaus")->GetParameter(2);
-      //std::cout << "sx value: " << sx << std::endl;
-      // if ( sx > 50.){
-      // 	for (size_t m =0; m< 48 ; m++){
-      // 	  std::cout << "Bad MWData: " << mwdata[m]  << std::endl;  
-      // 	}
-      //}
 
       chi2=hProf->GetFunction("gaus")->GetChisquare()/hProf->GetFunction("gaus")->GetNDF();
     } else {
@@ -506,13 +292,6 @@ bnb::bnbAutoTune bmd::getSettings(const bmd::autoTunes& history, const uint64_t 
     sigma1[5][3] =  sigma1[3][5];
 
     
-
-    for (int fi =0; fi <6; fi++){
-      for(int la =0; la<6; la++){
-	//std::cout << "sigma1[" << fi << "][" << la << "] = " << sigma1[fi][la] << "  | ppp: " << ppp << std::endl;
-      }
-    }
-
     double begtocnt[6][6]={
       { 0.65954,  0.43311,  0.00321,  0.10786, 0.00000,  1.97230},
       { 0.13047,  1.60192,  0.00034,  0.00512, 0.00000,  1.96723},
@@ -558,22 +337,19 @@ bnb::bnbAutoTune bmd::getSettings(const bmd::autoTunes& history, const uint64_t 
 		 cx, cy, sx, sy, rho);
     double scalex=tgtsx/sx;
     double scaley=tgtsy/sy;
-    //std::cout << "Scalex: " << scalex << "  | Scaley: " << scaley << " | sx: " << sx << " | sy: " << sy << " | tgtsx: " << tgtsx << " | tgtsy: " << tgtsy << std::endl;
     double fom_a=sbn::func_intbivar(cx, cy, sx*scalex, sy*scaley, rho);
     //swim to center of target
     sbn::swimBNB(centroid1,sigma1,
 		 identity, begtocnt,
 		 cx, cy, sx, sy, rho);
     double fom_b=sbn::func_intbivar(cx, cy, sx*scalex, sy*scaley, rho);
-    //std::cout << "After Scalex: " << scalex << "  | Scaley: " << scaley << " | sx: " << sx << " | sy: " << sy << " | tgtsx: " << tgtsx << " | tgtsy: " << tgtsy  << " | rho: " << rho << std::endl;
     //swim to downstream of target
     sbn::swimBNB(centroid1,sigma1,
 		 cnttodns, begtodns,
 		 cx, cy, sx, sy, rho);
     double fom_c=sbn::func_intbivar(cx, cy, sx*scalex, sy*scaley, rho);
     // add a guard for double precision
-    //std::cout << "Foma,b,c: " << fom_a << ", " << fom_b << ", " << fom_c << std::endl;
-    
+
     if(fom_a <= -10000. || fom_b <= -10000. || fom_c <= -10000) return -10000.;
     double fom2=fom_a*0.6347 +
       fom_b*0.2812 +
@@ -601,7 +377,6 @@ bnb::bnbAutoTune bmd::getSettings(const bmd::autoTunes& history, const uint64_t 
 	for (int k = 0;k<6;k++) {
 	  for (int m = 0;m<6;m++) {
 	    sigma2[i][m] = sigma2[i][m] + xfers[i][j]*sigma1[j][k]*xfers[m][k];
-	    //std::cout << "sigma2: " << sigma2[i][m] << " = " << sigma2[i][m]<< " + " << xfers[i][j] << " * " << sigma1[j][k] << " * " << xfers[m][k] << std::endl; 
 	  }
 	}
       }
@@ -610,14 +385,12 @@ bnb::bnbAutoTune bmd::getSettings(const bmd::autoTunes& history, const uint64_t 
     sx  = sqrt(sigma2[0][0])*1000.0;
     sy  = sqrt(sigma2[2][2])*1000.0;
     rho = sigma2[0][2]/sqrt(sigma2[0][0]*sigma2[2][2]);
-    //cout<<"Swim "<<sx<<"\t"<<sy<<"\t"<<rho<<endl;
   }
   
   
   
   double func_intbivar(const double cx, const double cy, const double sx, const double sy, const double rho )
   {
-    //std::cout << cx << ", " << cy << ", " << sx << ", " << sy << ", " << rho << std::endl;
     //integrate beam overlap with target cylinder
     double x0  =  cx;
     double y0  =  cy;
@@ -633,26 +406,26 @@ bnb::bnbAutoTune bmd::getSettings(const bmd::autoTunes& history, const uint64_t 
     int jmax = round((2.0*r)/dy);
     double sum =  0.0;
     double x = xmin;
-    //cout <<sx<<"\t"<<sy<<"\t"<<imax<<"\t"<<jmax<<endl;
     for (int i=0;i<=imax;i++) {
       double y = ymin;
       for (int j=0;j<=jmax;j++) {
 	if ( (x*x+y*y)<rr ) {
-	  double tx = (x+x0)/sx;
-	  double ty = (y+y0)/sy;
+	  //Looking up Bivariate Normal Distribution, tx and ty should be x-x0 not x+x0; doesn't change much for a symmetric spill
+	  double tx = (x-x0)/sx;
+	  double ty = (y-y0)/sy;
+	  //Code used in the MicroBooNE code, possible error in the formula
+	  //double tx = (x+x0)/sx;
+	  //double ty = (y+y0)/sy;
 	  double z = tx*tx - 2.0*rho*tx*ty + ty*ty;
 	  double t = exp(-z/(2.0*(1.0-rho2)));
 	  sum = sum + t;
-	  //std::cout << " t: " << t << " z: " << z << std::endl;
 	}
-	//      cout << i<<"\t"<<j<<"\t"<<x<<"\t"<<y<<"\t"<<sum<<endl;
 	y = y + dy;
       }
       x = x + dx;
     }
     sum = sum*dx*dy/(2.0*3.14159*sx*sy*sqrt(1.0-rho2));
 
-    //std::cout << sum << ", " << dx << ", " << dy  << ", " << rho2<< std::endl;
 
     // add a guard for double precision
     if(sum >= 1.) return -10000.;
