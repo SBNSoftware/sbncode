@@ -21,6 +21,14 @@ namespace caf
     single_store.VPTG1 = info.VPTG1;
     single_store.HPTG2 = info.HPTG2;
     single_store.VPTG2 = info.VPTG2;
+    single_store.FOM = info.FOM;
+    single_store.VP873 = info.VP873;
+    single_store.VP875Offset = info.VP875Offset;
+    single_store.HP875Offset = info.HP875Offset;
+    single_store.VPTG1Offset = info.VPTG1Offset;
+    single_store.HPTG1Offset = info.HPTG1Offset;
+    single_store.VPTG2Offset = info.VPTG2Offset;
+    single_store.HPTG2Offset = info.HPTG2Offset;
     single_store.BTJT2 = info.BTJT2;
     single_store.THCURR = info.THCURR;
     single_store.M875BB = info.M875BB;
