@@ -1374,7 +1374,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   }
 
   // Prep truth-to-reco-matching info
-  std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map;
+  std::map<int, std::vector<caf::ParticleIDE>>  id_to_ide_map;
   std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map;
   std::map<int, caf::HitsEnergy> id_to_hit_energy_map;
 
