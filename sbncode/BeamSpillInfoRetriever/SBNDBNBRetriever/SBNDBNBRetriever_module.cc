@@ -62,16 +62,17 @@ sbn::SBNDBNBRetriever::SBNDBNBRetriever(fhicl::ParameterSet const & params)
   fTimePad = params.get<double>("TimePadding");
   fBESOffset = params.get<double>("BESOffset");
   fDeviceUsedForTiming = params.get<std::string>("DeviceUsedForTiming");
-  bfp = ifbeam_handle->getBeamFolder(params.get<std::string>("Bundle"), params.get<std::string>("URL"), std::stod(params.get<std::string>("TimeWindow")));
+  double timeWindow = std::stod(params.get<std::string>("TimeWindow"))
+  bfp = ifbeam_handle->getBeamFolder(params.get<std::string>("Bundle"), params.get<std::string>("URL"), timeWindow);
   bfp->set_epsilon(0.02);
   bfp_mwr = ifbeam_handle->getBeamFolder(params.get<std::string>("MultiWireBundle"), params.get<std::string>("URL"), std::stod(params.get<std::string>("MWR_TimeWindow")));
   bfp_mwr->set_epsilon(0.5);
   bfp_mwr->setValidWindow(3605);
   TotalBeamSpills = 0;
-  vp873 = ifbeam_handle->getBeamFolder(params.get<std::string>("VP873Bundle"), params.get<std::string>("URL"), std::stod(params.get<std::string>("TimeWindow" ) ));
+  vp873 = ifbeam_handle->getBeamFolder(params.get<std::string>("VP873Bundle"), params.get<std::string>("URL"), timeWindow);
   vp873->set_epsilon(0.02);
  
-  offsets = ifbeam_handle->getBeamFolder(params.get<std::string>("OffsetBundle"), params.get<std::string>("URL"), std::stod(params.get<std::string>("TimeWindow" ) ));
+  offsets = ifbeam_handle->getBeamFolder(params.get<std::string>("OffsetBundle"), params.get<std::string>("URL"), timeWindow);
   offsets->set_epsilon(600);
 
 }
