@@ -10,7 +10,6 @@
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
 #include "sbncode/BeamSpillInfoRetriever/SBNDPOTTools.h"
 #include "sbncode/BeamSpillInfoRetriever/getFOM.h"
-#include <fstream>
 
 
 namespace sbn {
