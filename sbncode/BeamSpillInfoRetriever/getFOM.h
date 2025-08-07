@@ -1,5 +1,6 @@
-#ifndef _GETFOM_H
-#define _GETFOM_H
+#ifndef SBNCODE_BEAMSPILLRETRIEVER_GETFOM_H
+#define SBNCODE_BEAMSPILLRETRIEVER_GETFOM_H
+
 /**
  * @file   sbncode/BeamSpillInfoRetriever/getFOM.h
  * @brief  Beam quality figures of merit.
