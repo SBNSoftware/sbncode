@@ -1,19 +1,12 @@
-//#############################################################################################
-// Script: Figure of Merit for BNB Spills using SBND information adapted from MicroBooNE FOM
-//
-// Author: Max Dubnowski
-// Contact: maxdub@sas.upenn.edu or sbn slack
-//
-//###############################################################################################
-
-#include "getFOM.h"
-#include <iostream>
+/**
+ * @file sbncode/BeamSpillInfoRetriever/getFOM.cpp
+ * @brief Figure of Merit for BNB Spills using SBND information adapted from MicroBooNE FOM
+ * @author Max Dubnowski (maxdub@sas.upenn.edu or `@Max Dubnowski` on SBN Slack)
+ */
 #include <math.h>
 #include "TH1D.h"
-#include "TF1.h"
+#include "TFitResultPtr.h"
 #include <vector>
-#include <iostream>
-#include "TCanvas.h"
 
 
 using namespace std;
@@ -23,7 +16,7 @@ namespace sbn {
   
   bool onePlot = true;
 
-  float getFOM(BNBSpillInfo & spill )
+  float getBNBqualityFOM(BNBSpillInfo & spill )
   {
     double fom=0;
 
@@ -37,18 +30,19 @@ namespace sbn {
     //Decides which position monitor to check first
     int useHTG = 0;
     int useVTG = 0;
-    
-    double hp875_zpos= 202.116104;
-    double vp875_zpos= 202.3193205;
-    double hptg1_zpos= 204.833267;
-    double vptg1_zpos= 204.629608;
-    double hptg2_zpos= 205.240662;
-    double vptg2_zpos= 205.036835;
-    double target_center_zpos= 206.870895;
-    double p875x[]={0.431857, 0.158077, 0.00303551};
-    double p875y[]={0.279128, 0.337048, 0};
-    double p876x[]={0.166172, 0.30999, -0.00630299};
-    double p876y[]={0.13425, 0.580862, 0};
+
+	//Z Position of the monitors in m
+    double const hp875_zpos= 202.116104;
+    double const vp875_zpos= 202.3193205;
+    double const hptg1_zpos= 204.833267;
+    double const vptg1_zpos= 204.629608;
+    double const hptg2_zpos= 205.240662;
+    double const vptg2_zpos= 205.036835;
+    double const target_center_zpos= 206.870895;
+    double const p875x[]={0.431857, 0.158077, 0.00303551};
+    double const p875y[]={0.279128, 0.337048, 0};
+    double const p876x[]={0.166172, 0.30999, -0.00630299};
+    double const p876y[]={0.13425, 0.580862, 0};
     
     
     std::vector<double> tor860;
@@ -75,9 +69,9 @@ namespace sbn {
     vptg2.push_back(spill.VPTG2);
     
     double tor;
-    if (tor860.size()>0)
+    if (!tor860.empty())
       tor=tor860[0];
-    else if (tor875.size()>0)
+    else if (!tor875.empty())
       tor=tor875[0];
     else
       return -1;
@@ -87,12 +81,12 @@ namespace sbn {
     //this could create a difference when passing events with FOM>1 since
     //events with missing BPM data would get FOM=2, while events with BPM set to -999 will get FOM=0
     //bad or missing MWR data gets FOM 4 in either case
-    if (hptg2.size()==0) hptg2.push_back(-999);
-    if (hptg1.size()==0) hptg1.push_back(-999);
-    if (hp875.size()==0) hp875.push_back(-999);
-    if (vptg2.size()==0) vptg2.push_back(-999);
-    if (vptg1.size()==0) vptg1.push_back(-999);
-    if (vp875.size()==0) vp875.push_back(-999);
+    if (hptg2.empty()) hptg2.push_back(-999);
+    if (hptg1.empty()) hptg1.push_back(-999);
+    if (hp875.empty()) hp875.push_back(-999);
+    if (vptg2.empty()) vptg2.push_back(-999);
+    if (vptg1.empty()) vptg1.push_back(-999);
+    if (vp875.empty()) vp875.push_back(-999);
     double horang,horpos;
     if(useHTG == 1){
       if (hptg1.size()>0 && hp875.size()>0) {
@@ -152,12 +146,11 @@ namespace sbn {
     bool good_tgt=false;
     bool good_876=false;
     bool good_875=false;
+	constexpr size_t FirstXMWtgt =0;
+	constexpr size_t FirstYMWtgt =48;
     if (mwtgt.size()>0) {
-      //if (bh.getSeconds()<1463677200 && mwtgt.size()>0) {
-      //target multiwire started failing after May 20 2016 (1463677200)
-      //skip this if data from when tgt multiwire was already dead
-      processBNBprofile(&mwtgt[0], xx, sx,chi2x);
-      processBNBprofile(&mwtgt[48], yy, sy, chi2y);
+      processBNBprofile(&mwtgt[FirstXMWtgt], xx, sx,chi2x);
+      processBNBprofile(&mwtgt[FirstYMWtgt], yy, sy, chi2y);
       if (sx>0.5 && sx<10 && sy>0.3 && sy<10 && chi2x<20 && chi2y<20 && mwtgt.size()>0) {
 	tgtsx=sx;
 	tgtsy=sy;
@@ -165,8 +158,8 @@ namespace sbn {
       }
     }
     if (!good_tgt && mw876.size()>0) {
-      processBNBprofile(&mw876[0], xx,sx,chi2x);
-      processBNBprofile(&mw876[48], yy,sy,chi2y);
+      processBNBprofile(&mw876[FirstXMWtgt], xx,sx,chi2x);
+      processBNBprofile(&mw876[FirstYMWtgt], yy,sy,chi2y);
       double tgtsx876=p876x[0]+p876x[1]*sx+p876x[2]*sx*sx;
       double tgtsy876=p876y[0]+p876y[1]*sy+p876y[2]*sy*sy;
       if (tgtsx876>0.5 && tgtsx876<10 && tgtsy876>0.3 && tgtsy876<10 && chi2x<20 && chi2y<20) {
@@ -176,8 +169,8 @@ namespace sbn {
       }
     }
     if (!good_tgt && !good_876 && mw875.size()>0){
-      processBNBprofile(&mw875[0], xx,sx,chi2x);
-      processBNBprofile(&mw875[48], yy,sy,chi2y);
+      processBNBprofile(&mw875[FirstXMWtgt], xx,sx,chi2x);
+      processBNBprofile(&mw875[FirstYMWtgt], yy,sy,chi2y);
       double tgtsx875=p875x[0]+p875x[1]*sx+p875x[2]*sx*sx;
       double tgtsy875=p875y[0]+p875y[1]*sy+p875y[2]*sy*sy;
       if (tgtsx875>0.5 && tgtsx875<10 && tgtsy875>0.3 && tgtsy875<10 && chi2x<20 && chi2y<20) {
@@ -196,41 +189,40 @@ namespace sbn {
   }
   
 
-
+/**
+    * @brief Extracts statistics from multiwire monitor data.
+    * @param mwdata pointer to multiwire data (48 channels horizontal or vertical)
+    * @param[out] x mean position from the fit [mm]
+    * @param[out] sx &sigma; from the fit [mm]
+    * @param[out] chi2 &chi;&sup2;/NDF for the Gaussian fit
+    * 
+    * This function takes multiwire data (`mwdata`),
+    * finds the min and max,
+    * finds the first and last bin where amplitude is greater than 20%,
+    * fits the peak between first and last bin with Gaussian (assuming 2% relative errors)
+    * and returns the parameters of the fit.
+    */
     void processBNBprofile(const double* mwdata, double &x, double& sx, double& chi2)
   {
-    /*
-      function takes multiwire data as input (48 channels horizontal or vertical,
-      finds the min and max
-      finds the first and last bin where amplitude is greater than 20%
-      fits the peak between first and last bin with gaussian (assuming 2% relative errors)
-      returns:
-      x  - mean position from the fit
-      sx - sigma x from the fit
-      chi2 - chi2/NDF for the gaussian fit
-    */
-    double minx=0;
-    double maxx=0;
-    for (unsigned int i=0;i<48;i++) {
-      minx=std::min(-mwdata[i],minx);
-      maxx=std::max(-mwdata[i],maxx);
-    }
-    int first_x=-1;
-    int last_x=-1;
-    static int entry = 1;
-    TH1D* hProf=new TH1D("hProf"+TString(std::to_string(entry)),"",48,-12,12);
-    for (unsigned int i=0;i<48;i++) {
+    // values' sign is inverted
+    double minx = std::min(-*std::max_element(mwdata, mwdata + 48), 0);
+    double maxx = std::max(-*std::min_element(mwdata, mwdata + 48), 0);
+    
+	TH1D hProf("hProfMW","",48,-12.0,12.0); // coverage is 24 cm
+	double const threshold = (maxx-minx)*0.2; // 20% of the range
+   	double const error = (maxx-minx)*0.02; // 2% of the range
+ 	for (unsigned int i=0;i<48;i++) {
       hProf->SetBinContent(i+1,-mwdata[i]-minx);
-      if (-mwdata[i]-minx    > (maxx-minx)*0.2 && first_x==-1) first_x=i;
-      if (-mwdata[i]-minx    > (maxx-minx)*0.2)                last_x=i+1;
-      hProf->SetBinError(i+1,(maxx-minx)*0.02);
+	  if (-mwdata[i]-minx    > threshold && first_x==-1) first_x=i;
+      if (-mwdata[i]-minx    > threshold)                last_x=i+1;
+      hProf->SetBinError(i+1,error);
     }
     if (hProf->GetSumOfWeights()>0) {
-      hProf->Fit("gaus","Q0","",-12+first_x*0.5,-12+last_x*0.5);
-      x   =hProf->GetFunction("gaus")->GetParameter(1);
-      sx  =hProf->GetFunction("gaus")->GetParameter(2);
+	  TFitResultPtr const fit = hProf.Fit("gaus","QN","",-12+first_x*0.5,-12+last_x*0.5);
+      x   = fit->Parameter(1);
+      sx  = fit->Parameter(2);
+      chi2= fit->Chi2() / fit->Ndf();
 
-      chi2=hProf->GetFunction("gaus")->GetChisquare()/hProf->GetFunction("gaus")->GetNDF();
     } else {
       x=99999;
       sx=99999;
@@ -242,7 +234,7 @@ namespace sbn {
   
   double calcFOM(double horpos, double horang, double verpos, double verang, double ppp, double tgtsx, double tgtsy)
   {
-    ppp = ppp / pow(10,12);
+    ppp /= 1e12; //converts to 10^12 POT
     
 
     //code from MiniBooNE AnalysisFramework with the addition of scaling the beam profile to match tgtsx, tgtsy
