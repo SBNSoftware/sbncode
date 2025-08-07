@@ -223,8 +223,8 @@ int sbn::SBNDBNBRetriever::matchMultiWireData(
     }//end loop over MWR devices
     
     sbn::BNBSpillInfo spillInfo = makeBNBSpillInfo(eventID, times_temps[i], MWRdata, matched_MWR, bfp, offsets, vp873);
-    
-    double const spillFOM = sbn::getFOM(spillInfo);
+
+	double const spillFOM = sbn::getBNBqualityFOM(spillInfo);
     spillInfo.FOM = spillFOM;
     
     beamInfos.push_back(std::move(spillInfo));
