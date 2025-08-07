@@ -92,6 +92,7 @@
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Slice.h"
 #include "lardataobj/RecoBase/Track.h"
+#include "lardataobj/RecoBase/TrackHitMeta.h"
 #include "lardataobj/RecoBase/Vertex.h"
 #include "lardataobj/RecoBase/Shower.h"
 #include "lardataobj/RecoBase/MCSFitResult.h"
@@ -1916,8 +1917,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<recob::Vertex>(fmPFPart, evt,
              fParams.PFParticleLabel() + slice_tag_suff);
 
-    art::FindManyP<recob::Hit> fmTrackHit =
-      FindManyPStrict<recob::Hit>(slcTracks, evt,
+    art::FindManyP<recob::Hit, recob::TrackHitMeta> fmTrackHit =
+      FindManyPDStrict<recob::Hit, recob::TrackHitMeta>(slcTracks, evt,
           fParams.RecoTrackLabel() + slice_tag_suff);
 
     art::FindManyP<recob::Hit> fmShowerHit =
@@ -2162,7 +2163,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
            FillTrackDazzle(fmTrackDazzle.at(iPart).front(), trk);
         }
         if (fmCalo.isValid()) {
-          FillTrackCalo(fmCalo.at(iPart), fmTrackHit.at(iPart),
+          FillTrackCalo(fmCalo.at(iPart), *thisTrack[0], fmTrackHit.at(iPart), fmTrackHit.data(iPart),
               (fParams.FillHitsNeutrinoSlices() && NeutrinoSlice) || fParams.FillHitsAllSlices(),
               fParams.TrackHitFillRRStartCut(), fParams.TrackHitFillRREndCut(),
               dprop, trk);
