@@ -130,13 +130,14 @@ namespace sbn {
     bool good_875=false;
 	constexpr size_t FirstXMWtgt =0;
 	constexpr size_t FirstYMWtgt =48;
+	const double smallSigmaX =0.5, largeSigmaX = 10, smallSigmaY = 0.3, largeSigmaY =10, maxChi2X = 20, maxChi2Y = 20;
     if (mwtgt.size()>0) {
       processBNBprofile(&mwtgt[FirstXMWtgt], xx, sx,chi2x);
       processBNBprofile(&mwtgt[FirstYMWtgt], yy, sy, chi2y);
-      if (sx>0.5 && sx<10 && sy>0.3 && sy<10 && chi2x<20 && chi2y<20 && mwtgt.size()>0) {
-	tgtsx=sx;
-	tgtsy=sy;
-	good_tgt=true;
+      if (sx>smallSigmaX && sx<largeSigmaX && sy>smallSigmaY && sy<largeSigmaY && chi2x<maxChi2X && chi2y<maxChi2Y) {
+		tgtsx=sx;
+		tgtsy=sy;
+		good_tgt=true;
       }
     }
     if (!good_tgt && mw876.size()>0) {
@@ -144,10 +145,10 @@ namespace sbn {
       processBNBprofile(&mw876[FirstYMWtgt], yy,sy,chi2y);
       double tgtsx876=p876x[0]+p876x[1]*sx+p876x[2]*sx*sx;
       double tgtsy876=p876y[0]+p876y[1]*sy+p876y[2]*sy*sy;
-      if (tgtsx876>0.5 && tgtsx876<10 && tgtsy876>0.3 && tgtsy876<10 && chi2x<20 && chi2y<20) {
-	tgtsx=tgtsx876;
-	tgtsy=tgtsy876;
-	good_876=true;
+      if (tgtsx876>smallSigmaX && tgtsx876<largeSigmaX && tgtsy876>smallSigmaY && tgtsy876<largeSigmaY && chi2x< maxChi2X && chi2y< maxChi2Y) {
+		tgtsx=tgtsx876;
+		tgtsy=tgtsy876;
+		good_876=true;
       }
     }
     if (!good_tgt && !good_876 && mw875.size()>0){
@@ -155,10 +156,10 @@ namespace sbn {
       processBNBprofile(&mw875[FirstYMWtgt], yy,sy,chi2y);
       double tgtsx875=p875x[0]+p875x[1]*sx+p875x[2]*sx*sx;
       double tgtsy875=p875y[0]+p875y[1]*sy+p875y[2]*sy*sy;
-      if (tgtsx875>0.5 && tgtsx875<10 && tgtsy875>0.3 && tgtsy875<10 && chi2x<20 && chi2y<20) {
-	tgtsx=tgtsx875;
-	tgtsy=tgtsy875;
-	good_875=true;
+      if (tgtsx875>smallSigmaX && tgtsx875<largeSigmaX && tgtsy875>smallSigmaY && tgtsy875<largeSigmaY && chi2x<maxChi2X && chi2y<maxChi2Y) {
+		tgtsx=tgtsx875;
+		tgtsy=tgtsy875;
+		good_875=true;
       }
     }
     if (!good_tgt && !good_876 && !good_875) {
