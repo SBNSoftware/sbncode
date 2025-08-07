@@ -136,7 +136,7 @@ namespace caf {
   }//FillTrackTruth
 
   // Assumes truth matching and calo-points are filled
-  void FillTrackCaloTruth(const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> &id_to_ide_map,
+  void FillTrackCaloTruth(const std::map<int, std::vector<caf::ParticleIDE>> &id_to_ide_map,
                           const std::vector<simb::MCParticle> &mc_particles,
                           const geo::GeometryCore& geometry,
                           const geo::WireReadoutGeom& wireReadout,
@@ -163,10 +163,10 @@ namespace caf {
 
     // Load the hits
     // match on the channel, which is unique
-    const std::vector<std::pair<geo::WireID, const sim::IDE*>> &match_ides = id_to_ide_map.at(srtrack.truth.p.G4ID);
+    const std::vector<caf::ParticleIDE> &match_ides = id_to_ide_map.at(srtrack.truth.p.G4ID);
     std::map<unsigned, std::vector<const sim::IDE *>> chan_2_ides;
-    for (auto const &ide_pair: match_ides) {
-      chan_2_ides[wireReadout.PlaneWireToChannel(ide_pair.first)].push_back(ide_pair.second);
+    for (auto const &ide_p: match_ides) {
+      chan_2_ides[wireReadout.PlaneWireToChannel(ide_p.wire)].push_back(ide_p.ide);
     }
 
     // pre-compute partial ranges
@@ -634,15 +634,15 @@ namespace caf {
   void FillTrueG4Particle(const simb::MCParticle &particle,
         const std::vector<geo::BoxBoundedGeo> &active_volumes,
         const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
-        const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE *>>> &id_to_ide_map,
+        const std::map<int, std::vector<caf::ParticleIDE>> &id_to_ide_map,
         const std::map<int, std::vector<art::Ptr<recob::Hit>>> &id_to_truehit_map,
         const cheat::BackTrackerService &backtracker,
         const cheat::ParticleInventoryService &inventory_service,
         const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
                           caf::SRTrueParticle &srparticle) {
 
-    std::vector<std::pair<geo::WireID, const sim::IDE *>> empty;
-    const std::vector<std::pair<geo::WireID, const sim::IDE *>> &particle_ides = id_to_ide_map.count(particle.TrackId()) ? id_to_ide_map.at(particle.TrackId()) : empty;
+    std::vector<caf::ParticleIDE> empty;
+    const std::vector<caf::ParticleIDE> &particle_ides = id_to_ide_map.count(particle.TrackId()) ? id_to_ide_map.at(particle.TrackId()) : empty;
 
     std::vector<art::Ptr<recob::Hit>> emptyHits;
     const std::vector<art::Ptr<recob::Hit>> &particle_hits = id_to_truehit_map.count(particle.TrackId()) ? id_to_truehit_map.at(particle.TrackId()) : emptyHits;
@@ -662,9 +662,9 @@ namespace caf {
       }
     }
 
-    for (auto const &ide_pair: particle_ides) {
-      const geo::WireID &w = ide_pair.first;
-      const sim::IDE *ide = ide_pair.second;
+    for (auto const &ide_p: particle_ides) {
+      const geo::WireID &w = ide_p.wire;
+      const sim::IDE *ide = ide_p.ide;
 
       if(w.Plane >= 0 && w.Plane < 3 && w.Cryostat < 2){
         srparticle.plane[w.Cryostat][w.Plane].visE += ide->energy / 1000. /* MeV -> GeV*/;
@@ -882,8 +882,8 @@ namespace caf {
     return ret;
   }
 
-  std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels, const geo::WireReadoutGeom &wireReadout) {
-    std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> ret;
+  std::map<int, std::vector<caf::ParticleIDE>> PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels, const geo::WireReadoutGeom &wireReadout) {
+    std::map<int, std::vector<caf::ParticleIDE>> ret;
 
     for (const art::Ptr<sim::SimChannel> sc : simchannels) {
       // Lookup the wire of this channel
@@ -895,7 +895,7 @@ namespace caf {
       for (const auto &item : sc->TDCIDEMap()) {
         for (const sim::IDE &ide: item.second) {
           // indexing initializes empty vector
-          ret[abs(ide.trackID)].push_back({thisWire, &ide});
+          ret[abs(ide.trackID)].push_back({thisWire, item.first, &ide});
         }
       }
     }
