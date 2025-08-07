@@ -18,7 +18,7 @@ namespace sbn
    * The figure of merit is described in [SBN DocDB 41901](https://sbn-docdb.fnal.gov/cgi-bin/sso/ShowDocument?docid=41901).
    * Inputs the BNBSpillInfo and returns the BNB Quality Metric called FOM, derived from MicroBooNE's FOM
    */
-  float getFOM(BNBSpillInfo& spill);
+  float getBNBqualityFOM(BNBSpillInfo& spill);
 
   /**
     * @brief Inside the getFOM script, takes the positions and angles of the beam and calculates the BNB FOM
