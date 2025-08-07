@@ -1,18 +1,7 @@
 #ifndef _GETFOM_H
 #define _GETFOM_H
 
-//#include "datatypes/ub_BeamHeader.h"
-//#include "datatypes/ub_BeamData.h"
-//#include "lardataobj/RawData/BeamInfo.h"
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
-//#include "bnbAutoTune.h"
-#include <string>
-#include "TMath.h"
-#include "TH1.h"
-#include "TGraph.h"
-//#include "TH1D.h"
-//#include "TF1.h"
-
 
 
 
