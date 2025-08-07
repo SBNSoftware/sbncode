@@ -88,57 +88,39 @@ namespace sbn {
     if (vptg1.empty()) vptg1.push_back(-999);
     if (vp875.empty()) vp875.push_back(-999);
     double horang,horpos;
-    if(useHTG == 1){
-      if (hptg1.size()>0 && hp875.size()>0) {
-	horang=((hptg1[0]-hptg1_offset)-(hp875[0]-hp875_offset))/(hptg1_zpos-hp875_zpos);
-	horpos=(hp875[0]-hp875_offset)+horang*(target_center_zpos-hp875_zpos);
-      } else if (hptg2.size()>0 && hp875.size()>0) {
-	horang=((hptg2[0]-hptg2_offset)-(hp875[0]-hp875_offset))/(hptg2_zpos-hp875_zpos);
-	horpos=(hp875[0]-hp875_offset)+horang*(target_center_zpos-hp875_zpos);
-      } else {
-	//missing horizontal BPM data
-	return 2;
-      }
-    }
-    else if(useHTG == 0){
-      if (hptg2.size()>0 && hp875.size()>0) {
-	horang=((hptg2[0]-hptg2_offset)-(hp875[0]-hp875_offset))/(hptg2_zpos-hp875_zpos);
-	horpos=(hp875[0]-hp875_offset)+horang*(target_center_zpos-hp875_zpos);
-      } else if (hptg1.size()>0 && hp875.size()>0) {
-	horang=((hptg1[0]-hptg1_offset)-(hp875[0]-hp875_offset))/(hptg1_zpos-hp875_zpos);
-	horpos=(hp875[0]-hp875_offset)+horang*(target_center_zpos-hp875_zpos);
-      } else {
-	//missing horizontal BPM data
-	return 2;
-      }
-    }
-    else { return 2; }
-    double verang,verpos;
-    if(useVTG == 1){
-      if (vptg1.size()>0 && vp875.size()>0) {
-	verang=((vptg1[0]-vptg1_offset)-(vp875[0]-vp875_offset))/(vptg1_zpos-vp875_zpos);
-	verpos=(vp875[0]-vp875_offset)+verang*(target_center_zpos-vp875_zpos);
-      } else if (vptg2.size()>0 && vp875.size()>0) {
-	verang=((vptg2[0]-vptg2_offset)-(vp875[0]-vp875_offset))/(vptg2_zpos-vp875_zpos);
-	verpos=(vp875[0]-vp875_offset)+verang*(target_center_zpos-vp875_zpos);
-      } else {
-	//missing vertical BPM data
-	return 3;
-      }
-    }
-    else if(useVTG == 0){
-      if (vptg2.size()>0 && vp875.size()>0) {
-	verang=((vptg2[0]-vptg2_offset)-(vp875[0]-vp875_offset))/(vptg2_zpos-vp875_zpos);
-	verpos=(vp875[0]-vp875_offset)+verang*(target_center_zpos-vp875_zpos);
-      } else if (vptg1.size()>0 && vp875.size()>0) {
-	verang=((vptg1[0]-vptg1_offset)-(vp875[0]-vp875_offset))/(vptg1_zpos-vp875_zpos);
-	verpos=(vp875[0]-vp875_offset)+verang*(target_center_zpos-vp875_zpos);
-      } else {
-	//missing vertical BPM data
-	return 3;
-      }
-    }
-    else { return 3; }
+    
+	auto interpolate_hp875 = [delta_hp875=(hp875[0]-hp875_offset), hp875_zpos, target_center_zpos]
+      (double delta_value, double zpos)
+      {
+      double const ang = (delta_value-delta_hp875)/(zpos-hp875_zpos);
+      double const pos = delta_hp875+ang*(target_center_zpos-hp875_zpos);
+      return std::pair(ang, pos);
+      };
+	
+	// return 2 when missing essential beam horizontal position data:
+    if (hp875.empty() || (hptg1.empty() && hptg2.empty())) return 2;
+    bool const doUseHTG1 = (useHTG == 1) || hptg2.empty();
+    auto const [ horang, horpos ] = doUseHTG1?
+       interpolate_hp875(hptg1[0] - hptg1_offset, hptg1_zpos):
+       interpolate_hp875(hptg2[0] - hptg2_offset, hptg2_zpos);
+
+
+  double verang,verpos;
+  auto interpolate_vp875 = [delta_vp875=(vp875[0]-vp875_offset), vp875_zpos, target_center_zpos]
+      (double delta_value, double zpos)
+      {
+      double const ang = (delta_value-delta_vp875)/(zpos-vp875_zpos);
+      double const pos = delta_vp875+ang*(target_center_zpos-vp875_zpos);
+      return std::pair(ang, pos);
+      };
+	
+	// return 2 when missing essential beam horizontal position data:
+    if (vp875.empty() || (vptg1.empty() && vptg2.empty())) return 3;
+    bool const doUseVTG1 = (useVTG == 1) || vptg2.empty();
+    auto const [ verang, verpos ] = doUseVTG1?
+       interpolate_vp875(vptg1[0] - vptg1_offset, vptg1_zpos):
+       interpolate_vp875(vptg2[0] - vptg2_offset, vptg2_zpos);
+
     horang=atan(horang);
     verang=atan(verang);
     double xx,yy,sx,sy,chi2x,chi2y;
