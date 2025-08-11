@@ -134,6 +134,8 @@ namespace sbn::pot{
     beamInfo.LM875A = LM875A;
     beamInfo.LM875B = LM875B;
     beamInfo.LM875C = LM875C;
+    beamInfo.HP873 = HP873;
+    beamInfo.VP873 = VP873;
     beamInfo.HP875 = HP875;
     beamInfo.VP875 = VP875;
     beamInfo.HPTG1 = HPTG1;
@@ -142,9 +144,17 @@ namespace sbn::pot{
     beamInfo.VPTG2 = VPTG2;
     beamInfo.BTJT2 = BTJT2;
     beamInfo.THCURR = THCURR;
+    beamInfo.M875HS = M875HS;
+    beamInfo.M875VS = M875VS;
+    beamInfo.M875HM = M875HM;
+    beamInfo.M875VM = M875VM;
+    beamInfo.M876HS = M876HS;
+    beamInfo.M876VS = M876VS;
+    beamInfo.M876HM = M876HM;
+    beamInfo.M876VM = M876VM;
     beamInfo.spill_time_s = time_closest_int;
     beamInfo.spill_time_ns = time_closest_ns;    
-  
+ 
     for(auto const& MWRdata: unpacked_MWR){
       std::ignore = MWRdata;
       assert(!MWRdata.empty());
