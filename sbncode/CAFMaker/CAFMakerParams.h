@@ -44,6 +44,10 @@ namespace caf
     Atom<bool> SaveGENIEEventRecord { Name("SaveGENIEEventRecord"),
       Comment("Whether to produce GENIE event record to the output file"), false
     };
+    
+    Atom<bool> OverrideRealData { Name("OverrideRealData"),
+	      Comment("when true, some algorithms (e.g. PoT count) treat events as MC rather than real data -- e.g. set it if the event is an overlay"), false
+    };
 
     Atom<float> PrescaleFactor { Name("PrescaleFactor"),
 	Comment("Factor by which to prescale unblind events"), 10
@@ -274,6 +278,12 @@ namespace caf
       "pandoraTrackCRTHit"
     };
 
+    Atom<string> CRTHitMatchInfoLabel {
+      Name("CRTHitMatchInfoLabel"),
+      Comment("Base label of additional information on track to CRT hit matching producer."),
+      "CRTT0Tagging"
+    };
+
     Atom<string> CRTTrackMatchLabel {
       Name("CRTTrackMatchLabel"),
       Comment("Base label of track to CRT track matching producer."),
@@ -340,10 +350,34 @@ namespace caf
       "" //Empty by default, configured in icaruscode cafmaker_defs
     };
 
+    Atom<art::InputTag> NuGraphSliceHitLabel {
+      Name("NuGraphSliceHitLabel"),
+      Comment("Label of NuGraph slice hit map."),
+      "" //Empty by default, please set to e.g. art::InputTag("nuslhits")
+    };
+
+    Atom<art::InputTag> NuGraphFilterLabel {
+      Name("NuGraphFilterLabel"),
+      Comment("Label of NuGraph filter."),
+      "" //Empty by default, please set to e.g. art::InputTag("NuGraph","filter")
+    };
+
+    Atom<art::InputTag> NuGraphSemanticLabel {
+      Name("NuGraphSemanticLabel"),
+      Comment("Label of NuGraph semantic."),
+      "" //Empty by default, please set to e.g. art::InputTag("NuGraph","semantic")
+    };
+
     Atom<string> OpFlashLabel {
       Name("OpFlashLabel"),
       Comment("Label of PMT flash."),
       "OpFlash"
+    };
+
+    Atom<string> PMTBeamSignalLabel {
+      Name("PMTBeamSignalLabel"),
+      Comment("Label for special PMT beam timing signals used to build the beam bunch structure"),
+      "beamTiming:RWM"
     };
 
     Atom<long long> CRTSimT0Offset {

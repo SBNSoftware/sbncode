@@ -12,6 +12,7 @@
 
 namespace caf
 {
+  const float ng_filter_cut = 0.5;
 
   //......................................................................
   bool SelectSlice(const caf::SRSlice &slice, bool cut_clear_cosmic) {
@@ -122,8 +123,8 @@ namespace caf
     srspacepoint.position     = SRVector3D(spacepoint.X(), spacepoint.Y(), spacepoint.Z());
     srspacepoint.position_err = SRVector3D(spacepoint.XErr(), spacepoint.YErr(), spacepoint.ZErr());
     srspacepoint.pe           = spacepoint.PE();
-    srspacepoint.time         = spacepoint.Ts1();
-    srspacepoint.time_err     = spacepoint.Ts1Err();
+    srspacepoint.time         = spacepoint.Ts0();
+    srspacepoint.time_err     = spacepoint.Ts0Err();
     srspacepoint.complete     = spacepoint.Complete();
   }
 
@@ -134,8 +135,8 @@ namespace caf
     for(auto const& point : track.Points())
       srsbndcrttrack.points.emplace_back(point.X(), point.Y(), point.Z());
 
-    srsbndcrttrack.time     = track.Ts1();
-    srsbndcrttrack.time_err = track.Ts1Err();
+    srsbndcrttrack.time     = track.Ts0();
+    srsbndcrttrack.time_err = track.Ts0Err();
     srsbndcrttrack.pe       = track.PE();
     srsbndcrttrack.tof      = track.ToF();
   }
@@ -179,9 +180,10 @@ namespace caf
   }
 
 
-  void FillOpFlash(const recob::OpFlash &flash,
+  void FillICARUSOpFlash(const recob::OpFlash &flash,
                   std::vector<recob::OpHit const*> const& hits,
                   int cryo, 
+                  std::vector<sbn::timing::PMTBeamSignal> RWMTimes,
                   caf::SROpFlash &srflash,
                   bool allowEmpty) {
 
@@ -191,11 +193,15 @@ namespace caf
     srflash.timewidth = flash.TimeWidth();
 
     double firstTime = std::numeric_limits<double>::max();
+    std::map<int, double> risemap;
     for(const auto& hit: hits){
       double const hitTime = hit->HasStartTime()? hit->StartTime(): hit->PeakTime();
       if (firstTime > hitTime)
         firstTime = hitTime;
+      if (!RWMTimes.empty())
+        sbn::timing::SelectFirstOpHitByTime(hit,risemap); 
     }
+    srflash.rwmtime = getFlashBunchTime(risemap, RWMTimes);
     srflash.firsttime = firstTime;
 
     srflash.cryo = cryo; // 0 in SBND, 0/1 for E/W in ICARUS
@@ -224,6 +230,41 @@ namespace caf
     if ( flash.hasXCenter() ) {
       srflash.center.SetX( flash.XCenter() );
       srflash.width.SetX( flash.XWidth() );
+    }
+  }
+
+  void FillSBNDOpFlash(const recob::OpFlash &flash,
+    std::vector<recob::OpHit const*> const& hits,
+    int tpc, 
+    caf::SROpFlash &srflash,
+    bool allowEmpty) {
+
+    srflash.setDefault();
+
+    srflash.time = flash.Time();
+    srflash.timewidth = flash.TimeWidth();
+
+    double firstTime = std::numeric_limits<double>::max();
+    for(const auto& hit: hits){
+    double const hitTime = hit->HasStartTime()? hit->StartTime(): hit->PeakTime();
+    if (firstTime > hitTime)
+    firstTime = hitTime;
+    }
+    srflash.firsttime = firstTime;
+    srflash.tpc = tpc;
+
+    srflash.totalpe = flash.TotalPE();
+    srflash.fasttototal = flash.FastToTotal();
+    srflash.onbeamtime = flash.OnBeamTime();
+
+    srflash.center.SetXYZ( -9999.f, flash.YCenter(), flash.ZCenter() );
+    srflash.width.SetXYZ( -9999.f, flash.YWidth(), flash.ZWidth() );
+
+    // Checks if ( recob::OpFlash.XCenter() != std::numeric_limits<double>::max() )
+    // See LArSoft OpFlash.h at https://nusoft.fnal.gov/larsoft/doxsvn/html/OpFlash_8h_source.html
+    if ( flash.hasXCenter() ) {
+    srflash.center.SetX( flash.XCenter() );
+    srflash.width.SetX( flash.XWidth() );
     }
   }
 
@@ -544,20 +585,58 @@ namespace caf
     }
   }
 
+  void FillSliceNuGraph(const std::vector<art::Ptr<recob::Hit>> &inputHits,
+			const std::vector<unsigned int> &sliceHitsMap,
+			const std::vector<art::Ptr<anab::FeatureVector<1>>> &ngFilterResult,
+			const std::vector<art::Ptr<anab::FeatureVector<5>>> &ngSemanticResult,
+			caf::SRSlice &slice)
+  {
+
+    //need to double check that the slice processed by NuGraph is the same under consideration
+    //std::cout << "sizes=" << inputHits.size() << " " << sliceHitsMap.size() << " " << ngFilterResult.size() << " " << ngSemanticResult.size() << std::endl;
+    unsigned int nHits = inputHits.size();
+    if (nHits==0 || nHits!=sliceHitsMap.size() || inputHits[0].key()!=sliceHitsMap[0]) return;//not the same slice!
+
+    unsigned int npass = 0;
+    for ( unsigned int i = 0; i < nHits; i++ ) {
+      if (ngFilterResult.at(i)->at(0)>=ng_filter_cut) npass++;
+    }
+    slice.ng_filt_pass_frac = float(npass)/nHits;
+  }
+
   //......................................................................
+
 
   void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
                        const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,
+                       const std::vector<art::Ptr<sbn::crt::CRTHitT0TaggingInfo>> &hitmatchinfo,
                        bool use_ts0,
                        int64_t CRT_T0_reference_time, // ns, signed
                        double CRT_T1_reference_time, // us
                        caf::SRTrack &srtrack,
                        bool allowEmpty)
   {
+    // Francesco Poppi: In the current implementation, hitmatch and hitmatchinfo are
+    // vectors of pointers, but currently they are vector of size 1.
+    // The reason behind the current implementation is that we only store the 
+    // best CRT candidate in the selection, eventually, we can store a vector
+    // of "good" candidates and fill additional infos for all of them.
+    // This is a TODO.
     if (t0match.size()) {
       assert(t0match.size() == 1);
       srtrack.crthit.distance = t0match[0]->fTriggerConfidence;
+      srtrack.crthit.region = t0match[0]->fID;
+      srtrack.crthit.sys = t0match[0]->fTriggerBits;
+      if(hitmatchinfo.size() == 1){
+        srtrack.crthit.deltaX = hitmatchinfo[0]->DeltaX;
+        srtrack.crthit.deltaY = hitmatchinfo[0]->DeltaY;
+        srtrack.crthit.deltaZ = hitmatchinfo[0]->DeltaZ;
+        srtrack.crthit.crossX = hitmatchinfo[0]->CrossX;
+        srtrack.crthit.crossY = hitmatchinfo[0]->CrossY;
+        srtrack.crthit.crossZ = hitmatchinfo[0]->CrossZ;      
+      }
       srtrack.crthit.hit.time = t0match[0]->fTime / 1e3; /* ns -> us */
+      srtrack.crthit.hit.plane = t0match[0]->fID;
     }
     if (hitmatch.size()) {
       FillCRTHit(*hitmatch[0], use_ts0, CRT_T0_reference_time, CRT_T1_reference_time, srtrack.crthit.hit, allowEmpty);
@@ -948,6 +1027,59 @@ namespace caf
     srpfp.cnnscore.michel = cnnscore->pfpMichelScore;
     srpfp.cnnscore.endmichel = cnnscore->pfpEndMichelScore;
     srpfp.cnnscore.nclusters = cnnscore->nClusters;
+  }
+
+  void FillPFPNuGraph(const std::vector<unsigned int> &sliceHitsMap,
+		      const std::vector<art::Ptr<anab::FeatureVector<1>>> &ngFilterResult,
+		      const std::vector<art::Ptr<anab::FeatureVector<5>>> &ngSemanticResult,
+		      const std::vector<art::Ptr<recob::Hit>> &pfpHits,
+		      caf::SRPFP& srpfp,
+		      bool allowEmpty)
+  {
+
+    // the nugraph elements are ordered the same as the sliceHitsMap
+    std::vector<size_t> mappedhits;
+    for (auto& hit : pfpHits) {
+      auto it = std::find(sliceHitsMap.begin(), sliceHitsMap.end(), hit.key());
+      if (it != sliceHitsMap.end()) {
+	size_t index = std::distance(sliceHitsMap.begin(), it);
+	mappedhits.push_back(index);
+      }
+    }
+
+    if (mappedhits.size()>0) {
+      std::vector<float> ng2sempfpcounts(5,0);
+      size_t ng2bkgpfpcount = 0;
+      for (size_t pos : mappedhits) {
+	auto const& bkgscore = ngFilterResult.at(pos);
+	if (bkgscore->at(0)<ng_filter_cut) {
+	  ng2bkgpfpcount++;
+	} else {
+	  auto const& scores = ngSemanticResult.at(pos);
+	  std::vector<float> ng2semscores;
+	  for (size_t i=0;i<scores->size();i++) ng2semscores.push_back(scores->at(i));
+	  size_t sem_label = std::distance(ng2semscores.begin(), std::max_element(ng2semscores.begin(), ng2semscores.end()));//arg_max(ng2semscores);
+	  ng2sempfpcounts[sem_label]++;
+	}
+      }
+      srpfp.ngscore.sem_cat = SRNuGraphScore::NuGraphCategory(std::distance(ng2sempfpcounts.begin(), std::max_element(ng2sempfpcounts.begin(), ng2sempfpcounts.end())));//arg_max(ng2sempfpcounts);
+      size_t nonBkgHits = (pfpHits.size() > ng2bkgpfpcount ? pfpHits.size()-ng2bkgpfpcount : 0);
+      srpfp.ngscore.mip_frac = (nonBkgHits>0 ? float(ng2sempfpcounts[0])/nonBkgHits : -1.);
+      srpfp.ngscore.hip_frac = (nonBkgHits>0 ? float(ng2sempfpcounts[1])/nonBkgHits : -1.);
+      srpfp.ngscore.shr_frac = (nonBkgHits>0 ? float(ng2sempfpcounts[2])/nonBkgHits : -1.);
+      srpfp.ngscore.mhl_frac = (nonBkgHits>0 ? float(ng2sempfpcounts[3])/nonBkgHits : -1.);
+      srpfp.ngscore.dif_frac = (nonBkgHits>0 ? float(ng2sempfpcounts[4])/nonBkgHits : -1.);
+      srpfp.ngscore.bkg_frac = float(ng2bkgpfpcount)/pfpHits.size();
+    } else {
+      srpfp.ngscore.sem_cat = SRNuGraphScore::NuGraphCategory::Unset;
+      srpfp.ngscore.mip_frac = -1.;
+      srpfp.ngscore.hip_frac = -1.;
+      srpfp.ngscore.shr_frac = -1.;
+      srpfp.ngscore.mhl_frac = -1.;
+      srpfp.ngscore.dif_frac = -1.;
+      srpfp.ngscore.bkg_frac = -1.;
+    }
+
   }
 
   void FillHitVars(const recob::Hit& hit,
