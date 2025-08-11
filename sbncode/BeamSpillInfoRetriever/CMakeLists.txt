@@ -34,12 +34,11 @@ art_make_library(
 
 art_make_library(
 	LIBRARIES
-	art::Persistency_Common
-        art::Utilities 
+	   
 	ROOT::Hist
-	ROOT::Spectrum
-	ROOT::MathCore   
-    	ROOT::Tree
+	ROOT::MathCore
+	sbnobj::Common_POTAccounting
+
 
 	LIBRARY_NAME sbn_getFOM
 	SOURCE getFOM.cpp        
