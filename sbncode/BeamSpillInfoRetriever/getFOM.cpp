@@ -3,9 +3,10 @@
  * @brief Figure of Merit for BNB Spills using SBND information adapted from MicroBooNE FOM
  * @author Max Dubnowski (maxdub@sas.upenn.edu or `@Max Dubnowski` on SBN Slack)
  */
+#include "sbncode/BeamSpillInfoRetriever/getFOM.h"
 #include <math.h>
 #include "TH1D.h"
-#include "TFitResultPtr.h"
+#include "TFitResult.h"
 #include <vector>
 
 
@@ -87,7 +88,7 @@ namespace sbn {
     if (vptg2.empty()) vptg2.push_back(-999);
     if (vptg1.empty()) vptg1.push_back(-999);
     if (vp875.empty()) vp875.push_back(-999);
-    double horang,horpos;
+    //double horang,horpos;
     
 	auto interpolate_hp875 = [delta_hp875=(hp875[0]-hp875_offset), hp875_zpos, target_center_zpos]
       (double delta_value, double zpos)
@@ -105,7 +106,7 @@ namespace sbn {
        interpolate_hp875(hptg2[0] - hptg2_offset, hptg2_zpos);
 
 
-  double verang,verpos;
+    //double verang,verpos;
   auto interpolate_vp875 = [delta_vp875=(vp875[0]-vp875_offset), vp875_zpos, target_center_zpos]
       (double delta_value, double zpos)
       {
@@ -188,24 +189,24 @@ namespace sbn {
     void processBNBprofile(const double* mwdata, double &x, double& sx, double& chi2)
   {
     // values' sign is inverted
-    double minx = std::min(-*std::max_element(mwdata, mwdata + 48), 0);
-    double maxx = std::max(-*std::min_element(mwdata, mwdata + 48), 0);
-    
-	TH1D hProf("hProfMW","",48,-12.0,12.0); // coverage is 24 cm
-	double const threshold = (maxx-minx)*0.2; // 20% of the range
-   	double const error = (maxx-minx)*0.02; // 2% of the range
- 	for (unsigned int i=0;i<48;i++) {
+    double minx = std::min(-*std::max_element(mwdata, mwdata + 48), 0.0);
+    double maxx = std::max(-*std::min_element(mwdata, mwdata + 48), 0.0);
+    int first_x = -1; int last_x = -1;
+    TH1D* hProf("hProfMW","",48,-12.0,12.0); // coverage is 24 cm
+    double const threshold = (maxx-minx)*0.2; // 20% of the range
+    double const error = (maxx-minx)*0.02; // 2% of the range
+    for (unsigned int i=0;i<48;i++) {
       hProf->SetBinContent(i+1,-mwdata[i]-minx);
-	  if (-mwdata[i]-minx    > threshold && first_x==-1) first_x=i;
+      if (-mwdata[i]-minx    > threshold && first_x==-1) first_x=i;
       if (-mwdata[i]-minx    > threshold)                last_x=i+1;
       hProf->SetBinError(i+1,error);
     }
     if (hProf->GetSumOfWeights()>0) {
-	  TFitResultPtr const fit = hProf.Fit("gaus","QN","",-12+first_x*0.5,-12+last_x*0.5);
+      TFitResult const fit = hProf.Fit("gaus","QN","",-12+first_x*0.5,-12+last_x*0.5);
       x   = fit->Parameter(1);
       sx  = fit->Parameter(2);
       chi2= fit->Chi2() / fit->Ndf();
-
+      
     } else {
       x=99999;
       sx=99999;
