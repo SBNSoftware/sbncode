@@ -315,6 +315,9 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
   for (art::Ptr<recob::PFParticle> p_pfp: PFParticleList) {
     const recob::PFParticle &pfp = *p_pfp;
 
+    if(p_pfp->PdgCode() == 11)
+      continue;
+
     const std::vector<art::Ptr<recob::Track>> thisTrack = fmTracks.at(p_pfp.key());
     if (thisTrack.size() != 1)
       continue;
