@@ -88,7 +88,7 @@ namespace sbn {
     if (vptg2.empty()) vptg2.push_back(-999);
     if (vptg1.empty()) vptg1.push_back(-999);
     if (vp875.empty()) vp875.push_back(-999);
-    //double horang,horpos;
+    double horang;
     
 	auto interpolate_hp875 = [delta_hp875=(hp875[0]-hp875_offset), hp875_zpos, target_center_zpos]
       (double delta_value, double zpos)
@@ -101,12 +101,12 @@ namespace sbn {
 	// return 2 when missing essential beam horizontal position data:
     if (hp875.empty() || (hptg1.empty() && hptg2.empty())) return 2;
     bool const doUseHTG1 = (useHTG == 1) || hptg2.empty();
-    auto const [ horang, horpos ] = doUseHTG1?
+    auto const [ Tanhorang, horpos ] = doUseHTG1?
        interpolate_hp875(hptg1[0] - hptg1_offset, hptg1_zpos):
        interpolate_hp875(hptg2[0] - hptg2_offset, hptg2_zpos);
 
 
-    //double verang,verpos;
+    double verang;
   auto interpolate_vp875 = [delta_vp875=(vp875[0]-vp875_offset), vp875_zpos, target_center_zpos]
       (double delta_value, double zpos)
       {
@@ -118,12 +118,12 @@ namespace sbn {
 	// return 2 when missing essential beam horizontal position data:
     if (vp875.empty() || (vptg1.empty() && vptg2.empty())) return 3;
     bool const doUseVTG1 = (useVTG == 1) || vptg2.empty();
-    auto const [ verang, verpos ] = doUseVTG1?
+    auto const [ Tanverang, verpos ] = doUseVTG1?
        interpolate_vp875(vptg1[0] - vptg1_offset, vptg1_zpos):
        interpolate_vp875(vptg2[0] - vptg2_offset, vptg2_zpos);
 
-    horang=atan(horang);
-    verang=atan(verang);
+    horang=atan(Tanhorang);
+    verang=atan(Tanverang);
     double xx,yy,sx,sy,chi2x,chi2y;
     double tgtsx, tgtsy;
     bool good_tgt=false;
@@ -192,7 +192,8 @@ namespace sbn {
     double minx = std::min(-*std::max_element(mwdata, mwdata + 48), 0.0);
     double maxx = std::max(-*std::min_element(mwdata, mwdata + 48), 0.0);
     int first_x = -1; int last_x = -1;
-    TH1D* hProf("hProfMW","",48,-12.0,12.0); // coverage is 24 cm
+    static int entry = 1;
+    TH1D* hProf = new TH1D("hProfMW","",48,-12.0,12.0); // coverage is 24 cm
     double const threshold = (maxx-minx)*0.2; // 20% of the range
     double const error = (maxx-minx)*0.02; // 2% of the range
     for (unsigned int i=0;i<48;i++) {
@@ -202,7 +203,8 @@ namespace sbn {
       hProf->SetBinError(i+1,error);
     }
     if (hProf->GetSumOfWeights()>0) {
-      TFitResult const fit = hProf.Fit("gaus","QN","",-12+first_x*0.5,-12+last_x*0.5);
+      TFitResultPtr fitPtr = hProf->Fit("gaus","QN","",-12+first_x*0.5,-12+last_x*0.5);
+      TFitResult* fit = fitPtr.Get();
       x   = fit->Parameter(1);
       sx  = fit->Parameter(2);
       chi2= fit->Chi2() / fit->Ndf();
