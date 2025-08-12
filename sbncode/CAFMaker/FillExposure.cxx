@@ -15,6 +15,8 @@ namespace caf
     single_store.LM875A = info.LM875A;
     single_store.LM875B = info.LM875B;
     single_store.LM875C = info.LM875C;
+    single_store.HP873 = info.HP873;
+    single_store.VP873 = info.VP873;
     single_store.HP875 = info.HP875;
     single_store.VP875 = info.VP875;
     single_store.HPTG1 = info.HPTG1;
@@ -31,6 +33,14 @@ namespace caf
     single_store.HPTG2Offset = info.HPTG2Offset;
     single_store.BTJT2 = info.BTJT2;
     single_store.THCURR = info.THCURR;
+    single_store.M875HS = info.M875HS;
+    single_store.M875VS = info.M875VS;
+    single_store.M875HM = info.M875HM;
+    single_store.M875VM = info.M875VM;
+    single_store.M876HS = info.M876HS;
+    single_store.M876VS = info.M876VS;
+    single_store.M876HM = info.M876HM;
+    single_store.M876VM = info.M876VM;
     single_store.M875BB = info.M875BB;
     single_store.M876BB = info.M876BB;
     single_store.MMBTBB = info.MMBTBB;

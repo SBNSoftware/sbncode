@@ -338,7 +338,7 @@ namespace sbn {
             };
 
           }//Iterate through the number of universes      
-        }//Yes, Multisim
+        }//Yes, MultiSim
       }
 
       if(count_weights){
