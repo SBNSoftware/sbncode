@@ -61,7 +61,7 @@ sbn::SBNDBNBRetriever::SBNDBNBRetriever(fhicl::ParameterSet const & params)
   fTimePad = params.get<double>("TimePadding");
   fBESOffset = params.get<double>("BESOffset");
   fDeviceUsedForTiming = params.get<std::string>("DeviceUsedForTiming");
-  double const timeWindow = std::stod(params.get<std::string>("TimeWindow"))
+  double const timeWindow = std::stod(params.get<std::string>("TimeWindow"));
   bfp = ifbeam_handle->getBeamFolder(params.get<std::string>("Bundle"), params.get<std::string>("URL"), timeWindow);
   bfp->set_epsilon(0.02);
   bfp_mwr = ifbeam_handle->getBeamFolder(params.get<std::string>("MultiWireBundle"), params.get<std::string>("URL"), std::stod(params.get<std::string>("MWR_TimeWindow")));
