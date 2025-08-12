@@ -211,21 +211,8 @@ namespace sbn {
       hProf->Fit("gaus","Q0","",-12+first_x*0.5,-12+last_x*0.5);
       x   =hProf->GetFunction("gaus")->GetParameter(1);
       sx  =hProf->GetFunction("gaus")->GetParameter(2);
-
       chi2=hProf->GetFunction("gaus")->GetChisquare()/hProf->GetFunction("gaus")->GetNDF();
-
-      // TFitResult* const fit = hProf->Fit("gaus","QN","",-12+first_x*0.5,-12+last_x*0.5);
-      // x   = fit->Parameter(1);
-      // sx  = fit->Parameter(2);
-      // chi2= fit->Chi2() / fit->Ndf();
-      
-      //TFitResult * fitPtr = hProf->Fit("gaus","QN","",-12+first_x*0.5,-12+last_x*0.5);
-      //std::cout  << "Fit Result  " <<  fitPtr.fStatus << std::endl;
-       // TFitResult* fit = fitPtr.Get();
-       //x   = fitPtr->Parameter(1);
-       //sx  = fitPtr->Parameter(2);
-       //chi2= fitPtr->Chi2() / fitPtr->Ndf();
-        delete hProf;
+	  delete hProf;
     } else {
       x=99999;
       sx=99999;
