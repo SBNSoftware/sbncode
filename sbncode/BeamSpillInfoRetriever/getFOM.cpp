@@ -6,7 +6,9 @@
 #include "sbncode/BeamSpillInfoRetriever/getFOM.h"
 #include <math.h>
 #include "TH1D.h"
+#include "TF1.h"
 #include "TFitResult.h"
+#include <iostream>
 #include <vector>
 
 
@@ -77,11 +79,13 @@ namespace sbn {
     else
       return -1;
         
-    
-    //when creating ntuples for pot counting script the variables are filled with -999
-    //this could create a difference when passing events with FOM>1 since
-    //events with missing BPM data would get FOM=2, while events with BPM set to -999 will get FOM=0
-    //bad or missing MWR data gets FOM 4 in either case
+    /**
+     * @brief when creating ntuples for pot counting script the variables are filled with -999
+     * this could create a difference when passing events with FOM>1 since
+     * events with missing BPM data would get FOM=2, while events with BPM set to -999 will get FOM=0
+     * bad or missing MWR data gets FOM 4 in either case
+    */
+
     if (hptg2.empty()) hptg2.push_back(-999);
     if (hptg1.empty()) hptg1.push_back(-999);
     if (hp875.empty()) hp875.push_back(-999);
@@ -169,6 +173,7 @@ namespace sbn {
     }
     
     fom=1-pow(10,sbn::calcFOM(horpos,horang,verpos,verang,tor,tgtsx,tgtsy));
+    std::cout << fom << std::endl;
     return fom;
   }
   
@@ -203,12 +208,24 @@ namespace sbn {
       hProf->SetBinError(i+1,error);
     }
     if (hProf->GetSumOfWeights()>0) {
-      TFitResultPtr fitPtr = hProf->Fit("gaus","QN","",-12+first_x*0.5,-12+last_x*0.5);
-      TFitResult* fit = fitPtr.Get();
-      x   = fit->Parameter(1);
-      sx  = fit->Parameter(2);
-      chi2= fit->Chi2() / fit->Ndf();
+      hProf->Fit("gaus","Q0","",-12+first_x*0.5,-12+last_x*0.5);
+      x   =hProf->GetFunction("gaus")->GetParameter(1);
+      sx  =hProf->GetFunction("gaus")->GetParameter(2);
+
+      chi2=hProf->GetFunction("gaus")->GetChisquare()/hProf->GetFunction("gaus")->GetNDF();
+
+      // TFitResult* const fit = hProf->Fit("gaus","QN","",-12+first_x*0.5,-12+last_x*0.5);
+      // x   = fit->Parameter(1);
+      // sx  = fit->Parameter(2);
+      // chi2= fit->Chi2() / fit->Ndf();
       
+      //TFitResult * fitPtr = hProf->Fit("gaus","QN","",-12+first_x*0.5,-12+last_x*0.5);
+      //std::cout  << "Fit Result  " <<  fitPtr.fStatus << std::endl;
+       // TFitResult* fit = fitPtr.Get();
+       //x   = fitPtr->Parameter(1);
+       //sx  = fitPtr->Parameter(2);
+       //chi2= fitPtr->Chi2() / fitPtr->Ndf();
+        delete hProf;
     } else {
       x=99999;
       sx=99999;
