@@ -66,8 +66,6 @@
 #include "sbnobj/SBND/CRT/CRTTrack.hh"
 #include "sbnobj/SBND/CRT/CRTSpacePoint.hh"
 
-#include "sbndcode/CRT/CRTEventDisplay/CRTEventDisplayAlg.h"
-
 #include "ITCSSelectionTool.h"
 
 namespace sbn {
@@ -242,7 +240,5 @@ private:
   // Fitting info
   TFitter fFitExp;
   TFitter fFitConst;
-
-  sbnd::crt::CRTEventDisplayAlg fCRTEventDisplayAlg;
 };
 #endif

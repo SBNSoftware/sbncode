@@ -1,5 +1,3 @@
-#include "crteventdisplayalg_sbnd.fcl"
-
 BEGIN_PROLOG
 
 caloskim_calorimetry: {
@@ -58,7 +56,7 @@ stopping_selection: {
   EndMediandQdxCut: 1600
   NumberTimeSamples: 3400
   MediandQdxRRMax: 5.
-  CheckFiducialX: false
+  CheckFiducialX: true
 }
 
 exiting_selection: {
@@ -76,7 +74,7 @@ exiting_selection: {
   EndMediandQdxCut: -1
   RequireDownwards: false
   NumberTimeSamples: 3400
-  CheckFiducialX: false
+  CheckFiducialX: true
 }
 
 a2c_selection: {
@@ -92,11 +90,10 @@ throughgoing_selection: {
   FVInsetMaxY: 5
   FVInsetMinZ: 5
   FVInsetMaxZ: 5
-  CheckFiducialX: false
+  CheckFiducialX: true
 }
 
 caloskim_nodigits_goldentracks: @local::caloskim_nodigits
 caloskim_nodigits_goldentracks.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection, @local::exiting_selection]
-caloskim_nodigits_goldentracks.CRTEventDisplayAlg: @local::crteventdisplayalg_sbnd_temp
 
 END_PROLOG
