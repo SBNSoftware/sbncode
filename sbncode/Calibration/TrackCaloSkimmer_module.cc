@@ -64,7 +64,6 @@ sbn::TrackCaloSkimmer::TrackCaloSkimmer(fhicl::ParameterSet const& p)
   : EDAnalyzer{p},
     fFitExp(2),
     fFitConst(1)
-  , fCRTEventDisplayAlg(p.get<fhicl::ParameterSet>("CRTEventDisplayAlg"))
 {
   // Grab config
   fPFPproducer  = p.get< art::InputTag > ("PFPproducer","pandoraGausCryo0");
@@ -261,7 +260,6 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
 
   // The raw digit list is not sorted, so make it into a map on the WireID
   std::map<geo::WireID, art::Ptr<raw::RawDigit>> rawdigits;
-  /*
   for (const art::Ptr<raw::RawDigit> &d: rawdigitlist) {
     
     std::vector<geo::WireID> wids;
@@ -281,7 +279,7 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
 
     rawdigits[wids[0]] = d;
   } 
-  */
+
   // Collect all hits
   art::ValidHandle<std::vector<recob::Hit>> allhit_handle = e.getValidHandle<std::vector<recob::Hit>>(fHITproducer);
   std::vector<art::Ptr<recob::Hit>> allHits;
@@ -298,12 +296,10 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
   const cheat::BackTrackerService *bt = NULL;
 
   if (simchannels.size()) {
-    /*
     art::ServiceHandle<cheat::BackTrackerService> bt_serv;
     id_to_ide_map = caf::PrepSimChannels(simchannels, *wireReadout);
     id_to_truehit_map = caf::PrepTrueHits(allHits, clock_data, *bt_serv.get());
     bt = bt_serv.get();
-    */
   }
 
   // service data
@@ -412,23 +408,6 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
 
     hasT0 = hasPFPT0 || hasCRTTrackT0 || hasCRTHitT0 || hasCRTSpacePointT0;
 
-    if(hasPFPT0)
-      {
-	fCRTEventDisplayAlg.SetPrint(true);
-	fCRTEventDisplayAlg.SetMinTime(t0PFP - 3e3);
-	fCRTEventDisplayAlg.SetMaxTime(t0PFP + 3e3);
-
-	auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
-
-	if(hasCRTTrackT0)
-	  {
-	    std::cout << t0CRTTrack << std::endl;
-	    fCRTEventDisplayAlg.Draw(clockData, e, Form("/exp/sbnd/data/users/hlay/crt_fall_production_2025/t0_event_displays/good/crtEventDisplayRun%iSubrun%iEvent%iPFP%li", e.run(), e.subRun(), e.event(), p_pfp.key()));
-	  }
-	else
-	  fCRTEventDisplayAlg.Draw(clockData, e, Form("/exp/sbnd/data/users/hlay/crt_fall_production_2025/t0_event_displays/bad/crtEventDisplayRun%iSubrun%iEvent%iPFP%li", e.run(), e.subRun(), e.event(), p_pfp.key()));
-      }
-    continue;
     // "whicht0" should reflect the T0 used for the reconstruction of the drift coordinate.
     if(!hasT0) whicht0 = -1;
     // In this way, if a track is T0 tagged from PFP and CRT tagged, which T0 reflects the PFP Tag.
