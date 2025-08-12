@@ -70,6 +70,11 @@ cet_build_plugin(TrackCaloSkimmerSelectAllTrack art::tool
                             ROOT::X3d
 )
 
+cet_build_plugin(TrackCaloSkimmerSelectThroughgoingTrack art::tool
+                      LIBRARIES
+                            larcore::Geometry_Geometry_service
+)
+
 cet_build_plugin ( DataSelect art::module
            LIBRARIES
                ifdh_art::IFDH_service
