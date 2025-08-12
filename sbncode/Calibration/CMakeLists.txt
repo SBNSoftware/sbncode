@@ -25,6 +25,7 @@ cet_build_plugin( TrackCaloSkimmer art::module
                             sbncode_CAFMaker
                             sbnobj::Common_Calibration_dict
                             larevt::SpaceCharge
+			    sbndcode::CRT_CRTEventDisplay
 )
 
 cet_build_plugin(TrackCaloSkimmerSelectStoppingTrack art::tool
