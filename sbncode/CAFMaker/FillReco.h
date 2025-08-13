@@ -44,6 +44,7 @@
 #include "sbnobj/Common/CRT/CRTHitT0TaggingInfo.hh"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
+#include "sbndcode/Timing/SBNDRawTimingObj.h"
 
 #include "sbnanaobj/StandardRecord/SRSlice.h"
 #include "sbnanaobj/StandardRecord/StandardRecord.h"
@@ -278,6 +279,14 @@ namespace caf
   void FillPFPRazzled(const art::Ptr<sbn::MVAPID> razzled,
                       caf::SRPFP& srpfp,
                       bool allowEmpty = false);
+
+  void FillSBNDFrameShiftInfo(const raw::FrameShiftInfo &frame,
+                        caf::SRSBNDFrameShiftInfo &srsbndframe,
+                        bool allowEmpty = false);
+
+  void FillSBNDTimingInfo(const raw::TimingInfo &timing,
+                        caf::SRSBNDTimingInfo &srsbndtiming,
+                        bool allowEmpty = false);
 
   template<class T, class U>
   void CopyPropertyIfSet( const std::map<std::string, T>& props, const std::string& search, U& value );

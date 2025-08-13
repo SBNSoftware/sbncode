@@ -141,6 +141,31 @@ namespace caf
     srsbndcrttrack.tof      = track.ToF();
   }
 
+  void FillSBNDFrameShiftInfo(const raw::FrameShiftInfo &frame,
+                        caf::SRSBNDFrameShiftInfo &srsbndframe,
+                        bool allowEmpty)
+  {
+    srsbndframe.frameTdcCrtt1 = frame.frameTdcCrtt1;
+    srsbndframe.frameTdcBes = frame.frameTdcBes;
+    srsbndframe.frameTdcRwm = frame.frameTdcRwm;
+    srsbndframe.frameHltCrtt1 = frame.frameHltCrtt1;
+    srsbndframe.frameHltBeamGate = frame.frameHltBeamGate;
+    srsbndframe.frameDataToMC = frame.frameDataToMC;
+  }
+
+  void FillSBNDTimingInfo(const raw::TimingInfo &timing,
+                        caf::SRSBNDTimingInfo &srsbndtiming,
+                        bool allowEmpty)
+  {
+    srsbndtiming.tdcCrtt1 = timing.tdcCrtt1;
+    srsbndtiming.tdcBes = timing.tdcBes;
+    srsbndtiming.tdcRwm = timing.tdcRwm;
+    srsbndtiming.tdcEtrig = timing.tdcEtrig;
+    srsbndtiming.hltCrtt1 = timing.hltCrtt1;
+    srsbndtiming.hltEtrig = timing.hltEtrig;
+    srsbndtiming.hltBeamGate = timing.hltBeamGate;
+  }
+
   void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,
 		       caf::SRCRTPMTMatch &srmatch,
 		       bool allowEmpty){

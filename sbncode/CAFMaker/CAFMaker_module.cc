@@ -1603,6 +1603,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   std::vector<caf::SRCRTTrack> srcrttracks;
   std::vector<caf::SRCRTSpacePoint> srcrtspacepoints;
   std::vector<caf::SRSBNDCRTTrack> srsbndcrttracks;
+  std::vector<caf::SRSBNDFrameShiftInfo> srsbndframeshiftinfo;
+  std::vector<caf::SRSBNDTimingInfo> srsbndtiminginfo;
 
   if(fDet == kICARUS)
     {
@@ -1651,6 +1653,29 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           FillSBNDCRTTrack(sbndcrttracks[i], srsbndcrttracks.back());
         }
       }
+
+      art::Handle<std::vector<raw::FrameShiftInfo>> sbndframeshiftinfo_handle;
+      GetByLabelStrict(evt, fParams.SBNDFrameShiftInfoLabel(), sbndframeshiftinfo_handle);
+      // fill into event
+      if (sbndframeshiftinfo_handle.isValid()) {
+        const std::vector<raw::FrameShiftInfo> &sbndframeshiftinfo = *sbndframeshiftinfo_handle;
+        for (unsigned i = 0; i < sbndframeshiftinfo.size(); i++) {
+          srsbndframeshiftinfo.emplace_back();
+          FillSBNDFrameShiftInfo(sbndframeshiftinfo[i], srsbndframeshiftinfo.back());
+        }
+      }
+
+      art::Handle<std::vector<raw::TimingInfo>> sbndtiminginfo_handle;
+      GetByLabelStrict(evt, fParams.SBNDTimingInfoLabel(), sbndtiminginfo_handle);
+      // fill into event
+      if (sbndtiminginfo_handle.isValid()) {
+        const std::vector<raw::TimingInfo> &sbndtiminginfo = *sbndtiminginfo_handle;
+        for (unsigned i = 0; i < sbndtiminginfo.size(); i++) {
+          srsbndtiminginfo.emplace_back();
+          FillSBNDTimingInfo(sbndtiminginfo[i], srsbndtiminginfo.back());
+        }
+      }
+
     }
 
   // Get all of the CRTPMT Matches
