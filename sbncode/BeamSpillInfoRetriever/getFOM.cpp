@@ -23,20 +23,22 @@ namespace sbn {
 
     double hp875_offset= spill.HP875Offset;
     double vp875_offset= spill.VP875Offset;
-    double hptg1_offset= spill.HPTG1Offset;
-    double vptg1_offset= spill.VPTG1Offset;
+    double vp873_offset= spill.VP873Offset;
+	double hptg1_offset= spill.HPTG1Offset;
+    //double vptg1_offset= spill.VPTG1Offset;
     double hptg2_offset= spill.HPTG2Offset;
     double vptg2_offset= spill.VPTG2Offset;
         
     //Decides which position monitor to check first
-    int useHTG = 0;
-    int useVTG = 0;
+    int useHTG = 1;
+    int useVTG = 1;
 
 	//Z Position of the monitors in m
     double const hp875_zpos= 202.116104;
     double const vp875_zpos= 202.3193205;
-    double const hptg1_zpos= 204.833267;
-    double const vptg1_zpos= 204.629608;
+    double const vp873_zpos= 191.153656;
+	double const hptg1_zpos= 204.833267;
+    //double const vptg1_zpos= 204.629608;
     double const hptg2_zpos= 205.240662;
     double const vptg2_zpos= 205.036835;
     double const target_center_zpos= 206.870895;
@@ -50,6 +52,7 @@ namespace sbn {
     std::vector<double> tor875;
     std::vector<double> hp875;
     std::vector<double> vp875;
+	std::vector<double> vp873;
     std::vector<double> hptg1;
     std::vector<double> vptg1;
     std::vector<double> hptg2;
@@ -64,7 +67,8 @@ namespace sbn {
     tor875.push_back(spill.TOR875);
     hp875.push_back(spill.HP875);
     vp875.push_back(spill.VP875);
-    hptg1.push_back(spill.HPTG1);
+	vp873.push_back(spill.VP873);
+	hptg1.push_back(spill.HPTG1);
     vptg1.push_back(spill.VPTG1);
     hptg2.push_back(spill.HPTG2);
     vptg2.push_back(spill.VPTG2);
@@ -90,6 +94,7 @@ namespace sbn {
     if (vptg2.empty()) vptg2.push_back(-999);
     if (vptg1.empty()) vptg1.push_back(-999);
     if (vp875.empty()) vp875.push_back(-999);
+	if (vp873.empty()) vp873.push_back(-999);
     double horang;
     
 	auto interpolate_hp875 = [delta_hp875=(hp875[0]-hp875_offset), hp875_zpos, target_center_zpos]
@@ -121,7 +126,7 @@ namespace sbn {
     if (vp875.empty() || (vptg1.empty() && vptg2.empty())) return 3;
     bool const doUseVTG1 = (useVTG == 1) || vptg2.empty();
     auto const [ Tanverang, verpos ] = doUseVTG1?
-       interpolate_vp875(vptg1[0] - vptg1_offset, vptg1_zpos):
+       interpolate_vp875(vp873[0] - vp873_offset, vp873_zpos):
        interpolate_vp875(vptg2[0] - vptg2_offset, vptg2_zpos);
 
     horang=atan(Tanhorang);
