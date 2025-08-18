@@ -56,7 +56,7 @@ stopping_selection: {
   EndMediandQdxCut: 1600
   NumberTimeSamples: 3400
   MediandQdxRRMax: 5.
-  CheckFiducialX: true
+  CheckFiducialX: false
 }
 
 exiting_selection: {
@@ -74,7 +74,7 @@ exiting_selection: {
   EndMediandQdxCut: -1
   RequireDownwards: false
   NumberTimeSamples: 3400
-  CheckFiducialX: true
+  CheckFiducialX: false
 }
 
 a2c_selection: {
@@ -90,10 +90,10 @@ throughgoing_selection: {
   FVInsetMaxY: 5
   FVInsetMinZ: 5
   FVInsetMaxZ: 5
-  CheckFiducialX: true
+  CheckFiducialX: false
 }
 
 caloskim_nodigits_goldentracks: @local::caloskim_nodigits
-caloskim_nodigits_goldentracks.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection, @local::exiting_selection]
+caloskim_nodigits_goldentracks.SelectionTools: [ @local::stopping_selection, @local::a2c_selection, @local::exiting_selection ]
 
 END_PROLOG
