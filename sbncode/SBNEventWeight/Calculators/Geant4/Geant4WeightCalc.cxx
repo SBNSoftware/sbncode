@@ -60,11 +60,9 @@ private:
   std::string fMCTruthProducer;  //!< Label for the MCTruth producer
   CLHEP::RandGaussQ* fGaussRandom;  //!< Random number generator
   fhicl::ParameterSet fMaterial; //!< Detector material, i.e. LAr
-  // std::map<int, ParticleDef> fParticles;  //!< Particles to reweight
   unsigned fNsims;  //!< Number of universes (multisim mode)
   unsigned fNsigmas; //!< Number of sigmas (multisigma mode)
   int fPdg; //!< PDG value for particles that a given weight calculator should apply to. Note that for now this module can only handle weights for one particle species at a time.
-  // float fXSUncertainty;  //!< Flat cross section uncertainty
   G4ReweighterFactory fRWFactory; //!< Base class to handle all Geant4Reweighters
   G4Reweighter *fReweighter; //!< Geant4Reweighter -- this is what provides the weights
   G4ReweightParameterMaker *fParMaker;
@@ -90,10 +88,7 @@ private:
   int p_nElasticScatters; //!< Variables for by-particle output tree
   std::vector<double> p_weight; //!< Variables for by-particle output tree
 
-
   // **IF** I understand correctly, then after commit 11077f2 (el_weight*inel_weight) is returned by GetWeight()
-  //std::vector<double> p_inel_weight; //!< Variables for by-particle output tree
-  //std::vector<double> p_elastic_weight; //!< Variables for by-particle output
 
   bool fDebug; //!< print debug statements
 
@@ -108,7 +103,6 @@ void Geant4WeightCalc::Configure(fhicl::ParameterSet const& p,
 
   // Get configuration for this function
   fhicl::ParameterSet const& pset = p.get<fhicl::ParameterSet>(GetName());
-  // std::cout << pset.GetName() << std::endl;
   fMCParticleProducer = pset.get<std::string>("MCParticleProducer", "largeant");
   fMCTruthProducer = pset.get<std::string>("MCTruthProducer", "generator");
   fMakeOutputTrees = pset.get< bool >( "makeoutputtree", false );
@@ -144,8 +138,6 @@ void Geant4WeightCalc::Configure(fhicl::ParameterSet const& p,
     fOutTree_Particle->Branch("pdg_to_reweight",&fPdg);
 
     fOutTree_Particle->Branch("weight",&p_weight);
-    //fOutTree_Particle->Branch("inelastic_weight",&p_inel_weight);
-    //fOutTree_Particle->Branch("elastic_weight",&p_elastic_weight);
     fOutTree_Particle->Branch("track_length",&p_track_length);
     fOutTree_Particle->Branch("PDG",&p_PDG);
     fOutTree_Particle->Branch("final_proc",&p_final_proc);
@@ -164,7 +156,6 @@ void Geant4WeightCalc::Configure(fhicl::ParameterSet const& p,
     fOutTree_MCTruth->Branch("UniverseVals", &UniverseVals);
     fOutTree_MCTruth->Branch("pdg_to_reweight",&fPdg);
   }
-
 
   // Read input parameter sets and set up universes
   size_t n_parsets = FitParSets.size();
@@ -193,29 +184,7 @@ void Geant4WeightCalc::Configure(fhicl::ParameterSet const& p,
     fParameterSet.AddParameter(theName, theSigma);
   }
 
-  //DEPRECATED
-  if (mode=="pm1sigma"){
-    // pm1sigma mode: 0 = +1sigma, 1 = -1sigma of a single parameter. All other parameters at nominal
-    for (size_t i_parset=0; i_parset<n_parsets; ++i_parset){
-      // For each parameter, first create a nominal parameter set (one for +1sigma and one for -1sigma)
-      std::map<std::string, double> tmp_vals_p1sigma(theNominals);
-      std::map<std::string, double> tmp_vals_m1sigma(theNominals);
-      // Now reset the +1sigma and -1sigma values for this parameter set only
-      tmp_vals_p1sigma[FitParNames.at(i_parset)] = FitParNominals.at(i_parset)+FitParSigmas.at(i_parset);
-      tmp_vals_m1sigma[FitParNames.at(i_parset)] = FitParNominals.at(i_parset)-FitParSigmas.at(i_parset);
-
-      if (fDebug){
-        std::cout << "Universe " << i_parset*2 << ": " << FitParNames.at(i_parset) << " = " << FitParNominals.at(i_parset)+FitParSigmas.at(i_parset) << std::endl;
-        std::cout << "Universe " << i_parset*2+1 << ": " << FitParNames.at(i_parset) << " = " << FitParNominals.at(i_parset)-FitParSigmas.at(i_parset) << std::endl;
-      }
-
-      // Finally, add these universes into the vector
-      UniverseVals.push_back(tmp_vals_p1sigma);
-      UniverseVals.push_back(tmp_vals_m1sigma);
-    } // end loop over parsets (i)
-  } // pm1sigma
-
-  else if (mode=="multisim"){
+  if (mode=="multisim"){
     // multisim mode: parameter values sample within the given uncertainty for all parameters simultaneously
     // Loop over universes j
     for (unsigned j=0; j<fNsims; j++){
@@ -230,7 +199,7 @@ void Geant4WeightCalc::Configure(fhicl::ParameterSet const& p,
     } // loop over Nsims (j)
   } // multisim
 
-  if (mode=="multisigma"){
+  else if (mode=="multisigma"){
     // pm1sigma mode: 0 = +1sigma, 1 = -1sigma of a single parameter. All other parameters at nominal
     for (size_t i_parset=0; i_parset<n_parsets; ++i_parset){
       for ( int i_sigma = -1*fNsigmas; i_sigma < int(fNsigmas+1); i_sigma++ ) {
@@ -279,10 +248,6 @@ std::vector<float> Geant4WeightCalc::GetWeight(art::Event& e, size_t itruth ) {
     // Reset things to be saved in the output tree for fast validation
     p_weight.clear();
     p_weight.resize(fNsims,1.0);
-    //p_inel_weight.clear();
-    //p_inel_weight.resize(fNsims,1.0);
-    //p_elastic_weight.clear();
-    //p_elastic_weight.resize(fNsims,1.0);
     p_track_length=-9999;
     p_PDG=-9999;
     p_final_proc="dummy";
@@ -384,16 +349,12 @@ std::vector<float> Geant4WeightCalc::GetWeight(art::Event& e, size_t itruth ) {
       p_nElasticScatters = elastic_indices.size();
       for( size_t istep = 1; istep < nSteps; ++istep ){
 
-        // if( istep == trajpoint_PX.size() - 1 && std::find( elastic_indices.begin(), elastic_indices.end(), j ) != elastic_indices.end() )
-        //   std::cout << "Warning: last step an elastic process" << std::endl;
-
         std::string proc = "default";
         if( istep == trajpoint_PX.size() - 1 )
           proc = EndProcess;
         else if( std::find( elastic_indices.begin(), elastic_indices.end(), istep ) != elastic_indices.end() ){
           proc = "hadElastic";
         }
-
 
         double deltaX = ( trajpoint_X.at(istep) - trajpoint_X.at(istep-1) );
         double deltaY = ( trajpoint_Y.at(istep) - trajpoint_Y.at(istep-1) );
@@ -460,7 +421,7 @@ std::vector<float> Geant4WeightCalc::GetWeight(art::Event& e, size_t itruth ) {
 
       // Loop through universes (j)
       for (size_t j=0; j<weight.size(); j++) {
-        float w/*, el_w*/;
+        float w;
 
         // I think this is the only bit that needs to change for different universes -- all the above is jut about the track, which doesn't change based on universe
         fParMaker->SetNewVals(UniverseVals.at(j));
@@ -474,37 +435,10 @@ std::vector<float> Geant4WeightCalc::GetWeight(art::Event& e, size_t itruth ) {
         // just for the output tree
         p_weight[j] = w;
 
-/*
-        // Do the same for elastic weight (should be 1 unless set to non-nominal )
-        el_w = fReweighter->GetElasticWeight( &theTraj );
-        weight[j] *= std::max((float)0.0,el_w);
-
-        // just for the output tree
-        p_inel_weight[j] = w;
-        p_elastic_weight[j] = el_w;
-
-        if (fDebug){
-          std::cout << "  Universe " << j << ": ";
-          // std::cout << UniverseVals.at(j) << std::endl;
-          std::cout << "    w = " << w << ", el_w = " << el_w << std::endl;
-        }
-*/
-
       } // loop through universes (j)
 
       if (fDebug){
         std::cout << "PDG = " << p_PDG << std::endl;
-/*
-        std::cout << "inel weights by particle: ";
-        for (unsigned int j=0; j<weight.size(); j++){
-          std::cout << p_inel_weight[j] << ", ";
-        }
-        std::cout << std::endl;
-        std::cout << "elastic weights by particle: ";
-        for (unsigned int j=0; j<weight.size(); j++){
-          std::cout << p_elastic_weight[j] << ", ";
-        }
-*/
         std::cout << "weights by particle: ";
         for (unsigned int j=0; j<weight.size(); j++){
           std::cout << p_weight[j] << ", ";
