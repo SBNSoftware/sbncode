@@ -810,6 +810,8 @@ namespace caf
     const std::vector<float> &dedx = calo.dEdx();
     const std::vector<float> &pitch = calo.TrkPitchVec();
     const std::vector<float> &rr = calo.ResidualRange();
+    const std::vector<float> &efield = calo.Efield();
+    const std::vector<float> &phi = calo.Phi();
     const std::vector<geo::Point_t> &xyz = calo.XYZ();
     const std::vector<size_t> &tps = calo.TpIndices();
 
@@ -831,6 +833,8 @@ namespace caf
         p.dqdx = dqdx[i];
         p.dedx = dedx[i];
         p.pitch = pitch[i];
+        p.efield = efield[i];
+        p.phi = phi[i];
         p.x = xyz[i].x();
         p.y = xyz[i].y();
         p.z = xyz[i].z();
