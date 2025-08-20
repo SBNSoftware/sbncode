@@ -441,68 +441,68 @@ namespace caf
       Atom<string> DiffStraightLineMeanName {
         Name("DiffStraightLineMeanName"),
         Comment("Provide the tool name for the DiffStraightLineMean BDT variable."),
-        "LArThreeDChargeFeatureTool_DiffStraightLineMean"
+        "LArThreeDLinearFitFeatureTool_DiffStraightLineMean"
       };
 
       Atom<string> LengthName {
         Name("LengthName"),
         Comment("Provide the tool name for the Length BDT variable."),
-        "LArThreeDChargeFeatureTool_Length"
+        "LArThreeDLinearFitFeatureTool_Length"
       };
 
       Atom<string> MaxFitGapLengthName {
         Name("MaxFitGapLengthName"),
         Comment("Provide the tool name for the MaxFitGapLength BDT variable."),
-        "LArThreeDChargeFeatureTool_MaxFitGapLength"
+        "LArThreeDLinearFitFeatureTool_MaxFitGapLength"
       };
 
       Atom<string> SlidingLinearFitRMSName {
         Name("SlidingLinearFitRMSName"),
         Comment("Provide the tool name for the SlidingLinearFitRMS BDT variable."),
-        "LArThreeDChargeFeatureTool_SlidingLinearFitRMS"
+        "LArThreeDLinearFitFeatureTool_SlidingLinearFitRMS"
       };
 
       Atom<string> AngleDiffName {
         Name("AngleDiffName"),
         Comment("Provide the tool name for the AngleDiff BDT variable."),
-        "LArThreeDChargeFeatureTool_AngleDiff"
+        "LArThreeDOpeningAngleFeatureTool_AngleDiff"
       };
 
       Atom<string> SecondaryPCARatioName {
         Name("SecondaryPCARatioName"),
         Comment("Provide the tool name for the SecondaryPCARatio BDT variable."),
-        "LArThreeDChargeFeatureTool_SecondaryPCARatio"
+        "LArThreeDPCAFeatureTool_SecondaryPCARatio"
       };
 
       Atom<string> TertiaryPCARatioName {
         Name("TertiaryPCARatioName"),
         Comment("Provide the tool name for the TertiaryPCARatio BDT variable."),
-        "LArThreeDChargeFeatureTool_TertiaryPCARatio"
+        "LArThreeDPCAFeatureTool_TertiaryPCARatio"
       };
 
       Atom<string> VertexDistanceName {
         Name("VertexDistanceName"),
         Comment("Provide the tool name for the VertexDistance BDT variable."),
-        "LArThreeDChargeFeatureTool_VertexDistanceName"
+        "LArThreeDVertexDistanceFeatureTool_VertexDistance"
       };
 
       Atom<string> HaloTotalRatioName {
         Name("HaloTotalRatioName"),
         Comment("Provide the tool name for the HaloTotalRatio BDT variable."),
-        "LArThreeDChargeFeatureTool_HaloTotalRatioName"
+        "LArConeChargeFeatureTool_HaloTotalRatio"
       };
 
       Atom<string> ConcentrationName {
         Name("ConcentrationName"),
         Comment("Provide the tool name for the Concentration BDT variable."),
-        "LArThreeDChargeFeatureTool_Concentration"
+        "LArConeChargeFeatureTool_Concentration"
 
       };
 
       Atom<string> ConicalnessName {
         Name("ConicalnessName"),
         Comment("Provide the tool name for the Conicalness BDT variable."),
-        "LArThreeDChargeFeatureTool_Conicalness"
+        "LArConeChargeFeatureTool_Conicalness"
       };
     };
 
