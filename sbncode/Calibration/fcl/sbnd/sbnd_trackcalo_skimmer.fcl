@@ -59,7 +59,7 @@ stopping_selection: {
   CheckFiducialX: false
 }
 
-exiting_selection: {
+throughgoing_selection: {
   tool_type: TrackCaloSkimmerSelectStoppingTrack
   Invert: true
   PreScale: 1
@@ -82,18 +82,7 @@ a2c_selection: {
   TickCut: 2500
 }
 
-throughgoing_selection: {
-  tool_type: TrackCaloSkimmerSelectThroughgoingTrack
-  FVInsetMinX: 5
-  FVInsetMaxX: 5
-  FVInsetMinY: 5
-  FVInsetMaxY: 5
-  FVInsetMinZ: 5
-  FVInsetMaxZ: 5
-  CheckFiducialX: false
-}
-
 caloskim_nodigits_goldentracks: @local::caloskim_nodigits
-caloskim_nodigits_goldentracks.SelectionTools: [ @local::stopping_selection, @local::a2c_selection, @local::exiting_selection ]
+caloskim_nodigits_goldentracks.SelectionTools: [ @local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection ]
 
 END_PROLOG
