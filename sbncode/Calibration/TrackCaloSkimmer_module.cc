@@ -414,18 +414,18 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
     else if (hasPFPT0) whicht0 = 0;
     else if (hasCRTTrackT0)
       {
-	whicht0 = 1;
-	crtMatchingScore = t0CRTTrackScore;
+        whicht0 = 1;
+        crtMatchingScore = t0CRTTrackScore;
       }
     else if (hasCRTHitT0)
       {
-	whicht0 = 2;
-	crtMatchingScore = t0CRTHitScore;
+        whicht0 = 2;
+        crtMatchingScore = t0CRTHitScore;
       }
     else if (hasCRTSpacePointT0)
       {
-	whicht0 = 3;
-	crtMatchingScore = t0CRTSpacePointScore;
+        whicht0 = 3;
+        crtMatchingScore = t0CRTSpacePointScore;
       }
 
     T0TimingInfo thisTrackTimingInfo = {t0PFP, t0CRTTrack, t0CRTHit, t0CRTSpacePoint, hasPFPT0, hasCRTTrackT0, hasCRTHitT0, hasCRTSpacePointT0, crtMatchingScore};
@@ -1186,26 +1186,26 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
       const double driftv(dprop.DriftVelocity(dprop.Efield(), dprop.Temperature()));
 
       if(t0Info.hasT0CRTTrack)
-	{
-	  const double xshift = driftDir*driftv*t0Info.t0CRTTrack*1e-3;
-	  fTrack->start.x = track.Start().X() + xshift;
-	  fTrack->end.x = track.End().X() + xshift;
-	  fTrack->xShiftCRT = xshift;
-	}
+        {
+          const double xshift = driftDir*driftv*t0Info.t0CRTTrack*1e-3;
+          fTrack->start.x = track.Start().X() + xshift;
+          fTrack->end.x = track.End().X() + xshift;
+          fTrack->xShiftCRT = xshift;
+        }
       else if(t0Info.hasT0CRTHit)
-	{
-	  const double xshift = driftDir*driftv*t0Info.t0CRTHit*1e-3;
-	  fTrack->start.x = track.Start().X() + xshift;
-	  fTrack->end.x = track.End().X() + xshift;
-	  fTrack->xShiftCRT = xshift;
-	}
+        {
+          const double xshift = driftDir*driftv*t0Info.t0CRTHit*1e-3;
+          fTrack->start.x = track.Start().X() + xshift;
+          fTrack->end.x = track.End().X() + xshift;
+          fTrack->xShiftCRT = xshift;
+        }
       else if(t0Info.hasT0CRTSpacePoint)
-	{
-	  const double xshift = driftDir*driftv*t0Info.t0CRTSpacePoint*1e-3;
-	  fTrack->start.x = track.Start().X() + xshift;
-	  fTrack->end.x = track.End().X() + xshift;
-	  fTrack->xShiftCRT = xshift;
-	}
+        {
+          const double xshift = driftDir*driftv*t0Info.t0CRTSpacePoint*1e-3;
+          fTrack->start.x = track.Start().X() + xshift;
+          fTrack->end.x = track.End().X() + xshift;
+          fTrack->xShiftCRT = xshift;
+        }
     }
 
   if (hits.size() > 0) {
@@ -1468,11 +1468,11 @@ sbn::TrackHitInfo sbn::TrackCaloSkimmer::MakeHit(const recob::Hit &hit,
       double time = std::numeric_limits<float>::signaling_NaN();
 
       if(t0Info.hasT0CRTTrack)
-	time = t0Info.t0CRTTrack*1e-3;
+        time = t0Info.t0CRTTrack*1e-3;
       else if(t0Info.hasT0CRTHit)
-	time = t0Info.t0CRTHit*1e-3;
+        time = t0Info.t0CRTHit*1e-3;
       else if(t0Info.hasT0CRTSpacePoint)
-	time = t0Info.t0CRTSpacePoint*1e-3;
+        time = t0Info.t0CRTSpacePoint*1e-3;
 
       double anodeDistance = (hit.PeakTime()-dclock.Time2Tick(dclock.TriggerTime())-time/dclock.TPCClock().TickPeriod())*dclock.TPCClock().TickPeriod()*driftv;
       double wirePlaneX = wireReadout->Plane(geo::PlaneID(hit.WireID().Cryostat, hit.WireID().TPC, hit.WireID().Plane)).GetCenter().X();
