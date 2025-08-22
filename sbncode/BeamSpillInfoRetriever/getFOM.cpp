@@ -81,11 +81,12 @@ namespace sbn {
     else
       return -1;
         
-    
-    //when creating ntuples for pot counting script the variables are filled with -999
-    //this could create a difference when passing events with FOM>1 since
-    //events with missing BPM data would get FOM=2, while events with BPM set to -999 will get FOM=0
-    //bad or missing MWR data gets FOM 4 in either case
+    /**
+    * @brief when creating ntuples for pot counting script the variables are filled with -999
+    * this could create a difference when passing events with FOM>1 since
+    * events with missing BPM data would get FOM=2, while events with BPM set to -999 will get FOM=0
+    * bad or missing MWR data gets FOM 4 in either case
+	*/
     if (hptg2.empty()) hptg2.push_back(-999);
     if (hptg1.empty()) hptg1.push_back(-999);
     if (hp875.empty()) hp875.push_back(-999);
