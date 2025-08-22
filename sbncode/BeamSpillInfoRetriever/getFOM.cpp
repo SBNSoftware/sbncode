@@ -208,12 +208,11 @@ namespace sbn {
       hProf->SetBinError(i+1,error);
     }
     if (hProf->GetSumOfWeights()>0) {
-      TFitResultPtr fitPtr = hProf->Fit("gaus","QN","",-12+first_x*0.5,-12+last_x*0.5);
-      TFitResult* fit = fitPtr.Get();
+      TFitResultPtr const fit = hProf->Fit("gaus","QNS","",-12+first_x*0.5,-12+last_x*0.5);
       x   = fit->Parameter(1);
       sx  = fit->Parameter(2);
       chi2= fit->Chi2() / fit->Ndf();
-      
+      delete hProf;      
     } else {
       x=99999;
       sx=99999;
