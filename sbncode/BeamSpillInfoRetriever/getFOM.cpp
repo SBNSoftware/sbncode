@@ -5,7 +5,7 @@
  */
 #include "sbncode/BeamSpillInfoRetriever/getFOM.h"
 #include <math.h>
-#include "TH1D.H"
+#include "TH1D.h"
 #include "TFitResult.h"
 #include <vector>
 
