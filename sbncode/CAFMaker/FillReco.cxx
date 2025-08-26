@@ -158,6 +158,7 @@ namespace caf
                         caf::SRSBNDTimingInfo &srsbndtiming,
                         bool allowEmpty)
   {
+    srsbndtiming.rawDAQHeaderTimestamp = timing.rawDAQHeaderTimestamp;
     srsbndtiming.tdcCrtt1 = timing.tdcCrtt1;
     srsbndtiming.tdcBes = timing.tdcBes;
     srsbndtiming.tdcRwm = timing.tdcRwm;

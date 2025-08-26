@@ -1641,8 +1641,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   std::vector<caf::SRCRTTrack> srcrttracks;
   std::vector<caf::SRCRTSpacePoint> srcrtspacepoints;
   std::vector<caf::SRSBNDCRTTrack> srsbndcrttracks;
-  std::vector<caf::SRSBNDFrameShiftInfo> srsbndframeshiftinfo;
-  std::vector<caf::SRSBNDTimingInfo> srsbndtiminginfo;
+  caf::SRSBNDFrameShiftInfo srsbndframeshiftinfo;
+  caf::SRSBNDTimingInfo srsbndtiminginfo;
 
   if(fDet == kICARUS)
     {
@@ -1691,29 +1691,22 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           FillSBNDCRTTrack(sbndcrttracks[i], srsbndcrttracks.back());
         }
       }
-
-      art::Handle<std::vector<raw::FrameShiftInfo>> sbndframeshiftinfo_handle;
+    
+      art::Handle<raw::FrameShiftInfo> sbndframeshiftinfo_handle;
       GetByLabelStrict(evt, fParams.SBNDFrameShiftInfoLabel(), sbndframeshiftinfo_handle);
       // fill into event
       if (sbndframeshiftinfo_handle.isValid()) {
-        const std::vector<raw::FrameShiftInfo> &sbndframeshiftinfo = *sbndframeshiftinfo_handle;
-        for (unsigned i = 0; i < sbndframeshiftinfo.size(); i++) {
-          srsbndframeshiftinfo.emplace_back();
-          FillSBNDFrameShiftInfo(sbndframeshiftinfo[i], srsbndframeshiftinfo.back());
-        }
+        raw::FrameShiftInfo const& sbndframeshiftinfo(*sbndframeshiftinfo_handle);
+        FillSBNDFrameShiftInfo(sbndframeshiftinfo, srsbndframeshiftinfo);
       }
 
-      art::Handle<std::vector<raw::TimingInfo>> sbndtiminginfo_handle;
+      art::Handle<raw::TimingInfo> sbndtiminginfo_handle;
       GetByLabelStrict(evt, fParams.SBNDTimingInfoLabel(), sbndtiminginfo_handle);
       // fill into event
       if (sbndtiminginfo_handle.isValid()) {
-        const std::vector<raw::TimingInfo> &sbndtiminginfo = *sbndtiminginfo_handle;
-        for (unsigned i = 0; i < sbndtiminginfo.size(); i++) {
-          srsbndtiminginfo.emplace_back();
-          FillSBNDTimingInfo(sbndtiminginfo[i], srsbndtiminginfo.back());
-        }
+        raw::TimingInfo const& sbndtiminginfo(*sbndtiminginfo_handle);
+        FillSBNDTimingInfo(sbndtiminginfo, srsbndtiminginfo);
       }
-
     }
 
   // Get all of the CRTPMT Matches
@@ -2421,9 +2414,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.opflashes        = srflashes;
   rec.nopflashes       = srflashes.size();
   rec.sbnd_frames      = srsbndframeshiftinfo;
-  rec.nsbnd_frames     = srsbndframeshiftinfo.size();
   rec.sbnd_timings      = srsbndtiminginfo;
-  rec.nsbnd_timings     = srsbndtiminginfo.size();
 
   if (fParams.FillTrueParticles()) {
     rec.true_particles  = true_particles;
@@ -2465,24 +2456,17 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   // TODO: TPC?
   
-  // SBND: Fix the Reference time (See docdb# ????? and FrameShift module on sbndcode repo)
-  
+  // SBND: Fix the Reference time in data depending on the stream (See FrameShift module on sbndcode repo)
   if (isRealData & (fDet == kSBND))
   {
-    mf::LogInfo("CAFMaker") << "Setting Reference Timing for timing object in SBND" ;
+    mf::LogInfo("CAFMaker") << "Setting Reference Timing for timing object in SBND \n"
+                            << "    Shift Apply At Caf Level = " << rec.sbnd_frames.frameApplyAtCaf << " ns\n";
+    
+    //shift reference frame for CRT objects: crt trk, crt sp, crt sp match, crt trk match
+    SBNDShiftCRTReference(rec, rec.sbnd_frames.frameApplyAtCaf);
 
-    //Should only be 1 set of frame per event, if not, something is really wrong and nothing should be corrected
-    if (rec.nsbnd_frames == 1)
-    {   
-        SRSBNDFrameShiftInfo frame = rec.sbnd_frames.at(0);
-        
-        //shift reference frame for CRT objects: crt trk, crt sp, crt sp match, crt trk match
-        SBNDShiftCRTReference(rec, frame.frameApplyAtCaf);
-
-        //shift reference frame for PMT objects: opflash, opt0
-        SBNDShiftPMTReference(rec, frame.frameApplyAtCaf);
-    }
-
+    //shift reference frame for PMT objects: opflash, opt0
+    SBNDShiftPMTReference(rec, rec.sbnd_frames.frameApplyAtCaf);
   }
 
   // Get metadata information for header

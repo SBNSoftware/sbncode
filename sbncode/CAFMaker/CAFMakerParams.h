@@ -341,7 +341,7 @@ namespace caf
     Atom<string> SBNDFrameShiftInfoLabel {
       Name("SBNDFrameShiftInfoLabel"),
       Comment("Label of sbnd frame shift."),
-      "framshift" // sbnd
+      "frameshift" // sbnd
     };
 
     Atom<string> SBNDTimingInfoLabel {
