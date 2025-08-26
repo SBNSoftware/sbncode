@@ -782,7 +782,8 @@ namespace caf
 
         // lookup the wire -- the Calorimery object makes this
         // __way__ harder than it should be
-        for (const art::Ptr<recob::Hit> &h: hits) {
+        for (unsigned i_hit = 0; i_hit < hits.size(); i_hit++) {
+          const art::Ptr<recob::Hit> &h = hits[i_hit];
           if (h.key() == tps[i]) {
             p.wire = h->WireID().Wire;
             p.tpc = h->WireID().TPC;
@@ -799,7 +800,7 @@ namespace caf
             // Get the trajectory point index from this hit. Again -- this is too hard. 
             //
             // Use this to get the (SCE corrected) efield and the angle to the drift direction
-            unsigned traj_point_index = thms.at(h.key())->Index();
+            unsigned traj_point_index = thms.at(i_hit)->Index();
             unsigned int int_max_as_unsigned_int{std::numeric_limits<int>::max()};
             if (traj_point_index != int_max_as_unsigned_int && // invalid
                 track.HasValidPoint(traj_point_index)) {
