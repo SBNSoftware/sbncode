@@ -316,6 +316,9 @@ class CAFMaker : public art::EDProducer {
   void FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_time);
   void FixCRTReferenceTimes(StandardRecord &rec, double CRTT0_reference_time, double CRTT1_reference_time);
 
+  void SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame);
+  void SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame);
+
   /// Equivalent of FindManyP except a return that is !isValid() prints a
   /// messsage and aborts if StrictMode is true.
   template <class T, class U>
@@ -496,6 +499,41 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
 	}
       }
     }
+  }
+}
+
+void CAFMaker::SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame){
+
+  //CRT Space Point
+  for (SRCRTSpacePoint &sp: rec.crt_spacepoints){
+    sp.time += SBNDFrame; //ns
+  }
+  
+  //CRT Track
+  for (SRSBNDCRTTrack &trk: rec.sbnd_crt_tracks){
+    trk.time += SBNDFrame; //ns
+  }
+
+  //CRT Space Point and Track Match
+  for (SRPFP &pfp: rec.reco.pfp) {
+    pfp.trk.crtspacepoint.spacepoint.time += SBNDFrame;
+    pfp.trk.crtsbndtrack.track.time += SBNDFrame;
+  }
+}
+
+void CAFMaker::SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame){
+
+  double SBNDFrame_us = SBNDFrame / 1000.0; //convert ns to us
+
+  //Op Flash
+  for (SROpFlash &opf: rec.opflashes) {
+    opf.time += SBNDFrame_us;
+    opf.firsttime += SBNDFrame_us;
+  }
+  
+  //OpT0 match to slice
+  for (SRSlice &s: rec.slc) {
+    s.opt0.time += SBNDFrame_us;
   }
 }
 
@@ -2382,6 +2420,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.nsbnd_crt_tracks = srsbndcrttracks.size();
   rec.opflashes        = srflashes;
   rec.nopflashes       = srflashes.size();
+  rec.sbnd_frames      = srsbndframeshiftinfo;
+  rec.nsbnd_frames     = srsbndframeshiftinfo.size();
+  rec.sbnd_timings      = srsbndtiminginfo;
+  rec.nsbnd_timings     = srsbndtiminginfo.size();
+
   if (fParams.FillTrueParticles()) {
     rec.true_particles  = true_particles;
   }
@@ -2389,7 +2432,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.crtpmt_matches = srcrtpmtmatches;
   rec.ncrtpmt_matches = srcrtpmtmatches.size();
 
-  // Fix the Reference time
+  // ICARUS: Fix the Reference time
   //
   // We want MC and Data to have the same reference time.
   // In MC/LArSoft the "reference time" is canonically defined
@@ -2421,6 +2464,26 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   FixPMTReferenceTimes(rec, PMT_reference_time);
 
   // TODO: TPC?
+  
+  // SBND: Fix the Reference time (See docdb# ????? and FrameShift module on sbndcode repo)
+  
+  if (isRealData & (fDet == kSBND))
+  {
+    mf::LogInfo("CAFMaker") << "Setting Reference Timing for timing object in SBND" ;
+
+    //Should only be 1 set of frame per event, if not, something is really wrong and nothing should be corrected
+    if (rec.nsbnd_frames == 1)
+    {   
+        SRSBNDFrameShiftInfo frame = rec.sbnd_frames.at(0);
+        
+        //shift reference frame for CRT objects: crt trk, crt sp, crt sp match, crt trk match
+        SBNDShiftCRTReference(rec, frame.frameApplyAtCaf);
+
+        //shift reference frame for PMT objects: opflash, opt0
+        SBNDShiftPMTReference(rec, frame.frameApplyAtCaf);
+    }
+
+  }
 
   // Get metadata information for header
   unsigned int run = evt.run();

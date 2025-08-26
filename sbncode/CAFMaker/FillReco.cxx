@@ -145,12 +145,13 @@ namespace caf
                         caf::SRSBNDFrameShiftInfo &srsbndframe,
                         bool allowEmpty)
   {
+    srsbndframe.timingType = frame.timingType;
     srsbndframe.frameTdcCrtt1 = frame.frameTdcCrtt1;
     srsbndframe.frameTdcBes = frame.frameTdcBes;
     srsbndframe.frameTdcRwm = frame.frameTdcRwm;
     srsbndframe.frameHltCrtt1 = frame.frameHltCrtt1;
     srsbndframe.frameHltBeamGate = frame.frameHltBeamGate;
-    srsbndframe.frameDataToMC = frame.frameDataToMC;
+    srsbndframe.frameApplyAtCaf = frame.frameApplyAtCaf;
   }
 
   void FillSBNDTimingInfo(const raw::TimingInfo &timing,
