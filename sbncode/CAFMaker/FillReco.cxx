@@ -10,6 +10,10 @@
 #include "FillReco.h"
 #include "RecoUtils/RecoUtils.h"
 
+#include "larevt/SpaceCharge/SpaceCharge.h"
+#include "larevt/SpaceChargeServices/SpaceChargeService.h"
+#include "larcore/CoreUtils/ServiceUtil.h"
+
 namespace caf
 {
   const float ng_filter_cut = 0.5;
@@ -794,8 +798,28 @@ namespace caf
     }
   }
 
+  // Helper function: get the e field
+  double GetEfield(const detinfo::DetectorPropertiesData& dprop, const geo::Point_t loc) {
+    auto const* sce = lar::providerFrom<spacecharge::SpaceChargeService>();
+
+    double EField = dprop.Efield();
+    if (sce->EnableSimEfieldSCE()) {
+      // Gets relative E field Distortions
+      geo::Vector_t EFieldOffsets = sce->GetEfieldOffsets(loc);
+      // Add 1 in X direction as this is the direction of the drift field
+      EFieldOffsets = EFieldOffsets + geo::Vector_t{1, 0, 0};
+      // Convert to Absolute E Field from relative
+      EFieldOffsets = EField * EFieldOffsets;
+      // We only care about the magnitude for recombination
+      EField = EFieldOffsets.r();
+    }
+    return EField;
+  }
+
   void FillTrackPlaneCalo(const anab::Calorimetry &calo, 
+        const recob::Track& track,
         const std::vector<art::Ptr<recob::Hit>> &hits,
+        const std::vector<const recob::TrackHitMeta*>& thms,
         bool fill_calo_points, float fillhit_rrstart, float fillhit_rrend, 
         const detinfo::DetectorPropertiesData &dprop,
         caf::SRTrackCalo &srcalo) {
@@ -832,7 +856,8 @@ namespace caf
 
         // lookup the wire -- the Calorimery object makes this
         // __way__ harder than it should be
-        for (const art::Ptr<recob::Hit> &h: hits) {
+        for (unsigned i_hit = 0; i_hit < hits.size(); i_hit++) {
+          const art::Ptr<recob::Hit> &h = hits[i_hit];
           if (h.key() == tps[i]) {
             p.wire = h->WireID().Wire;
             p.tpc = h->WireID().TPC;
@@ -844,6 +869,22 @@ namespace caf
             p.mult = h->Multiplicity();
             p.start = h->StartTick();
             p.end = h->EndTick();
+
+
+            // Get the trajectory point index from this hit. Again -- this is too hard. 
+            //
+            // Use this to get the (SCE corrected) efield and the angle to the drift direction
+            unsigned traj_point_index = thms.at(i_hit)->Index();
+            unsigned int int_max_as_unsigned_int{std::numeric_limits<int>::max()};
+            if (traj_point_index != int_max_as_unsigned_int && // invalid
+                track.HasValidPoint(traj_point_index)) {
+              float costh_drift = track.DirectionAtPoint(traj_point_index).X();
+              // p.costh_drift = costh_drift;
+              float efield = GetEfield(dprop, track.LocationAtPoint(traj_point_index));
+              // p.efield = efield;
+              (void) costh_drift;
+              (void) efield;
+            }
           }
         }
 
@@ -897,7 +938,9 @@ namespace caf
   }
 
   void FillTrackCalo(const std::vector<art::Ptr<anab::Calorimetry>> &calos,
+                     const recob::Track& track,
                      const std::vector<art::Ptr<recob::Hit>> &hits,
+                     const std::vector<const recob::TrackHitMeta*>& thms,
                      bool fill_calo_points, float fillhit_rrstart, float fillhit_rrend,
                      const detinfo::DetectorPropertiesData &dprop,
                      caf::SRTrack& srtrack,
@@ -912,7 +955,7 @@ namespace caf
       if (calo.PlaneID()) {
         unsigned plane_id = calo.PlaneID().Plane;
         assert(plane_id < 3);
-        FillTrackPlaneCalo(calo, hits, fill_calo_points, fillhit_rrstart, fillhit_rrend, dprop, srtrack.calo[plane_id]);
+        FillTrackPlaneCalo(calo, track, hits, thms, fill_calo_points, fillhit_rrstart, fillhit_rrend, dprop, srtrack.calo[plane_id]);
       }
     }
 
