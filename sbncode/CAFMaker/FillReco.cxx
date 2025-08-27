@@ -879,11 +879,10 @@ namespace caf
             if (traj_point_index != int_max_as_unsigned_int && // invalid
                 track.HasValidPoint(traj_point_index)) {
               float costh_drift = track.DirectionAtPoint(traj_point_index).X();
-              // p.costh_drift = costh_drift;
+	      float phi  = acos(abs(costh_drift)) * 180. / M_PI;
               float efield = GetEfield(dprop, track.LocationAtPoint(traj_point_index));
-              // p.efield = efield;
-              (void) costh_drift;
-              (void) efield;
+	      p.efield = efield;
+	      p.phi = phi;
             }
           }
         }
