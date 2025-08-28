@@ -1089,7 +1089,6 @@ void CAFMaker::InitializeOutfiles()
 
   }     
 
-
   if(fParams.CreateFlatCAF()){
     mf::LogInfo("CAFMaker") << "Output flat filename is " << fFlatCafFilename;
 
@@ -1725,6 +1724,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   std::vector<caf::SROpFlash> srflashes;
   if(fDet == kICARUS)
   {
+    //Get all of the special PMT Beam Signals (to use as an opFlash reference time below)
+    art::Handle<std::vector<sbn::timing::PMTBeamSignal>> PMTBeamSignal_handle;
+    GetByLabelIfExists(evt, fParams.PMTBeamSignalLabel(), PMTBeamSignal_handle);
+  
     for (const std::string& pandora_tag_suffix : pandora_tag_suffixes) {
       art::Handle<std::vector<recob::OpFlash>> flashes_handle;
       GetByLabelStrict(evt, fParams.OpFlashLabel() + pandora_tag_suffix, flashes_handle);
@@ -1732,7 +1735,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       if (flashes_handle.isValid()) {
         const std::vector<recob::OpFlash> &opflashes = *flashes_handle;
         int cryostat = ( pandora_tag_suffix.find("W") != std::string::npos ) ? 1 : 0;
-
+        
         // get associated OpHits for each OpFlash
         art::FindMany<recob::OpHit> findManyHits(flashes_handle, evt, fParams.OpFlashLabel() + pandora_tag_suffix);
 
@@ -1742,7 +1745,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           std::vector<recob::OpHit const*> const& ophits = findManyHits.at(iflash);
 
           srflashes.emplace_back();
-          FillICARUSOpFlash(flash, ophits, cryostat, srflashes.back());
+          if(PMTBeamSignal_handle.isValid() && isRealData){
+            const std::vector<sbn::timing::PMTBeamSignal> &pmtbeamsignals = *PMTBeamSignal_handle;
+            FillICARUSOpFlash(flash, ophits, cryostat, pmtbeamsignals, srflashes.back());
+          }
+          else{
+            const std::vector<sbn::timing::PMTBeamSignal> pmtbeamsignals;
+            FillICARUSOpFlash(flash, ophits, cryostat, pmtbeamsignals, srflashes.back());
+          }
           iflash++;
         }
       }

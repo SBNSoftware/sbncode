@@ -386,6 +386,12 @@ namespace caf
       "OpFlash"
     };
 
+    Atom<string> PMTBeamSignalLabel {
+      Name("PMTBeamSignalLabel"),
+      Comment("Label for special PMT beam timing signals used to build the beam bunch structure"),
+      "beamTiming:RWM"
+    };
+
     Atom<long long> CRTSimT0Offset {
       Name("CRTSimT0Offset"),
       Comment("start of beam gate/simulation time in the simulated CRT clock"),
