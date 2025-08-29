@@ -1487,7 +1487,7 @@ caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData,
   art::ServiceHandle<cheat::BackTrackerService> bt_serv;
 
   // this id is the same as the mcparticle ID as long as we got it from geant4
-  std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueReadoutIDEnergyMatches(clockData, hits, true);
+  std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clockData, hits, true);
   float total_energy = CAFRecoUtils::TotalHitEnergy(clockData, hits);
   std::map<int, caf::HitsEnergy> track_hits_map = caf::SetupIDHitEnergyMap(hits, clockData, *bt_serv.get());
 
@@ -1586,7 +1586,7 @@ caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
     ret.index = -1;
     return ret;
   }
-  std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueReadoutIDEnergyMatches(clockData, hits, true);
+  std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clockData, hits, true);
   std::vector<float> matching_energy(truths.size(), 0.);
   for (auto const &pair: matches) {
     art::Ptr<simb::MCTruth> truth;

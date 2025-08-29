@@ -1018,7 +1018,7 @@ void sbn::TrackCaloSkimmer::FillTrackTruth(const detinfo::DetectorClocksData &cl
     const geo::WireReadoutGeom *wireReadout) {
 
   // Lookup the true-particle match -- use utils in CAF
-  std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueReadoutIDEnergyMatches(clock_data, trkHits, true);
+  std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clock_data, trkHits, true);
   float total_energy = CAFRecoUtils::TotalHitEnergy(clock_data, trkHits);
 
   fTrack->truth.depE = total_energy / 1000. /* MeV -> GeV */;
