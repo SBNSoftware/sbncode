@@ -40,10 +40,11 @@ namespace caf
     float totE;
   };
 
+  /// Ioniosation charge (`sim::IDE`) associated to its TPC readout information.
   struct ParticleIDE {
-    geo::WireID wire;
-    unsigned short tick;
-    const sim::IDE *ide;
+    geo::WireID wire; ///< Wire on a given plane closest to the drift path of the charge.
+    unsigned short tick = 0; ///< Time tick at which the charge passes closest to the wire.
+    const sim::IDE *ide = nullptr; ///< Deposited charge information.
   };
 
 

@@ -804,12 +804,12 @@ namespace caf
 
     double EField = dprop.Efield();
     if (sce->EnableSimEfieldSCE()) {
-      // Gets relative E field Distortions
+      // Gets fractional E field distortions w.r.t. the nominal field on x-axis
       geo::Vector_t EFieldOffsets = sce->GetEfieldOffsets(loc);
-      // Add 1 in X direction as this is the direction of the drift field
+      // Add 1 in X direction as this is the direction of the drift field, not caring if it is +x or -x direction, since we only want |E|
       EFieldOffsets = EFieldOffsets + geo::Vector_t{1, 0, 0};
       // Convert to Absolute E Field from relative
-      EFieldOffsets = EField * EFieldOffsets;
+      EFieldOffsets *= EField;
       // We only care about the magnitude for recombination
       EField = EFieldOffsets.r();
     }
@@ -875,14 +875,12 @@ namespace caf
             //
             // Use this to get the (SCE corrected) efield and the angle to the drift direction
             unsigned traj_point_index = thms.at(i_hit)->Index();
-            unsigned int int_max_as_unsigned_int{std::numeric_limits<int>::max()};
-            if (traj_point_index != int_max_as_unsigned_int && // invalid
-                track.HasValidPoint(traj_point_index)) {
+	    if (track.HasValidPoint(traj_point_index)) {
               float costh_drift = track.DirectionAtPoint(traj_point_index).X();
-	      float phi  = acos(abs(costh_drift)) * 180. / M_PI;
+              float phi  = acos(abs(costh_drift)) * 180. / M_PI;
               float efield = GetEfield(dprop, track.LocationAtPoint(traj_point_index));
-	      p.efield = efield;
-	      p.phi = phi;
+              p.efield = efield;
+              p.phi = phi;
             }
           }
         }
