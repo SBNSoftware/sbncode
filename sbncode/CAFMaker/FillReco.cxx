@@ -807,7 +807,7 @@ namespace caf
       // Gets fractional E field distortions w.r.t. the nominal field on x-axis
       geo::Vector_t EFieldOffsets = sce->GetEfieldOffsets(loc);
       // Add 1 in X direction as this is the direction of the drift field, not caring if it is +x or -x direction, since we only want |E|
-      EFieldOffsets = EFieldOffsets + geo::Vector_t{1, 0, 0};
+      EFieldOffsets += geo::Vector_t{1, 0, 0};
       // Convert to Absolute E Field from relative
       EFieldOffsets *= EField;
       // We only care about the magnitude for recombination
