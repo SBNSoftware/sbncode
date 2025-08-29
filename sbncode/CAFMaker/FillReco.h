@@ -42,9 +42,11 @@
 #include "sbnobj/SBND/CRT/CRTTrack.hh"
 #include "sbnobj/Common/CRT/CRTPMTMatching.hh"
 #include "sbnobj/Common/CRT/CRTHitT0TaggingInfo.hh"
+#include "sbnobj/SBND/Timing/TimingInfo.hh"
+#include "sbnobj/SBND/Timing/FrameShiftInfo.hh"
+
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
-#include "sbndcode/Timing/SBNDRawTimingObj.h"
 
 #include "sbnanaobj/StandardRecord/SRSlice.h"
 #include "sbnanaobj/StandardRecord/StandardRecord.h"
@@ -280,11 +282,11 @@ namespace caf
                       caf::SRPFP& srpfp,
                       bool allowEmpty = false);
 
-  void FillSBNDFrameShiftInfo(const raw::FrameShiftInfo &frame,
+  void FillSBNDFrameShiftInfo(const sbnd::timing::FrameShiftInfo &frame,
                         caf::SRSBNDFrameShiftInfo &srsbndframe,
                         bool allowEmpty = false);
 
-  void FillSBNDTimingInfo(const raw::TimingInfo &timing,
+  void FillSBNDTimingInfo(const sbnd::timing::TimingInfo &timing,
                         caf::SRSBNDTimingInfo &srsbndtiming,
                         bool allowEmpty = false);
 

@@ -141,31 +141,31 @@ namespace caf
     srsbndcrttrack.tof      = track.ToF();
   }
 
-  void FillSBNDFrameShiftInfo(const raw::FrameShiftInfo &frame,
+  void FillSBNDFrameShiftInfo(const sbnd::timing::FrameShiftInfo &frame,
                         caf::SRSBNDFrameShiftInfo &srsbndframe,
                         bool allowEmpty)
   {
-    srsbndframe.timingType = frame.timingType;
-    srsbndframe.frameTdcCrtt1 = frame.frameTdcCrtt1;
-    srsbndframe.frameTdcBes = frame.frameTdcBes;
-    srsbndframe.frameTdcRwm = frame.frameTdcRwm;
-    srsbndframe.frameHltCrtt1 = frame.frameHltCrtt1;
-    srsbndframe.frameHltBeamGate = frame.frameHltBeamGate;
-    srsbndframe.frameApplyAtCaf = frame.frameApplyAtCaf;
+    srsbndframe.timingType = frame.TimingType();
+    srsbndframe.frameTdcCrtt1 = frame.FrameTdcCrtt1();
+    srsbndframe.frameTdcBes = frame.FrameTdcBes();
+    srsbndframe.frameTdcRwm = frame.FrameTdcRwm();
+    srsbndframe.frameHltCrtt1 = frame.FrameHltCrtt1();
+    srsbndframe.frameHltBeamGate = frame.FrameHltBeamGate();
+    srsbndframe.frameApplyAtCaf = frame.FrameApplyAtCaf();
   }
 
-  void FillSBNDTimingInfo(const raw::TimingInfo &timing,
+  void FillSBNDTimingInfo(const sbnd::timing::TimingInfo &timing,
                         caf::SRSBNDTimingInfo &srsbndtiming,
                         bool allowEmpty)
   {
-    srsbndtiming.rawDAQHeaderTimestamp = timing.rawDAQHeaderTimestamp;
-    srsbndtiming.tdcCrtt1 = timing.tdcCrtt1;
-    srsbndtiming.tdcBes = timing.tdcBes;
-    srsbndtiming.tdcRwm = timing.tdcRwm;
-    srsbndtiming.tdcEtrig = timing.tdcEtrig;
-    srsbndtiming.hltCrtt1 = timing.hltCrtt1;
-    srsbndtiming.hltEtrig = timing.hltEtrig;
-    srsbndtiming.hltBeamGate = timing.hltBeamGate;
+    srsbndtiming.rawDAQHeaderTimestamp = timing.RawDAQHeaderTimestamp();
+    srsbndtiming.tdcCrtt1 = timing.TdcCrtt1();
+    srsbndtiming.tdcBes = timing.TdcBes();
+    srsbndtiming.tdcRwm = timing.TdcRwm();
+    srsbndtiming.tdcEtrig = timing.TdcEtrig();
+    srsbndtiming.hltCrtt1 = timing.HltCrtt1();
+    srsbndtiming.hltEtrig = timing.HltEtrig();
+    srsbndtiming.hltBeamGate = timing.HltBeamGate();
   }
 
   void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,

@@ -118,6 +118,8 @@
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
 #include "sbnobj/Common/Reco/OpT0FinderResult.h"
+#include "sbnobj/SBND/Timing/TimingInfo.hh"
+#include "sbnobj/SBND/Timing/FrameShiftInfo.hh"
 
 // GENIE
 #include "Framework/EventGen/EventRecord.h"
@@ -1692,19 +1694,19 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         }
       }
     
-      art::Handle<raw::FrameShiftInfo> sbndframeshiftinfo_handle;
+      art::Handle<sbnd::timing::FrameShiftInfo> sbndframeshiftinfo_handle;
       GetByLabelStrict(evt, fParams.SBNDFrameShiftInfoLabel(), sbndframeshiftinfo_handle);
       // fill into event
       if (sbndframeshiftinfo_handle.isValid()) {
-        raw::FrameShiftInfo const& sbndframeshiftinfo(*sbndframeshiftinfo_handle);
+        sbnd::timing::FrameShiftInfo const& sbndframeshiftinfo(*sbndframeshiftinfo_handle);
         FillSBNDFrameShiftInfo(sbndframeshiftinfo, srsbndframeshiftinfo);
       }
 
-      art::Handle<raw::TimingInfo> sbndtiminginfo_handle;
+      art::Handle<sbnd::timing::TimingInfo> sbndtiminginfo_handle;
       GetByLabelStrict(evt, fParams.SBNDTimingInfoLabel(), sbndtiminginfo_handle);
       // fill into event
       if (sbndtiminginfo_handle.isValid()) {
-        raw::TimingInfo const& sbndtiminginfo(*sbndtiminginfo_handle);
+        sbnd::timing::TimingInfo const& sbndtiminginfo(*sbndtiminginfo_handle);
         FillSBNDTimingInfo(sbndtiminginfo, srsbndtiminginfo);
       }
     }
