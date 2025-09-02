@@ -274,7 +274,6 @@ namespace caf
       slice.correctedOpFlash.OpFlashT0  = _correctedOpFlash.OpFlashT0;
       slice.correctedOpFlash.UpstreamTime_lightonly  = _correctedOpFlash.UpstreamTime_lightonly;
       slice.correctedOpFlash.UpstreamTime_tpczcorr  = _correctedOpFlash.UpstreamTime_tpczcorr;
-      slice.correctedOpFlash.UpstreamTime_propcorr  = _correctedOpFlash.UpstreamTime_propcorr;
       slice.correctedOpFlash.UpstreamTime_propcorr_tpczcorr  = _correctedOpFlash.UpstreamTime_propcorr_tpczcorr;
     }
   }
