@@ -318,8 +318,8 @@ class CAFMaker : public art::EDProducer {
   void FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_time);
   void FixCRTReferenceTimes(StandardRecord &rec, double CRTT0_reference_time, double CRTT1_reference_time);
 
-  void SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame);
-  void SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame);
+  void SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame) const;
+  void SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame) const;
 
   /// Equivalent of FindManyP except a return that is !isValid() prints a
   /// messsage and aborts if StrictMode is true.
@@ -504,7 +504,7 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
   }
 }
 
-void CAFMaker::SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame){
+void CAFMaker::SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame) const {
 
   //CRT Space Point
   for (SRCRTSpacePoint &sp: rec.crt_spacepoints){
@@ -523,7 +523,7 @@ void CAFMaker::SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame){
   //}
 }
 
-void CAFMaker::SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame){
+void CAFMaker::SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame) const {
 
   double SBNDFrame_us = SBNDFrame / 1000.0; //convert ns to us
 
@@ -2416,7 +2416,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.opflashes        = srflashes;
   rec.nopflashes       = srflashes.size();
   rec.sbnd_frames      = srsbndframeshiftinfo;
-  rec.sbnd_timings      = srsbndtiminginfo;
+  rec.sbnd_timings     = srsbndtiminginfo;
 
   if (fParams.FillTrueParticles()) {
     rec.true_particles  = true_particles;
@@ -2425,7 +2425,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.crtpmt_matches = srcrtpmtmatches;
   rec.ncrtpmt_matches = srcrtpmtmatches.size();
 
-  // ICARUS: Fix the Reference time
+  // Move the reference time of reconstructed objects from trigger time to beam spill/beam gate opening time.
   //
   // We want MC and Data to have the same reference time.
   // In MC/LArSoft the "reference time" is canonically defined
@@ -2442,6 +2442,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // filled with the default values, which are set to the numerical limits of double.
   // In this case, we should set the PMT_reference_time to 0.
 
+  // ICARUS: Fix the Reference time
   const bool hasValidTriggerTime =
     srtrigger.global_trigger_det_time >
       (std::numeric_limits<double>::min() + std::numeric_limits<double>::epsilon()) &&
@@ -2458,8 +2459,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   // TODO: TPC?
   
-  // SBND: Fix the Reference time in data depending on the stream (See FrameShift module on sbndcode repo)
-  if (isRealData & (fDet == kSBND))
+  // SBND: Fix the Reference time in data depending on the stream i
+  // For more information, see: 
+  // https://sbn-docdb.fnal.gov/cgi-bin/sso/RetrieveFile?docid=43090
+
+  if (isRealData && (fDet == kSBND) && (rec.sbnd_frames.frameApplyAtCaf != 0.0))
   {
     mf::LogInfo("CAFMaker") << "Setting Reference Timing for timing object in SBND \n"
                             << "    Shift Apply At Caf Level = " << rec.sbnd_frames.frameApplyAtCaf << " ns\n";
@@ -2753,7 +2757,6 @@ void CAFMaker::endJob() {
   if(fParams.CreateBlindedCAF() && fFlatFileb) AddMetadataToFile(fFlatFileb, metamap);
   if(fParams.CreateBlindedCAF() && fFlatFilep) AddMetadataToFile(fFlatFilep, metamap);
 }
-
 
 }  // end namespace caf
 DEFINE_ART_MODULE(caf::CAFMaker)
