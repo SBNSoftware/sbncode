@@ -64,12 +64,17 @@
 #include "sbnobj/Common/CRT/CRTHitT0TaggingInfo.hh"
 #include "sbnobj/Common/CRT/CRTHitT0TaggingTruthInfo.hh"
 
-#include "sbncode/CAFMaker/FillTrue.h"
 #include "ITCSSelectionTool.h"
 
 namespace sbn {
   class TrackCaloSkimmer;
   enum EDet {kNOTDEFINED, kSBND, kICARUS}; 
+
+  struct ReadoutIDE {
+    geo::WireID wire;              ///< Wire on a given plane closest to the drift path of the charge.
+    unsigned short tick = 0;       ///< Time tick at which the charge passes closest to the wire.
+    const sim::IDE *ide = nullptr; ///< Deposited charge information.
+  };
 }
 
 class sbn::TrackCaloSkimmer : public art::EDAnalyzer {
@@ -112,7 +117,6 @@ private:
     geo::Vector_t enddir;
     int ID;
   };
-
 
   // Represents a "Snippet" of ADCs shared by a set of hits on a wire
   struct Snippet {
@@ -162,7 +166,7 @@ private:
     const std::vector<art::Ptr<simb::MCParticle>> &mcparticles,
     const std::vector<geo::BoxBoundedGeo> &active_volumes,
     const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
-    const std::map<int, std::vector<caf::ReadoutIDE>> id_to_ide_map,
+    const std::map<int, std::vector<sbn::ReadoutIDE>> id_to_ide_map,
     const std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map,
     const detinfo::DetectorPropertiesData &dprop,
     const geo::GeometryCore *geo,

@@ -136,7 +136,7 @@ namespace caf {
   }//FillTrackTruth
 
   // Assumes truth matching and calo-points are filled
-  void FillTrackCaloTruth(const std::map<int, std::vector<caf::ReadoutIDE>> &id_to_ide_map,
+  void FillTrackCaloTruth(const std::map<int, std::vector<sbn::ReadoutIDE>> &id_to_ide_map,
                           const std::vector<simb::MCParticle> &mc_particles,
                           const geo::GeometryCore& geometry,
                           const geo::WireReadoutGeom& wireReadout,
@@ -163,7 +163,7 @@ namespace caf {
 
     // Load the hits
     // match on the channel, which is unique
-    const std::vector<caf::ReadoutIDE> &match_ides = id_to_ide_map.at(srtrack.truth.p.G4ID);
+    const std::vector<sbn::ReadoutIDE> &match_ides = id_to_ide_map.at(srtrack.truth.p.G4ID);
     std::map<unsigned, std::vector<const sim::IDE *>> chan_2_ides;
     for (auto const &ide_p: match_ides) {
       chan_2_ides[wireReadout.PlaneWireToChannel(ide_p.wire)].push_back(ide_p.ide);
@@ -634,15 +634,15 @@ namespace caf {
   void FillTrueG4Particle(const simb::MCParticle &particle,
         const std::vector<geo::BoxBoundedGeo> &active_volumes,
         const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
-        const std::map<int, std::vector<caf::ReadoutIDE>> &id_to_ide_map,
+        const std::map<int, std::vector<sbn::ReadoutIDE>> &id_to_ide_map,
         const std::map<int, std::vector<art::Ptr<recob::Hit>>> &id_to_truehit_map,
         const cheat::BackTrackerService &backtracker,
         const cheat::ParticleInventoryService &inventory_service,
         const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
                           caf::SRTrueParticle &srparticle) {
 
-    std::vector<caf::ReadoutIDE> empty;
-    const std::vector<caf::ReadoutIDE> &particle_ides = id_to_ide_map.count(particle.TrackId()) ? id_to_ide_map.at(particle.TrackId()) : empty;
+    std::vector<sbn::ReadoutIDE> empty;
+    const std::vector<sbn::ReadoutIDE> &particle_ides = id_to_ide_map.count(particle.TrackId()) ? id_to_ide_map.at(particle.TrackId()) : empty;
 
     std::vector<art::Ptr<recob::Hit>> emptyHits;
     const std::vector<art::Ptr<recob::Hit>> &particle_hits = id_to_truehit_map.count(particle.TrackId()) ? id_to_truehit_map.at(particle.TrackId()) : emptyHits;
@@ -882,8 +882,8 @@ namespace caf {
     return ret;
   }
 
-  std::map<int, std::vector<caf::ReadoutIDE>> PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels, const geo::WireReadoutGeom &wireReadout) {
-    std::map<int, std::vector<caf::ReadoutIDE>> ret;
+  std::map<int, std::vector<sbn::ReadoutIDE>> PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels, const geo::WireReadoutGeom &wireReadout) {
+    std::map<int, std::vector<sbn::ReadoutIDE>> ret;
 
     for (const art::Ptr<sim::SimChannel> sc : simchannels) {
       // Lookup the wire of this channel

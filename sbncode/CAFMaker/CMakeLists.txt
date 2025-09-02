@@ -29,6 +29,7 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   larcorealg::Geometry
                   larcore::Geometry_Geometry_service
                   larcorealg::GeoAlgo
+		  lardata::DetectorInfoServices_DetectorPropertiesServiceStandard_service
                   larsim::MCCheater_BackTrackerService_service
                   nusimdata::SimulationBase
                   larsim::MCCheater_ParticleInventoryService_service

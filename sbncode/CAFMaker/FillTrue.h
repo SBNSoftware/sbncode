@@ -33,20 +33,14 @@
 #include "sbnanaobj/StandardRecord/StandardRecord.h"
 #include "sbnanaobj/StandardRecord/SRMeVPrtl.h"
 
+#include "sbncode/Calibration/TrackCaloSkimmer.h"
+
 namespace caf
 {
   struct HitsEnergy {
     int nHits;
     float totE;
   };
-
-  /// Ioniosation charge (`sim::IDE`) associated to its TPC readout information.
-  struct ReadoutIDE {
-    geo::WireID wire; ///< Wire on a given plane closest to the drift path of the charge.
-    unsigned short tick = 0; ///< Time tick at which the charge passes closest to the wire.
-    const sim::IDE *ide = nullptr; ///< Deposited charge information.
-  };
-
 
   // Helpers
   caf::Wall_t GetWallCross( const geo::BoxBoundedGeo &volume,
@@ -81,7 +75,7 @@ namespace caf
   void FillTrueG4Particle(const simb::MCParticle &particle,
         const std::vector<geo::BoxBoundedGeo> &active_volumes,
         const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
-        const std::map<int, std::vector<caf::ReadoutIDE>> &id_to_ide_map,
+        const std::map<int, std::vector<sbn::ReadoutIDE>> &id_to_ide_map,
         const std::map<int, std::vector<art::Ptr<recob::Hit>>> &id_to_truehit_map,
         const cheat::BackTrackerService &backtracker,
         const cheat::ParticleInventoryService &inventory_service,
@@ -111,7 +105,7 @@ namespace caf
                       caf::SRTrack& srtrack,
                       bool allowEmpty = false);
 
-  void FillTrackCaloTruth(const std::map<int, std::vector<ReadoutIDE>> &id_to_ide_map,
+  void FillTrackCaloTruth(const std::map<int, std::vector<sbn::ReadoutIDE>> &id_to_ide_map,
                           const std::vector<simb::MCParticle> &mc_particles,
                           const geo::GeometryCore & geometry,
                           const geo::WireReadoutGeom& wireReadout,
@@ -141,7 +135,7 @@ namespace caf
                     CLHEP::HepRandomEngine &rand,
                     std::vector<caf::SRFakeReco> &srfakereco);
 
-  std::map<int, std::vector<ReadoutIDE>> PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels, const geo::WireReadoutGeom &wireReadout);
+  std::map<int, std::vector<sbn::ReadoutIDE>> PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels, const geo::WireReadoutGeom &wireReadout);
   std::map<int, std::vector<art::Ptr<recob::Hit>>> PrepTrueHits(const std::vector<art::Ptr<recob::Hit>> &allHits,
     const detinfo::DetectorClocksData &clockData, const cheat::BackTrackerService &backtracker);
   std::map<int, caf::HitsEnergy> SetupIDHitEnergyMap(const std::vector<art::Ptr<recob::Hit>> &allHits, const detinfo::DetectorClocksData &clockData,

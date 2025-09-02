@@ -289,7 +289,7 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
   // Prep truth-to-reco-matching info
   //
   // Use helper functions from CAFMaker/FillTrue
-  std::map<int, std::vector<caf::ReadoutIDE>> id_to_ide_map;
+  std::map<int, std::vector<sbn::ReadoutIDE>> id_to_ide_map;
   std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map;
   const cheat::BackTrackerService *bt = NULL;
 
@@ -545,14 +545,14 @@ geo::Point_t WireToTrajectoryPosition(const geo::Point_t &loc, const geo::TPCID 
 sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
     const std::vector<geo::BoxBoundedGeo> &active_volumes,
     const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
-    const std::map<int, std::vector<caf::ReadoutIDE>> &id_to_ide_map,
+    const std::map<int, std::vector<sbn::ReadoutIDE>> &id_to_ide_map,
     const std::map<int, std::vector<art::Ptr<recob::Hit>>> &id_to_truehit_map, 
     const detinfo::DetectorPropertiesData &dprop,
     const geo::GeometryCore *geo,
     const geo::WireReadoutGeom *wireReadout) {
 
-  std::vector<caf::ReadoutIDE> empty;
-  const std::vector<caf::ReadoutIDE> &particle_ides = id_to_ide_map.count(particle.TrackId()) ? id_to_ide_map.at(particle.TrackId()) : empty;
+  std::vector<sbn::ReadoutIDE> empty;
+  const std::vector<sbn::ReadoutIDE> &particle_ides = id_to_ide_map.count(particle.TrackId()) ? id_to_ide_map.at(particle.TrackId()) : empty;
   
   std::vector<art::Ptr<recob::Hit>> emptyHits;
   const std::vector<art::Ptr<recob::Hit>> &particle_hits = id_to_truehit_map.count(particle.TrackId()) ? id_to_truehit_map.at(particle.TrackId()) : emptyHits;
@@ -1011,7 +1011,7 @@ void sbn::TrackCaloSkimmer::FillTrackTruth(const detinfo::DetectorClocksData &cl
     const std::vector<art::Ptr<simb::MCParticle>> &mcparticles,
     const std::vector<geo::BoxBoundedGeo> &active_volumes,
     const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
-    const std::map<int, std::vector<caf::ReadoutIDE>> id_to_ide_map,
+    const std::map<int, std::vector<sbn::ReadoutIDE>> id_to_ide_map,
     const std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map,
     const detinfo::DetectorPropertiesData &dprop,
     const geo::GeometryCore *geo,
