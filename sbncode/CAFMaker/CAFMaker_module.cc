@@ -506,6 +506,7 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
 
 void CAFMaker::SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame) const {
 
+  std::cout << "hellooooo PMT " << std::endl;
   //CRT Space Point
   for (SRCRTSpacePoint &sp: rec.crt_spacepoints){
     sp.time += SBNDFrame; //ns
@@ -524,7 +525,7 @@ void CAFMaker::SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame) cons
 }
 
 void CAFMaker::SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame) const {
-
+  std::cout << "hellooooo PMT " << std::endl;
   double SBNDFrame_us = SBNDFrame / 1000.0; //convert ns to us
 
   //Op Flash
@@ -2463,16 +2464,18 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // For more information, see: 
   // https://sbn-docdb.fnal.gov/cgi-bin/sso/RetrieveFile?docid=43090
 
-  if (isRealData && (fDet == kSBND) && (rec.sbnd_frames.frameApplyAtCaf != 0.0))
+  if (isRealData && (fDet == kSBND))
   {
-    mf::LogInfo("CAFMaker") << "Setting Reference Timing for timing object in SBND \n"
-                            << "    Shift Apply At Caf Level = " << rec.sbnd_frames.frameApplyAtCaf << " ns\n";
-    
-    //shift reference frame for CRT objects: crt trk, crt sp, crt sp match, crt trk match
-    SBNDShiftCRTReference(rec, rec.sbnd_frames.frameApplyAtCaf);
+    if ((rec.sbnd_frames.frameApplyAtCaf != kSignalingNaN) && (rec.sbnd_frames.frameApplyAtCaf != 0.0)){
+      mf::LogInfo("CAFMaker") << "Setting Reference Timing for timing object in SBND \n"
+                              << "    Shift Apply At Caf Level = " << rec.sbnd_frames.frameApplyAtCaf << " ns\n";
+      
+      //shift reference frame for CRT objects: crt trk, crt sp, crt sp match, crt trk match
+      SBNDShiftCRTReference(rec, rec.sbnd_frames.frameApplyAtCaf);
 
-    //shift reference frame for PMT objects: opflash, opt0
-    SBNDShiftPMTReference(rec, rec.sbnd_frames.frameApplyAtCaf);
+      //shift reference frame for PMT objects: opflash, opt0
+      SBNDShiftPMTReference(rec, rec.sbnd_frames.frameApplyAtCaf);
+    }
   }
 
   // Get metadata information for header
