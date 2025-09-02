@@ -506,7 +506,6 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
 
 void CAFMaker::SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame) const {
 
-  std::cout << "hellooooo PMT " << std::endl;
   //CRT Space Point
   for (SRCRTSpacePoint &sp: rec.crt_spacepoints){
     sp.time += SBNDFrame; //ns
@@ -525,7 +524,7 @@ void CAFMaker::SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame) cons
 }
 
 void CAFMaker::SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame) const {
-  std::cout << "hellooooo PMT " << std::endl;
+
   double SBNDFrame_us = SBNDFrame / 1000.0; //convert ns to us
 
   //Op Flash
