@@ -263,6 +263,23 @@ namespace caf
     }
   }
 
+
+  void FillCorrectedOpFlashTiming(const std::vector<art::Ptr<sbnd::OpFlashTiming::CorrectedOpFlashTiming>> &slcCorrectedOpFlash,
+                           caf::SRSlice& slice)
+  { 
+    slice.correctedOpFlash.setDefault();
+    if ( slcCorrectedOpFlash.empty()==false ) {
+      const sbnd::OpFlashTiming::CorrectedOpFlashTiming &_correctedOpFlash = *slcCorrectedOpFlash[0];
+      //TODO: use the score of the match to fill the information accordingly
+      slice.correctedOpFlash.OpFlashT0  = _correctedOpFlash.OpFlashT0;
+      slice.correctedOpFlash.UpstreamTime_lightonly  = _correctedOpFlash.UpstreamTime_lightonly;
+      slice.correctedOpFlash.UpstreamTime_tpczcorr  = _correctedOpFlash.UpstreamTime_tpczcorr;
+      slice.correctedOpFlash.UpstreamTime_propcorr  = _correctedOpFlash.UpstreamTime_propcorr;
+      slice.correctedOpFlash.UpstreamTime_propcorr_tpczcorr  = _correctedOpFlash.UpstreamTime_propcorr_tpczcorr;
+    }
+  }
+
+
   std::vector<float> double_to_float_vector(const std::vector<double>& v)
   {
     std::vector<float> ret;

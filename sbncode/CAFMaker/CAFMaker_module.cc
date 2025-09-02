@@ -1828,6 +1828,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     const sbn::TPCPMTBarycenterMatch *barycenterMatch
       = foTPCPMTBarycenterMatch.isValid()? foTPCPMTBarycenterMatch.at(0).get(): nullptr;
 
+
+    art::FindManyP<sbnd::OpFlashTiming::CorrectedOpFlashTiming> fmCorrectedOpFlash =
+      FindManyPStrict<sbnd::OpFlashTiming::CorrectedOpFlashTiming>(sliceList, evt,
+          fParams.CorrectedOpFlashLabel() + slice_tag_suff);
+    std::vector<art::Ptr<sbnd::OpFlashTiming::CorrectedOpFlashTiming>> slcCorrectedOpFlash;
+     if (fmCorrectedOpFlash.isValid())
+      slcCorrectedOpFlash = fmCorrectedOpFlash.at(0);
+
+
     art::FindOneP<lcvn::Result> foCVNResult =
       FindOnePStrict<lcvn::Result>(sliceList, evt,
           fParams.CVNLabel() + slice_tag_suff);
@@ -2083,6 +2092,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceOpT0Finder(slcOpT0, recslc);
     FillSliceBarycenter(slcHits, slcSpacePoints, recslc);
     FillTPCPMTBarycenterMatch(barycenterMatch, recslc);
+    FillCorrectedOpFlashTiming(slcCorrectedOpFlash, recslc);
     FillCVNScores(cvnResult, recslc);
     
     // select slice
@@ -2429,6 +2439,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.hdr.ismc    = !isRealData;
   rec.hdr.det     = fDet;
   rec.hdr.fno     = fFileNumber;
+
   if(fFirstInSubRun)
   {
     rec.hdr.nbnbinfo = fBNBInfo.size();
@@ -2469,13 +2480,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   else {
     std::cout << "Did not find this event in the spill info map." << std::endl;
   }
-
+  
   if(fRecTree){
     // Save the standard-record
     StandardRecord* prec = &rec;
+
     fRecTree->SetBranchAddress("rec", &prec);
     fRecTree->Fill();
-
     if(fFlatTree){
       fFlatRecord->Clear();
       fFlatRecord->Fill(rec);

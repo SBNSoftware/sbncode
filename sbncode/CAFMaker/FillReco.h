@@ -40,6 +40,7 @@
 #include "sbnobj/Common/CRT/CRTTrack.hh"
 #include "sbnobj/SBND/CRT/CRTSpacePoint.hh"
 #include "sbnobj/SBND/CRT/CRTTrack.hh"
+#include "sbnobj/SBND/OpFlashTiming/CorrectedOpFlashTiming.h"
 #include "sbnobj/Common/CRT/CRTPMTMatching.hh"
 #include "sbnobj/Common/CRT/CRTHitT0TaggingInfo.hh"
 #include "nusimdata/SimulationBase/MCParticle.h"
@@ -270,6 +271,9 @@ namespace caf
 		       bool allowEmpty = false);
 
   void FillTPCPMTBarycenterMatch(const sbn::TPCPMTBarycenterMatch *matchInfo,
+                           caf::SRSlice& slice);
+
+  void FillCorrectedOpFlashTiming(const std::vector<art::Ptr<sbnd::OpFlashTiming::CorrectedOpFlashTiming>> &slcCorrectedOpFlash,
                            caf::SRSlice& slice);
 
   void FillCVNScores(const lcvn::Result *cvnResult,
