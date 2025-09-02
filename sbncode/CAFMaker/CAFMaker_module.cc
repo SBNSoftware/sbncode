@@ -2459,7 +2459,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   // TODO: TPC?
   
-  // SBND: Fix the Reference time in data depending on the stream i
+  // SBND: Fix the Reference time in data depending on the stream
   // For more information, see: 
   // https://sbn-docdb.fnal.gov/cgi-bin/sso/RetrieveFile?docid=43090
 
