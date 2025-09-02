@@ -341,13 +341,13 @@ namespace caf
     Atom<string> SBNDFrameShiftInfoLabel {
       Name("SBNDFrameShiftInfoLabel"),
       Comment("Label of sbnd frame shift."),
-      "frameshift" // sbnd
+      "" // sbnd
     };
 
     Atom<string> SBNDTimingInfoLabel {
       Name("SBNDTimingInfoLabel"),
       Comment("Label of sbnd timing shift."),
-      "frameshift" // sbnd
+      "" // sbnd
     };
 
     Atom<string> CRTPMTLabel {
