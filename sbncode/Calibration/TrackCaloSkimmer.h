@@ -51,8 +51,8 @@
 
 #include "larevt/SpaceCharge/SpaceCharge.h"
 #include "larevt/SpaceChargeServices/SpaceChargeService.h"
-#include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+#include "lardataalg/DetectorInfo/DetectorPropertiesData.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "larcorealg/Geometry/fwd.h"
 
@@ -66,15 +66,12 @@
 
 #include "ITCSSelectionTool.h"
 
+// Useful functions
+#include "sbncode/CAFMaker/RecoUtils/RecoUtils.h"
+
 namespace sbn {
   class TrackCaloSkimmer;
   enum EDet {kNOTDEFINED, kSBND, kICARUS}; 
-
-  struct ReadoutIDE {
-    geo::WireID wire;              ///< Wire on a given plane closest to the drift path of the charge.
-    unsigned short tick = 0;       ///< Time tick at which the charge passes closest to the wire.
-    const sim::IDE *ide = nullptr; ///< Deposited charge information.
-  };
 }
 
 class sbn::TrackCaloSkimmer : public art::EDAnalyzer {

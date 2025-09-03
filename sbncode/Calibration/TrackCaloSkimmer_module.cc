@@ -12,12 +12,9 @@
 
 #include "TrackCaloSkimmer.h"
 #include "sbnobj/SBND/CRT/CRTTrack.hh"
+#include "sbnanaobj/StandardRecord/SREnums.h"
 
 #include "art/Utilities/make_tool.h"
-
-// Useful functions
-#include "sbncode/CAFMaker/FillTrue.h"
-#include "sbncode/CAFMaker/RecoUtils/RecoUtils.h"
 
 #include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
@@ -288,15 +285,15 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
 
   // Prep truth-to-reco-matching info
   //
-  // Use helper functions from CAFMaker/FillTrue
+  // Use helper functions from CAFMaker/RecoUtils
   std::map<int, std::vector<sbn::ReadoutIDE>> id_to_ide_map;
   std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map;
   const cheat::BackTrackerService *bt = NULL;
 
   if (simchannels.size()) {
     art::ServiceHandle<cheat::BackTrackerService> bt_serv;
-    id_to_ide_map = caf::PrepSimChannels(simchannels, *wireReadout);
-    id_to_truehit_map = caf::PrepTrueHits(allHits, clock_data, *bt_serv.get());
+    id_to_ide_map = sbn::PrepSimChannels(simchannels, *wireReadout);
+    id_to_truehit_map = sbn::PrepTrueHits(allHits, clock_data, *bt_serv.get());
     bt = bt_serv.get();
   }
 
@@ -622,7 +619,7 @@ sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
 
   // get the wall
   if (entry_point > 0) {
-    trueparticle.wallin = (int)caf::GetWallCross(active_volumes.at(cryostat_index), particle.Position(entry_point).Vect(), particle.Position(entry_point-1).Vect());
+    trueparticle.wallin = (int)sbn::GetWallCross(active_volumes.at(cryostat_index), particle.Position(entry_point).Vect(), particle.Position(entry_point-1).Vect());
   }
 
   int exit_point = -1;
@@ -690,7 +687,7 @@ sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
     exit_point = particle.NumberTrajectoryPoints() - 1;
   }
   if (exit_point >= 0 && ((unsigned)exit_point) < particle.NumberTrajectoryPoints() - 1) {
-    trueparticle.wallout = (int)caf::GetWallCross(active_volumes.at(cryostat_index), particle.Position(exit_point).Vect(), particle.Position(exit_point+1).Vect());
+    trueparticle.wallout = (int)sbn::GetWallCross(active_volumes.at(cryostat_index), particle.Position(exit_point).Vect(), particle.Position(exit_point+1).Vect());
   }
 
   // other truth information
@@ -711,8 +708,8 @@ sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
   trueparticle.endp = ConvertTVector((exit_point >= 0) ? particle.Momentum(exit_point).Vect() : TVector3(-9999, -9999, -9999));
   trueparticle.endE = (exit_point >= 0) ? particle.Momentum(exit_point).E() : -9999.;
   
-  trueparticle.start_process = (int)caf::GetG4ProcessID(particle.Process());
-  trueparticle.end_process = (int)caf::GetG4ProcessID(particle.EndProcess());
+  trueparticle.start_process = (int)sbn::GetG4ProcessID(particle.Process());
+  trueparticle.end_process = (int)sbn::GetG4ProcessID(particle.EndProcess());
   
   trueparticle.G4ID = particle.TrackId();
   trueparticle.parent = particle.Mother();

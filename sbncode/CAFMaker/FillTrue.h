@@ -33,7 +33,7 @@
 #include "sbnanaobj/StandardRecord/StandardRecord.h"
 #include "sbnanaobj/StandardRecord/SRMeVPrtl.h"
 
-#include "sbncode/Calibration/TrackCaloSkimmer.h"
+#include "RecoUtils/RecoUtils.h"
 
 namespace caf
 {
@@ -41,13 +41,6 @@ namespace caf
     int nHits;
     float totE;
   };
-
-  // Helpers
-  caf::Wall_t GetWallCross( const geo::BoxBoundedGeo &volume,
-        const TVector3 p0,
-        const TVector3 p1);
-
-  caf::g4_process_ GetG4ProcessID(const std::string &name);
 
   void FillSRGlobal(const sbn::evwgh::EventWeightParameterSet& pset,
                     caf::SRGlobal& srglobal,
@@ -135,9 +128,6 @@ namespace caf
                     CLHEP::HepRandomEngine &rand,
                     std::vector<caf::SRFakeReco> &srfakereco);
 
-  std::map<int, std::vector<sbn::ReadoutIDE>> PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels, const geo::WireReadoutGeom &wireReadout);
-  std::map<int, std::vector<art::Ptr<recob::Hit>>> PrepTrueHits(const std::vector<art::Ptr<recob::Hit>> &allHits,
-    const detinfo::DetectorClocksData &clockData, const cheat::BackTrackerService &backtracker);
   std::map<int, caf::HitsEnergy> SetupIDHitEnergyMap(const std::vector<art::Ptr<recob::Hit>> &allHits, const detinfo::DetectorClocksData &clockData,
     const cheat::BackTrackerService &backtracker);
 

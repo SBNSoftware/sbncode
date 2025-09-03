@@ -64,7 +64,7 @@
 #include "art/Framework/Services/System/TriggerNamesService.h"
 #include "nurandom/RandomUtils/NuRandomService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
-#include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
+#include "lardataalg/DetectorInfo/DetectorPropertiesData.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "larevt/SpaceCharge/SpaceCharge.h"
@@ -1394,8 +1394,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   if ( !isRealData ) {
     art::ServiceHandle<cheat::BackTrackerService> bt_serv;
 
-    id_to_ide_map = PrepSimChannels(simchannels, wireReadout);
-    id_to_truehit_map = PrepTrueHits(hits, clock_data, *bt_serv);
+    id_to_ide_map = sbn::PrepSimChannels(simchannels, wireReadout);
+    id_to_truehit_map = sbn::PrepTrueHits(hits, clock_data, *bt_serv);
     id_to_hit_energy_map = SetupIDHitEnergyMap(hits, clock_data, *bt_serv);
   }
 
