@@ -51,8 +51,8 @@
 
 #include "larevt/SpaceCharge/SpaceCharge.h"
 #include "larevt/SpaceChargeServices/SpaceChargeService.h"
-#include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+#include "lardataalg/DetectorInfo/DetectorPropertiesData.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "larcorealg/Geometry/fwd.h"
 
@@ -67,6 +67,9 @@
 #include "sbnobj/SBND/CRT/CRTSpacePoint.hh"
 
 #include "ITCSSelectionTool.h"
+
+// Useful functions
+#include "sbncode/CAFMaker/RecoUtils/RecoUtils.h"
 
 namespace sbn {
   class TrackCaloSkimmer;

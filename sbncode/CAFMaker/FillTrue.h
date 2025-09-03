@@ -33,19 +33,14 @@
 #include "sbnanaobj/StandardRecord/StandardRecord.h"
 #include "sbnanaobj/StandardRecord/SRMeVPrtl.h"
 
+#include "RecoUtils/RecoUtils.h"
+
 namespace caf
 {
   struct HitsEnergy {
     int nHits;
     float totE;
   };
-
-  // Helpers
-  caf::Wall_t GetWallCross( const geo::BoxBoundedGeo &volume,
-        const TVector3 p0,
-        const TVector3 p1);
-
-  caf::g4_process_ GetG4ProcessID(const std::string &name);
 
   void FillSRGlobal(const sbn::evwgh::EventWeightParameterSet& pset,
                     caf::SRGlobal& srglobal,
@@ -133,9 +128,12 @@ namespace caf
                     CLHEP::HepRandomEngine &rand,
                     std::vector<caf::SRFakeReco> &srfakereco);
 
+<<<<<<< HEAD
   std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels, const geo::WireReadoutGeom &wireReadout);
   std::map<int, std::vector<art::Ptr<recob::Hit>>> PrepTrueHits(const std::vector<art::Ptr<recob::Hit>> &allHits,
     const detinfo::DetectorClocksData &clockData, const cheat::BackTrackerService &backtracker);
+=======
+>>>>>>> 46e144f5 (Refactor CAF helper functions utilized in CaloSkimmer into RecoUtils.)
   std::map<int, caf::HitsEnergy> SetupIDHitEnergyMap(const std::vector<art::Ptr<recob::Hit>> &allHits, const detinfo::DetectorClocksData &clockData,
     const cheat::BackTrackerService &backtracker);
 
