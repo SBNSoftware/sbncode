@@ -10,6 +10,8 @@
 // LArSoft includes
 #include "larcorealg/Geometry/fwd.h"
 
+#include "larevt/SpaceCharge/SpaceCharge.h"
+
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Shower.h"
 #include "lardataobj/RecoBase/Slice.h"
@@ -210,6 +212,7 @@ namespace caf
                      const std::vector<const recob::TrackHitMeta*>& thms,
                      bool fill_calo_points, float fillhit_rrstart, float fillhit_rrend, 
                      const detinfo::DetectorPropertiesData &dprop,
+                     spacecharge::SpaceCharge const& sce,
                      caf::SRTrackCalo &srcalo);
 
   void FillTrackScatterClosestApproach(const art::Ptr<sbn::ScatterClosestApproach> closestapproach,
@@ -230,6 +233,7 @@ namespace caf
                      const std::vector<const recob::TrackHitMeta*>& thms,
                      bool fill_calo_points, float fillhit_rrstart, float fillhit_rrend,
                      const detinfo::DetectorPropertiesData &dprop,
+                     spacecharge::SpaceCharge const& sce,
                      caf::SRTrack& srtrack,
                      bool allowEmpty = false);
 

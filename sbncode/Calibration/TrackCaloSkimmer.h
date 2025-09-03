@@ -67,7 +67,7 @@
 #include "ITCSSelectionTool.h"
 
 // Useful functions
-#include "sbncode/CAFMaker/RecoUtils/RecoUtils.h"
+#include "sbncode/CAFMaker/RecoUtils/RecoUtils.h" // sbn::ReadoutIDE, sbn::PrepTrueHits()...
 
 namespace sbn {
   class TrackCaloSkimmer;

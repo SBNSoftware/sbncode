@@ -2243,7 +2243,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           FillTrackCalo(fmCalo.at(iPart), *thisTrack[0], fmTrackHit.at(iPart), fmTrackHit.data(iPart),
               (fParams.FillHitsNeutrinoSlices() && NeutrinoSlice) || fParams.FillHitsAllSlices(),
               fParams.TrackHitFillRRStartCut(), fParams.TrackHitFillRREndCut(),
-              dprop, trk);
+              dprop, *sce, trk);
         }
         
         if (fmCRTHitMatch.isValid() && fDet == kICARUS) {
