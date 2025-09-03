@@ -877,7 +877,7 @@ namespace caf
             unsigned traj_point_index = thms.at(i_hit)->Index();
 	    if (track.HasValidPoint(traj_point_index)) {
               float costh_drift = track.DirectionAtPoint(traj_point_index).X();
-              float phi  = acos(abs(costh_drift)) * 180. / M_PI;
+              float phi  = acos(abs(costh_drift));
               float efield = GetEfield(dprop, track.LocationAtPoint(traj_point_index));
               p.efield = efield;
               p.phi = phi;

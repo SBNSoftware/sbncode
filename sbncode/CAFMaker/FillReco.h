@@ -5,7 +5,7 @@
 
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
-#include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
+#include "lardataalg/DetectorInfo/DetectorPropertiesData.h"
 
 // LArSoft includes
 #include "larcorealg/Geometry/fwd.h"
