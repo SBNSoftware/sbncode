@@ -517,10 +517,13 @@ void CAFMaker::SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame) cons
   }
 
   //TODO: CRT Space Point and Track Match
-  //for (SRPFP &pfp: rec.reco.pfp) {
-  //  pfp.trk.crtspacepoint.spacepoint.time += SBNDFrame;
-  //  pfp.trk.crtsbndtrack.track.time += SBNDFrame;
-  //}
+  for (SRSlice &slc: rec.slc){
+    for (SRPFP &pfp: slc.reco.pfp){
+      if(!std::isnan(pfp.trk.crtspacepoint.score)) pfp.trk.crtspacepoint.spacepoint.time += SBNDFrame;
+
+      if(!std::isnan(pfp.trk.crtsbndtrack.score)) pfp.trk.crtsbndtrack.track.time += SBNDFrame;
+    }
+  }
 }
 
 void CAFMaker::SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame) const {
