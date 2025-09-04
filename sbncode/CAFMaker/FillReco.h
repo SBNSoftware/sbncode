@@ -5,15 +5,18 @@
 
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
-#include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
+#include "lardataalg/DetectorInfo/DetectorPropertiesData.h"
 
 // LArSoft includes
 #include "larcorealg/Geometry/fwd.h"
+
+#include "larevt/SpaceCharge/SpaceCharge.h"
 
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Shower.h"
 #include "lardataobj/RecoBase/Slice.h"
 #include "lardataobj/RecoBase/Track.h"
+#include "lardataobj/RecoBase/TrackHitMeta.h"
 #include "lardataobj/RecoBase/Vertex.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/SpacePoint.h"
@@ -207,9 +210,12 @@ namespace caf
                         bool allowEmpty = false);
 
   void FillTrackPlaneCalo(const anab::Calorimetry &calo, 
+                     const recob::Track& track,
                      const std::vector<art::Ptr<recob::Hit>> &hits,
+                     const std::vector<const recob::TrackHitMeta*>& thms,
                      bool fill_calo_points, float fillhit_rrstart, float fillhit_rrend, 
                      const detinfo::DetectorPropertiesData &dprop,
+                     spacecharge::SpaceCharge const& sce,
                      caf::SRTrackCalo &srcalo);
 
   void FillTrackScatterClosestApproach(const art::Ptr<sbn::ScatterClosestApproach> closestapproach,
@@ -225,9 +231,12 @@ namespace caf
                         bool allowEmpty = false);
 
   void FillTrackCalo(const std::vector<art::Ptr<anab::Calorimetry>> &calos,
+                     const recob::Track& track,
                      const std::vector<art::Ptr<recob::Hit>> &hits,
+                     const std::vector<const recob::TrackHitMeta*>& thms,
                      bool fill_calo_points, float fillhit_rrstart, float fillhit_rrend,
                      const detinfo::DetectorPropertiesData &dprop,
+                     spacecharge::SpaceCharge const& sce,
                      caf::SRTrack& srtrack,
                      bool allowEmpty = false);
 

@@ -11,12 +11,10 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "TrackCaloSkimmer.h"
+#include "sbnobj/SBND/CRT/CRTTrack.hh"
+#include "sbnanaobj/StandardRecord/SREnums.h"
 
 #include "art/Utilities/make_tool.h"
-
-// Useful functions
-#include "sbncode/CAFMaker/FillTrue.h"
-#include "sbncode/CAFMaker/RecoUtils/RecoUtils.h"
 
 #include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
@@ -290,15 +288,15 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
 
   // Prep truth-to-reco-matching info
   //
-  // Use helper functions from CAFMaker/FillTrue
-  std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map;
+  // Use helper functions from CAFMaker/RecoUtils
+  std::map<int, std::vector<sbn::ReadoutIDE>> id_to_ide_map;
   std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map;
   const cheat::BackTrackerService *bt = NULL;
 
   if (simchannels.size()) {
     art::ServiceHandle<cheat::BackTrackerService> bt_serv;
-    id_to_ide_map = caf::PrepSimChannels(simchannels, *wireReadout);
-    id_to_truehit_map = caf::PrepTrueHits(allHits, clock_data, *bt_serv.get());
+    id_to_ide_map = sbn::PrepSimChannels(simchannels, *wireReadout);
+    id_to_truehit_map = sbn::PrepTrueHits(allHits, clock_data, *bt_serv.get());
     bt = bt_serv.get();
   }
 
@@ -581,14 +579,14 @@ geo::Point_t WireToTrajectoryPosition(const geo::Point_t &loc, const geo::TPCID 
 sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
     const std::vector<geo::BoxBoundedGeo> &active_volumes,
     const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
-    const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE *>>> &id_to_ide_map,
+    const std::map<int, std::vector<sbn::ReadoutIDE>> &id_to_ide_map,
     const std::map<int, std::vector<art::Ptr<recob::Hit>>> &id_to_truehit_map, 
     const detinfo::DetectorPropertiesData &dprop,
     const geo::GeometryCore *geo,
     const geo::WireReadoutGeom *wireReadout) {
 
-  std::vector<std::pair<geo::WireID, const sim::IDE *>> empty;
-  const std::vector<std::pair<geo::WireID, const sim::IDE *>> &particle_ides = id_to_ide_map.count(particle.TrackId()) ? id_to_ide_map.at(particle.TrackId()) : empty;
+  std::vector<sbn::ReadoutIDE> empty;
+  const std::vector<sbn::ReadoutIDE> &particle_ides = id_to_ide_map.count(particle.TrackId()) ? id_to_ide_map.at(particle.TrackId()) : empty;
   
   std::vector<art::Ptr<recob::Hit>> emptyHits;
   const std::vector<art::Ptr<recob::Hit>> &particle_hits = id_to_truehit_map.count(particle.TrackId()) ? id_to_truehit_map.at(particle.TrackId()) : emptyHits;
@@ -605,9 +603,9 @@ sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
   trueparticle.plane0nhit = 0;
   trueparticle.plane1nhit = 0;
   trueparticle.plane2nhit = 0;
-  for (auto const &ide_pair: particle_ides) {
-    const geo::WireID &w = ide_pair.first;
-    const sim::IDE *ide = ide_pair.second;
+  for (auto const &ide_p: particle_ides) {
+    const geo::WireID &w = ide_p.wire;
+    const sim::IDE *ide = ide_p.ide;
     
     if (w.Plane == 0) {
       trueparticle.plane0VisE += ide->energy / 1000. /* MeV -> GeV*/;
@@ -658,7 +656,7 @@ sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
 
   // get the wall
   if (entry_point > 0) {
-    trueparticle.wallin = (int)caf::GetWallCross(active_volumes.at(cryostat_index), particle.Position(entry_point).Vect(), particle.Position(entry_point-1).Vect());
+    trueparticle.wallin = (int)sbn::GetWallCross(active_volumes.at(cryostat_index), particle.Position(entry_point).Vect(), particle.Position(entry_point-1).Vect());
   }
 
   int exit_point = -1;
@@ -726,7 +724,7 @@ sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
     exit_point = particle.NumberTrajectoryPoints() - 1;
   }
   if (exit_point >= 0 && ((unsigned)exit_point) < particle.NumberTrajectoryPoints() - 1) {
-    trueparticle.wallout = (int)caf::GetWallCross(active_volumes.at(cryostat_index), particle.Position(exit_point).Vect(), particle.Position(exit_point+1).Vect());
+    trueparticle.wallout = (int)sbn::GetWallCross(active_volumes.at(cryostat_index), particle.Position(exit_point).Vect(), particle.Position(exit_point+1).Vect());
   }
 
   // other truth information
@@ -747,8 +745,8 @@ sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
   trueparticle.endp = ConvertTVector((exit_point >= 0) ? particle.Momentum(exit_point).Vect() : TVector3(-9999, -9999, -9999));
   trueparticle.endE = (exit_point >= 0) ? particle.Momentum(exit_point).E() : -9999.;
   
-  trueparticle.start_process = (int)caf::GetG4ProcessID(particle.Process());
-  trueparticle.end_process = (int)caf::GetG4ProcessID(particle.EndProcess());
+  trueparticle.start_process = (int)sbn::GetG4ProcessID(particle.Process());
+  trueparticle.end_process = (int)sbn::GetG4ProcessID(particle.EndProcess());
   
   trueparticle.G4ID = particle.TrackId();
   trueparticle.parent = particle.Mother();
@@ -756,10 +754,11 @@ sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
   // Organize deposition info into per-wire true "Hits" -- key is the Channel Number
   std::map<unsigned, sbn::TrueHit> truehits; 
 
-  for (auto const &ide_pair: particle_ides) {
-    const geo::WireID &w = ide_pair.first;
+  for (auto const &ide_part: particle_ides) {
+    const geo::WireID &w = ide_part.wire;
     unsigned c = wireReadout->PlaneWireToChannel(w);
-    const sim::IDE *ide = ide_pair.second;
+    const sim::IDE *ide = ide_part.ide;
+    unsigned short tick = ide_part.tick;
 
     // Set stuff
     truehits[c].cryo = w.Cryostat;
@@ -774,6 +773,8 @@ sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
     truehits[c].p.x = (truehits[c].p.x*old_elec + ide->x*ide->numElectrons) / new_elec;
     truehits[c].p.y = (truehits[c].p.y*old_elec + ide->y*ide->numElectrons) / new_elec;
     truehits[c].p.z = (truehits[c].p.z*old_elec + ide->z*ide->numElectrons) / new_elec;
+
+    truehits[c].time = (truehits[c].time*old_elec + tick*ide->numElectrons) / new_elec;
 
     // Also get the position with space charge un-done
     geo::Point_t ide_p(ide->x, ide->y, ide->z);
@@ -790,10 +791,10 @@ sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
   }
 
   // Compute widths
-  for (auto const &ide_pair: particle_ides) {
-    const geo::WireID &w = ide_pair.first;
+  for (auto const &ide_part: particle_ides) {
+    const geo::WireID &w = ide_part.wire;
     unsigned c = wireReadout->PlaneWireToChannel(w);
-    const sim::IDE *ide = ide_pair.second;
+    const sim::IDE *ide = ide_part.ide;
 
     geo::Point_t ide_p(ide->x, ide->y, ide->z);
     geo::Point_t ide_p_scecorr = WireToTrajectoryPosition(ide_p, w);
@@ -818,8 +819,6 @@ sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
 
   // Compute the time of each hit
   for (sbn::TrueHit &h: truehits_v) {
-    h.time = dprop.ConvertXToTicks(h.p.x, h.plane, h.tpc, h.cryo);
-
     double xdrift = abs(h.p.x - wireReadout->Plane(geo::PlaneID(h.cryo, h.tpc, 0)).GetCenter().X());
     h.tdrift = xdrift / dprop.DriftVelocity(); 
   }
@@ -1046,7 +1045,7 @@ void sbn::TrackCaloSkimmer::FillTrackTruth(const detinfo::DetectorClocksData &cl
     const std::vector<art::Ptr<simb::MCParticle>> &mcparticles,
     const std::vector<geo::BoxBoundedGeo> &active_volumes,
     const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
-    const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map,
+    const std::map<int, std::vector<sbn::ReadoutIDE>> id_to_ide_map,
     const std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map,
     const detinfo::DetectorPropertiesData &dprop,
     const geo::GeometryCore *geo,
