@@ -141,6 +141,33 @@ namespace caf
     srsbndcrttrack.tof      = track.ToF();
   }
 
+  void FillSBNDFrameShiftInfo(const sbnd::timing::FrameShiftInfo &frame,
+                        caf::SRSBNDFrameShiftInfo &srsbndframe,
+                        bool allowEmpty)
+  {
+    srsbndframe.timingType = frame.TimingType();
+    srsbndframe.frameTdcCrtt1 = frame.FrameTdcCrtt1();
+    srsbndframe.frameTdcBes = frame.FrameTdcBes();
+    srsbndframe.frameTdcRwm = frame.FrameTdcRwm();
+    srsbndframe.frameHltCrtt1 = frame.FrameHltCrtt1();
+    srsbndframe.frameHltBeamGate = frame.FrameHltBeamGate();
+    srsbndframe.frameApplyAtCaf = frame.FrameApplyAtCaf();
+  }
+
+  void FillSBNDTimingInfo(const sbnd::timing::TimingInfo &timing,
+                        caf::SRSBNDTimingInfo &srsbndtiming,
+                        bool allowEmpty)
+  {
+    srsbndtiming.rawDAQHeaderTimestamp = timing.RawDAQHeaderTimestamp();
+    srsbndtiming.tdcCrtt1 = timing.TdcCrtt1();
+    srsbndtiming.tdcBes = timing.TdcBes();
+    srsbndtiming.tdcRwm = timing.TdcRwm();
+    srsbndtiming.tdcEtrig = timing.TdcEtrig();
+    srsbndtiming.hltCrtt1 = timing.HltCrtt1();
+    srsbndtiming.hltEtrig = timing.HltEtrig();
+    srsbndtiming.hltBeamGate = timing.HltBeamGate();
+  }
+
   void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,
 		       caf::SRCRTPMTMatch &srmatch,
 		       bool allowEmpty){
