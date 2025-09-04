@@ -36,7 +36,7 @@ namespace sbn{
   double extractTDCTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags);
   bool BrokenClock(double time, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp);
   MWRdata_t extractSpillTimes(TriggerInfo_t const& triggerInfo, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp_mwr, double fTimePad, double MWRtoroidDelay, sbn::MWRData mwrdata );
-  sbn::BNBSpillInfo makeBNBSpillInfo(art::EventID const& eventID, double time, MWRdata_t const& MWRdata, std::vector<int> const& matched_MWR, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp);
+  sbn::BNBSpillInfo makeBNBSpillInfo(art::EventID const& eventID, double time, MWRdata_t const& MWRdata, std::vector<int> const& matched_MWR, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp, std::unique_ptr<ifbeam_ns::BeamFolder> const& offsets, std::unique_ptr<ifbeam_ns::BeamFolder> const& vp873);
 }
 
 #endif
