@@ -69,7 +69,7 @@
 #include "ITCSSelectionTool.h"
 
 // Useful functions
-#include "sbncode/CAFMaker/RecoUtils/RecoUtils.h"
+#include "sbncode/CAFMaker/RecoUtils/RecoUtils.h" // sbn::ReadoutIDE, sbn::PrepTrueHits()...
 
 namespace sbn {
   class TrackCaloSkimmer;
@@ -120,7 +120,6 @@ private:
     int ID;
   };
 
-
   // Represents a "Snippet" of ADCs shared by a set of hits on a wire
   struct Snippet {
     geo::WireID wire;
@@ -169,7 +168,7 @@ private:
     const std::vector<art::Ptr<simb::MCParticle>> &mcparticles,
     const std::vector<geo::BoxBoundedGeo> &active_volumes,
     const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
-    const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map,
+    const std::map<int, std::vector<sbn::ReadoutIDE>> id_to_ide_map,
     const std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map,
     const detinfo::DetectorPropertiesData &dprop,
     const geo::GeometryCore *geo,

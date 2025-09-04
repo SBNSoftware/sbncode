@@ -580,14 +580,14 @@ geo::Point_t WireToTrajectoryPosition(const geo::Point_t &loc, const geo::TPCID 
 sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
     const std::vector<geo::BoxBoundedGeo> &active_volumes,
     const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
-    const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE *>>> &id_to_ide_map,
+    const std::map<int, std::vector<sbn::ReadoutIDE>> &id_to_ide_map,
     const std::map<int, std::vector<art::Ptr<recob::Hit>>> &id_to_truehit_map, 
     const detinfo::DetectorPropertiesData &dprop,
     const geo::GeometryCore *geo,
     const geo::WireReadoutGeom *wireReadout) {
 
-  std::vector<std::pair<geo::WireID, const sim::IDE *>> empty;
-  const std::vector<std::pair<geo::WireID, const sim::IDE *>> &particle_ides = id_to_ide_map.count(particle.TrackId()) ? id_to_ide_map.at(particle.TrackId()) : empty;
+  std::vector<sbn::ReadoutIDE> empty;
+  const std::vector<sbn::ReadoutIDE> &particle_ides = id_to_ide_map.count(particle.TrackId()) ? id_to_ide_map.at(particle.TrackId()) : empty;
   
   std::vector<art::Ptr<recob::Hit>> emptyHits;
   const std::vector<art::Ptr<recob::Hit>> &particle_hits = id_to_truehit_map.count(particle.TrackId()) ? id_to_truehit_map.at(particle.TrackId()) : emptyHits;
@@ -604,9 +604,9 @@ sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
   trueparticle.plane0nhit = 0;
   trueparticle.plane1nhit = 0;
   trueparticle.plane2nhit = 0;
-  for (auto const &ide_pair: particle_ides) {
-    const geo::WireID &w = ide_pair.first;
-    const sim::IDE *ide = ide_pair.second;
+  for (auto const &ide_p: particle_ides) {
+    const geo::WireID &w = ide_p.wire;
+    const sim::IDE *ide = ide_p.ide;
     
     if (w.Plane == 0) {
       trueparticle.plane0VisE += ide->energy / 1000. /* MeV -> GeV*/;
@@ -755,10 +755,11 @@ sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
   // Organize deposition info into per-wire true "Hits" -- key is the Channel Number
   std::map<unsigned, sbn::TrueHit> truehits; 
 
-  for (auto const &ide_pair: particle_ides) {
-    const geo::WireID &w = ide_pair.first;
+  for (auto const &ide_part: particle_ides) {
+    const geo::WireID &w = ide_part.wire;
     unsigned c = wireReadout->PlaneWireToChannel(w);
-    const sim::IDE *ide = ide_pair.second;
+    const sim::IDE *ide = ide_part.ide;
+    unsigned short tick = ide_part.tick;
 
     // Set stuff
     truehits[c].cryo = w.Cryostat;
@@ -773,6 +774,8 @@ sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
     truehits[c].p.x = (truehits[c].p.x*old_elec + ide->x*ide->numElectrons) / new_elec;
     truehits[c].p.y = (truehits[c].p.y*old_elec + ide->y*ide->numElectrons) / new_elec;
     truehits[c].p.z = (truehits[c].p.z*old_elec + ide->z*ide->numElectrons) / new_elec;
+
+    truehits[c].time = (truehits[c].time*old_elec + tick*ide->numElectrons) / new_elec;
 
     // Also get the position with space charge un-done
     geo::Point_t ide_p(ide->x, ide->y, ide->z);
@@ -789,10 +792,10 @@ sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
   }
 
   // Compute widths
-  for (auto const &ide_pair: particle_ides) {
-    const geo::WireID &w = ide_pair.first;
+  for (auto const &ide_part: particle_ides) {
+    const geo::WireID &w = ide_part.wire;
     unsigned c = wireReadout->PlaneWireToChannel(w);
-    const sim::IDE *ide = ide_pair.second;
+    const sim::IDE *ide = ide_part.ide;
 
     geo::Point_t ide_p(ide->x, ide->y, ide->z);
     geo::Point_t ide_p_scecorr = WireToTrajectoryPosition(ide_p, w);
@@ -817,8 +820,6 @@ sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
 
   // Compute the time of each hit
   for (sbn::TrueHit &h: truehits_v) {
-    h.time = dprop.ConvertXToTicks(h.p.x, h.plane, h.tpc, h.cryo);
-
     double xdrift = abs(h.p.x - wireReadout->Plane(geo::PlaneID(h.cryo, h.tpc, 0)).GetCenter().X());
     h.tdrift = xdrift / dprop.DriftVelocity(); 
   }
@@ -1045,7 +1046,7 @@ void sbn::TrackCaloSkimmer::FillTrackTruth(const detinfo::DetectorClocksData &cl
     const std::vector<art::Ptr<simb::MCParticle>> &mcparticles,
     const std::vector<geo::BoxBoundedGeo> &active_volumes,
     const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
-    const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map,
+    const std::map<int, std::vector<sbn::ReadoutIDE>> id_to_ide_map,
     const std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map,
     const detinfo::DetectorPropertiesData &dprop,
     const geo::GeometryCore *geo,

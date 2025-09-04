@@ -68,7 +68,7 @@ namespace caf
   void FillTrueG4Particle(const simb::MCParticle &particle,
         const std::vector<geo::BoxBoundedGeo> &active_volumes,
         const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
-        const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE *>>> &id_to_ide_map,
+        const std::map<int, std::vector<sbn::ReadoutIDE>> &id_to_ide_map,
         const std::map<int, std::vector<art::Ptr<recob::Hit>>> &id_to_truehit_map,
         const cheat::BackTrackerService &backtracker,
         const cheat::ParticleInventoryService &inventory_service,
@@ -98,7 +98,7 @@ namespace caf
                       caf::SRTrack& srtrack,
                       bool allowEmpty = false);
 
-  void FillTrackCaloTruth(const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> &id_to_ide_map,
+  void FillTrackCaloTruth(const std::map<int, std::vector<sbn::ReadoutIDE>> &id_to_ide_map,
                           const std::vector<simb::MCParticle> &mc_particles,
                           const geo::GeometryCore & geometry,
                           const geo::WireReadoutGeom& wireReadout,
