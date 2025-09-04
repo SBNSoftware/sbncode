@@ -2465,6 +2465,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   if (isRealData && (fDet == kSBND))
   {
+    // Fill trigger info
+    FillTriggerSBND(srsbndtiminginfo, srtrigger);
+
+    // Shift timing reference frame
     if (!std::isnan(rec.sbnd_frames.frameApplyAtCaf) && (rec.sbnd_frames.frameApplyAtCaf != 0.0)){
       mf::LogInfo("CAFMaker") << "Setting Reference Timing for timing object in SBND \n"
                               << "    Shift Apply At Caf Level = " << rec.sbnd_frames.frameApplyAtCaf << " ns\n";
