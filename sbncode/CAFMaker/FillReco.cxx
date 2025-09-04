@@ -834,7 +834,7 @@ namespace caf
         p.dedx = dedx[i];
         p.pitch = pitch[i];
         p.efield = efield[i];
-        p.phi = phi[i];
+        p.phi = phi[i] * M_PI / 180.; // converting to radian since calo.Phi() is in degree
         p.x = xyz[i].x();
         p.y = xyz[i].y();
         p.z = xyz[i].z();
