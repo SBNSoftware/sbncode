@@ -40,6 +40,7 @@ cet_report_compiler_flags(REPORT_THRESHOLD VERBOSE)
 
 # these are minimum required versions, not the actual product versions
 find_package( art REQUIRED )
+find_package( Eigen3 REQUIRED)
 find_package( messagefacility REQUIRED )
 find_package( art_root_io REQUIRED )
 find_package( nusimdata REQUIRED )
