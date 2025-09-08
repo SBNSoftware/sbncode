@@ -118,6 +118,7 @@
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
 #include "sbnobj/Common/Reco/OpT0FinderResult.h"
+#include "sbnobj/Common/Reco/CorrectedOpFlashTiming.h"
 
 // GENIE
 #include "Framework/EventGen/EventRecord.h"
@@ -1829,10 +1830,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       = foTPCPMTBarycenterMatch.isValid()? foTPCPMTBarycenterMatch.at(0).get(): nullptr;
 
 
-    art::FindManyP<sbnd::OpFlashTiming::CorrectedOpFlashTiming> fmCorrectedOpFlash =
-      FindManyPStrict<sbnd::OpFlashTiming::CorrectedOpFlashTiming>(sliceList, evt,
+    art::FindManyP<sbn::CorrectedOpFlashTiming> fmCorrectedOpFlash =
+      FindManyPStrict<sbn::CorrectedOpFlashTiming>(sliceList, evt,
           fParams.CorrectedOpFlashLabel() + slice_tag_suff);
-    std::vector<art::Ptr<sbnd::OpFlashTiming::CorrectedOpFlashTiming>> slcCorrectedOpFlash;
+    std::vector<art::Ptr<sbn::CorrectedOpFlashTiming>> slcCorrectedOpFlash;
      if (fmCorrectedOpFlash.isValid())
       slcCorrectedOpFlash = fmCorrectedOpFlash.at(0);
 
