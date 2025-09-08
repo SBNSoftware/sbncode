@@ -84,6 +84,7 @@ sbn::TrackCaloSkimmer::TrackCaloSkimmer(
   fRangeInputtag = p.get< art::InputTag > ("RangeInputtag"); 
   fHITproducer = p.get< art::InputTag > ("HITproducer" );
   fG4producer = p.get< std::string > ("G4producer" );
+  fG4Droppedproducer = p.get< std::string > ("G4Droppedproducer" );
   fSimChannelproducer = p.get< std::string > ("SimChannelproducer" );
   fRequireT0 = p.get<bool>("RequireT0", false);
   fDoTailFit = p.get<bool>("DoTailFit", true);
@@ -192,6 +193,12 @@ void sbn::TrackCaloSkimmer::analyze(
   if (fG4producer.size()) {
     art::ValidHandle<std::vector<simb::MCParticle>> mcparticle_handle = e.getValidHandle<std::vector<simb::MCParticle>>(fG4producer);
     art::fill_ptr_vector(mcparticles, mcparticle_handle);
+  }
+
+  std::vector<art::Ptr<simb::MCParticle>> droppedmcparticles;
+  if (fG4Droppedproducer.size()) {
+    art::ValidHandle<std::vector<simb::MCParticle>> droppedmcparticle_handle = e.getValidHandle<std::vector<simb::MCParticle>>(fG4Droppedproducer);
+    art::fill_ptr_vector(droppedmcparticles, droppedmcparticle_handle);
   }
 
   std::vector<art::Ptr<sim::SimChannel>> simchannels;
@@ -464,7 +471,8 @@ void sbn::TrackCaloSkimmer::analyze(
     if (fFillTrackEndHits) FillTrackEndHits(geometry, dprop, *trkPtr, allHits, allHitSPs);
 
     // Fill the truth information if configured
-    if (simchannels.size()) FillTrackTruth(clock_data, trkHits, mcparticles, AVs, TPCVols, id_to_ide_map, id_to_truehit_map, dprop, geometry); 
+    if (simchannels.size()) FillTrackTruth(clock_data, trkHits, mcparticles, droppedmcparticles ,AVs, TPCVols, id_to_ide_map, id_to_truehit_map, dprop, geometry); 
+    if (simchannels.size()) FillDroppedTrackTruth(clock_data, trkHits, mcparticles, droppedmcparticles, AVs, TPCVols, id_to_ide_map, id_to_truehit_map, dprop, geometry); 
     bool select = false;
     if (!fSelectionTools.size()) select = true;
     if (!fSelectionTools.size()) std::cout << "selection tools not empty" << std::endl;
@@ -484,6 +492,7 @@ void sbn::TrackCaloSkimmer::analyze(
     if (select) {
       std::cout << "i_select = " << i_select << std::endl;
       fTree->Fill();
+      std::cout << " after filling " << std::endl;
     }
   }
 }
@@ -740,6 +749,7 @@ sbn::TrueParticle TrueParticleInfo(
 
   // other truth information
   trueparticle.pdg = particle.PdgCode();
+  if (particle.PdgCode() == 11) std::cout << " truth electron " << std::endl;
   
   trueparticle.gen = ConvertTVector(particle.NumberTrajectoryPoints() ? particle.Position().Vect() : TVector3(-9999, -9999, -9999));
   trueparticle.genT = particle.NumberTrajectoryPoints() ? particle.Position().T() / 1000. /* ns -> us*/: -9999;
@@ -758,6 +768,8 @@ sbn::TrueParticle TrueParticleInfo(
   
   trueparticle.start_process = (int)caf::GetG4ProcessID(particle.Process());
   trueparticle.end_process = (int)caf::GetG4ProcessID(particle.EndProcess());
+  if (particle.PdgCode() == 11)  std::cout << " truth process " << trueparticle.start_process << std::endl;
+  if (particle.PdgCode() == 11) std::cout << " truth genE " << trueparticle.genE << std::endl;
   
   trueparticle.G4ID = particle.TrackId();
   trueparticle.parent = particle.Mother();
@@ -1052,6 +1064,7 @@ void sbn::TrackCaloSkimmer::FillTrackTruth(
   const detinfo::DetectorClocksData &clock_data,
   const std::vector<art::Ptr<recob::Hit>> &trkHits,
   const std::vector<art::Ptr<simb::MCParticle>> &mcparticles,
+  const std::vector<art::Ptr<simb::MCParticle>> &droppedmcparticles,
   const std::vector<geo::BoxBoundedGeo> &active_volumes,
   const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
   const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map,
@@ -1077,9 +1090,14 @@ void sbn::TrackCaloSkimmer::FillTrackTruth(
 
     fTrack->truth.pur = bestmatch.second / total_energy;
 
+    std::cout << " mcparticles size " << mcparticles.size() << std::endl;
+    std::cout << " dropped size " << droppedmcparticles.size() << std::endl;
+
     for (const art::Ptr<simb::MCParticle> &p_mcp: mcparticles) {
+      //std::cout << " nondropped trackid " << p_mcp->TrackId() << " pdg: " << p_mcp->PdgCode() << " process: " << p_mcp->Process() << std::endl;
+      //std::cout << " nondropped trackid " << p_mcp->TrackId() << " energy: " << p_mcp->E()  << std::endl;
       if (p_mcp->TrackId() == bestmatch.first) {
-        //std::cout << "Matched! Track ID: " << p_mcp->TrackId() << " pdg: " << p_mcp->PdgCode() << " process: " << p_mcp->EndProcess() << std::endl;
+        std::cout << "Matched! Track ID: " << p_mcp->TrackId() << " pdg: " << p_mcp->PdgCode() << " process: " << p_mcp->EndProcess() << std::endl;
         fTrack->truth.p = TrueParticleInfo(*p_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo);
         fTrack->truth.eff = fTrack->truth.depE / (fTrack->truth.p.plane0VisE + fTrack->truth.p.plane1VisE + fTrack->truth.p.plane2VisE);
 
@@ -1092,6 +1110,84 @@ void sbn::TrackCaloSkimmer::FillTrackTruth(
             fTrack->truth.michel = TrueParticleInfo(*d_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo);
             break;
           }
+        }
+        std::vector<std::pair<const simb::MCParticle*, float>> ionization_electrons;
+
+        // Now look for ionization electrons from this particle in the dropped list
+        for (const art::Ptr<simb::MCParticle> &c_mcp: droppedmcparticles) {
+          
+          if (!(c_mcp->PdgCode() == 11 && c_mcp->Process() == "muIoni")) continue;
+          if (c_mcp->Mother() == p_mcp->TrackId()) {
+            
+            std::cout << "Dropped Matched! Track ID: " << c_mcp->TrackId() << " pdg: " << c_mcp->PdgCode() << " process: " << c_mcp->Process() << "  Energy: " << c_mcp->E() * 1000.0 << " keV" << std::endl; //da vedere se MeV o kev
+            
+            float energy = c_mcp->E(); // in GeV
+            ionization_electrons.emplace_back(c_mcp.get(), energy);
+
+            //sbn::TrueParticle deltaray = TrueParticleInfo(*c_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo);
+            
+            //fTrack->truth.deltarays.push_back(deltaray);
+          
+          }
+        }
+
+        // Sort ionization electrons by energy
+        std::sort(ionization_electrons.begin(), ionization_electrons.end(),
+          [](const auto &a, const auto &b) {
+            return a.second > b.second; // descending order
+          });
+
+        // Fill the deltaray information
+        //fTrack->truth.Ndeltarays = ionization_electrons.size();
+          
+        if (ionization_electrons.size() > 0) {
+          const simb::MCParticle* c_mcp = ionization_electrons[0].first;
+          fTrack->truth.deltaray_1 = TrueParticleInfo(*c_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo);
+        }
+        
+        if (ionization_electrons.size() > 1) {
+          const simb::MCParticle* c_mcp = ionization_electrons[1].first;
+          fTrack->truth.deltaray_2 = TrueParticleInfo(*c_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo);
+        }
+        
+        if (ionization_electrons.size() > 2) {
+          const simb::MCParticle* c_mcp = ionization_electrons[2].first;
+          fTrack->truth.deltaray_3 = TrueParticleInfo(*c_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo);
+        }
+
+        if (ionization_electrons.size() > 3) {
+          const simb::MCParticle* c_mcp = ionization_electrons[3].first;
+          fTrack->truth.deltaray_4 = TrueParticleInfo(*c_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo);
+        }
+
+        if (ionization_electrons.size() > 4) {
+          const simb::MCParticle* c_mcp = ionization_electrons[4].first;
+          fTrack->truth.deltaray_5 = TrueParticleInfo(*c_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo);
+        }
+        
+        if (ionization_electrons.size() > 5) {
+          const simb::MCParticle* c_mcp = ionization_electrons[5].first;
+          fTrack->truth.deltaray_6 = TrueParticleInfo(*c_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo);
+        }
+        
+        if (ionization_electrons.size() > 6) {
+          const simb::MCParticle* c_mcp = ionization_electrons[6].first;
+          fTrack->truth.deltaray_7 = TrueParticleInfo(*c_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo);
+        }
+        
+        if (ionization_electrons.size() > 7) {
+          const simb::MCParticle* c_mcp = ionization_electrons[7].first;
+          fTrack->truth.deltaray_8 = TrueParticleInfo(*c_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo);
+        }
+
+        if (ionization_electrons.size() > 8) {
+          const simb::MCParticle* c_mcp = ionization_electrons[8].first;
+          fTrack->truth.deltaray_9 = TrueParticleInfo(*c_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo);
+        }
+
+        if (ionization_electrons.size() > 9) {
+          const simb::MCParticle* c_mcp = ionization_electrons[9].first;
+          fTrack->truth.deltaray_10 = TrueParticleInfo(*c_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo);
         }
 
         break;
@@ -1147,6 +1243,7 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
   const int whichcrt,
   const float crtt0,
   const float confidence) {
+  std::cout << " filltrack " << std::endl;
 
   fTrack->whichCRT = whichcrt;
   fTrack->CRT_T0 = crtt0;
@@ -1157,6 +1254,7 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
   fTrack->t0 = t0;
   fTrack->id = track.ID();
   fTrack->clear_cosmic_muon = pfp.Parent() == recob::PFParticle::kPFParticlePrimary;
+  std::cout << " filltrack " << std::endl;
 
   fTrack->length = track.Length();
   fTrack->start.x = track.Start().X();
@@ -1168,6 +1266,7 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
   fTrack->dir.x = track.StartDirection().X();
   fTrack->dir.y = track.StartDirection().Y();
   fTrack->dir.z = track.StartDirection().Z();
+  std::cout << " filltrack " << std::endl;
 
   fTrack->range_p = rangeP->range_p;
   
@@ -1175,11 +1274,13 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
   fTrack->mcs_perr_UF  = mcsUF->fwdMomUncertainty();
   fTrack->mcs_pbest_UI = mcsUI->fwdMomentum();
   fTrack->mcs_perr_UI  = mcsUI->fwdMomUncertainty();
+  std::cout << " filltrack " << std::endl;
 
   for (size_t ja = 0; ja < mcsUF->scatterAngles().size(); ja++)
     fTrack->mcs_angles_UF.push_back(mcsUF->scatterAngles().at(ja));
   for (size_t ja = 0; ja < mcsUI->scatterAngles().size(); ja++)
     fTrack->mcs_angles_UI.push_back(mcsUI->scatterAngles().at(ja));
+  std::cout << " filltrack " << std::endl;
 
   fTrack->mcs_stop = mcsIF3D->GeoStopCheck();
   
@@ -1187,6 +1288,24 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
   fTrack->mcs_isdelta_2DI1 = mcsIF2DI1->IsDelta();
   fTrack->mcs_isdelta_2DI2 = mcsIF2DI2->IsDelta();
   fTrack->mcs_isdelta_2DC = mcsIF2DC->IsDelta();
+
+  fTrack->mcs_isdelta_indexC = mcsIF2DC->IsDeltaIndex();
+  fTrack->mcs_isdelta_indexI2 = mcsIF2DI2->IsDeltaIndex();
+  fTrack->mcs_isdelta_indexI1 = mcsIF2DI1->IsDeltaIndex();
+  std::cout << " filltrack " << std::endl;
+
+  for (unsigned int jd = 0; jd < fTrack->mcs_isdelta_2DI2.size(); jd++) 
+    if (fTrack->mcs_isdelta_2DI2.at(jd) > 0)
+      std::cout << " candidate isdelta 2di2 " << fTrack->mcs_isdelta_2DI2.at(jd) << std::endl; 
+  for (unsigned int jd = 0; jd < fTrack->mcs_isdelta_2DI1.size(); jd++) 
+    if (fTrack->mcs_isdelta_2DI1.at(jd) > 0)
+      std::cout << " candidate isdelta 2di1 " << fTrack->mcs_isdelta_2DI1.at(jd) << std::endl; 
+  for (unsigned int jd = 0; jd < fTrack->mcs_isdelta_2DC.size(); jd++) 
+    if (fTrack->mcs_isdelta_2DC.at(jd) > 0)
+      std::cout << " candidate isdelta 2dC " << fTrack->mcs_isdelta_2DC.at(jd) << std::endl; 
+  for (unsigned int jd = 0; jd < fTrack->mcs_isdelta_indexI2.size(); jd++) 
+    if (fTrack->mcs_isdelta_indexI2.at(jd) > 0)
+      std::cout << " candidate isdelta indexI2 " << fTrack->mcs_isdelta_indexI2.at(jd) << std::endl; 
 
   fTrack->mcs_sigma3p_3D   = mcsIF3D->sigma3P();
   fTrack->mcs_sigma3p_2DI1 = mcsIF2DI1->sigma3P();
@@ -1201,6 +1320,15 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
   fTrack->mcs_c2atrange_II2DI1 = mcsII2DI1->C2AtRange();
   fTrack->mcs_c2atrange_II2DI2 = mcsII2DI2->C2AtRange();
   fTrack->mcs_c2atrange_II2DC = mcsII2DC->C2AtRange();
+  
+  fTrack->mcs_tailsatrange_IF3D = mcsIF3D->TailsAtRange();
+  fTrack->mcs_tailsatrange_IF2DI1 = mcsIF2DI1->TailsAtRange();
+  fTrack->mcs_tailsatrange_IF2DI2 = mcsIF2DI2->TailsAtRange();
+  fTrack->mcs_tailsatrange_IF2DC = mcsIF2DC->TailsAtRange();
+  fTrack->mcs_tailsatrange_II3D = mcsII3D->TailsAtRange();
+  fTrack->mcs_tailsatrange_II2DI1 = mcsII2DI1->TailsAtRange();
+  fTrack->mcs_tailsatrange_II2DI2 = mcsII2DI2->TailsAtRange();
+  fTrack->mcs_tailsatrange_II2DC = mcsII2DC->TailsAtRange();
 
   fTrack->mcs_l1DI1 = mcsIF2DI1->length1D();
   fTrack->mcs_l2DI1 = mcsIF2DI1->length2D();
@@ -1224,6 +1352,8 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
     fTrack->mcs_ptest_IF3D.push_back(mcsIF3D->testMomentum().at(ja));
   for (size_t ja = 0; ja < mcsIF3D->C2Function().size(); ja++)
     fTrack->mcs_c2function_IF3D.push_back(mcsIF3D->C2Function().at(ja));
+  for (size_t ja = 0; ja < mcsIF3D->TailsSize().size(); ja++)
+    fTrack->mcs_tailssize_IF3D.push_back(mcsIF3D->TailsSize().at(ja));
   for (size_t ja = 0; ja < mcsIF3D->segmentLengths().size(); ja++)
     fTrack->mcs_seglens_IF3D.push_back(mcsIF3D->segmentLengths().at(ja));
   for (size_t ja = 0; ja < mcsIF3D->segmentCumLengths().size(); ja++)
@@ -1253,6 +1383,8 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
     fTrack->mcs_ptest_IF2DI1.push_back(mcsIF2DI1->testMomentum().at(ja));
   for (size_t ja = 0; ja < mcsIF2DI1->C2Function().size(); ja++)
     fTrack->mcs_c2function_IF2DI1.push_back(mcsIF2DI1->C2Function().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DI1->TailsSize().size(); ja++)
+    fTrack->mcs_tailssize_IF2DI1.push_back(mcsIF2DI1->TailsSize().at(ja));
   for (size_t ja = 0; ja < mcsIF2DI1->segmentLengths().size(); ja++)
     fTrack->mcs_seglens_IF2DI1.push_back(mcsIF2DI1->segmentLengths().at(ja));
   for (size_t ja = 0; ja < mcsIF2DI1->segmentCumLengths().size(); ja++)
@@ -1282,6 +1414,8 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
     fTrack->mcs_ptest_IF2DI2.push_back(mcsIF2DI2->testMomentum().at(ja));
   for (size_t ja = 0; ja < mcsIF2DI2->C2Function().size(); ja++)
     fTrack->mcs_c2function_IF2DI2.push_back(mcsIF2DI2->C2Function().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DI2->TailsSize().size(); ja++)
+    fTrack->mcs_tailssize_IF2DI2.push_back(mcsIF2DI2->TailsSize().at(ja));
   for (size_t ja = 0; ja < mcsIF2DI2->segmentLengths().size(); ja++)
     fTrack->mcs_seglens_IF2DI2.push_back(mcsIF2DI2->segmentLengths().at(ja));
   for (size_t ja = 0; ja < mcsIF2DI2->segmentCumLengths().size(); ja++)
@@ -1311,6 +1445,8 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
     fTrack->mcs_ptest_IF2DC.push_back(mcsIF2DC->testMomentum().at(ja));
   for (size_t ja = 0; ja < mcsIF2DC->C2Function().size(); ja++)
     fTrack->mcs_c2function_IF2DC.push_back(mcsIF2DC->C2Function().at(ja));
+  for (size_t ja = 0; ja < mcsIF2DC->TailsSize().size(); ja++)
+    fTrack->mcs_tailssize_IF2DC.push_back(mcsIF2DC->TailsSize().at(ja));
   for (size_t ja = 0; ja < mcsIF2DC->segmentLengths().size(); ja++)
     fTrack->mcs_seglens_IF2DC.push_back(mcsIF2DC->segmentLengths().at(ja));
   for (size_t ja = 0; ja < mcsIF2DC->segmentCumLengths().size(); ja++)
@@ -1340,22 +1476,8 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
     fTrack->mcs_ptest_II3D.push_back(mcsII3D->testMomentum().at(ja));
   for (size_t ja = 0; ja < mcsII3D->C2Function().size(); ja++)
     fTrack->mcs_c2function_II3D.push_back(mcsII3D->C2Function().at(ja));
-  for (size_t ja = 0; ja < mcsII3D->segmentLengths().size(); ja++)
-    fTrack->mcs_seglens_II3D.push_back(mcsII3D->segmentLengths().at(ja));
-  for (size_t ja = 0; ja < mcsII3D->segmentCumLengths().size(); ja++)
-    fTrack->mcs_cumseglens_II3D.push_back(mcsII3D->segmentCumLengths().at(ja));
-  for (size_t ja = 0; ja < mcsII3D->segmentHits().size(); ja++)
-    fTrack->mcs_seghits_II3D.push_back(mcsII3D->segmentHits().at(ja));
-  for (size_t ja = 0; ja < mcsII3D->segmentCumHits().size(); ja++)
-    fTrack->mcs_cumseghits_II3D.push_back(mcsII3D->segmentCumHits().at(ja));
-  for (size_t ja = 0; ja < mcsII3D->expectedLinAngles().size(); ja++)
-    fTrack->mcs_dthetalinexp_II3D.push_back(mcsII3D->expectedLinAngles().at(ja));
-  for (size_t ja = 0; ja < mcsII3D->measuredLinAngles().size(); ja++)
-    fTrack->mcs_dthetalin_II3D.push_back(mcsII3D->measuredLinAngles().at(ja));
-  for (size_t ja = 0; ja < mcsII3D->expectedPolyAngles().size(); ja++)
-    fTrack->mcs_dthetapolyexp_II3D.push_back(mcsII3D->expectedPolyAngles().at(ja));
-  for (size_t ja = 0; ja < mcsII3D->measuredPolyAngles().size(); ja++)
-    fTrack->mcs_dthetapoly_II3D.push_back(mcsII3D->measuredPolyAngles().at(ja));
+  for (size_t ja = 0; ja < mcsII3D->TailsSize().size(); ja++)
+    fTrack->mcs_tailssize_II3D.push_back(mcsII3D->TailsSize().at(ja));
 
   fTrack->mcs_pbest_II2DI1  = mcsII2DI1->bestMomentum();
   fTrack->mcs_perr_II2DI1   = mcsII2DI1->errorMomentum();
@@ -1369,22 +1491,8 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
     fTrack->mcs_ptest_II2DI1.push_back(mcsII2DI1->testMomentum().at(ja));
   for (size_t ja = 0; ja < mcsII2DI1->C2Function().size(); ja++)
     fTrack->mcs_c2function_II2DI1.push_back(mcsII2DI1->C2Function().at(ja));
-  for (size_t ja = 0; ja < mcsII2DI1->segmentLengths().size(); ja++)
-    fTrack->mcs_seglens_II2DI1.push_back(mcsII2DI1->segmentLengths().at(ja));
-  for (size_t ja = 0; ja < mcsII2DI1->segmentCumLengths().size(); ja++)
-    fTrack->mcs_cumseglens_II2DI1.push_back(mcsII2DI1->segmentCumLengths().at(ja));
-  for (size_t ja = 0; ja < mcsII2DI1->segmentHits().size(); ja++)
-    fTrack->mcs_seghits_II2DI1.push_back(mcsII2DI1->segmentHits().at(ja));
-  for (size_t ja = 0; ja < mcsII2DI1->segmentCumHits().size(); ja++)
-    fTrack->mcs_cumseghits_II2DI1.push_back(mcsII2DI1->segmentCumHits().at(ja));
-  for (size_t ja = 0; ja < mcsII2DI1->expectedLinAngles().size(); ja++)
-    fTrack->mcs_dthetalinexp_II2DI1.push_back(mcsII2DI1->expectedLinAngles().at(ja));
-  for (size_t ja = 0; ja < mcsII2DI1->measuredLinAngles().size(); ja++)
-    fTrack->mcs_dthetalin_II2DI1.push_back(mcsII2DI1->measuredLinAngles().at(ja));
-  for (size_t ja = 0; ja < mcsII2DI1->expectedPolyAngles().size(); ja++)
-    fTrack->mcs_dthetapolyexp_II2DI1.push_back(mcsII2DI1->expectedPolyAngles().at(ja));
-  for (size_t ja = 0; ja < mcsII2DI1->measuredPolyAngles().size(); ja++)
-    fTrack->mcs_dthetapoly_II2DI1.push_back(mcsII2DI1->measuredPolyAngles().at(ja));
+  for (size_t ja = 0; ja < mcsII2DI1->TailsSize().size(); ja++)
+    fTrack->mcs_tailssize_II2DI1.push_back(mcsII2DI1->TailsSize().at(ja));
 
   fTrack->mcs_pbest_II2DI2  = mcsII2DI2->bestMomentum();
   fTrack->mcs_perr_II2DI2   = mcsII2DI2->errorMomentum();
@@ -1398,22 +1506,8 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
     fTrack->mcs_ptest_II2DI2.push_back(mcsII2DI2->testMomentum().at(ja));
   for (size_t ja = 0; ja < mcsII2DI2->C2Function().size(); ja++)
     fTrack->mcs_c2function_II2DI2.push_back(mcsII2DI2->C2Function().at(ja));
-  for (size_t ja = 0; ja < mcsII2DI2->segmentLengths().size(); ja++)
-    fTrack->mcs_seglens_II2DI2.push_back(mcsII2DI2->segmentLengths().at(ja));
-  for (size_t ja = 0; ja < mcsII2DI2->segmentCumLengths().size(); ja++)
-    fTrack->mcs_cumseglens_II2DI2.push_back(mcsII2DI2->segmentCumLengths().at(ja));
-  for (size_t ja = 0; ja < mcsII2DI2->segmentHits().size(); ja++)
-    fTrack->mcs_seghits_II2DI2.push_back(mcsII2DI2->segmentHits().at(ja));
-  for (size_t ja = 0; ja < mcsII2DI2->segmentCumHits().size(); ja++)
-    fTrack->mcs_cumseghits_II2DI2.push_back(mcsII2DI2->segmentCumHits().at(ja));
-  for (size_t ja = 0; ja < mcsII2DI2->expectedLinAngles().size(); ja++)
-    fTrack->mcs_dthetalinexp_II2DI2.push_back(mcsII2DI2->expectedLinAngles().at(ja));
-  for (size_t ja = 0; ja < mcsII2DI2->measuredLinAngles().size(); ja++)
-    fTrack->mcs_dthetalin_II2DI2.push_back(mcsII2DI2->measuredLinAngles().at(ja));
-  for (size_t ja = 0; ja < mcsII2DI2->expectedPolyAngles().size(); ja++)
-    fTrack->mcs_dthetapolyexp_II2DI2.push_back(mcsII2DI2->expectedPolyAngles().at(ja));
-  for (size_t ja = 0; ja < mcsII2DI2->measuredPolyAngles().size(); ja++)
-    fTrack->mcs_dthetapoly_II2DI2.push_back(mcsII2DI2->measuredPolyAngles().at(ja));
+  for (size_t ja = 0; ja < mcsII2DI2->TailsSize().size(); ja++)
+    fTrack->mcs_tailssize_II2DI2.push_back(mcsII2DI2->TailsSize().at(ja));
 
   fTrack->mcs_pbest_II2DC  = mcsII2DC->bestMomentum();
   fTrack->mcs_perr_II2DC   = mcsII2DC->errorMomentum();
@@ -1427,23 +1521,9 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
     fTrack->mcs_ptest_II2DC.push_back(mcsII2DC->testMomentum().at(ja));
   for (size_t ja = 0; ja < mcsII2DC->C2Function().size(); ja++)
     fTrack->mcs_c2function_II2DC.push_back(mcsII2DC->C2Function().at(ja));
-  for (size_t ja = 0; ja < mcsII2DC->segmentLengths().size(); ja++)
-    fTrack->mcs_seglens_II2DC.push_back(mcsII2DC->segmentLengths().at(ja));
-  for (size_t ja = 0; ja < mcsII2DC->segmentCumLengths().size(); ja++)
-    fTrack->mcs_cumseglens_II2DC.push_back(mcsII2DC->segmentCumLengths().at(ja));
-  for (size_t ja = 0; ja < mcsII2DC->segmentHits().size(); ja++)
-    fTrack->mcs_seghits_II2DC.push_back(mcsII2DC->segmentHits().at(ja));
-  for (size_t ja = 0; ja < mcsII2DC->segmentCumHits().size(); ja++)
-    fTrack->mcs_cumseghits_II2DC.push_back(mcsII2DC->segmentCumHits().at(ja));
-  for (size_t ja = 0; ja < mcsII2DC->expectedLinAngles().size(); ja++)
-    fTrack->mcs_dthetalinexp_II2DC.push_back(mcsII2DC->expectedLinAngles().at(ja));
-  for (size_t ja = 0; ja < mcsII2DC->measuredLinAngles().size(); ja++)
-    fTrack->mcs_dthetalin_II2DC.push_back(mcsII2DC->measuredLinAngles().at(ja));
-  for (size_t ja = 0; ja < mcsII2DC->expectedPolyAngles().size(); ja++)
-    fTrack->mcs_dthetapolyexp_II2DC.push_back(mcsII2DC->expectedPolyAngles().at(ja));
-  for (size_t ja = 0; ja < mcsII2DC->measuredPolyAngles().size(); ja++)
-    fTrack->mcs_dthetapoly_II2DC.push_back(mcsII2DC->measuredPolyAngles().at(ja));
-
+  for (size_t ja = 0; ja < mcsII2DC->TailsSize().size(); ja++)
+    fTrack->mcs_tailssize_II2DC.push_back(mcsII2DC->TailsSize().at(ja));
+    
   if (hits.size() > 0) {
     fTrack->cryostat = hits[0]->WireID().Cryostat;
   }
@@ -1461,6 +1541,7 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
       fTrack->hits2.push_back(hinfo);
     }
   }
+  std::cout << " skimmer collection count " << fTrack->hits2.size() << std::endl;
 
   // Hit summary info
   fTrack->hit_min_time_p0_tpcE = HitMinTime(fTrack->hits0, true, det);
@@ -1540,7 +1621,7 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
           track.StartDirection().Dot(othr.dir) : track.StartDirection().Dot(othr.enddir)); 
     }
   }
-  //std::cout << " end filltrack " << std::endl;
+  std::cout << " end filltrack " << std::endl;
 }
 
 void sbn::TrackCaloSkimmer::DoTailFit() {
@@ -1619,18 +1700,21 @@ sbn::TrackHitInfo sbn::TrackCaloSkimmer::MakeHit(const recob::Hit &hit,
   sbn::TrackHitInfo hinfo;
 
   // information from the hit object
-  hinfo.h.integral = hit.Integral();
-  hinfo.h.sumadc = hit.SummedADC();
-  hinfo.h.width = hit.RMS();
-  hinfo.h.time = hit.PeakTime();
-  hinfo.h.mult = hit.Multiplicity();
-  hinfo.h.wire = hit.WireID().Wire;
-  hinfo.h.plane = hit.WireID().Plane;
-  hinfo.h.channel = geo->PlaneWireToChannel(hit.WireID());
-  hinfo.h.tpc = hit.WireID().TPC;
-  hinfo.h.end = hit.EndTick();
-  hinfo.h.start = hit.StartTick();
-  hinfo.h.id = (int)hkey;
+  if (trk.HasValidPoint(thm.Index())) {
+    hinfo.h.integral = hit.Integral();
+    hinfo.h.sumadc = hit.SummedADC();
+    hinfo.h.width = hit.RMS();
+    hinfo.h.time = hit.PeakTime();
+    hinfo.h.mult = hit.Multiplicity();
+    hinfo.h.wire = hit.WireID().Wire;
+    hinfo.h.plane = hit.WireID().Plane;
+    if (hinfo.h.plane == 2) std::cout << " adding skimmer index " << thm.Index() << std::endl;
+    hinfo.h.channel = geo->PlaneWireToChannel(hit.WireID());
+    hinfo.h.tpc = hit.WireID().TPC;
+    hinfo.h.end = hit.EndTick();
+    hinfo.h.start = hit.StartTick();
+    hinfo.h.id = (int)hkey;
+  }
 
   // Do back-tracking on each hit
   if (bt_serv) {
@@ -1725,10 +1809,13 @@ sbn::TrackHitInfo sbn::TrackCaloSkimmer::MakeHit(const recob::Hit &hit,
   }
 
   // Save SpacePoint information
-  if (sp) {
+  if (sp && trk.HasValidPoint(thm.Index())) {
     hinfo.h.sp.x = sp->position().x();
     hinfo.h.sp.y = sp->position().y();
     hinfo.h.sp.z = sp->position().z();
+    if(isnan(sp->position().x())) std::cout << " x nan " << thm.Index() << std::endl;
+    if(isnan(sp->position().y())) std::cout << " y nan " << thm.Index() << std::endl;
+    if(isnan(sp->position().z())) std::cout << " z nan " << thm.Index() << std::endl;
 
     hinfo.h.hasSP = true;
   }
@@ -1737,6 +1824,64 @@ sbn::TrackHitInfo sbn::TrackCaloSkimmer::MakeHit(const recob::Hit &hit,
   }
 
   return hinfo;
+}
+
+void sbn::TrackCaloSkimmer::FillDroppedTrackTruth(
+  const detinfo::DetectorClocksData &clock_data,
+  const std::vector<art::Ptr<recob::Hit>> &trkHits,
+  const std::vector<art::Ptr<simb::MCParticle>> &mcparticles,
+  const std::vector<art::Ptr<simb::MCParticle>> &droppedmcparticles,
+  const std::vector<geo::BoxBoundedGeo> &active_volumes,
+  const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
+  const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map,
+  const std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map,
+  const detinfo::DetectorPropertiesData &dprop,
+  const geo::GeometryCore *geo) {
+
+  // Lookup the true-particle match -- use utils in CAF
+  std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clock_data, trkHits, true);
+  float total_energy = CAFRecoUtils::TotalHitEnergy(clock_data, trkHits); 
+  fTrack->truth.depE = total_energy / 1000. /* MeV -> GeV */;
+  
+  // sort highest energy match to lowest
+  std::sort(matches.begin(), matches.end(),
+      [](const auto &a, const auto &b) {
+        return a.second > b.second;
+      }
+  );
+std::cout << " dropped size " << droppedmcparticles.size() << std::endl;
+
+  // loop on matches
+  for (unsigned int j=0;j<matches.size();j++) {
+    std::pair<int, float> match = matches[j];
+
+
+    fTrack->truth.pur = match.second / total_energy;
+
+    for (const art::Ptr<simb::MCParticle> &p_mcp: droppedmcparticles) {
+     //std::cout << " nondropped trackid " << p_mcp->TrackId() << " pdg: " << p_mcp->PdgCode() << " process: " << p_mcp->Process() << std::endl;
+     //std::cout << " nondropped trackid " << p_mcp->TrackId() << " energy: " << p_mcp->E()  << std::endl;
+
+      if (p_mcp->TrackId() == match.first) {
+        std::cout << "Matched reco track " << j << " Track ID: " << p_mcp->TrackId() << " pdg: " << p_mcp->PdgCode() << " process: " << p_mcp->EndProcess() << std::endl;
+        fTrack->truth.p = TrueParticleInfo(*p_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo);
+        fTrack->truth.eff = fTrack->truth.depE / (fTrack->truth.p.plane0VisE + fTrack->truth.p.plane1VisE + fTrack->truth.p.plane2VisE);
+
+        // Lookup any delta
+        for (const art::Ptr<simb::MCParticle> &d_mcp: mcparticles) {
+          if (d_mcp->Mother() == p_mcp->TrackId() && // correct parent
+              (d_mcp->Process() == "Decay" || d_mcp->Process() == "muIoni") && // correct process
+              abs(d_mcp->PdgCode()) == 11) { // correct PDG code
+
+            fTrack->truth.michel = TrueParticleInfo(*d_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo);
+            break;
+          }
+        }
+      }
+    }
+
+    
+  }
 }
 
 DEFINE_ART_MODULE(sbn::TrackCaloSkimmer)
