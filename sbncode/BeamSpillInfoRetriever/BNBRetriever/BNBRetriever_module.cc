@@ -663,6 +663,8 @@ sbn::BNBSpillInfo sbn::BNBRetriever::makeBNBSpillInfo
   double LM875A = 0; // units R/s
   double LM875B = 0; // units R/s
   double LM875C = 0; // units R/s
+  double HP873 = 0; // units mm
+  double VP873 = 0; // units mm
   double HP875 = 0; // units mm
   double VP875 = 0; // units mm
   double HPTG1 = 0; // units mm
@@ -671,6 +673,14 @@ sbn::BNBSpillInfo sbn::BNBRetriever::makeBNBSpillInfo
   double VPTG2 = 0; // units mm
   double BTJT2 = 0; // units Deg C
   double THCURR = 0; // units kiloAmps
+  double M875HS = 0; // units mm
+  double M875VS = 0; // units mm
+  double M875HM = 0; // units mm
+  double M875VM = 0; // units mm
+  double M876HS = 0; // units mm
+  double M876VS = 0; // units mm
+  double M876HM = 0; // units mm
+  double M876VM = 0; // units mm
   
   double TOR860_time = 0; // units s
     
@@ -683,6 +693,8 @@ sbn::BNBSpillInfo sbn::BNBRetriever::makeBNBSpillInfo
   try{bfp->GetNamedData(time, "E:LM875A",&LM875A);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
   try{bfp->GetNamedData(time, "E:LM875B",&LM875B);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
   try{bfp->GetNamedData(time, "E:LM875C",&LM875C);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:HP873",&HP873);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:VP873",&VP873);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
   try{bfp->GetNamedData(time, "E:HP875",&HP875);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
   try{bfp->GetNamedData(time, "E:VP875",&VP875);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
   try{bfp->GetNamedData(time, "E:HPTG1",&HPTG1);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
@@ -691,6 +703,14 @@ sbn::BNBSpillInfo sbn::BNBRetriever::makeBNBSpillInfo
   try{bfp->GetNamedData(time, "E:VPTG2",&VPTG2);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
   try{bfp->GetNamedData(time, "E:BTJT2",&BTJT2);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
   try{bfp->GetNamedData(time, "E:THCURR",&THCURR);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:M875HS",&M875HS);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:M875VS",&M875VS);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:M875HM",&M875HM);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:M875VM",&M875VM);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:M876HS",&M876HS);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:M876VS",&M876VS);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:M876HM",&M876HM);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:M876VM",&M876VM);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
   
   //crunch the times 
   unsigned long int time_closest_int = (int) TOR860_time;
@@ -703,6 +723,8 @@ sbn::BNBSpillInfo sbn::BNBRetriever::makeBNBSpillInfo
   beamInfo.LM875A = LM875A;
   beamInfo.LM875B = LM875B;
   beamInfo.LM875C = LM875C;
+  beamInfo.HP873 = HP873;
+  beamInfo.VP873 = VP873;
   beamInfo.HP875 = HP875;
   beamInfo.VP875 = VP875;
   beamInfo.HPTG1 = HPTG1;
@@ -711,6 +733,14 @@ sbn::BNBSpillInfo sbn::BNBRetriever::makeBNBSpillInfo
   beamInfo.VPTG2 = VPTG2;
   beamInfo.BTJT2 = BTJT2;
   beamInfo.THCURR = THCURR;
+  beamInfo.M875HS = M875HS;
+  beamInfo.M875VS = M875VS;
+  beamInfo.M875HM = M875HM;
+  beamInfo.M875VM = M875VM;
+  beamInfo.M876HS = M876HS;
+  beamInfo.M876VS = M876VS;
+  beamInfo.M876HM = M876HM;
+  beamInfo.M876VM = M876VM;
   beamInfo.spill_time_s = time_closest_int;
   beamInfo.spill_time_ns = time_closest_ns;    
 
