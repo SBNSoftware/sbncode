@@ -141,6 +141,18 @@ namespace caf
     srsbndcrttrack.tof      = track.ToF();
   }
 
+  void FillSBNDCRTVeto(const sbnd::crt::CRTVeto &veto,
+                        caf::SRSBNDCRTVeto &srsbndcrtveto,
+                        bool allowEmpty)
+  {
+    std::cout << "DEBUGGING!!!! veto.V0 " << veto.V0() << std::endl;
+    srsbndcrtveto.V0     = veto.V0();
+    srsbndcrtveto.V1     = veto.V1();
+    srsbndcrtveto.V2     = veto.V2();
+    srsbndcrtveto.V3     = veto.V3();
+    srsbndcrtveto.V4     = veto.V4();
+  }
+
   void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,
 		       caf::SRCRTPMTMatch &srmatch,
 		       bool allowEmpty){

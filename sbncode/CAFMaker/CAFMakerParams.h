@@ -338,6 +338,12 @@ namespace caf
       "crttracks" // sbnd
     };
 
+    Atom<string> SBNDCRTVetoLabel {
+      Name("SBNDCRTVetoLabel"),
+      Comment("Label of sbnd CRT Veto."),
+      "crtveto" // sbnd
+    };
+
     Atom<string> CRTPMTLabel {
       Name("CRTPMTLabel"),
       Comment("Label for the CRTPMT Matched variables from the crtpmt data product"),

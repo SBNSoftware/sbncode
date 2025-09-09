@@ -1602,6 +1602,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   std::vector<caf::SRCRTTrack> srcrttracks;
   std::vector<caf::SRCRTSpacePoint> srcrtspacepoints;
   std::vector<caf::SRSBNDCRTTrack> srsbndcrttracks;
+  caf::SRSBNDCRTVeto srsbndcrtveto;
 
   if(fDet == kICARUS)
     {
@@ -1650,6 +1651,44 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           FillSBNDCRTTrack(sbndcrttracks[i], srsbndcrttracks.back());
         }
       }
+      // Fill CRT Veto 
+      std::cout << std::endl;	
+      std::cout << std::endl;	
+      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
+      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
+      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
+      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
+      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
+      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
+      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
+      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
+      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
+      std::cout << std::endl;	
+      std::cout << std::endl;	
+      art::Handle<std::vector<sbnd::crt::CRTVeto>> sbndcrtveto_handle;
+      GetByLabelStrict(evt, fParams.SBNDCRTVetoLabel(), sbndcrtveto_handle);
+      // fill into event
+      if (sbndcrtveto_handle.isValid()) {
+	std::cout << "Found a valid CRT Veto Handle!!!" << std::endl;
+        const std::vector<sbnd::crt::CRTVeto> &sbndcrtvetos = *sbndcrtveto_handle;
+          //srsbndcrtveto.emplace_back();
+          FillSBNDCRTVeto(sbndcrtvetos[0], srsbndcrtveto);
+      }
+      else {
+        std::cout << "Invalid CRT Veto Handle!" << std::endl;
+	return;
+      }
+      std::cout << std::endl;	
+      std::cout << std::endl;	
+      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
+      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
+      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
+      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
+      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
+      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
+      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
+      std::cout << std::endl;	
+      std::cout << std::endl;	
     }
 
   // Get all of the CRTPMT Matches
@@ -2349,6 +2388,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   }  // end loop over slices
 
+  std::cout << std::endl;
+  std::cout << std::endl;
+  std::cout << "// -------------- DEBUG FILL REC TREE --------------------- //" <<std::endl;
+  std::cout << "V0 " << srsbndcrtveto.V0 << std::endl;
+  std::cout << std::endl;
+  std::cout << std::endl;
   //#######################################################
   //  Fill rec Tree
   //#######################################################
@@ -2365,6 +2410,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.ncrt_spacepoints = srcrtspacepoints.size();
   rec.sbnd_crt_tracks  = srsbndcrttracks;
   rec.nsbnd_crt_tracks = srsbndcrttracks.size();
+  rec.sbnd_crt_veto  = srsbndcrtveto;
   rec.opflashes        = srflashes;
   rec.nopflashes       = srflashes.size();
   if (fParams.FillTrueParticles()) {
@@ -2374,6 +2420,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.crtpmt_matches = srcrtpmtmatches;
   rec.ncrtpmt_matches = srcrtpmtmatches.size();
 
+  std::cout << std::endl;
+  std::cout << std::endl;
+  std::cout << "// -------------- DEBUG After FILL REC TREE --------------------- //" <<std::endl;
+  std::cout << "V0 " << rec.sbnd_crt_veto.V0 << std::endl;
+  std::cout << std::endl;
+  std::cout << std::endl;
   // Fix the Reference time
   //
   // We want MC and Data to have the same reference time.
