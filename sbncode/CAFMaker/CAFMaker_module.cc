@@ -2420,6 +2420,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.crtpmt_matches = srcrtpmtmatches;
   rec.ncrtpmt_matches = srcrtpmtmatches.size();
 
+  rec.sbnd_crtveto_v0 = srsbndcrtveto.V0;
+  rec.sbnd_crtveto_v1 = srsbndcrtveto.V1;
+  rec.sbnd_crtveto_v2 = srsbndcrtveto.V2;
+  rec.sbnd_crtveto_v3 = srsbndcrtveto.V3;
+  rec.sbnd_crtveto_v4 = srsbndcrtveto.V4;
+
   std::cout << std::endl;
   std::cout << std::endl;
   std::cout << "// -------------- DEBUG After FILL REC TREE --------------------- //" <<std::endl;
