@@ -108,6 +108,11 @@ std::vector<std::pair<unsigned int, unsigned int>> sys::WireModUtility::GetHitTa
   return target_roi_vec;
 }
 
+//--- FillROIMatchedIDEMap ---
+void sys::WireModUtility::FillROIMatchedIDEMap(std::vector<sim::SimChannel> const& simchVec, std::vector<recob::Wire> const& wireVec, double offset)
+{
+}
+
 //--- FillROIMatchedEdepMap ---
 void sys::WireModUtility::FillROIMatchedEdepMap(std::vector<sim::SimEnergyDeposit> const& edepVec, std::vector<recob::Wire> const& wireVec, double offset)
 {
