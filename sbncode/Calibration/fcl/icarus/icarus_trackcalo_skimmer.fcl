@@ -27,6 +27,7 @@ caloskim_cryoe: {
   T0producers: ["pandoraGausCryoE"]
   PFPproducer: "pandoraGausCryoE"
   G4producer: ""
+  G4Droppedproducer: ""
   SimChannelproducer: ""
   HITproducer: "cluster3DCryoE"
   RawDigitproducers: ["daqTPCROI:PHYSCRATEDATATPCEW", "daqTPCROI:PHYSCRATEDATATPCEE"]
@@ -44,6 +45,7 @@ caloskim_cryow: {
   T0producers: ["pandoraGausCryoW"]
   PFPproducer: "pandoraGausCryoW"
   G4producer: ""
+  G4Droppedproducer: ""
   SimChannelproducer: ""
   HITproducer: "cluster3DCryoW"
   RawDigitproducers: ["daqTPCROI:PHYSCRATEDATATPCWW", "daqTPCROI:PHYSCRATEDATATPCWE"]
