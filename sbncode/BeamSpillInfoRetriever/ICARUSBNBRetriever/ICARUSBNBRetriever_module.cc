@@ -16,6 +16,8 @@
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerV3Fragment.hh"
 #include <sqlite3.h>
+#include "sbncode/BeamSpillInfoRetriever/POTTools.h"
+#include "sbncode/BeamSpillInfoRetriever/getFOM.h"
 
 namespace sbn {
   class ICARUSBNBRetriever;
@@ -115,6 +117,8 @@ private:
   //
   art::ServiceHandle<ifbeam_ns::IFBeam> ifbeam_handle;
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp;
+  std::unique_ptr<ifbeam_ns::BeamFolder> offsets;
+  std::unique_ptr<ifbeam_ns::BeamFolder> vp873;
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp_mwr;
   
   //
@@ -213,6 +217,8 @@ sbn::ICARUSBNBRetriever::ICARUSBNBRetriever(Parameters const& params)
   raw_data_label(params().RawDataLabel()),
   fDeviceUsedForTiming(params().DeviceUsedForTiming()),
   bfp(     ifbeam_handle->getBeamFolder(params().Bundle(), params().URL(), params().TimeWindow())),
+  vp873(     ifbeam_handle->getBeamFolder(params().VP873Bundle(), params().URL(), params().TimeWindow())),
+  offsets(     ifbeam_handle->getBeamFolder(params().OffsetBundle(), params().URL(), params().TimeWindow())),
   bfp_mwr( ifbeam_handle->getBeamFolder(params().MultiWireBundle(), params().URL(), params().MWR_TimeWindow())),
   fTriggerDatabaseFile(params().TriggerDatabaseFile())
 {
@@ -231,6 +237,8 @@ sbn::ICARUSBNBRetriever::ICARUSBNBRetriever(Parameters const& params)
   //
   bfp->set_epsilon(0.02); //20 ms, this was tuned by hand and compared to IFBeamDB times  
   bfp_mwr->set_epsilon(0.5);
+  vp873->set_epsilon(0.02);
+  offsets->set_epsilon(600);
 
   //bfp_mwr->setValidWindow(86400);  
   bfp_mwr->setValidWindow(3605);  
@@ -433,7 +441,9 @@ int sbn::ICARUSBNBRetriever::matchMultiWireData(
       
     }//end loop over MWR devices
     
-    sbn::BNBSpillInfo spillInfo = sbn::pot::makeBNBSpillInfo(eventID, times_temps[i], MWRdata, matched_MWR, bfp);
+    sbn::BNBSpillInfo spillInfo = sbn::pot::makeBNBSpillInfo(eventID, times_temps[i], MWRdata, matched_MWR, bfp, offsets, vp873);
+    double const spillFOM = sbn::getBNBqualityFOM(spillInfo);
+    spillInfo.FOM = spillFOM;
 
     beamInfos.push_back(std::move(spillInfo));
 
