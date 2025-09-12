@@ -1,4 +1,4 @@
-#include "bnbspillinfo.fcl"
+#include "icarusbnbspillinfo.fcl"
 
 process_name: BNBInfoGen
 
@@ -28,10 +28,10 @@ source: {
 
 physics: {
  producers: {
-   bnbinfo: @local::bnbspillinfo
+   bnbinfo: @local::icarusbnbspillinfo
  }
 
- simulate: [bnbinfo ]
+ simulate: [ bnbinfo ]
  stream1: [ out1 ]
 }
 
