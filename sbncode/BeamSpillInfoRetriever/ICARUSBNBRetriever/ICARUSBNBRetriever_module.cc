@@ -71,7 +71,16 @@ public:
       Name{ "MultiWireBundle" },
       Comment{ "name of collections of devices to grab from IFbeam for use as MWRdevices." }
       };
-    
+
+    fhicl::Atom<std::string> VP873Bundle {
+      Name{ "VP873Bundle" },
+      Comment{ "name of collections of devices to grab from IFbeam for use as VP873." }
+      };   
+ 
+    fhicl::Atom<std::string> OffsetBundle {
+      Name{ "OffsetBundle" },
+      Comment{ "name of collections of devices to grab from IFbeam for use for offsets." }
+      };
     fhicl::Atom<double> MWR_TimeWindow {
       Name{ "MWR_TimeWindow" },
       Comment{ "Window of time in seconds to use for mwr ifbeam queries." } 
