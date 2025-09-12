@@ -9,6 +9,8 @@ icarusbnbspillinfo: {
     URL: "" #keep this blank and we're good
     Bundle: "BoosterNeutrinoBeam_read_expanded"
     MultiWireBundle: "BNBMultiWire"
+    VP873Bundle: "BNB_monitor"
+    OffsetBundle: "BNB_BPM_settings"
     TimeWindow: "700" #seconds
     MWR_TimeWindow: "3601" #seconds
     raw_data_label: "daq"
