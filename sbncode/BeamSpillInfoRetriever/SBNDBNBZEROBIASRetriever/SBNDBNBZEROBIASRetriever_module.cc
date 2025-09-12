@@ -9,6 +9,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
 #include "sbncode/BeamSpillInfoRetriever/SBNDPOTTools.h"
+#include "sbncode/BeamSpillInfoRetriever/getFOM.h"
 
 namespace sbn {
   class SBNDBNBZEROBIASRetriever;
@@ -34,6 +35,8 @@ private:
   double fBESOffset;
   std::string fDeviceUsedForTiming;
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp;
+  std::unique_ptr<ifbeam_ns::BeamFolder> offsets;
+  std::unique_ptr<ifbeam_ns::BeamFolder> vp873;
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp_mwr;
   sbn::MWRData mwrdata;
   art::ServiceHandle<ifbeam_ns::IFBeam> ifbeam_handle;
@@ -56,11 +59,18 @@ sbn::SBNDBNBZEROBIASRetriever::SBNDBNBZEROBIASRetriever(fhicl::ParameterSet cons
   fTimePad = params.get<double>("TimePadding");
   fDeviceUsedForTiming = params.get<std::string>("DeviceUsedForTiming");
   fBESOffset = params.get<double>("BESOffset");
-  bfp = ifbeam_handle->getBeamFolder(params.get<std::string>("Bundle"), params.get<std::string>("URL"), std::stod(params.get<std::string>("TimeWindow")));
+  const double timeWindow = std::stod(params.get<std::string>("TimeWindow"));
+  bfp = ifbeam_handle->getBeamFolder(params.get<std::string>("Bundle"), params.get<std::string>("URL"), timeWindow);
   bfp->set_epsilon(0.02);
   bfp_mwr = ifbeam_handle->getBeamFolder(params.get<std::string>("MultiWireBundle"), params.get<std::string>("URL"), std::stod(params.get<std::string>("MWR_TimeWindow")));
   bfp_mwr->set_epsilon(0.5);
   bfp_mwr->setValidWindow(3605);
+  vp873 = ifbeam_handle->getBeamFolder(params.get<std::string>("VP873Bundle"), params.get<std::string>("URL"), timeWindow);
+  vp873->set_epsilon(0.02);
+ 
+  offsets = ifbeam_handle->getBeamFolder(params.get<std::string>("OffsetBundle"), params.get<std::string>("URL"), timeWindow);
+  offsets->set_epsilon(600);
+
   TotalBeamSpills = 0;
   produces< std::vector< sbn::BNBSpillInfo >, art::InEvent >();
   produces< std::vector< sbn::BNBSpillInfo >, art::InSubRun >();
@@ -217,7 +227,10 @@ void sbn::SBNDBNBZEROBIASRetriever::matchMultiWireData(
     }//end loop over MWR times 
   }//end loop over MWR devices
     
-  sbn::BNBSpillInfo spillInfo = makeBNBSpillInfo(eventID, times_temps[i], MWRdata, matched_MWR, bfp);
+  sbn::BNBSpillInfo spillInfo = makeBNBSpillInfo(eventID, times_temps[i], MWRdata, matched_MWR, bfp, offsets, vp873);
+  double spillFOM = sbn::getBNBqualityFOM(spillInfo);
+  spillInfo.FOM = spillFOM;
+  
   beamInfos.push_back(std::move(spillInfo));
 
   // We do not write these to the art::Events because 
