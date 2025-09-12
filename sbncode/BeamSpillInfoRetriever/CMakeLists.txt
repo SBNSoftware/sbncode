@@ -15,6 +15,7 @@ art_make_library(LIBRARIES Boost::system
         SOURCE MWRData.cpp
 )
 
+
 art_make_library(
     LIBRARIES
         art::Persistency_Common
@@ -26,9 +27,21 @@ art_make_library(
         sbnobj::Common_POTAccounting
         sbn_MWRData
         larcorealg::CoreUtils
-
-        LIBRARY_NAME sbn_SBNDPOTTools
+	
+	LIBRARY_NAME sbn_SBNDPOTTools
         SOURCE SBNDPOTTools.cpp
+)
+
+art_make_library(
+	LIBRARIES
+	   
+	ROOT::Hist
+	ROOT::MathCore
+	sbnobj::Common_POTAccounting
+
+
+	LIBRARY_NAME sbn_getFOM
+	SOURCE getFOM.cpp        
 )
 
 install_headers()

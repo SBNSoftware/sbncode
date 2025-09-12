@@ -183,6 +183,7 @@ namespace caf
   void FillICARUSOpFlash(const recob::OpFlash &flash,
                   std::vector<recob::OpHit const*> const& hits,
                   int cryo, 
+                  std::vector<sbn::timing::PMTBeamSignal> RWMTimes,
                   caf::SROpFlash &srflash,
                   bool allowEmpty) {
 
@@ -192,11 +193,15 @@ namespace caf
     srflash.timewidth = flash.TimeWidth();
 
     double firstTime = std::numeric_limits<double>::max();
+    std::map<int, double> risemap;
     for(const auto& hit: hits){
       double const hitTime = hit->HasStartTime()? hit->StartTime(): hit->PeakTime();
       if (firstTime > hitTime)
         firstTime = hitTime;
+      if (!RWMTimes.empty())
+        sbn::timing::SelectFirstOpHitByTime(hit,risemap); 
     }
+    srflash.rwmtime = getFlashBunchTime(risemap, RWMTimes);
     srflash.firsttime = firstTime;
 
     srflash.cryo = cryo; // 0 in SBND, 0/1 for E/W in ICARUS
@@ -805,6 +810,8 @@ namespace caf
     const std::vector<float> &dedx = calo.dEdx();
     const std::vector<float> &pitch = calo.TrkPitchVec();
     const std::vector<float> &rr = calo.ResidualRange();
+    const std::vector<float> &efield = calo.Efield();
+    const std::vector<float> &phi = calo.Phi();
     const std::vector<geo::Point_t> &xyz = calo.XYZ();
     const std::vector<size_t> &tps = calo.TpIndices();
 
@@ -826,6 +833,8 @@ namespace caf
         p.dqdx = dqdx[i];
         p.dedx = dedx[i];
         p.pitch = pitch[i];
+        p.efield = efield[i];
+        p.phi = phi[i] * M_PI / 180.; // converting to radian since calo.Phi() is in degree
         p.x = xyz[i].x();
         p.y = xyz[i].y();
         p.z = xyz[i].z();
