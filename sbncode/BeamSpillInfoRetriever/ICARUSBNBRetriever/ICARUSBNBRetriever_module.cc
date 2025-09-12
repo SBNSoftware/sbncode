@@ -126,8 +126,8 @@ private:
   //
   art::ServiceHandle<ifbeam_ns::IFBeam> ifbeam_handle;
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp;
-  std::unique_ptr<ifbeam_ns::BeamFolder> offsets;
   std::unique_ptr<ifbeam_ns::BeamFolder> vp873;
+  std::unique_ptr<ifbeam_ns::BeamFolder> offsets;
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp_mwr;
   
   //

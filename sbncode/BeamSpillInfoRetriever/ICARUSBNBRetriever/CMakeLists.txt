@@ -4,6 +4,7 @@ find_package(ifdh_art)
 cet_build_plugin(ICARUSBNBRetriever art::module
     LIBRARIES
         sbn_POTTools
+	sbn_getFOM
         SQLite::SQLite3
 )
 

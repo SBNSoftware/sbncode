@@ -74,7 +74,7 @@ namespace sbn::pot{
     double LM875B = 0; // units R/s
     double LM875C = 0; // units R/s
     double HP873 = 0; // units mm
-    double VP873 = 0; // units mm
+    double VP873 = 0; // units mm; not in the first IFBeam query bunch
     double HP875 = 0; // units mm
     double VP875 = 0; // units mm
     double HPTG1 = 0; // units mm
