@@ -74,7 +74,7 @@ namespace sbn::pot{
     double LM875B = 0; // units R/s
     double LM875C = 0; // units R/s
     double HP873 = 0; // units mm
-    double VP873 = 0; // units mm
+    double VP873 = 0; // units mm; not in the first IFBeam query bunch
     double HP875 = 0; // units mm
     double VP875 = 0; // units mm
     double HPTG1 = 0; // units mm
@@ -93,7 +93,6 @@ namespace sbn::pot{
     double M876VM = 0; // units mm
     
 
-    double VP873 = 0; //units mm; not in the first IFBeam query bunch
     double HP875Offset =0;//units mm; make a another separate IFBeam query bunch for offsets
     double VP875Offset =0;//units mm
     double VP873Offset =0;//units mm
