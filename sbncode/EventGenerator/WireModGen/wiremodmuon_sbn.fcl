@@ -1,0 +1,22 @@
+BEGIN_PROLOG
+
+# needs the corsika config to be added to the table, inside the experimental codebase
+wiremodmuon_icarus: {
+  module_type: WireModMuon
+
+  # CRT bounds
+  CRTX0: [-550]
+  CRTX1: [550]
+  CRTY0: [618]
+  CRTY1: [618]
+  CRTZ0: [-1100]
+  CRTZ1: [1300]
+
+  # selection config
+  SelectA2C: true
+  SelectCRT: true
+  PrescaleA2C: 1
+  PrescaleCRT: 1
+  NMuonPerEvent: 3
+}
+END_PROLOG
