@@ -40,7 +40,7 @@ namespace caf
     triggerInfo.global_trigger_time = timingInfo.hltEtrig;
     triggerInfo.beam_gate_time_abs = timingInfo.hltBeamGate;
     
-    double diff_ts = triggerInfo.global_trigger_det_time - triggerInfo.beam_gate_det_time;
+    uint64_t diff_ts = triggerInfo.global_trigger_det_time - triggerInfo.beam_gate_det_time;
     triggerInfo.trigger_within_gate = diff_ts;
   }
 
