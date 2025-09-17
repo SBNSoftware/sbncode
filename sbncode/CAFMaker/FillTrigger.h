@@ -4,6 +4,7 @@
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbnobj/Common/Trigger/BeamBits.h"
 #include "sbnanaobj/StandardRecord/SRTrigger.h"
+#include "sbnanaobj/StandardRecord/SRSBNDTimingInfo.h"
 #include "lardataobj/RawData/TriggerData.h"
 
 #include <vector>
@@ -18,6 +19,7 @@ namespace caf
 
   void FillTriggerMC(double absolute_time, caf::SRTrigger& triggerInfo);
 
+  void FillTriggerSBND(caf::SRSBNDTimingInfo& timingInfo, caf::SRTrigger& triggerInfo);
 }
 
 #endif
