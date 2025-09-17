@@ -142,15 +142,34 @@ namespace caf
   }
 
   void FillSBNDCRTVeto(const sbnd::crt::CRTVeto &veto,
-                        caf::SRSBNDCRTVeto &srsbndcrtveto,
-                        bool allowEmpty)
+                       const std::vector<sbnd::crt::CRTSpacePoint> &points,
+                       caf::SRSBNDCRTVeto &srsbndcrtveto,
+                       bool allowEmpty)
   {
-    std::cout << "DEBUGGING!!!! veto.V0 " << veto.V0() << std::endl;
     srsbndcrtveto.V0     = veto.V0();
     srsbndcrtveto.V1     = veto.V1();
     srsbndcrtveto.V2     = veto.V2();
     srsbndcrtveto.V3     = veto.V3();
     srsbndcrtveto.V4     = veto.V4();
+
+    // add the CRTSpacePoint associations to the SR Veto
+    //std::vector<SRCRTSpacePoint> srvetopoints;
+    // TODO --> Figure out if we want all SpacePoint Info or a subset
+    // Going with subset for now
+
+    //for (long unsigned int i = 0; i < points.size(); ++i) {
+      //SRCRTSpacePoint this_srsp;
+      //FillCRTSpacePoint(points.at(i), this_srsp);
+      //srvetopoints.push_back(this_srsp)
+    int counter = 0;
+    for(auto const& sp : points) {
+      srsbndcrtveto.sp_position.emplace_back(sp.X(), sp.Y(), sp.Z());   
+      srsbndcrtveto.sp_time.emplace_back(sp.Ts0());   
+      srsbndcrtveto.sp_pe.emplace_back(sp.PE());   
+      std::cout << "Veto SP X " << srsbndcrtveto.sp_position[counter].x << std::endl;
+      counter += 1;
+    }
+    //srsbndcrtveto.crtveto_points = srvetopoints;
   }
 
   void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,

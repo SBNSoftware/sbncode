@@ -118,6 +118,7 @@
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
 #include "sbnobj/Common/Reco/OpT0FinderResult.h"
+#include "sbnobj/SBND/CRT/CRTVeto.hh"
 
 // GENIE
 #include "Framework/EventGen/EventRecord.h"
@@ -1671,8 +1672,64 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       if (sbndcrtveto_handle.isValid()) {
 	std::cout << "Found a valid CRT Veto Handle!!!" << std::endl;
         const std::vector<sbnd::crt::CRTVeto> &sbndcrtvetos = *sbndcrtveto_handle;
-          //srsbndcrtveto.emplace_back();
-          FillSBNDCRTVeto(sbndcrtvetos[0], srsbndcrtveto);
+	  
+  	// And associated SpacePoint objects
+  	//
+  	//art::FindManyP<sbnd::crt::CRTSpacePoint> fveto_sp = FindManyPStrict<sbnd::crt::CRTSpacePoint>(sbndcrtvetos[0], evt, fParams.SBNDCRTVetoLabel());
+	//art::FindManyP<sbnd::crt::CRTSpacePoint> spAssoc(&sbndcrtvetos[0], evt, fParams.SBNDCRTVetoLabel());
+	art::FindManyP<sbnd::crt::CRTSpacePoint> spAssoc(sbndcrtveto_handle, evt, fParams.SBNDCRTVetoLabel());
+        if (spAssoc.isValid()) {
+	  std::cout << "Valid SpacePoint Association" << std::endl;
+	  std::cout << "Association Size: " << spAssoc.size() << std::endl;
+	}
+	else {
+	  std::cout << "Invalid Space Point Association" << std::endl;
+	}
+
+	// Assume there is only one Veto per event    
+	const std::vector<art::Ptr<sbnd::crt::CRTSpacePoint>> veto_sp_v(spAssoc.at(0)); 
+        //for (auto const& sp: veto_sp_v) {
+      
+        //}
+        //
+
+       // Fill the associated space points --> then add to the FillReco function
+       
+       std::vector<sbnd::crt::CRTSpacePoint> vetoSpacePoints;
+       if (veto_sp_v.size() == 0) {
+         std::cout << " No Veto SpacePoints" << std::endl; 
+         vetoSpacePoints.emplace_back(); // nullptr
+       }
+       else {
+       
+         for (auto const& sp: veto_sp_v) {
+	       
+           vetoSpacePoints.push_back(*sp);
+
+         }
+       }
+
+       /*
+       if (fveto_sp.isValid()) {
+         std::cout << "Veto SP Association is valid! Size = " << fveto_sp.size() << std::endl;
+         //for (unsigned i = 0; i < fveto_sp.size(); i++) {
+         // Should have just one vector of possible space points
+         const std::vector<art::Ptr<sbnd::crt::CRTSpacePoint>> &theseSpacePoints = fveto_sp.at(0);
+           if (theseSpacePoints.size() == 0) {
+	     std::cout << " No Veto SpacePoints" << std::endl; 
+             vetoSpacePoints.emplace_back(); // nullptr
+           }
+           else if (theseSpacePoints.size() > 0) {
+             //vetoSpacePoints.push_back(*fveto_sp.at(i).at(0));
+             for (auto const& sp: theseSpacePoints) {
+	       vetoSpacePoints.push_back(*sp);
+             }
+           }
+         }
+	 */
+	  //srsbndcrtveto.emplace_back();
+	
+          FillSBNDCRTVeto(sbndcrtvetos[0], vetoSpacePoints, srsbndcrtveto);
       }
       else {
         std::cout << "Invalid CRT Veto Handle!" << std::endl;
@@ -2419,12 +2476,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.ntrue_particles = true_particles.size();
   rec.crtpmt_matches = srcrtpmtmatches;
   rec.ncrtpmt_matches = srcrtpmtmatches.size();
-
-  rec.sbnd_crtveto_v0 = srsbndcrtveto.V0;
-  rec.sbnd_crtveto_v1 = srsbndcrtveto.V1;
-  rec.sbnd_crtveto_v2 = srsbndcrtveto.V2;
-  rec.sbnd_crtveto_v3 = srsbndcrtveto.V3;
-  rec.sbnd_crtveto_v4 = srsbndcrtveto.V4;
 
   std::cout << std::endl;
   std::cout << std::endl;

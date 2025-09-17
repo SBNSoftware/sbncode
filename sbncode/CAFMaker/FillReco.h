@@ -256,8 +256,9 @@ namespace caf
                         bool allowEmpty = false);
   
   void FillSBNDCRTVeto(const sbnd::crt::CRTVeto &veto,
-                        caf::SRSBNDCRTVeto &srsbndcrtveto,
-                        bool allowEmpty = false);
+		       const std::vector<sbnd::crt::CRTSpacePoint> &points,
+                       caf::SRSBNDCRTVeto &srsbndcrtveto,
+                       bool allowEmpty = false);
 
   void FillICARUSOpFlash(const recob::OpFlash &flash,
                   std::vector<recob::OpHit const*> const& hits,
