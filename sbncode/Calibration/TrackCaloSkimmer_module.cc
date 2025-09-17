@@ -1458,29 +1458,6 @@ sbn::TrackHitInfo sbn::TrackCaloSkimmer::MakeHit(const recob::Hit &hit,
     }
   }
 
-  // If T0 provided CRT then we should appropriately shift the drift position (already done for pandora T0)
-  double recoX = std::numeric_limits<float>::signaling_NaN();
-
-  if(!t0Info.hasT0Pandora && (t0Info.hasT0CRTTrack || t0Info.hasT0CRTHit || t0Info.hasT0CRTSpacePoint))
-    {
-      int driftDir = geo->TPC(hit.WireID()).DriftDir().X();
-      const double driftv(dprop.DriftVelocity(dprop.Efield(), dprop.Temperature()));
-
-      double time = std::numeric_limits<float>::signaling_NaN();
-
-      if(t0Info.hasT0CRTTrack)
-        time = t0Info.t0CRTTrack*1e-3;
-      else if(t0Info.hasT0CRTHit)
-        time = t0Info.t0CRTHit*1e-3;
-      else if(t0Info.hasT0CRTSpacePoint)
-        time = t0Info.t0CRTSpacePoint*1e-3;
-
-      double anodeDistance = (hit.PeakTime()-dclock.Time2Tick(dclock.TriggerTime())-time/dclock.TPCClock().TickPeriod())*dclock.TPCClock().TickPeriod()*driftv;
-      double wirePlaneX = wireReadout->Plane(geo::PlaneID(hit.WireID().Cryostat, hit.WireID().TPC, hit.WireID().Plane)).GetCenter().X();
-
-      recoX = wirePlaneX - driftDir*anodeDistance;
-    }
-
   // Information from the TrackHitMeta
   bool badhit = (thm.Index() == std::numeric_limits<unsigned int>::max()) ||
                     (!trk.HasValidPoint(thm.Index()));
@@ -1493,7 +1470,7 @@ sbn::TrackHitInfo sbn::TrackCaloSkimmer::MakeHit(const recob::Hit &hit,
 
     // The tp X coordinate is reconstructed only if it does not have a PandoraT0.
     hinfo.tp.x = loc.X();
-    if((t0Info.hasT0CRTTrack || t0Info.hasT0CRTHit || t0Info.hasT0CRTSpacePoint) && !t0Info.hasT0Pandora && !isnan(hinfo.tp.x)) hinfo.tp.x = recoX;
+    if((t0Info.hasT0CRTTrack || t0Info.hasT0CRTHit || t0Info.hasT0CRTSpacePoint) && !t0Info.hasT0Pandora && !isnan(hinfo.tp.x)) hinfo.tp.x = loc.X() + xshift;
     hinfo.tp.y = loc.Y();
     hinfo.tp.z = loc.Z();
 
