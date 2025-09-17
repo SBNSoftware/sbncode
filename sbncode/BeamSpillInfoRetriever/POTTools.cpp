@@ -1,12 +1,10 @@
-#include "SBNDPOTTools.h"
+#include "POTTools.h"
 
 using namespace std;
 
-namespace sbn{
+namespace sbn::pot{
 
-  // Function for extracting the PTB information (current timestamp,
-  // previous timestamp, gate counter). Used in SBND modules only.
-  sbn::PTBInfo_t extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags, int HLT) {
+  sbn::pot::PTBInfo_t extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags, int HLT) {
     bool foundHLT = false;
     PTBInfo_t PTBInfo;
     for (auto const& cont : *cont_frags)
@@ -45,7 +43,6 @@ namespace sbn{
     }
   }
 
-  // Function for extracting the TDC timestamp. Used in SBND modules only.
   double extractTDCTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) {
   
     double TDCTimeStamp = 0;
@@ -62,10 +59,8 @@ namespace sbn{
     return TDCTimeStamp;
   }
 
-  // Collect device information to make BNBSpillInfo object. Used in
-  // ICARUS and SBND modules.
   sbn::BNBSpillInfo makeBNBSpillInfo
-    (art::EventID const& eventID, double time, MWRdata_t const& MWRdata, std::vector<int> const& matched_MWR, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp)
+  (art::EventID const& eventID, double time, MWRdata_t const& MWRdata, std::vector<int> const& matched_MWR, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp,  const std::unique_ptr<ifbeam_ns::BeamFolder> & offsets,const  std::unique_ptr<ifbeam_ns::BeamFolder> & vp873)
   {
     
     auto const& [ MWR_times, unpacked_MWR ] = MWRdata; // alias
@@ -78,6 +73,8 @@ namespace sbn{
     double LM875A = 0; // units R/s
     double LM875B = 0; // units R/s
     double LM875C = 0; // units R/s
+    double HP873 = 0; // units mm
+    double VP873 = 0; // units mm; not in the first IFBeam query bunch
     double HP875 = 0; // units mm
     double VP875 = 0; // units mm
     double HPTG1 = 0; // units mm
@@ -86,28 +83,66 @@ namespace sbn{
     double VPTG2 = 0; // units mm
     double BTJT2 = 0; // units Deg C
     double THCURR = 0; // units kiloAmps
+    double M875HS = 0; // units mm
+    double M875VS = 0; // units mm
+    double M875HM = 0; // units mm
+    double M875VM = 0; // units mm
+    double M876HS = 0; // units mm
+    double M876VS = 0; // units mm
+    double M876HM = 0; // units mm
+    double M876VM = 0; // units mm
     
+
+    double HP875Offset =0;//units mm; make a another separate IFBeam query bunch for offsets
+    double VP875Offset =0;//units mm
+    double VP873Offset =0;//units mm
+    double HPTG1Offset =0;//units mm
+    double HPTG2Offset =0;//units mm
+    double VPTG1Offset =0;//units mm
+    double VPTG2Offset =0;//units mm
+
     double TOR860_time = 0; // units s
-    
+
+    double FOM =0; 
+
     // Here we request all the devices
     // since sometimes devices fail to report we'll
     // allow each to throw an exception but still move forward
     // interpreting these failures will be part of the beam quality analyses
-  
-    try{bfp->GetNamedData(time, "E:TOR860@",&TOR860,&TOR860_time);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-    try{bfp->GetNamedData(time, "E:TOR875",&TOR875);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-    try{bfp->GetNamedData(time, "E:LM875A",&LM875A);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-    try{bfp->GetNamedData(time, "E:LM875B",&LM875B);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-    try{bfp->GetNamedData(time, "E:LM875C",&LM875C);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-    try{bfp->GetNamedData(time, "E:HP875",&HP875);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-    try{bfp->GetNamedData(time, "E:VP875",&VP875);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-    try{bfp->GetNamedData(time, "E:HPTG1",&HPTG1);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-    try{bfp->GetNamedData(time, "E:VPTG1",&VPTG1);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-    try{bfp->GetNamedData(time, "E:HPTG2",&HPTG2);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-    try{bfp->GetNamedData(time, "E:VPTG2",&VPTG2);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-    try{bfp->GetNamedData(time, "E:BTJT2",&BTJT2);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-    try{bfp->GetNamedData(time, "E:THCURR",&THCURR);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-  
+
+    try{bfp->GetNamedData(time, "E:TOR860@",&TOR860,&TOR860_time);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{bfp->GetNamedData(time, "E:TOR875",&TOR875);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{bfp->GetNamedData(time, "E:LM875A",&LM875A);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{bfp->GetNamedData(time, "E:LM875B",&LM875B);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{bfp->GetNamedData(time, "E:LM875C",&LM875C);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{bfp->GetNamedData(time, "E:HP873",&HP873);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{bfp->GetNamedData(time, "E:VP873",&VP873);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{bfp->GetNamedData(time, "E:HP875",&HP875);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{bfp->GetNamedData(time, "E:VP875",&VP875);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{bfp->GetNamedData(time, "E:HPTG1",&HPTG1);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{bfp->GetNamedData(time, "E:VPTG1",&VPTG1);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{bfp->GetNamedData(time, "E:HPTG2",&HPTG2);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{bfp->GetNamedData(time, "E:VPTG2",&VPTG2);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{bfp->GetNamedData(time, "E:BTJT2",&BTJT2);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{bfp->GetNamedData(time, "E:THCURR",&THCURR);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+
+    try{bfp->GetNamedData(time, "E:M875HS",&M875HS);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{bfp->GetNamedData(time, "E:M875VS",&M875VS);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{bfp->GetNamedData(time, "E:M875HM",&M875HM);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{bfp->GetNamedData(time, "E:M875VM",&M875VM);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{bfp->GetNamedData(time, "E:M876HS",&M876HS);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{bfp->GetNamedData(time, "E:M876VS",&M876VS);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{bfp->GetNamedData(time, "E:M876HM",&M876HM);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{bfp->GetNamedData(time, "E:M876VM",&M876VM);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";} 
+
+    try{offsets->GetNamedData(time, "E_VP873S",&VP873Offset);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{offsets->GetNamedData(time, "E_HP875S",&HP875Offset);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{offsets->GetNamedData(time, "E_VP875S",&VP875Offset);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{offsets->GetNamedData(time, "E_HPTG1S",&HPTG1Offset);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{offsets->GetNamedData(time, "E_HPTG2S",&HPTG2Offset);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{offsets->GetNamedData(time, "E_VPTG1S",&VPTG1Offset);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{offsets->GetNamedData(time, "E_VPTG2S",&VPTG2Offset);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+
     //crunch the times 
     unsigned long int time_closest_int = (int) TOR860_time;
     double time_closest_ns = (TOR860_time - time_closest_int)*1e9;
@@ -119,6 +154,8 @@ namespace sbn{
     beamInfo.LM875A = LM875A;
     beamInfo.LM875B = LM875B;
     beamInfo.LM875C = LM875C;
+    beamInfo.HP873 = HP873;
+    beamInfo.VP873 = VP873;
     beamInfo.HP875 = HP875;
     beamInfo.VP875 = VP875;
     beamInfo.HPTG1 = HPTG1;
@@ -127,9 +164,27 @@ namespace sbn{
     beamInfo.VPTG2 = VPTG2;
     beamInfo.BTJT2 = BTJT2;
     beamInfo.THCURR = THCURR;
+    beamInfo.M875HS = M875HS;
+    beamInfo.M875VS = M875VS;
+    beamInfo.M875HM = M875HM;
+    beamInfo.M875VM = M875VM;
+    beamInfo.M876HS = M876HS;
+    beamInfo.M876VS = M876VS;
+    beamInfo.M876HM = M876HM;
+    beamInfo.M876VM = M876VM;
     beamInfo.spill_time_s = time_closest_int;
     beamInfo.spill_time_ns = time_closest_ns;    
-  
+    beamInfo.VP873 = VP873;
+    beamInfo.VP873Offset = VP873Offset;
+    beamInfo.HP875Offset = HP875Offset;
+    beamInfo.VP875Offset = VP875Offset;
+    beamInfo.HPTG1Offset = HPTG1Offset;
+    beamInfo.HPTG2Offset = HPTG2Offset;
+    beamInfo.VPTG1Offset = VPTG1Offset;
+    beamInfo.VPTG2Offset = VPTG2Offset;
+    beamInfo.FOM = FOM;
+
+    
     for(auto const& MWRdata: unpacked_MWR){
       std::ignore = MWRdata;
       assert(!MWRdata.empty());
@@ -166,13 +221,14 @@ namespace sbn{
     // information, so we'll write it to the SubRun
     
     beamInfo.event = eventID.event(); // the rest of ID is known by art::SubRun
-   
+    
+    //for(size_t m=0; m< beamInfo.M875BB.size(); m++){
+    //std::cout << "M875BB:  " <<beamInfo.M875BB[m] << " | M876BB: " << beamInfo.M876BB[m] << " | MMTBB: " << beamInfo.MMBTBB[m] <<std::endl;
+    //}
+    
     return beamInfo;
   }
 
-  // Returns true if a time in IFBeam corresponds to a broken clock false if
-  // it is a real spill. Check this by seeing if all devices fire at once or
-  // if time is just a single outlier.
   bool BrokenClock(double time, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp)
   {
     double TOR860 = 0; // units e12 protons
@@ -221,8 +277,7 @@ namespace sbn{
     }
   }
 
-  // extract spill times from the IFBeam data base. Used in SBND and ICARUS.
-  sbn::MWRdata_t extractSpillTimes(TriggerInfo_t const& triggerInfo, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp_mwr, double fTimePad, double MWRtoroidDelay, sbn::MWRData mwrdata) {
+  sbn::pot::MWRdata_t extractSpillTimes(TriggerInfo_t const& triggerInfo, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp_mwr, double fTimePad, double MWRtoroidDelay, sbn::MWRData mwrdata) {
     
     // These lines get everything primed within the IFBeamDB.
     try{bfp->FillCache((triggerInfo.t_current_event)+fTimePad);} catch (WebAPIException &we) {};     
@@ -331,4 +386,8 @@ namespace sbn{
     
     return { std::move(MWR_times), std::move(unpacked_MWR) };
   }
+
 }
+
+
+

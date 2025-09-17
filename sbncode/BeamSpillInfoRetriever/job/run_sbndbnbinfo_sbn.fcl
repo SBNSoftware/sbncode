@@ -1,6 +1,6 @@
 #include "sbndbnbdefaults.fcl"
 
-process_name: SBNDBNBInfoGen
+process_name: BNBInfoGen
 
 services:{
   
@@ -28,9 +28,9 @@ source: {
 
 physics: {
  producers: {
-   sbndbnbinfo: @local::sbndbnbspillinfo
+   bnbinfo: @local::sbndbnbspillinfo
  }
- simulate: [sbndbnbinfo ]
+ simulate: [bnbinfo ]
  stream1: [ out1 ]
 }
 
@@ -39,7 +39,7 @@ physics.producers.sbndbnbinfo.module_type: "SBNDBNBRetriever"
 outputs: {
  out1: {
    module_type: RootOutput
-   fileName: "%ifb_%tc_sbndbnbinfo.root"
+   fileName: "%ifb_%tc_bnbinfo.root"
    dataTier: "raw"
    compressionLevel: 1
  }
