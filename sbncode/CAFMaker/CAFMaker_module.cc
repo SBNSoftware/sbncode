@@ -119,6 +119,8 @@
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
 #include "sbnobj/Common/Reco/OpT0FinderResult.h"
 #include "sbnobj/SBND/CRT/CRTVeto.hh"
+#include "sbnobj/SBND/Timing/TimingInfo.hh"
+#include "sbnobj/SBND/Timing/FrameShiftInfo.hh"
 
 // GENIE
 #include "Framework/EventGen/EventRecord.h"
@@ -317,6 +319,9 @@ class CAFMaker : public art::EDProducer {
   void FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_time);
   void FixCRTReferenceTimes(StandardRecord &rec, double CRTT0_reference_time, double CRTT1_reference_time);
 
+  void SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame) const;
+  void SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame) const;
+
   /// Equivalent of FindManyP except a return that is !isValid() prints a
   /// messsage and aborts if StrictMode is true.
   template <class T, class U>
@@ -497,6 +502,44 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
 	}
       }
     }
+  }
+}
+
+void CAFMaker::SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame) const {
+
+  //CRT Space Point
+  for (SRCRTSpacePoint &sp: rec.crt_spacepoints){
+    sp.time += SBNDFrame; //ns
+  }
+  
+  //CRT Track
+  for (SRSBNDCRTTrack &trk: rec.sbnd_crt_tracks){
+    trk.time += SBNDFrame; //ns
+  }
+
+  //TODO: CRT Space Point and Track Match
+  for (SRSlice &slc: rec.slc){
+    for (SRPFP &pfp: slc.reco.pfp){
+      if(!std::isnan(pfp.trk.crtspacepoint.score)) pfp.trk.crtspacepoint.spacepoint.time += SBNDFrame;
+
+      if(!std::isnan(pfp.trk.crtsbndtrack.score)) pfp.trk.crtsbndtrack.track.time += SBNDFrame;
+    }
+  }
+}
+
+void CAFMaker::SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame) const {
+
+  double SBNDFrame_us = SBNDFrame / 1000.0; //convert ns to us
+
+  //Op Flash
+  for (SROpFlash &opf: rec.opflashes) {
+    opf.time += SBNDFrame_us;
+    opf.firsttime += SBNDFrame_us;
+  }
+  
+  //OpT0 match to slice
+  for (SRSlice &s: rec.slc) {
+    s.opt0.time += SBNDFrame_us;
   }
 }
 
@@ -1604,6 +1647,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   std::vector<caf::SRCRTSpacePoint> srcrtspacepoints;
   std::vector<caf::SRSBNDCRTTrack> srsbndcrttracks;
   caf::SRSBNDCRTVeto srsbndcrtveto;
+  caf::SRSBNDFrameShiftInfo srsbndframeshiftinfo;
+  caf::SRSBNDTimingInfo srsbndtiminginfo;
 
   if(fDet == kICARUS)
     {
@@ -1683,8 +1728,25 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
             }
           }
-	}
+	      }
         FillSBNDCRTVeto(sbndcrtvetos[0], vetoSpacePoints, srsbndcrtveto);
+      }
+
+    
+      art::Handle<sbnd::timing::FrameShiftInfo> sbndframeshiftinfo_handle;
+      GetByLabelStrict(evt, fParams.SBNDFrameShiftInfoLabel(), sbndframeshiftinfo_handle);
+      // fill into event
+      if (sbndframeshiftinfo_handle.isValid()) {
+        sbnd::timing::FrameShiftInfo const& sbndframeshiftinfo(*sbndframeshiftinfo_handle);
+        FillSBNDFrameShiftInfo(sbndframeshiftinfo, srsbndframeshiftinfo);
+      }
+
+      art::Handle<sbnd::timing::TimingInfo> sbndtiminginfo_handle;
+      GetByLabelStrict(evt, fParams.SBNDTimingInfoLabel(), sbndtiminginfo_handle);
+      // fill into event
+      if (sbndtiminginfo_handle.isValid()) {
+        sbnd::timing::TimingInfo const& sbndtiminginfo(*sbndtiminginfo_handle);
+        FillSBNDTimingInfo(sbndtiminginfo, srsbndtiminginfo);
       }
     }
 
@@ -2404,6 +2466,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.sbnd_crt_veto  = srsbndcrtveto;
   rec.opflashes        = srflashes;
   rec.nopflashes       = srflashes.size();
+  rec.sbnd_frames      = srsbndframeshiftinfo;
+  rec.sbnd_timings     = srsbndtiminginfo;
+
   if (fParams.FillTrueParticles()) {
     rec.true_particles  = true_particles;
   }
@@ -2411,7 +2476,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.crtpmt_matches = srcrtpmtmatches;
   rec.ncrtpmt_matches = srcrtpmtmatches.size();
 
-  // Fix the Reference time
+  // Move the reference time of reconstructed objects from trigger time to beam spill/beam gate opening time.
   //
   // We want MC and Data to have the same reference time.
   // In MC/LArSoft the "reference time" is canonically defined
@@ -2428,6 +2493,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // filled with the default values, which are set to the numerical limits of double.
   // In this case, we should set the PMT_reference_time to 0.
 
+  // ICARUS: Fix the Reference time
   const bool hasValidTriggerTime =
     srtrigger.global_trigger_det_time >
       (std::numeric_limits<double>::min() + std::numeric_limits<double>::epsilon()) &&
@@ -2443,6 +2509,28 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   FixPMTReferenceTimes(rec, PMT_reference_time);
 
   // TODO: TPC?
+  
+  // SBND: Fix the Reference time in data depending on the stream
+  // For more information, see: 
+  // https://sbn-docdb.fnal.gov/cgi-bin/sso/RetrieveFile?docid=43090
+
+  if (isRealData && (fDet == kSBND))
+  {
+    // Fill trigger info
+    FillTriggerSBND(srsbndtiminginfo, srtrigger);
+
+    // Shift timing reference frame
+    if (!std::isnan(rec.sbnd_frames.frameApplyAtCaf) && (rec.sbnd_frames.frameApplyAtCaf != 0.0)){
+      mf::LogInfo("CAFMaker") << "Setting Reference Timing for timing object in SBND \n"
+                              << "    Shift Apply At Caf Level = " << rec.sbnd_frames.frameApplyAtCaf << " ns\n";
+      
+      //shift reference frame for CRT objects: crt trk, crt sp, crt sp match, crt trk match
+      SBNDShiftCRTReference(rec, rec.sbnd_frames.frameApplyAtCaf);
+
+      //shift reference frame for PMT objects: opflash, opt0
+      SBNDShiftPMTReference(rec, rec.sbnd_frames.frameApplyAtCaf);
+    }
+  }
 
   // Get metadata information for header
   unsigned int run = evt.run();
@@ -2726,7 +2814,6 @@ void CAFMaker::endJob() {
   if(fParams.CreateBlindedCAF() && fFlatFileb) AddMetadataToFile(fFlatFileb, metamap);
   if(fParams.CreateBlindedCAF() && fFlatFilep) AddMetadataToFile(fFlatFilep, metamap);
 }
-
 
 }  // end namespace caf
 DEFINE_ART_MODULE(caf::CAFMaker)

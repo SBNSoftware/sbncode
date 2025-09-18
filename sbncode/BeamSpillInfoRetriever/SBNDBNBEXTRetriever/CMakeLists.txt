@@ -3,7 +3,7 @@ find_package(ifdh_art)
 
 cet_build_plugin(SBNDBNBEXTRetriever art::module
     LIBRARIES
-        sbn_SBNDPOTTools
+        sbn_POTTools
 )
 
 install_headers()

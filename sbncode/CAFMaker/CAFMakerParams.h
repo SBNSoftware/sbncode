@@ -342,6 +342,17 @@ namespace caf
       Name("SBNDCRTVetoLabel"),
       Comment("Label of sbnd CRT Veto."),
       "crtveto" // sbnd
+
+    Atom<string> SBNDFrameShiftInfoLabel {
+      Name("SBNDFrameShiftInfoLabel"),
+      Comment("Label of sbnd frame shift."),
+      "" // sbnd
+    };
+
+    Atom<string> SBNDTimingInfoLabel {
+      Name("SBNDTimingInfoLabel"),
+      Comment("Label of sbnd timing shift."),
+      "" // sbnd
     };
 
     Atom<string> CRTPMTLabel {
