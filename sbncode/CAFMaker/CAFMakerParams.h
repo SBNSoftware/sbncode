@@ -338,6 +338,18 @@ namespace caf
       "crttracks" // sbnd
     };
 
+    Atom<string> SBNDFrameShiftInfoLabel {
+      Name("SBNDFrameShiftInfoLabel"),
+      Comment("Label of sbnd frame shift."),
+      "" // sbnd
+    };
+
+    Atom<string> SBNDTimingInfoLabel {
+      Name("SBNDTimingInfoLabel"),
+      Comment("Label of sbnd timing shift."),
+      "" // sbnd
+    };
+
     Atom<string> CRTPMTLabel {
       Name("CRTPMTLabel"),
       Comment("Label for the CRTPMT Matched variables from the crtpmt data product"),

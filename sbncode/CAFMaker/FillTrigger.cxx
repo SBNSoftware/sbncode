@@ -35,4 +35,13 @@ namespace caf
     // TODO: fill others?
   }
 
+  void FillTriggerSBND(caf::SRSBNDTimingInfo& timingInfo, caf::SRTrigger& triggerInfo){
+      
+    triggerInfo.global_trigger_time = timingInfo.hltEtrig;
+    triggerInfo.beam_gate_time_abs = timingInfo.hltBeamGate;
+    
+    double diff_ts = triggerInfo.global_trigger_det_time - triggerInfo.beam_gate_det_time;
+    triggerInfo.trigger_within_gate = diff_ts;
+  }
+
 }

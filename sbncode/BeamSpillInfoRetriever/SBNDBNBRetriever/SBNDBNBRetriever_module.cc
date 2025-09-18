@@ -8,7 +8,8 @@
 #include "art/Framework/Core/EDProducer.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
-#include "sbncode/BeamSpillInfoRetriever/SBNDPOTTools.h"
+#include "sbncode/BeamSpillInfoRetriever/POTTools.h"
+#include "sbncode/BeamSpillInfoRetriever/getFOM.h"
 
 namespace sbn {
   class SBNDBNBRetriever;
@@ -35,16 +36,19 @@ private:
   double fBESOffset;
   std::string fDeviceUsedForTiming;
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp;
+  std::unique_ptr<ifbeam_ns::BeamFolder> offsets;
+  std::unique_ptr<ifbeam_ns::BeamFolder> vp873;
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp_mwr;
+
   sbn::MWRData mwrdata;
   art::ServiceHandle<ifbeam_ns::IFBeam> ifbeam_handle;
   static constexpr double MWRtoroidDelay = -0.035; ///< the same time point is measured _t_ by MWR and _t + MWRtoroidDelay`_ by the toroid [ms]
 
-  TriggerInfo_t extractTriggerInfo(art::Event const& e) const;
+  sbn::pot::TriggerInfo_t extractTriggerInfo(art::Event const& e) const;
   int matchMultiWireData(
     art::EventID const& eventID, 
-    TriggerInfo_t const& triggerInfo,
-    MWRdata_t const& MWRdata,
+    sbn::pot::TriggerInfo_t const& triggerInfo,
+    sbn::pot::MWRdata_t const& MWRdata,
     std::vector< sbn::BNBSpillInfo >& beamInfos
     ) const;
   unsigned int TotalBeamSpills;
@@ -56,12 +60,19 @@ sbn::SBNDBNBRetriever::SBNDBNBRetriever(fhicl::ParameterSet const & params)
   fTimePad = params.get<double>("TimePadding");
   fBESOffset = params.get<double>("BESOffset");
   fDeviceUsedForTiming = params.get<std::string>("DeviceUsedForTiming");
-  bfp = ifbeam_handle->getBeamFolder(params.get<std::string>("Bundle"), params.get<std::string>("URL"), std::stod(params.get<std::string>("TimeWindow")));
+  double const timeWindow = std::stod(params.get<std::string>("TimeWindow"));
+  bfp = ifbeam_handle->getBeamFolder(params.get<std::string>("Bundle"), params.get<std::string>("URL"), timeWindow);
   bfp->set_epsilon(0.02);
   bfp_mwr = ifbeam_handle->getBeamFolder(params.get<std::string>("MultiWireBundle"), params.get<std::string>("URL"), std::stod(params.get<std::string>("MWR_TimeWindow")));
   bfp_mwr->set_epsilon(0.5);
   bfp_mwr->setValidWindow(3605);
   TotalBeamSpills = 0;
+  vp873 = ifbeam_handle->getBeamFolder(params.get<std::string>("VP873Bundle"), params.get<std::string>("URL"), timeWindow);
+  vp873->set_epsilon(0.02);
+ 
+  offsets = ifbeam_handle->getBeamFolder(params.get<std::string>("OffsetBundle"), params.get<std::string>("URL"), timeWindow);
+  offsets->set_epsilon(600);
+
 }
 
 void sbn::SBNDBNBRetriever::produce(art::Event & e)
@@ -77,14 +88,14 @@ void sbn::SBNDBNBRetriever::produce(art::Event & e)
   }
 
   mf::LogDebug("SBNDBNBRetriever")<< "ptb_event: " << e.event() << std::endl;
-  TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
+  sbn::pot::TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
 
   if (triggerInfo.t_previous_event == 0) {
     return;
   }
 
   TotalBeamSpills += triggerInfo.number_of_gates_since_previous_event;
-  MWRdata_t const MWRdata = extractSpillTimes(triggerInfo, bfp, bfp_mwr, fTimePad, MWRtoroidDelay, mwrdata);
+  sbn::pot::MWRdata_t const MWRdata = extractSpillTimes(triggerInfo, bfp, bfp_mwr, fTimePad, MWRtoroidDelay, mwrdata);
 
   int const spill_count = matchMultiWireData(e.id(), triggerInfo, MWRdata, fOutbeamInfos);
 
@@ -94,7 +105,7 @@ void sbn::SBNDBNBRetriever::produce(art::Event & e)
     mf::LogDebug("SBNDBNBRetriever")<< "Event Spills : " << spill_count << ", DAQ Spills : " << triggerInfo.number_of_gates_since_previous_event << std::endl;
 }
 
-sbn::TriggerInfo_t sbn::SBNDBNBRetriever::extractTriggerInfo(art::Event const& e) const {
+sbn::pot::TriggerInfo_t sbn::SBNDBNBRetriever::extractTriggerInfo(art::Event const& e) const {
   // Using TDC for current event, but PTB for previous event. Exception for case where no TDC.
   art::InputTag PTB_itag("daq", "ContainerPTB");
   auto PTB_cont_frags = e.getHandle<artdaq::Fragments>(PTB_itag);
@@ -102,11 +113,11 @@ sbn::TriggerInfo_t sbn::SBNDBNBRetriever::extractTriggerInfo(art::Event const& e
   art::InputTag TDC_itag("daq", "ContainerTDCTIMESTAMP");
   auto TDC_cont_frags = e.getHandle<artdaq::Fragments>(TDC_itag);
 
-  TriggerInfo_t triggerInfo;
-  PTBInfo_t PTBInfo = extractPTBInfo(PTB_cont_frags, 2);
+  sbn::pot::TriggerInfo_t triggerInfo;
+  sbn::pot::PTBInfo_t PTBInfo = sbn::pot::extractPTBInfo(PTB_cont_frags, 2);
 
   if (TDC_cont_frags) {
-    double TDCTimeStamp = extractTDCTimeStamp(TDC_cont_frags);
+    double TDCTimeStamp = sbn::pot::extractTDCTimeStamp(TDC_cont_frags);
     triggerInfo.t_current_event = TDCTimeStamp - fBESOffset;
   }
   else{
@@ -134,8 +145,8 @@ sbn::TriggerInfo_t sbn::SBNDBNBRetriever::extractTriggerInfo(art::Event const& e
 
 int sbn::SBNDBNBRetriever::matchMultiWireData(
   art::EventID const& eventID,
-  TriggerInfo_t const& triggerInfo,
-  MWRdata_t const& MWRdata,
+  sbn::pot::TriggerInfo_t const& triggerInfo,
+  sbn::pot::MWRdata_t const& MWRdata,
   std::vector< sbn::BNBSpillInfo >& beamInfos
 ) const {
   
@@ -164,7 +175,7 @@ int sbn::SBNDBNBRetriever::matchMultiWireData(
       spills_removed++; 
       continue;}
 
-    if(BrokenClock(times_temps[i], bfp)){
+    if(sbn::pot::BrokenClock(times_temps[i], bfp)){
       continue;
     }
     
@@ -210,8 +221,11 @@ int sbn::SBNDBNBRetriever::matchMultiWireData(
       
     }//end loop over MWR devices
     
-    sbn::BNBSpillInfo spillInfo = makeBNBSpillInfo(eventID, times_temps[i], MWRdata, matched_MWR, bfp);
+    sbn::BNBSpillInfo spillInfo = makeBNBSpillInfo(eventID, times_temps[i], MWRdata, matched_MWR, bfp, offsets, vp873);
 
+	double const spillFOM = sbn::getBNBqualityFOM(spillInfo);
+    spillInfo.FOM = spillFOM;
+    
     beamInfos.push_back(std::move(spillInfo));
 
     // We do not write these to the art::Events because 
