@@ -16,6 +16,7 @@ namespace caf
     template<class T> using Atom = fhicl::Atom<T>;
     template<class T> using Sequence = fhicl::Sequence<T>;
     template<class T> using Table = fhicl::Table<T>;
+    template<class T> using OptionalTable = fhicl::OptionalTable<T>;
     using Comment  = fhicl::Comment;
     using Name     = fhicl::Name;
     using string   = std::string;
@@ -468,6 +469,92 @@ namespace caf
       Name("TrackHitFillRREndCut"),
       Comment("How long from the end of a track to save calo-point information. Set to -1 to save nothing"),
       25.
+    };
+
+    struct PFOCharLabels_t {
+      Atom<string> EndFractionName {
+        Name("EndFractionName"),
+        Comment("Provide the tool name for the EndFraction BDT variable."),
+        "LArThreeDChargeFeatureTool_EndFraction"
+      };
+
+      Atom<string> FractionalSpreadName {
+        Name("FractionalSpreadName"),
+        Comment("Provide the tool name for the FractionalSpread BDT variable."),
+        "LArThreeDChargeFeatureTool_FractionalSpread"
+      };
+
+      Atom<string> DiffStraightLineMeanName {
+        Name("DiffStraightLineMeanName"),
+        Comment("Provide the tool name for the DiffStraightLineMean BDT variable."),
+        "LArThreeDLinearFitFeatureTool_DiffStraightLineMean"
+      };
+
+      Atom<string> LengthName {
+        Name("LengthName"),
+        Comment("Provide the tool name for the Length BDT variable."),
+        "LArThreeDLinearFitFeatureTool_Length"
+      };
+
+      Atom<string> MaxFitGapLengthName {
+        Name("MaxFitGapLengthName"),
+        Comment("Provide the tool name for the MaxFitGapLength BDT variable."),
+        "LArThreeDLinearFitFeatureTool_MaxFitGapLength"
+      };
+
+      Atom<string> SlidingLinearFitRMSName {
+        Name("SlidingLinearFitRMSName"),
+        Comment("Provide the tool name for the SlidingLinearFitRMS BDT variable."),
+        "LArThreeDLinearFitFeatureTool_SlidingLinearFitRMS"
+      };
+
+      Atom<string> AngleDiffName {
+        Name("AngleDiffName"),
+        Comment("Provide the tool name for the AngleDiff BDT variable."),
+        "LArThreeDOpeningAngleFeatureTool_AngleDiff"
+      };
+
+      Atom<string> SecondaryPCARatioName {
+        Name("SecondaryPCARatioName"),
+        Comment("Provide the tool name for the SecondaryPCARatio BDT variable."),
+        "LArThreeDPCAFeatureTool_SecondaryPCARatio"
+      };
+
+      Atom<string> TertiaryPCARatioName {
+        Name("TertiaryPCARatioName"),
+        Comment("Provide the tool name for the TertiaryPCARatio BDT variable."),
+        "LArThreeDPCAFeatureTool_TertiaryPCARatio"
+      };
+
+      Atom<string> VertexDistanceName {
+        Name("VertexDistanceName"),
+        Comment("Provide the tool name for the VertexDistance BDT variable."),
+        "LArThreeDVertexDistanceFeatureTool_VertexDistance"
+      };
+
+      Atom<string> HaloTotalRatioName {
+        Name("HaloTotalRatioName"),
+        Comment("Provide the tool name for the HaloTotalRatio BDT variable."),
+        "LArConeChargeFeatureTool_HaloTotalRatio"
+      };
+
+      Atom<string> ConcentrationName {
+        Name("ConcentrationName"),
+        Comment("Provide the tool name for the Concentration BDT variable."),
+        "LArConeChargeFeatureTool_Concentration"
+
+      };
+
+      Atom<string> ConicalnessName {
+        Name("ConicalnessName"),
+        Comment("Provide the tool name for the Conicalness BDT variable."),
+        "LArConeChargeFeatureTool_Conicalness"
+      };
+    };
+
+    OptionalTable<PFOCharLabels_t> PFOCharLabels {
+      Name("PFOCharLabels"),
+      Comment("Provide tool names for the Pandora track/shower discrimination BDT variables.")
     };
 
     Atom<bool> ReferencePMTFromTriggerToBeam {

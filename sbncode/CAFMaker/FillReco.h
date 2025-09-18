@@ -140,12 +140,29 @@ namespace caf
                    caf::SRHit& srhit,
                    bool allowEmpty = false);
 
+  struct PFOCharLabelsStruct {
+    std::string EndFractionName;
+    std::string FractionalSpreadName;
+    std::string DiffStraightLineMeanName;
+    std::string LengthName;
+    std::string MaxFitGapLengthName;
+    std::string SlidingLinearFitRMSName;
+    std::string AngleDiffName;
+    std::string SecondaryPCARatioName;
+    std::string TertiaryPCARatioName;
+    std::string VertexDistanceName;
+    std::string HaloTotalRatioName;
+    std::string ConcentrationName;
+    std::string ConicalnessName;
+  };
+
   void FillPFPVars(const recob::PFParticle &particle,
                    const recob::PFParticle *primary,
                    const larpandoraobj::PFParticleMetadata *pfpMeta,
                    const art::Ptr<anab::T0> t0,
                    caf::SRPFP& srpfp,
-                   bool allowEmpty= false);
+                   const PFOCharLabelsStruct& pfoCharLabels,
+                   bool allowEmpty = false);
 
   void FillCNNScores(const recob::PFParticle &particle,
                      const sbn::PFPCNNScore *cnnscore,
