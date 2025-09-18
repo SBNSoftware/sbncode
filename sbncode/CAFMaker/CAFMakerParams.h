@@ -363,6 +363,12 @@ namespace caf
       "" //Empty by default, configured in icaruscode cafmaker_defs
     };
 
+    Atom<string> CorrectedOpFlashLabel {
+      Name("CorrectedOpFlashLabel"),
+      Comment("Label of CorrectedOpFlash containing tpc-corrected flash time."),
+      ""
+    };
+
     Atom<art::InputTag> NuGraphSliceHitLabel {
       Name("NuGraphSliceHitLabel"),
       Comment("Label of NuGraph slice hit map."),
