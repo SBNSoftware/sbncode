@@ -1164,6 +1164,8 @@ namespace caf
       slice.barycenterFM.deltaZ_Trigger  = matchInfo->deltaZ_Trigger;
       slice.barycenterFM.deltaY_Trigger  = matchInfo->deltaY_Trigger;
       slice.barycenterFM.radius_Trigger  = matchInfo->radius_Trigger;
+      slice.barycenterFM.score  = matchInfo->score;
+      slice.barycenterFM.chi2  = matchInfo->chi2;
     }
   }
 
