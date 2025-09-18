@@ -2265,7 +2265,24 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       }
 
       const larpandoraobj::PFParticleMetadata *pfpMeta = (fmPFPMeta.at(iPart).empty()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
-      FillPFPVars(thisParticle, primary, pfpMeta, thisPFPT0, pfp);
+      caf::CAFMakerParams::PFOCharLabels_t const& pfoCharParams
+        = fParams.PFOCharLabels().value_or(caf::CAFMakerParams::PFOCharLabels_t{});
+      const caf::PFOCharLabelsStruct pfoCharLabels {
+        pfoCharParams.EndFractionName(),
+        pfoCharParams.FractionalSpreadName(),
+        pfoCharParams.DiffStraightLineMeanName(),
+        pfoCharParams.LengthName(),
+        pfoCharParams.MaxFitGapLengthName(),
+        pfoCharParams.SlidingLinearFitRMSName(),
+        pfoCharParams.AngleDiffName(),
+        pfoCharParams.SecondaryPCARatioName(),
+        pfoCharParams.TertiaryPCARatioName(),
+        pfoCharParams.VertexDistanceName(),
+        pfoCharParams.HaloTotalRatioName(),
+        pfoCharParams.ConcentrationName(),
+        pfoCharParams.ConicalnessName()
+      };
+      FillPFPVars(thisParticle, primary, pfpMeta, thisPFPT0, pfp, pfoCharLabels);
 
       if (fmCNNScores.isValid()) {
         const sbn::PFPCNNScore *cnnScores = fmCNNScores.at(iPart).at(0).get();
