@@ -1653,99 +1653,39 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         }
       }
       // Fill CRT Veto 
-      std::cout << std::endl;	
-      std::cout << std::endl;	
-      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
-      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
-      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
-      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
-      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
-      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
-      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
-      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
-      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
-      std::cout << std::endl;	
-      std::cout << std::endl;	
       art::Handle<std::vector<sbnd::crt::CRTVeto>> sbndcrtveto_handle;
       GetByLabelStrict(evt, fParams.SBNDCRTVetoLabel(), sbndcrtveto_handle);
       // fill into event
       if (sbndcrtveto_handle.isValid()) {
-	std::cout << "Found a valid CRT Veto Handle!!!" << std::endl;
         const std::vector<sbnd::crt::CRTVeto> &sbndcrtvetos = *sbndcrtveto_handle;
-	  
   	// And associated SpacePoint objects
-  	//
-  	//art::FindManyP<sbnd::crt::CRTSpacePoint> fveto_sp = FindManyPStrict<sbnd::crt::CRTSpacePoint>(sbndcrtvetos[0], evt, fParams.SBNDCRTVetoLabel());
-	//art::FindManyP<sbnd::crt::CRTSpacePoint> spAssoc(&sbndcrtvetos[0], evt, fParams.SBNDCRTVetoLabel());
 	art::FindManyP<sbnd::crt::CRTSpacePoint> spAssoc(sbndcrtveto_handle, evt, fParams.SBNDCRTVetoLabel());
+        std::vector<sbnd::crt::CRTSpacePoint> vetoSpacePoints;
         if (spAssoc.isValid()) {
-	  std::cout << "Valid SpacePoint Association" << std::endl;
-	  std::cout << "Association Size: " << spAssoc.size() << std::endl;
-	}
-	else {
-	  std::cout << "Invalid Space Point Association" << std::endl;
-	}
 
-	// Assume there is only one Veto per event    
-	const std::vector<art::Ptr<sbnd::crt::CRTSpacePoint>> veto_sp_v(spAssoc.at(0)); 
-        //for (auto const& sp: veto_sp_v) {
-      
-        //}
-        //
+	  // Assume there is only one Veto per event    
+	  const std::vector<art::Ptr<sbnd::crt::CRTSpacePoint>> veto_sp_v(spAssoc.at(0)); 
 
-       // Fill the associated space points --> then add to the FillReco function
+          // Fill the associated space points --> then add to the FillReco function
        
-       std::vector<sbnd::crt::CRTSpacePoint> vetoSpacePoints;
-       if (veto_sp_v.size() == 0) {
-         std::cout << " No Veto SpacePoints" << std::endl; 
-         vetoSpacePoints.emplace_back(); // nullptr
-       }
-       else {
+          if (veto_sp_v.size() == 0) {
+            // TODO ? Need to decide how to handle this
+            // This version seems to work in skipping empty associations. It does break the rec.sbnd_crt_veto.sp_pe..length and 
+            // rec.sbnd_crt_veto.sp_time..length branches? However, the rec.sbnd_crt_veto.sp_position..length still works and can be used?
+            std::cout << "No Veto Space Points" << std::endl;
+            //vetoSpacePoints.emplace_back(); // nullptr 
+          }
+          else {
        
-         for (auto const& sp: veto_sp_v) {
+            for (auto const& sp: veto_sp_v) {
 	       
-           vetoSpacePoints.push_back(*sp);
+              vetoSpacePoints.push_back(*sp);
 
-         }
-       }
-
-       /*
-       if (fveto_sp.isValid()) {
-         std::cout << "Veto SP Association is valid! Size = " << fveto_sp.size() << std::endl;
-         //for (unsigned i = 0; i < fveto_sp.size(); i++) {
-         // Should have just one vector of possible space points
-         const std::vector<art::Ptr<sbnd::crt::CRTSpacePoint>> &theseSpacePoints = fveto_sp.at(0);
-           if (theseSpacePoints.size() == 0) {
-	     std::cout << " No Veto SpacePoints" << std::endl; 
-             vetoSpacePoints.emplace_back(); // nullptr
-           }
-           else if (theseSpacePoints.size() > 0) {
-             //vetoSpacePoints.push_back(*fveto_sp.at(i).at(0));
-             for (auto const& sp: theseSpacePoints) {
-	       vetoSpacePoints.push_back(*sp);
-             }
-           }
-         }
-	 */
-	  //srsbndcrtveto.emplace_back();
-	
-          FillSBNDCRTVeto(sbndcrtvetos[0], vetoSpacePoints, srsbndcrtveto);
+            }
+          }
+	}
+        FillSBNDCRTVeto(sbndcrtvetos[0], vetoSpacePoints, srsbndcrtveto);
       }
-      else {
-        std::cout << "Invalid CRT Veto Handle!" << std::endl;
-	return;
-      }
-      std::cout << std::endl;	
-      std::cout << std::endl;	
-      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
-      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
-      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
-      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
-      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
-      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
-      std::cout << "/------------- DEBUG DEBUG DEBUG DEBUG ------------------------ //" << std::endl;
-      std::cout << std::endl;	
-      std::cout << std::endl;	
     }
 
   // Get all of the CRTPMT Matches
@@ -2445,12 +2385,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   }  // end loop over slices
 
-  std::cout << std::endl;
-  std::cout << std::endl;
-  std::cout << "// -------------- DEBUG FILL REC TREE --------------------- //" <<std::endl;
-  std::cout << "V0 " << srsbndcrtveto.V0 << std::endl;
-  std::cout << std::endl;
-  std::cout << std::endl;
   //#######################################################
   //  Fill rec Tree
   //#######################################################
@@ -2477,12 +2411,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.crtpmt_matches = srcrtpmtmatches;
   rec.ncrtpmt_matches = srcrtpmtmatches.size();
 
-  std::cout << std::endl;
-  std::cout << std::endl;
-  std::cout << "// -------------- DEBUG After FILL REC TREE --------------------- //" <<std::endl;
-  std::cout << "V0 " << rec.sbnd_crt_veto.V0 << std::endl;
-  std::cout << std::endl;
-  std::cout << std::endl;
   // Fix the Reference time
   //
   // We want MC and Data to have the same reference time.
