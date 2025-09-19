@@ -34,7 +34,7 @@ physics: {
  stream1: [ out1 ]
 }
 
-physics.producers.sbndbnbinfo.module_type: "SBNDBNBRetriever"
+physics.producers.bnbinfo.module_type: "SBNDBNBRetriever"
 
 outputs: {
  out1: {
@@ -45,4 +45,4 @@ outputs: {
  }
 }
 
-physics.producers.sbndbnbinfo.fileNames: @local::outputs.out1.fileName
+physics.producers.bnbinfo.fileNames: @local::outputs.out1.fileName
