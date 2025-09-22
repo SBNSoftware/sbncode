@@ -122,7 +122,7 @@ namespace sbn{
 
 
     
-    try{bfp->GetNamedData(time, "E:VP873",&VP873);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{vp873->GetNamedData(time, "E:VP873",&VP873);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
     
     try{offsets->GetNamedData(time, "E_VP873S",&VP873Offset);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
     try{offsets->GetNamedData(time, "E_HP875S",&HP875Offset);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
