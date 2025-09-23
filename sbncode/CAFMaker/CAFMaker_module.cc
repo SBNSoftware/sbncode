@@ -1606,6 +1606,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   GetByLabelStrict(evt, fParams.TriggerLabel().encode(), extratrig_handle);
 
   art::Handle<std::vector<raw::Trigger>> trig_handle;
+  std::cout<<"Trigger label: "<<fParams.TriggerLabel()<<std::endl;
   GetByLabelStrict(evt, fParams.TriggerLabel().encode(), trig_handle);
 
   art::Handle<std::vector<raw::Trigger>> unshifted_trig_handle;

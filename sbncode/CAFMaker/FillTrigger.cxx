@@ -23,6 +23,12 @@ namespace caf
     triggerInfo.trigger_count = addltrig_info.triggerCount;
     triggerInfo.gate_count = addltrig_info.gateCount;
     triggerInfo.gate_delta = addltrig_info.gateCountFromPreviousTrigger;
+
+    triggerInfo.passed_trigger = addltrig_info.triggerEmulation;
+    triggerInfo.num_pairs_over_threshold = addltrig_info.pairsOverThreshold;
+    triggerInfo.monpulses_flat = addltrig_info.MonPulses;
+    triggerInfo.monpulse_sizes = addltrig_info.MonPulseSizes;
+
   }
 
   void FillTriggerMC(double absolute_time, caf::SRTrigger& triggerInfo) {
@@ -32,7 +38,6 @@ namespace caf
     // Set this to 0 since the "MC" trigger is (for now) always at the spill time
     triggerInfo.trigger_within_gate = 0.;
 
-    // TODO: fill others?
   }
 
   void FillTriggerSBND(caf::SRSBNDTimingInfo& timingInfo, caf::SRTrigger& triggerInfo){
