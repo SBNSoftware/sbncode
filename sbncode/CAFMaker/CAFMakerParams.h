@@ -343,6 +343,7 @@ namespace caf
       Name("SBNDCRTVetoLabel"),
       Comment("Label of sbnd CRT Veto."),
       "crtveto" // sbnd
+    };
 
     Atom<string> SBNDFrameShiftInfoLabel {
       Name("SBNDFrameShiftInfoLabel"),

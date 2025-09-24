@@ -158,7 +158,7 @@ namespace caf
       srsbndcrtveto.sp_time.emplace_back(sp.Ts0());   
       srsbndcrtveto.sp_pe.emplace_back(sp.PE());   
     }
-
+  };
   void FillSBNDFrameShiftInfo(const sbnd::timing::FrameShiftInfo &frame,
                         caf::SRSBNDFrameShiftInfo &srsbndframe,
                         bool allowEmpty)
