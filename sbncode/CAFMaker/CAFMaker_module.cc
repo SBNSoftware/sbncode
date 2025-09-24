@@ -119,6 +119,7 @@
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
 #include "sbnobj/Common/Reco/OpT0FinderResult.h"
 #include "sbnobj/SBND/CRT/CRTVeto.hh"
+#include "sbnobj/Common/Reco/CorrectedOpFlashTiming.h"
 #include "sbnobj/SBND/Timing/TimingInfo.hh"
 #include "sbnobj/SBND/Timing/FrameShiftInfo.hh"
 
@@ -1936,6 +1937,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     const sbn::TPCPMTBarycenterMatch *barycenterMatch
       = foTPCPMTBarycenterMatch.isValid()? foTPCPMTBarycenterMatch.at(0).get(): nullptr;
 
+
+    art::FindManyP<sbn::CorrectedOpFlashTiming> fmCorrectedOpFlash =
+      FindManyPStrict<sbn::CorrectedOpFlashTiming>(sliceList, evt,
+          fParams.CorrectedOpFlashLabel() + slice_tag_suff);
+    std::vector<art::Ptr<sbn::CorrectedOpFlashTiming>> slcCorrectedOpFlash;
+     if (fmCorrectedOpFlash.isValid())
+      slcCorrectedOpFlash = fmCorrectedOpFlash.at(0);
+
+
     art::FindOneP<lcvn::Result> foCVNResult =
       FindOnePStrict<lcvn::Result>(sliceList, evt,
           fParams.CVNLabel() + slice_tag_suff);
@@ -2191,6 +2201,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceOpT0Finder(slcOpT0, recslc);
     FillSliceBarycenter(slcHits, slcSpacePoints, recslc);
     FillTPCPMTBarycenterMatch(barycenterMatch, recslc);
+    FillCorrectedOpFlashTiming(slcCorrectedOpFlash, recslc);
     FillCVNScores(cvnResult, recslc);
     
     // select slice
@@ -2290,7 +2301,24 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       }
 
       const larpandoraobj::PFParticleMetadata *pfpMeta = (fmPFPMeta.at(iPart).empty()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
-      FillPFPVars(thisParticle, primary, pfpMeta, thisPFPT0, pfp);
+      caf::CAFMakerParams::PFOCharLabels_t const& pfoCharParams
+        = fParams.PFOCharLabels().value_or(caf::CAFMakerParams::PFOCharLabels_t{});
+      const caf::PFOCharLabelsStruct pfoCharLabels {
+        pfoCharParams.EndFractionName(),
+        pfoCharParams.FractionalSpreadName(),
+        pfoCharParams.DiffStraightLineMeanName(),
+        pfoCharParams.LengthName(),
+        pfoCharParams.MaxFitGapLengthName(),
+        pfoCharParams.SlidingLinearFitRMSName(),
+        pfoCharParams.AngleDiffName(),
+        pfoCharParams.SecondaryPCARatioName(),
+        pfoCharParams.TertiaryPCARatioName(),
+        pfoCharParams.VertexDistanceName(),
+        pfoCharParams.HaloTotalRatioName(),
+        pfoCharParams.ConcentrationName(),
+        pfoCharParams.ConicalnessName()
+      };
+      FillPFPVars(thisParticle, primary, pfpMeta, thisPFPT0, pfp, pfoCharLabels);
 
       if (fmCNNScores.isValid()) {
         const sbn::PFPCNNScore *cnnScores = fmCNNScores.at(iPart).at(0).get();
@@ -2564,6 +2592,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.hdr.ismc    = !isRealData;
   rec.hdr.det     = fDet;
   rec.hdr.fno     = fFileNumber;
+
   if(fFirstInSubRun)
   {
     rec.hdr.nbnbinfo = fBNBInfo.size();
@@ -2604,13 +2633,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   else {
     std::cout << "Did not find this event in the spill info map." << std::endl;
   }
-
+  
   if(fRecTree){
     // Save the standard-record
     StandardRecord* prec = &rec;
+
     fRecTree->SetBranchAddress("rec", &prec);
     fRecTree->Fill();
-
     if(fFlatTree){
       fFlatRecord->Clear();
       fFlatRecord->Fill(rec);
