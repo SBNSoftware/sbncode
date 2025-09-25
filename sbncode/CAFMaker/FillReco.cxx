@@ -142,7 +142,8 @@ namespace caf
   }
 
   void FillSBNDCRTVeto(const sbnd::crt::CRTVeto &veto,
-                       const std::vector<sbnd::crt::CRTSpacePoint> &points,
+                       //const std::vector<sbnd::crt::CRTSpacePoint> &points,
+		       const std::vector<art::Ptr<sbnd::crt::CRTSpacePoint>> &points,
                        caf::SRSBNDCRTVeto &srsbndcrtveto,
                        bool allowEmpty)
   {
@@ -154,9 +155,9 @@ namespace caf
 
     // add the CRTSpacePoint associations to the SR Veto
     for(auto const& sp : points) {
-      srsbndcrtveto.sp_position.emplace_back(sp.X(), sp.Y(), sp.Z());   
-      srsbndcrtveto.sp_time.emplace_back(sp.Ts0());   
-      srsbndcrtveto.sp_pe.emplace_back(sp.PE());   
+      srsbndcrtveto.sp_position.emplace_back(sp->X(), sp->Y(), sp->Z());   
+      srsbndcrtveto.sp_time.emplace_back(sp->Ts0()/1000); /// convert to us   
+      srsbndcrtveto.sp_pe.emplace_back(sp->PE());   
     }
   };
   void FillSBNDFrameShiftInfo(const sbnd::timing::FrameShiftInfo &frame,
