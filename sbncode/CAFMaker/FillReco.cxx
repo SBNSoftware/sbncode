@@ -142,7 +142,6 @@ namespace caf
   }
 
   void FillSBNDCRTVeto(const sbnd::crt::CRTVeto &veto,
-                       //const std::vector<sbnd::crt::CRTSpacePoint> &points,
 		       const std::vector<art::Ptr<sbnd::crt::CRTSpacePoint>> &points,
                        caf::SRSBNDCRTVeto &srsbndcrtveto,
                        bool allowEmpty)

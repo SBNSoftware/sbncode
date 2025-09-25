@@ -1699,11 +1699,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         }
       }
      
-      std::cout << std::endl;
-      std::cout << std::endl;
-      std::cout << "DEBUG --> Start CRT Veto Fill" <<std::endl;
-      std::cout << std::endl;
-      std::cout << std::endl;
       // Fill CRT Veto 
       art::Handle<std::vector<sbnd::crt::CRTVeto>> sbndcrtveto_handle;
       GetByLabelStrict(evt, fParams.SBNDCRTVetoLabel(), sbndcrtveto_handle);
@@ -1711,25 +1706,19 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       // fill into event
       if (sbndcrtveto_handle.isValid()) {
         const std::vector<sbnd::crt::CRTVeto> &sbndcrtvetos = *sbndcrtveto_handle;
-        std::cout << "DEBUG: about to Fill veto ptrs" << std::endl;
         art::fill_ptr_vector(vetoPtrs, sbndcrtveto_handle);
 	// Only one valid veto per event
         if (sbndcrtvetos.size() == 1) {
-          std::cout << "DEBUG: veto size is 1" << std::endl;
   	  // And associated SpacePoint objects
 	  art::FindManyP<sbnd::crt::CRTSpacePoint> spAssoc(sbndcrtveto_handle, evt, fParams.SBNDCRTVetoLabel());
           if (spAssoc.isValid()) {
-            std::cout << "DEBUG: Veto SP Ass is valid" << std::endl;
 	    // There is one vector of SpacePoints per Veto --> can be empty if no veto condition was satisfied     
 	    const std::vector<art::Ptr<sbnd::crt::CRTSpacePoint>> veto_sp_v(spAssoc.at(vetoPtrs[0].key())); 
             FillSBNDCRTVeto(sbndcrtvetos[0], veto_sp_v, srsbndcrtveto);
-            std::cout << "DEBUG: Filled the veto" << std::endl;
 	  }
 	}
         //FillSBNDCRTVeto(sbndcrtvetos[0], vetoSpacePoints, srsbndcrtveto);
       }
-      std::cout << std::endl;
-      std::cout << std::endl;
     
       art::Handle<sbnd::timing::FrameShiftInfo> sbndframeshiftinfo_handle;
       GetByLabelStrict(evt, fParams.SBNDFrameShiftInfoLabel(), sbndframeshiftinfo_handle);
