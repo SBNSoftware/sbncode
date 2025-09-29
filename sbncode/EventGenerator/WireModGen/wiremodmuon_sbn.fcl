@@ -5,12 +5,16 @@ wiremodmuon_icarus: {
   module_type: WireModMuon
 
   # CRT bounds
-  CRTX0: [-550]
-  CRTX1: [550]
-  CRTY0: [618]
-  CRTY1: [618]
-  CRTZ0: [-1100]
-  CRTZ1: [1300]
+  #
+  # Each entry (in X0, X1, Y0, Y1, Z0, Z1) is one plane that will be included in the intersection check
+  #
+  # listed as: Top horizontal, Top Rim West, Top Rim East, Top Rim South
+  CRTX0: [-580,  555,   -555,  -560,  -560]
+  CRTX1: [580,   555,   -555,  380,   560]
+  CRTY0: [617.4, 400,   400,   400,   420]
+  CRTY1: [617.4, 600,   600,   600,   620]
+  CRTZ0: [-1180, -1180, -1180, -1143, 1533]
+  CRTZ1: [1460,  1460,  1460,  -1143, 1533]
 
   # selection config
   SelectA2C: true
