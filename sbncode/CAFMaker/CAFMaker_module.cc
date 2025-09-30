@@ -1630,6 +1630,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // }
 
   // try to find the result of the Flash trigger if it was run
+  mf::LogInfo("CAFMaker") << "   New Trigger Time   = " << srtrigger.global_trigger_det_time << " us\n"
+			  << "   New Beam Gate Time =  " << srtrigger.beam_gate_det_time << " us";
   bool pass_flash_trig = false;
   art::Handle<bool> flashtrig_handle;
   GetByLabelStrict(evt, fParams.FlashTrigLabel(), flashtrig_handle);
