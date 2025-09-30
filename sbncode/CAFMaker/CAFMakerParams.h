@@ -320,6 +320,12 @@ namespace caf
       "crthit" // icarus
     };
 
+    Atom<string> CRTSimChanLabel {
+      Name("CRTSimChanLabel"),
+      Comment("Label of AuxDetSimChannels."),
+      "genericcrt" // icarus
+    };
+
     Atom<string> CRTTrackLabel {
       Name("CRTTrackLabel"),
       Comment("Label of sbn CRT tracks."),
