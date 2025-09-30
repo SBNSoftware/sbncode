@@ -24,11 +24,6 @@ namespace caf
     triggerInfo.gate_count = addltrig_info.gateCount;
     triggerInfo.gate_delta = addltrig_info.gateCountFromPreviousTrigger;
 
-    triggerInfo.passed_trigger = addltrig_info.triggerEmulation;
-    triggerInfo.num_pairs_over_threshold = addltrig_info.pairsOverThreshold;
-    triggerInfo.monpulses_flat = addltrig_info.MonPulses;
-    triggerInfo.monpulse_sizes = addltrig_info.MonPulseSizes;
-
   }
 
   void FillTriggerMC(double absolute_time, caf::SRTrigger& triggerInfo) {
@@ -47,6 +42,19 @@ namespace caf
     
     double diff_ts = triggerInfo.global_trigger_det_time - triggerInfo.beam_gate_det_time;
     triggerInfo.trigger_within_gate = diff_ts;
+  }
+
+  void FillTriggerEmulation(art::Handle<std::vector<int>> const& monpulsesFlat,
+                             art::Handle<std::vector<int>> const& monpulseSizes,
+                             art::Handle<int> const& numPairs,
+                             art::Handle<bool> const& passedTrig,
+                             caf::SRTrigger& triggerInfo) {
+
+    triggerInfo.monpulses_flat = *monpulsesFlat;
+    triggerInfo.monpulse_sizes = *monpulseSizes;
+    triggerInfo.num_pairs_over_threshold = *numPairs;
+    triggerInfo.passed_trigger = *passedTrig;
+
   }
 
 }
