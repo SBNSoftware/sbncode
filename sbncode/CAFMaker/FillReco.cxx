@@ -68,6 +68,7 @@ namespace caf
                   bool use_ts0,
                   int64_t CRT_T0_reference_time, // ns, signed
                   double CRT_T1_reference_time, // us
+                  const std::map<std::pair<int, int>, sim::AuxDetSimChannel> &crtsimchanmap,
                   caf::SRCRTHit &srhit,
                   bool allowEmpty) {
 
@@ -85,6 +86,52 @@ namespace caf
 
     srhit.pe = hit.peshit;
     srhit.plane = hit.plane;
+
+    // lookup truth matching information
+    std::map<int, float> true_energy;
+    std::set<std::pair<int, int>> checked; // keep track of what AuxDetSimChannels we have looked at
+    for (auto const &mac_to_pes: hit.pesmap) {
+      int mac = (int)mac_to_pes.first;
+      for (const std::pair<int,float> &chan_pe: mac_to_pes.second) {
+        int chan = chan_pe.first;
+
+        // check for the 3-pos Minos ("m") modules, or the 1-pos other modules
+        bool is_minos_module = mac < 94;
+        int pos = is_minos_module ? (chan/10 + 1) : 1;
+
+        std::pair<int, int> key {mac, pos};
+        if (checked.count(key)) continue; // already looked here
+
+        checked.insert(key);
+   
+        if (crtsimchanmap.count(key)) {
+          const sim::AuxDetSimChannel &crtsimchan = crtsimchanmap.at(key);
+          for (const sim::AuxDetIDE &ide: crtsimchan.AuxDetIDEs()) {
+            double hit_time_us = srhit.time;
+            double tru_time_us = ide.entryT/1e3; // ns -> us 
+
+            // 1us cut on truth matching
+            if (abs(hit_time_us - tru_time_us) < 1) {
+            // std::cout << "Hit at time: " << (srhit.time/1e3) << " " << (srhit.t0/1e3) << " " << (srhit.t1/1e3) << " pes: " << chan_pe.second << " of " << srhit.pe << " on FEB: " << mac << " channel: " << chan << " matched to AuxDetID: " << crtsimchan.AuxDetID() << " G4ID: " << ide.trackID << " E: " << ide.energyDeposited << " T: " << (ide.entryT/1e6) << std::endl;
+              true_energy[ide.trackID] += ide.energyDeposited;
+            }
+
+          }
+        }
+      }
+    }
+
+    // sort results by energy
+    std::vector<std::pair<float, int>> true_energy_list;
+    for (auto const &pair: true_energy) true_energy_list.push_back(std::make_pair(pair.second, pair.first));
+    std::sort(true_energy_list.begin(), true_energy_list.end(), std::greater<>());
+
+    // Save to the SRCRTHit truth
+    for (auto const &pair: true_energy_list) {
+      srhit.truth.match_e.push_back(pair.first);
+      srhit.truth.match_id.push_back(pair.second);
+    }
+    if (true_energy_list.size() > 0) srhit.truth.bestmatch_id = true_energy_list[0].second;
 
   }
 
@@ -635,6 +682,7 @@ namespace caf
                        bool use_ts0,
                        int64_t CRT_T0_reference_time, // ns, signed
                        double CRT_T1_reference_time, // us
+                       const std::map<std::pair<int, int>, sim::AuxDetSimChannel> &crtsimchanmap,
                        caf::SRTrack &srtrack,
                        bool allowEmpty)
   {
@@ -661,7 +709,7 @@ namespace caf
       srtrack.crthit.hit.plane = t0match[0]->fID;
     }
     if (hitmatch.size()) {
-      FillCRTHit(*hitmatch[0], use_ts0, CRT_T0_reference_time, CRT_T1_reference_time, srtrack.crthit.hit, allowEmpty);
+      FillCRTHit(*hitmatch[0], use_ts0, CRT_T0_reference_time, CRT_T1_reference_time, crtsimchanmap, srtrack.crthit.hit, allowEmpty);
     }
   }
 

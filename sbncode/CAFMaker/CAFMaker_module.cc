@@ -140,6 +140,7 @@
 #include "sbnanaobj/StandardRecord/Flat/FlatRecord.h"
 #include "lardataobj/RawData/ExternalTrigger.h"
 #include "lardataobj/RawData/TriggerData.h"
+#include "lardataobj/Simulation/AuxDetSimChannel.h"
 
 // // CAFMaker
 #include "sbncode/CAFMaker/AssociationUtil.h"
@@ -287,6 +288,11 @@ class CAFMaker : public art::EDProducer {
   std::vector<std::vector<geo::BoxBoundedGeo>> fTPCVolumes;
   std::vector<geo::BoxBoundedGeo> fActiveVolumes;
 
+  // CRT geometry info
+  //
+  // ICARUS
+  std::map<std::pair<int, int>, int> fFEBChannel2AuxDetID;
+
   // random number generator for fake reco
   CLHEP::HepRandomEngine& fFakeRecoRandomEngine;
 
@@ -315,6 +321,7 @@ class CAFMaker : public art::EDProducer {
   double GetBlindPOTScale() const;
 
   void InitVolumes(); ///< Initialize volumes from Gemotry service
+  void InitCRTMapping(); ///< Initialize CRT mapping
 
   void FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_time);
   void FixCRTReferenceTimes(StandardRecord &rec, double CRTT0_reference_time, double CRTT1_reference_time);
@@ -422,6 +429,9 @@ class CAFMaker : public art::EDProducer {
 
   // setup volume definitions
   InitVolumes();
+
+  // setup CRT mapping
+  InitCRTMapping();
 
   fSaveGENIEEventRecord = fParams.SaveGENIEEventRecord();
 
@@ -594,6 +604,36 @@ void CAFMaker::FixCRTReferenceTimes(StandardRecord &rec, double CRTT0_reference_
   // TODO: fix more?
   // Tracks?
 
+}
+
+void CAFMaker::InitCRTMapping() {
+
+  // ICARUS
+  cet::search_path searchPath("FW_SEARCH_PATH");
+  std::string fullFileName;
+  searchPath.find_file("feb_map.txt",fullFileName);
+  std::ifstream fin;
+  fin.open(fullFileName, std::ios::in);
+
+  if (fin.good()) {
+    std::string line;
+
+    while(std::getline(fin,line)) {
+      std::vector<std::string> row;
+      std::string word;
+
+      std::stringstream s(line);
+      while (std::getline(s, word, ',')) {
+        row.push_back(word);
+      }
+      int auxDetID = std::stoi(row[0]); // auxDetID
+      int mac5 = std::stoi(row[1]); // FEB ID
+      int chan = std::stoi(row[2]); // FEB channel
+      fFEBChannel2AuxDetID[std::make_pair(mac5, chan)] = auxDetID;
+    }
+
+    fin.close();
+  }
 }
 
 void CAFMaker::InitVolumes() {
@@ -1649,16 +1689,36 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   caf::SRSBNDFrameShiftInfo srsbndframeshiftinfo;
   caf::SRSBNDTimingInfo srsbndtiminginfo;
 
+  // Mapping of (feb, channel) to truth information (AuxDetSimChannel) -- filled for ICARUS
+  std::map<std::pair<int, int>, sim::AuxDetSimChannel> crtsimchanmap;
+
   if(fDet == kICARUS)
     {
       art::Handle<std::vector<sbn::crt::CRTHit>> crthits_handle;
       GetByLabelStrict(evt, fParams.CRTHitLabel(), crthits_handle);
+
+      art::Handle<std::vector<sim::AuxDetSimChannel>> auxdetsimchan_handle;
+      GetByLabelStrict(evt, fParams.CRTSimChanLabel(), auxdetsimchan_handle);
+
       // fill into event
       if (crthits_handle.isValid()) {
         const std::vector<sbn::crt::CRTHit> &crthits = *crthits_handle;
+
+        std::vector<sim::AuxDetSimChannel> empty;
+        const std::vector<sim::AuxDetSimChannel> &crtsimchanvec = (auxdetsimchan_handle.isValid()) ? *auxdetsimchan_handle : empty;
+        // Turn the AuxDetSimChannel's into a map that can be looked up from a CRT Hit
+        for (const sim::AuxDetSimChannel &crtsimchan: crtsimchanvec) {
+          for (auto const &map_pair: fFEBChannel2AuxDetID) {
+            if (map_pair.second == (int)crtsimchan.AuxDetID()) {
+              crtsimchanmap[map_pair.first] = crtsimchan;
+              break;
+            }
+          }
+        }
+
         for (unsigned i = 0; i < crthits.size(); i++) {
           srcrthits.emplace_back();
-          FillCRTHit(crthits[i], fParams.CRTUseTS0(), CRT_T0_reference_time, CRT_T1_reference_time, srcrthits.back());
+          FillCRTHit(crthits[i], fParams.CRTUseTS0(), CRT_T0_reference_time, CRT_T1_reference_time, crtsimchanmap, srcrthits.back());
         }
       }
 
@@ -2318,7 +2378,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
             crthittagginginfo = fmCRTHitMatchInfo.at(iPart);
           }          
           
-          FillTrackCRTHit(fmCRTHitMatch.at(iPart), crthitmatch, crthittagginginfo, fParams.CRTUseTS0(), CRT_T0_reference_time, CRT_T1_reference_time, trk);
+          FillTrackCRTHit(fmCRTHitMatch.at(iPart), crthitmatch, crthittagginginfo, fParams.CRTUseTS0(), CRT_T0_reference_time, CRT_T1_reference_time, crtsimchanmap, trk);
         }
         // NOTE: SEE TODO AT fmCRTTrackMatch
         if (fmCRTTrackMatch.isValid() && fDet == kICARUS) {
