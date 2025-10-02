@@ -1600,7 +1600,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   //#######################################################
   // Fill detector & reco
   //#######################################################
-
+  
   //Beam gate and Trigger info
   art::Handle<sbn::ExtraTriggerInfo> extratrig_handle;
   GetByLabelStrict(evt, fParams.TriggerLabel().encode(), extratrig_handle);
@@ -1612,16 +1612,40 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   if (!isRealData)
     GetByLabelStrict(evt, fParams.UnshiftedTriggerLabel().encode(), unshifted_trig_handle);
 
+  //Trigger emulation handles
+  art::Handle<std::vector<int>> monpulses_handle;
+  GetByLabelStrict(evt, fParams.MonPulsesTriggerLabel().encode(), monpulses_handle);
+
+  art::Handle<std::vector<int>> monpulse_sizes_handle;
+  GetByLabelStrict(evt, fParams.MonPulseSizesTriggerLabel().encode(), monpulse_sizes_handle);
+
+  art::Handle<int> pairs_handle;
+  GetByLabelStrict(evt, fParams.PairsTriggerLabel().encode(), pairs_handle);
+
+  art::Handle<bool> trigemu_handle;
+  GetByLabelStrict(evt, fParams.EmulatedTriggerLabel().encode(), trigemu_handle);
+
+  // Check trigger handles
   const bool isValidTrigger = extratrig_handle.isValid() && trig_handle.isValid() && trig_handle->size() == 1;
   const bool isValidUnshiftedTrigger = unshifted_trig_handle.isValid() && unshifted_trig_handle->size() == 1;
+  const bool isValidEmulationTrigger = monpulses_handle.isValid() && monpulse_sizes_handle.isValid() && pairs_handle.isValid() && trigemu_handle.isValid();
 
   const double triggerShift = (isValidUnshiftedTrigger && isValidTrigger)?
     unshifted_trig_handle->at(0).TriggerTime() - trig_handle->at(0).TriggerTime() : 0.;
+
+  // Fill local ExtraTriggerInfo struct
+  sbn::ExtraTriggerInfo extratrig;
+  if (extratrig_handle.isValid()) extratrig = *extratrig_handle;
 
   caf::SRTrigger srtrigger;
   if (isValidTrigger) {
       FillTrigger(*extratrig_handle, trig_handle->at(0), srtrigger, triggerShift);
   }
+  // Fill trigger emulation information
+  if (isValidEmulationTrigger) { 
+      FillTriggerEmulation(monpulses_handle, monpulse_sizes_handle, pairs_handle, trigemu_handle, srtrigger);
+  }
+
   // If not real data, fill in enough of the SRTrigger to make (e.g.) the CRT
   // time referencing work. TODO: add more stuff to a "MC"-Trigger?
   // No longer needed with incorporation of trigger emulation in the MC.

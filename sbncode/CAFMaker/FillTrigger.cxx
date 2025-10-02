@@ -26,6 +26,7 @@ namespace caf
     triggerInfo.trigger_count = addltrig_info.triggerCount;
     triggerInfo.gate_count = addltrig_info.gateCount;
     triggerInfo.gate_delta = addltrig_info.gateCountFromPreviousTrigger;
+
   }
 
   void FillTriggerMC(double absolute_time, caf::SRTrigger& triggerInfo) {
@@ -35,7 +36,6 @@ namespace caf
     // Set this to 0 since the "MC" trigger is (for now) always at the spill time
     triggerInfo.trigger_within_gate = 0.;
 
-    // TODO: fill others?
   }
 
   void FillTriggerSBND(caf::SRSBNDTimingInfo& timingInfo, caf::SRTrigger& triggerInfo){
@@ -47,6 +47,19 @@ namespace caf
     double diff_ts = triggerInfo.global_trigger_det_time - triggerInfo.beam_gate_det_time;
 	std::cout << "diff_ts: " << diff_ts << std::endl;
     triggerInfo.trigger_within_gate = diff_ts;
+  }
+
+  void FillTriggerEmulation(art::Handle<std::vector<int>> const& monpulsesFlat,
+                             art::Handle<std::vector<int>> const& monpulseSizes,
+                             art::Handle<int> const& numPairs,
+                             art::Handle<bool> const& passedTrig,
+                             caf::SRTrigger& triggerInfo) {
+
+    triggerInfo.monpulses_flat = *monpulsesFlat;
+    triggerInfo.monpulse_sizes = *monpulseSizes;
+    triggerInfo.num_pairs_over_threshold = *numPairs;
+    triggerInfo.passed_trigger = *passedTrig;
+
   }
 
 }
