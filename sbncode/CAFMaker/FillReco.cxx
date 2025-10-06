@@ -141,16 +141,17 @@ namespace caf
     srsbndcrttrack.tof      = track.ToF();
   }
 
-  void FillSBNDCRTVeto(const sbnd::crt::CRTVeto &veto,
+  //void FillSBNDCRTVeto(const sbnd::crt::CRTVeto &veto,
+  void FillSBNDCRTVeto(const art::Ptr<sbnd::crt::CRTVeto> &veto,
 		       const std::vector<art::Ptr<sbnd::crt::CRTSpacePoint>> &points,
                        caf::SRSBNDCRTVeto &srsbndcrtveto,
                        bool allowEmpty)
   {
-    srsbndcrtveto.V0     = veto.V0();
-    srsbndcrtveto.V1     = veto.V1();
-    srsbndcrtveto.V2     = veto.V2();
-    srsbndcrtveto.V3     = veto.V3();
-    srsbndcrtveto.V4     = veto.V4();
+    srsbndcrtveto.V0     = veto->V0();
+    srsbndcrtveto.V1     = veto->V1();
+    srsbndcrtveto.V2     = veto->V2();
+    srsbndcrtveto.V3     = veto->V3();
+    srsbndcrtveto.V4     = veto->V4();
 
     // add the CRTSpacePoint associations to the SR Veto
     for(auto const& sp : points) {
