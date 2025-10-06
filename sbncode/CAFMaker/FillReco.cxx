@@ -581,16 +581,16 @@ namespace caf
   }
 
   void FillSliceNuGraph(const std::vector<art::Ptr<recob::Hit>> &inputHits,
-			const std::vector<unsigned int> &sliceHitsMap,
 			const std::vector<art::Ptr<anab::FeatureVector<1>>> &ngFilterResult,
 			const std::vector<art::Ptr<anab::FeatureVector<5>>> &ngSemanticResult,
 			caf::SRSlice &slice)
   {
 
     //need to double check that the slice processed by NuGraph is the same under consideration
-    //std::cout << "sizes=" << inputHits.size() << " " << sliceHitsMap.size() << " " << ngFilterResult.size() << " " << ngSemanticResult.size() << std::endl;
+    // std::cout << "sizes=" << inputHits.size() << " " << " " << ngFilterResult.size() << " " << ngSemanticResult.size() << std::endl;
     unsigned int nHits = inputHits.size();
-    if (nHits==0 || nHits!=sliceHitsMap.size() || inputHits[0].key()!=sliceHitsMap[0]) return;//not the same slice!
+    // implementing this same-slice check with the updated architecture would be a major headache and I believe is not required given how inputHits is retrieved.
+    // if (nHits==0 || nHits!=sliceHitsMap.size() || inputHits[0].key()!=sliceHitsMap[0]) return;//not the same slice!
 
     unsigned int npass = 0;
     for ( unsigned int i = 0; i < nHits; i++ ) {
@@ -1024,38 +1024,26 @@ namespace caf
     srpfp.cnnscore.nclusters = cnnscore->nClusters;
   }
 
-  void FillPFPNuGraph(const std::vector<unsigned int> &sliceHitsMap,
+  void FillPFPNuGraph(const std::vector<art::Ptr<recob::Hit>> &pfpHits,
 		      const std::vector<art::Ptr<anab::FeatureVector<1>>> &ngFilterResult,
 		      const std::vector<art::Ptr<anab::FeatureVector<5>>> &ngSemanticResult,
-		      const std::vector<art::Ptr<recob::Hit>> &pfpHits,
 		      caf::SRPFP& srpfp,
 		      bool allowEmpty)
   {
-
-    // the nugraph elements are ordered the same as the sliceHitsMap
-    std::vector<size_t> mappedhits;
-    for (auto& hit : pfpHits) {
-      auto it = std::find(sliceHitsMap.begin(), sliceHitsMap.end(), hit.key());
-      if (it != sliceHitsMap.end()) {
-	size_t index = std::distance(sliceHitsMap.begin(), it);
-	mappedhits.push_back(index);
-      }
-    }
-
-    if (mappedhits.size()>0) {
+    if (pfpHits.size()>0) {
       std::vector<float> ng2sempfpcounts(5,0);
       size_t ng2bkgpfpcount = 0;
-      for (size_t pos : mappedhits) {
-	auto const& bkgscore = ngFilterResult.at(pos);
-	if (bkgscore->at(0)<ng_filter_cut) {
-	  ng2bkgpfpcount++;
-	} else {
-	  auto const& scores = ngSemanticResult.at(pos);
-	  std::vector<float> ng2semscores;
-	  for (size_t i=0;i<scores->size();i++) ng2semscores.push_back(scores->at(i));
-	  size_t sem_label = std::distance(ng2semscores.begin(), std::max_element(ng2semscores.begin(), ng2semscores.end()));//arg_max(ng2semscores);
-	  ng2sempfpcounts[sem_label]++;
-	}
+      for (size_t pos = 0; pos < pfpHits.size(); pos++) {
+	      auto const& bkgscore = ngFilterResult.at(pos);
+	      if (bkgscore->at(0)<ng_filter_cut) {
+	        ng2bkgpfpcount++;
+	      } else {
+          auto const& scores = ngSemanticResult.at(pos);
+          std::vector<float> ng2semscores;
+          for (size_t i=0;i<scores->size();i++) ng2semscores.push_back(scores->at(i));
+          size_t sem_label = std::distance(ng2semscores.begin(), std::max_element(ng2semscores.begin(), ng2semscores.end()));//arg_max(ng2semscores);
+          ng2sempfpcounts[sem_label]++;
+        }
       }
       srpfp.ngscore.sem_cat = SRNuGraphScore::NuGraphCategory(std::distance(ng2sempfpcounts.begin(), std::max_element(ng2sempfpcounts.begin(), ng2sempfpcounts.end())));//arg_max(ng2sempfpcounts);
       size_t nonBkgHits = (pfpHits.size() > ng2bkgpfpcount ? pfpHits.size()-ng2bkgpfpcount : 0);

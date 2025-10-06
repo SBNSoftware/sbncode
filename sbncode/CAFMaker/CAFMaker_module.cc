@@ -1717,6 +1717,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   // collect the TPC slices
   std::vector<art::Ptr<recob::Slice>> slices;
+  std::vector<art::Ptr<recob::Slice>> nccSlices;
   std::vector<std::string> slice_tag_suffixes;
   std::vector<unsigned> slice_tag_indices;
   for (unsigned i_tag = 0; i_tag < pandora_tag_suffixes.size(); i_tag++) {
@@ -1726,22 +1727,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     GetByLabelStrict(evt, fParams.PFParticleLabel() + pandora_tag_suffix, thisSlices);
     if (thisSlices.isValid()) {
       art::fill_ptr_vector(slices, thisSlices);
+      const std::vector<art::Ptr<recob::Slice>>& tempNCCSlices = evt.getProduct<std::vector<art::Ptr<recob::Slice>>>(fParams.NCCSlicesLabel().label() + pandora_tag_suffix);
+      nccSlices.insert(nccSlices.end(), tempNCCSlices.begin(), tempNCCSlices.end());
       for (unsigned i = 0; i < thisSlices->size(); i++) {
         slice_tag_suffixes.push_back(pandora_tag_suffix);
         slice_tag_indices.push_back(i_tag);
       }
     }
-  }
-
-  // nu graph
-  std::vector< art::Handle<std::vector<unsigned int>> > ng2_slice_hit_map_handle(pandora_tag_suffixes.size());
-  std::vector< art::Handle<std::vector<anab::FeatureVector<1>>> > ng2_filter_handle(pandora_tag_suffixes.size());
-  std::vector< art::Handle<std::vector<anab::FeatureVector<5>>> > ng2_semantic_handle(pandora_tag_suffixes.size());
-  for (unsigned i_tag = 0; i_tag < pandora_tag_suffixes.size(); i_tag++) {
-    const std::string &pandora_tag_suffix = pandora_tag_suffixes[i_tag];
-    GetByLabelIfExists(evt, fParams.NuGraphSliceHitLabel().encode() + pandora_tag_suffix, ng2_slice_hit_map_handle[i_tag]);
-    GetByLabelIfExists(evt, fParams.NuGraphFilterLabel().label() + pandora_tag_suffix + ":" + fParams.NuGraphFilterLabel().instance(), ng2_filter_handle[i_tag]);
-    GetByLabelIfExists(evt, fParams.NuGraphSemanticLabel().label() + pandora_tag_suffix + ":" + fParams.NuGraphSemanticLabel().instance(), ng2_semantic_handle[i_tag]);
   }
 
   // The Standard Record
@@ -1799,17 +1791,30 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         fmatch_assn_map.emplace(std::make_pair(fname_opdet, sfm_assn));
       }
     }
+    
+    if (std::find(nccSlices.begin(), nccSlices.end(), slice) != nccSlices.end()) {
+      // this check is required: if FindOneP does not find an associated item instead of returning nullptr it throws an exception.
+      // I believe a change of this behaviour could be handy.
+      std::vector<art::Ptr<anab::FeatureVector<1>>> ng2_filter_vec;
+      std::vector<art::Ptr<anab::FeatureVector<5>>> ng2_semantic_vec;
+      art::FindOneP<anab::FeatureVector<1>> findOneFilter(slcHits, evt, fParams.NuGraphFilterLabel().label() + slice_tag_suff + ":" + fParams.NuGraphFilterLabel().instance());
+      art::FindOneP<anab::FeatureVector<5>> findOneSemantic(slcHits, evt, fParams.NuGraphSemanticLabel().label() + slice_tag_suff + ":" + fParams.NuGraphSemanticLabel().instance());
+      // iteration is the only way to get something out of a FindOne or FindMany...
+      if (findOneFilter.isValid()) {
+        for (size_t hitIdx = 0; hitIdx < slcHits.size(); ++hitIdx) {
+          ng2_filter_vec.emplace_back(findOneFilter.at(hitIdx));
+        }
+      }
 
-    std::vector<art::Ptr<anab::FeatureVector<1>>> ng2_filter_vec;
-    std::vector<art::Ptr<anab::FeatureVector<5>>> ng2_semantic_vec;
-    if (ng2_filter_handle[producer].isValid()) {
-      art::fill_ptr_vector(ng2_filter_vec,ng2_filter_handle[producer]);
-    }
-    if (ng2_semantic_handle[producer].isValid()) {
-      art::fill_ptr_vector(ng2_semantic_vec,ng2_semantic_handle[producer]);
-    }
-    if (ng2_slice_hit_map_handle[producer].isValid()) {
-      FillSliceNuGraph(slcHits,*ng2_slice_hit_map_handle[producer],ng2_filter_vec,ng2_semantic_vec,recslc);
+      if (findOneSemantic.isValid()) {
+        for (size_t hitIdx = 0; hitIdx < slcHits.size(); ++hitIdx) {
+          ng2_semantic_vec.emplace_back(findOneSemantic.at(hitIdx));
+        }
+      }
+
+      if (ng2_filter_vec.size() > 0 || ng2_semantic_vec.size() > 0) {
+        FillSliceNuGraph(slcHits, ng2_filter_vec, ng2_semantic_vec, recslc);
+      }
     }
 
     art::FindManyP<sbn::OpT0Finder> fmOpT0 =
@@ -2189,8 +2194,28 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         FillCNNScores(thisParticle, cnnScores, pfp);
       }
 
-      if (ng2_slice_hit_map_handle[producer].isValid()) {
-	FillPFPNuGraph(*ng2_slice_hit_map_handle[producer], ng2_filter_vec, ng2_semantic_vec, fmPFPartHits.at(iPart), pfp);
+      if (std::find(nccSlices.begin(), nccSlices.end(), slice) != nccSlices.end()) {
+        const std::vector<art::Ptr<recob::Hit>>& PFPHits = fmPFPartHits.at(iPart);
+        art::FindOneP<anab::FeatureVector<1>> findOneFilter(PFPHits, evt, fParams.NuGraphFilterLabel().label() + slice_tag_suff + ":" + fParams.NuGraphFilterLabel().instance());
+        art::FindOneP<anab::FeatureVector<5>> findOneSemantic(PFPHits, evt, fParams.NuGraphSemanticLabel().label() + slice_tag_suff + ":" + fParams.NuGraphSemanticLabel().instance());
+        std::vector<art::Ptr<anab::FeatureVector<1>>> ng2_filter_vec;
+        std::vector<art::Ptr<anab::FeatureVector<5>>> ng2_semantic_vec;
+
+        if (findOneFilter.isValid()) {
+          for (size_t hitIdx = 0; hitIdx < PFPHits.size(); ++hitIdx) {
+            ng2_filter_vec.emplace_back(findOneFilter.at(hitIdx));
+          }
+        }
+
+        if (findOneSemantic.isValid()) {
+          for (size_t hitIdx = 0; hitIdx < PFPHits.size(); ++hitIdx) {
+            ng2_semantic_vec.emplace_back(findOneSemantic.at(hitIdx));
+          }
+        }
+
+        if (ng2_filter_vec.size() > 0 || ng2_semantic_vec.size() > 0) {
+          FillPFPNuGraph(PFPHits, ng2_filter_vec, ng2_semantic_vec, pfp);
+        }
       }
 
       if (!thisTrack.empty())  { // it has a track!

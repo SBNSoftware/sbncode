@@ -117,7 +117,6 @@ namespace caf
    * Hits with filter value (`ngFilterResult`) lower than `ng_filter_cut` are counted as background.
    */
   void FillSliceNuGraph(const std::vector<art::Ptr<recob::Hit>> &inputHits,
-			const std::vector<unsigned int> &sliceHitsMap,
 			const std::vector<art::Ptr<anab::FeatureVector<1>>> &ngFilterResult,
 			const std::vector<art::Ptr<anab::FeatureVector<5>>> &ngSemanticResult,
 			caf::SRSlice &slice);
@@ -158,10 +157,9 @@ namespace caf
    *
    * Hits with filter value (`ngFilterResult`) lower than `ng_filter_cut` are counted as background.
    */
-  void FillPFPNuGraph(const std::vector<unsigned int> &sliceHitsMap,
+  void FillPFPNuGraph(const std::vector<art::Ptr<recob::Hit>> &pfpHits,
 		      const std::vector<art::Ptr<anab::FeatureVector<1>>> &ngFilterResult,
 		      const std::vector<art::Ptr<anab::FeatureVector<5>>> &ngSemanticResult,
-		      const std::vector<art::Ptr<recob::Hit>> &pfpHits,
 		      caf::SRPFP& srpfp,
 		      bool allowEmpty= false);
 

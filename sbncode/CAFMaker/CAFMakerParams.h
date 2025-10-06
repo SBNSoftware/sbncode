@@ -350,10 +350,10 @@ namespace caf
       "" //Empty by default, configured in icaruscode cafmaker_defs
     };
 
-    Atom<art::InputTag> NuGraphSliceHitLabel {
-      Name("NuGraphSliceHitLabel"),
-      Comment("Label of NuGraph slice hit map."),
-      "" //Empty by default, please set to e.g. art::InputTag("nuslhits")
+    Atom<art::InputTag> NCCSlicesLabel {
+      Name("NCCSlicesLabel"),
+      Comment("Label of NotClearCosmic slices."),
+      "" //Empty by default, please set to e.g. art::InputTag("NCCSlices")
     };
 
     Atom<art::InputTag> NuGraphFilterLabel {
