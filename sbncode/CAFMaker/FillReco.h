@@ -20,6 +20,7 @@
 #include "lardataobj/RecoBase/OpFlash.h"
 #include "lardataobj/RecoBase/OpHit.h"
 #include "lardataobj/AnalysisBase/Calorimetry.h"
+#include "lardataobj/AnalysisBase/MVAOutput.h"
 #include "lardataobj/AnalysisBase/ParticleID.h"
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
@@ -35,11 +36,17 @@
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
 #include "sbnobj/Common/Reco/OpT0FinderResult.h"
 #include "sbnobj/Common/Reco/TPCPMTBarycenterMatch.h"
+#include "sbnobj/Common/Reco/CorrectedOpFlashTiming.h"
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "sbnobj/Common/CRT/CRTTrack.hh"
 #include "sbnobj/SBND/CRT/CRTSpacePoint.hh"
 #include "sbnobj/SBND/CRT/CRTTrack.hh"
 #include "sbnobj/Common/CRT/CRTPMTMatching.hh"
+#include "sbnobj/Common/CRT/CRTHitT0TaggingInfo.hh"
+#include "sbnobj/Common/PMT/Data/PMTBeamSignal.hh"
+#include "sbnobj/SBND/Timing/TimingInfo.hh"
+#include "sbnobj/SBND/Timing/FrameShiftInfo.hh"
+
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 
@@ -104,6 +111,22 @@ namespace caf
                            const std::vector<art::Ptr<recob::SpacePoint>> &inputPoints,
                            caf::SRSlice &slice);
 
+  /**
+   * @brief Fills the results from NuGraph at slice level
+   * @param inputHits (pointers to) the hits associated to the slice
+   * @param sliceHitsMap maps position of hits in collection input to NuGraph (slice only) to the one input to Pandora (all gaus hits)
+   * @param ngFilterResult NuGraph filter result, for each hit
+   * @param ngSemanticResult NuGraph semnatic result, for each hit (MIP track, HIP, shower, Michel electron, diffuse activity)
+   * @param[out] slice the destination slice object
+   *
+   * Hits with filter value (`ngFilterResult`) lower than `ng_filter_cut` are counted as background.
+   */
+  void FillSliceNuGraph(const std::vector<art::Ptr<recob::Hit>> &inputHits,
+			const std::vector<unsigned int> &sliceHitsMap,
+			const std::vector<art::Ptr<anab::FeatureVector<1>>> &ngFilterResult,
+			const std::vector<art::Ptr<anab::FeatureVector<5>>> &ngSemanticResult,
+			caf::SRSlice &slice);
+
   bool SelectSlice(const caf::SRSlice &slice, bool cut_clear_cosmic);
 
   void FillTrackVars(const recob::Track& track,
@@ -118,20 +141,55 @@ namespace caf
                    caf::SRHit& srhit,
                    bool allowEmpty = false);
 
+  struct PFOCharLabelsStruct {
+    std::string EndFractionName;
+    std::string FractionalSpreadName;
+    std::string DiffStraightLineMeanName;
+    std::string LengthName;
+    std::string MaxFitGapLengthName;
+    std::string SlidingLinearFitRMSName;
+    std::string AngleDiffName;
+    std::string SecondaryPCARatioName;
+    std::string TertiaryPCARatioName;
+    std::string VertexDistanceName;
+    std::string HaloTotalRatioName;
+    std::string ConcentrationName;
+    std::string ConicalnessName;
+  };
+
   void FillPFPVars(const recob::PFParticle &particle,
                    const recob::PFParticle *primary,
                    const larpandoraobj::PFParticleMetadata *pfpMeta,
                    const art::Ptr<anab::T0> t0,
                    caf::SRPFP& srpfp,
-                   bool allowEmpty= false);
+                   const PFOCharLabelsStruct& pfoCharLabels,
+                   bool allowEmpty = false);
 
   void FillCNNScores(const recob::PFParticle &particle,
                      const sbn::PFPCNNScore *cnnscore,
                      caf::SRPFP& srpfp,
                      bool allowEmpty = false);
 
+  /**
+   * @brief Fills the results from NuGraph at slice level
+   * @param sliceHitsMap maps position of hits in collection input to NuGraph (slice only) to the one input to Pandora (all gaus hits)
+   * @param ngFilterResult NuGraph filter result, for each hit
+   * @param ngSemanticResult NuGraph semnatic result, for each hit (MIP track, HIP, shower, Michel electron, diffuse activity)
+   * @param pfpHits Vector of hits associated to the PFParticle
+   * @param[out] srpfp the destination PFParticle object
+   *
+   * Hits with filter value (`ngFilterResult`) lower than `ng_filter_cut` are counted as background.
+   */
+  void FillPFPNuGraph(const std::vector<unsigned int> &sliceHitsMap,
+		      const std::vector<art::Ptr<anab::FeatureVector<1>>> &ngFilterResult,
+		      const std::vector<art::Ptr<anab::FeatureVector<5>>> &ngSemanticResult,
+		      const std::vector<art::Ptr<recob::Hit>> &pfpHits,
+		      caf::SRPFP& srpfp,
+		      bool allowEmpty= false);
+
   void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
                        const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,
+                       const std::vector<art::Ptr<sbn::crt::CRTHitT0TaggingInfo>> &hitmatchinfo,
                        bool use_ts0,
                        int64_t CRT_T0_reference_time, // ns, signed
                        double CRT_T1_reference_time, // us
@@ -217,16 +275,27 @@ namespace caf
                         caf::SRSBNDCRTTrack &srsbndcrttrack,
                         bool allowEmpty = false);
 
-  void FillOpFlash(const recob::OpFlash &flash,
+  void FillICARUSOpFlash(const recob::OpFlash &flash,
                   std::vector<recob::OpHit const*> const& hits,
                   int cryo,
+                  std::vector<sbn::timing::PMTBeamSignal> RWMTimes,
                   caf::SROpFlash &srflash,
                   bool allowEmpty = false);
+
+  void FillSBNDOpFlash(const recob::OpFlash &flash,
+                  std::vector<recob::OpHit const*> const& hits,
+                  int tpc,
+                  caf::SROpFlash &srflash,
+                  bool allowEmpty = false);
+                  
   void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,
 		       caf::SRCRTPMTMatch &srmatch,
 		       bool allowEmpty = false);
 
   void FillTPCPMTBarycenterMatch(const sbn::TPCPMTBarycenterMatch *matchInfo,
+                           caf::SRSlice& slice);
+
+  void FillCorrectedOpFlashTiming(const std::vector<art::Ptr<sbn::CorrectedOpFlashTiming>> &slcCorrectedOpFlash,
                            caf::SRSlice& slice);
 
   void FillCVNScores(const lcvn::Result *cvnResult,
@@ -235,6 +304,14 @@ namespace caf
   void FillPFPRazzled(const art::Ptr<sbn::MVAPID> razzled,
                       caf::SRPFP& srpfp,
                       bool allowEmpty = false);
+
+  void FillSBNDFrameShiftInfo(const sbnd::timing::FrameShiftInfo &frame,
+                        caf::SRSBNDFrameShiftInfo &srsbndframe,
+                        bool allowEmpty = false);
+
+  void FillSBNDTimingInfo(const sbnd::timing::TimingInfo &timing,
+                        caf::SRSBNDTimingInfo &srsbndtiming,
+                        bool allowEmpty = false);
 
   template<class T, class U>
   void CopyPropertyIfSet( const std::map<std::string, T>& props, const std::string& search, U& value );

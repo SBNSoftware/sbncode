@@ -35,7 +35,9 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   sbnobj::Common_CRT
                   sbnobj::Common_Reco
                   sbnobj::Common_Analysis
+                  sbnobj::Common_PMT_Data
                   sbnobj::SBND_CRT
+                  sbnobj::SBND_Timing
                   lardataalg::DetectorInfo
                   art::Framework_Services_System_TriggerNamesService_service
                   sbncode_Metadata_MetadataSBN_service
