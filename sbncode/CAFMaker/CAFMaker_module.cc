@@ -264,7 +264,8 @@ class CAFMaker : public art::EDProducer {
   double       fGenieEvtRec_brEvtXSec   = 0.0; ////< Cross section for selected event (1e-38 cm2)
   double       fGenieEvtRec_brEvtDXSec  = 0.0; ////< Cross section for selected event kinematics (1e-38 cm2 / {K^n})
   unsigned int fGenieEvtRec_brEvtKPS    = 0; ////< Kinematic phase space variables. See $GENIE/src/Framework/Conventions/KinePhaseSpace.h -> KinePhaseSpace_t
-  bool			fGenieEvtRec_brIsCC      = 0; ////< Is weakCC
+  int				fGenieEvtRec_brSctType   = 0; ////< See ScatteringType.h
+  int				fGenieEvtRec_brIntType   = 0; ////< See InteractionType.h
   double       fGenieEvtRec_brEvtWght   = 0.0; ////< Weight for that event
   double       fGenieEvtRec_brEvtProb   = 0.0; ////< Probability for that event (given cross section, path lengths, etc)
   double       fGenieEvtRec_brEvtVtx[4] = {0.0}; ////< Event vertex position in detector coord syst (SI)
@@ -1183,7 +1184,8 @@ void CAFMaker::InitializeOutfiles()
       fFlatGenieTree->Branch("GenieEvtRec.EvtXSec",  &fGenieEvtRec_brEvtXSec,  "GenieEvtRec.EvtXSec/D"   );
       fFlatGenieTree->Branch("GenieEvtRec.EvtDXSec", &fGenieEvtRec_brEvtDXSec, "GenieEvtRec.EvtDXSec/D"  );
       fFlatGenieTree->Branch("GenieEvtRec.EvtKPS",   &fGenieEvtRec_brEvtKPS,   "GenieEvtRec.EvtKPS/i"    );
-      fFlatGenieTree->Branch("GenieEvtRec.IsCC",   &fGenieEvtRec_brIsCC,   "GenieEvtRec.IsCC/O"    );
+      fFlatGenieTree->Branch("GenieEvtRec.SctType",   &fGenieEvtRec_brSctType,   "GenieEvtRec.SctType/I"    );
+      fFlatGenieTree->Branch("GenieEvtRec.IntType",   &fGenieEvtRec_brIntType,   "GenieEvtRec.IntType/I"    );
       fFlatGenieTree->Branch("GenieEvtRec.EvtWght",  &fGenieEvtRec_brEvtWght,  "GenieEvtRec.EvtWght/D"   );
       fFlatGenieTree->Branch("GenieEvtRec.EvtProb",  &fGenieEvtRec_brEvtProb,  "GenieEvtRec.EvtProb/D"   );
       fFlatGenieTree->Branch("GenieEvtRec.EvtVtx",    fGenieEvtRec_brEvtVtx,   "GenieEvtRec.EvtVtx[4]/D" );
@@ -1549,7 +1551,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 	  fGenieEvtRec_brEvtXSec  = genie_rec->XSec() * (1e+38/genie::units::cm2);
 	  fGenieEvtRec_brEvtDXSec = genie_rec->DiffXSec() * (1e+38/genie::units::cm2);
 	  fGenieEvtRec_brEvtKPS   = genie_rec->DiffXSecVars();
-	  fGenieEvtRec_brIsCC     = genie_rec->Summary()->ProcInfo().IsWeakCC();
+	  fGenieEvtRec_brSctType  = genie_rec->Summary()->ProcInfo().ScatteringTypeId();
+	  fGenieEvtRec_brIntType  = genie_rec->Summary()->ProcInfo().InteractionTypeId();
 	  fGenieEvtRec_brEvtWght  = genie_rec->Weight();
 	  fGenieEvtRec_brEvtProb  = genie_rec->Probability();
 	  fGenieEvtRec_brEvtVtx[0] = genie_rec->Vertex()->X();
