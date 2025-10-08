@@ -1791,21 +1791,17 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       std::vector<art::Ptr<sbnd::crt::CRTVeto>> vetoPtrs;
       // fill into event
       if (sbndcrtveto_handle.isValid()) {
-        //const std::vector<sbnd::crt::CRTVeto> &sbndcrtvetos = *sbndcrtveto_handle;
         art::fill_ptr_vector(vetoPtrs, sbndcrtveto_handle);
 	// Only one valid veto per event
-        //if (sbndcrtvetos.size() == 1) {
         if (vetoPtrs.size() == 1) {
   	  // And associated SpacePoint objects
 	  art::FindManyP<sbnd::crt::CRTSpacePoint> spAssoc(sbndcrtveto_handle, evt, fParams.SBNDCRTVetoLabel());
           if (spAssoc.isValid()) {
 	    // There is one vector of SpacePoints per Veto --> can be empty if no veto condition was satisfied     
 	    const std::vector<art::Ptr<sbnd::crt::CRTSpacePoint>> veto_sp_v(spAssoc.at(vetoPtrs[0].key())); 
-            //FillSBNDCRTVeto(sbndcrtvetos[0], veto_sp_v, srsbndcrtveto);
             FillSBNDCRTVeto(vetoPtrs[0], veto_sp_v, srsbndcrtveto);
 	  }
 	}
-        //FillSBNDCRTVeto(sbndcrtvetos[0], vetoSpacePoints, srsbndcrtveto);
       }
     
       art::Handle<sbnd::timing::FrameShiftInfo> sbndframeshiftinfo_handle;

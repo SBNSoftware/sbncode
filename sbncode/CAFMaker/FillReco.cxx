@@ -188,7 +188,6 @@ namespace caf
     srsbndcrttrack.tof      = track.ToF();
   }
 
-  //void FillSBNDCRTVeto(const sbnd::crt::CRTVeto &veto,
   void FillSBNDCRTVeto(const art::Ptr<sbnd::crt::CRTVeto> &veto,
 		       const std::vector<art::Ptr<sbnd::crt::CRTSpacePoint>> &points,
                        caf::SRSBNDCRTVeto &srsbndcrtveto,
@@ -206,7 +205,8 @@ namespace caf
       srsbndcrtveto.sp_time.emplace_back(sp->Ts0()/1000); /// convert to us   
       srsbndcrtveto.sp_pe.emplace_back(sp->PE());   
     }
-  };
+  }
+
   void FillSBNDFrameShiftInfo(const sbnd::timing::FrameShiftInfo &frame,
                         caf::SRSBNDFrameShiftInfo &srsbndframe,
                         bool allowEmpty)
