@@ -1577,6 +1577,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   caf::SRTrigger srtrigger;
   if (isValidTrigger) {
       FillTrigger(*extratrig_handle, trig_handle->at(0), srtrigger, triggerShift);
+      FillTriggerICARUS(*extratrig_handle, srtrigger);
   }
   // If not real data, fill in enough of the SRTrigger to make (e.g.) the CRT
   // time referencing work. TODO: add more stuff to a "MC"-Trigger?

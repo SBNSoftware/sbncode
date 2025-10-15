@@ -6,8 +6,6 @@
 #include "sbnanaobj/StandardRecord/SRTrigger.h"
 #include "lardataobj/RawData/TriggerData.h"
 
-#include <vector>
-
 namespace caf
 {
   void FillTrigger(const sbn::ExtraTriggerInfo& addltrig_info,
@@ -17,16 +15,8 @@ namespace caf
 
   void FillTriggerMC(double absolute_time, caf::SRTrigger& triggerInfo);
 
-  void FillTriggerSBND(caf::SRSBNDTimingInfo& timingInfo, caf::SRTrigger& triggerInfo);
-
   void FillTriggerICARUS(const sbn::ExtraTriggerInfo& addltrig_info,
-                         caf::SRTrigger& triggerInfo);
-
-  void FillTriggerEmulation(art::Handle<std::vector<int>> const& monpulsesFlat,
-                            art::Handle<std::vector<int>> const& monpulseSizes,
-                            art::Handle<int> const& numPairs,
-                            art::Handle<bool> const& passedTrig,
-                            caf::SRTrigger& triggerInfo);                             
+                         caf::SRTrigger& triggerInfo);                           
 }
 
 #endif
