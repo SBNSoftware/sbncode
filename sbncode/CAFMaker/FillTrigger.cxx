@@ -48,7 +48,7 @@ namespace caf
     const auto& addltrig_info_cryoW = addltrig_info.cryostats[sbn::ExtraTriggerInfo::WestCryostat];
 
     // Choose the cryostat that triggered first (if both are available)
-    if (addltrig_info_cryoE.hasTrigger() && (!addltrig_info_cryoW.hasTrigger() || addltrig_info_cryoE.beamToTrigger <= addltrig_info_cryoW.beamToTrigger)) {
+    if (addltrig_info_cryoE.hasTrigger() && (!addltrig_info_cryoW.hasTrigger() || (addltrig_info_cryoE.beamToTrigger <= addltrig_info_cryoW.beamToTrigger))) {
       triggerInfo.trigger_cryo_source  = 0; ///< East
       triggerInfo.trigger_logic_bits   = addltrig_info_cryoE.triggerLogicBits;
       triggerInfo.beam_to_trigger_time = addltrig_info_cryoE.beamToTrigger;

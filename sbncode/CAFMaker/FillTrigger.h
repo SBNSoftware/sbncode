@@ -21,11 +21,14 @@ namespace caf
 
   void FillTriggerSBND(caf::SRSBNDTimingInfo& timingInfo, caf::SRTrigger& triggerInfo);
 
+  void FillTriggerICARUS(const sbn::ExtraTriggerInfo& addltrig_info,
+                         caf::SRTrigger& triggerInfo);
+
   void FillTriggerEmulation(art::Handle<std::vector<int>> const& monpulsesFlat,
-                             art::Handle<std::vector<int>> const& monpulseSizes,
-                             art::Handle<int> const& numPairs,
-                             art::Handle<bool> const& passedTrig,
-                             caf::SRTrigger& triggerInfo);
+                            art::Handle<std::vector<int>> const& monpulseSizes,
+                            art::Handle<int> const& numPairs,
+                            art::Handle<bool> const& passedTrig,
+                            caf::SRTrigger& triggerInfo);                             
 }
 
 #endif
