@@ -12,7 +12,6 @@
 
 namespace caf
 {
-
   void FillTrigger(const sbn::ExtraTriggerInfo& addltrig_info,
                    const raw::Trigger& trig_info,
                    caf::SRTrigger& triggerInfo,
