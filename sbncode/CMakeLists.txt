@@ -48,3 +48,5 @@ execute_process(COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/Supera/setup.sh icarus
 add_subdirectory(Supera)
 
 add_subdirectory(LArG4)
+
+add_subdirectory(WireMod)
