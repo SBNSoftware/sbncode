@@ -777,6 +777,9 @@ namespace caf {
     if (exit_point < 0 && entry_point >= 0) {
       exit_point = particle.NumberTrajectoryPoints() - 1;
     }
+    if(exit_point >= 0 && entry_point >=0 && exit_point == entry_point && exit_point < static_cast<int>(particle.NumberTrajectoryPoints()) - 1){
+      exit_point++; // to avoid exactly the same start and end positions when single index is inside the active volumne
+    }
     if (exit_point >= 0 && ((unsigned)exit_point) < particle.NumberTrajectoryPoints() - 1) {
       srparticle.wallout = GetWallCross(active_volumes.at(cryostat_index), particle.Position(exit_point).Vect(), particle.Position(exit_point+1).Vect());
     }
