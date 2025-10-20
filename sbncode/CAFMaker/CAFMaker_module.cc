@@ -118,8 +118,10 @@
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
 #include "sbnobj/Common/Reco/OpT0FinderResult.h"
+#include "sbnobj/Common/Reco/CorrectedOpFlashTiming.h"
 #include "sbnobj/SBND/Timing/TimingInfo.hh"
 #include "sbnobj/SBND/Timing/FrameShiftInfo.hh"
+
 
 // GENIE
 #include "Framework/EventGen/EventRecord.h"
@@ -139,6 +141,7 @@
 #include "sbnanaobj/StandardRecord/Flat/FlatRecord.h"
 #include "lardataobj/RawData/ExternalTrigger.h"
 #include "lardataobj/RawData/TriggerData.h"
+#include "lardataobj/Simulation/AuxDetSimChannel.h"
 
 // // CAFMaker
 #include "sbncode/CAFMaker/AssociationUtil.h"
@@ -286,6 +289,11 @@ class CAFMaker : public art::EDProducer {
   std::vector<std::vector<geo::BoxBoundedGeo>> fTPCVolumes;
   std::vector<geo::BoxBoundedGeo> fActiveVolumes;
 
+  // CRT geometry info
+  //
+  // ICARUS
+  std::map<std::pair<int, int>, int> fFEBChannel2AuxDetID;
+
   // random number generator for fake reco
   CLHEP::HepRandomEngine& fFakeRecoRandomEngine;
 
@@ -314,6 +322,7 @@ class CAFMaker : public art::EDProducer {
   double GetBlindPOTScale() const;
 
   void InitVolumes(); ///< Initialize volumes from Gemotry service
+  void InitCRTMapping(); ///< Initialize CRT mapping
 
   void FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_time);
   void FixCRTReferenceTimes(StandardRecord &rec, double CRTT0_reference_time, double CRTT1_reference_time);
@@ -421,6 +430,9 @@ class CAFMaker : public art::EDProducer {
 
   // setup volume definitions
   InitVolumes();
+
+  // setup CRT mapping
+  InitCRTMapping();
 
   fSaveGENIEEventRecord = fParams.SaveGENIEEventRecord();
 
@@ -593,6 +605,36 @@ void CAFMaker::FixCRTReferenceTimes(StandardRecord &rec, double CRTT0_reference_
   // TODO: fix more?
   // Tracks?
 
+}
+
+void CAFMaker::InitCRTMapping() {
+
+  // ICARUS
+  cet::search_path searchPath("FW_SEARCH_PATH");
+  std::string fullFileName;
+  searchPath.find_file("feb_map.txt",fullFileName);
+  std::ifstream fin;
+  fin.open(fullFileName, std::ios::in);
+
+  if (fin.good()) {
+    std::string line;
+
+    while(std::getline(fin,line)) {
+      std::vector<std::string> row;
+      std::string word;
+
+      std::stringstream s(line);
+      while (std::getline(s, word, ',')) {
+        row.push_back(word);
+      }
+      int auxDetID = std::stoi(row[0]); // auxDetID
+      int mac5 = std::stoi(row[1]); // FEB ID
+      int chan = std::stoi(row[2]); // FEB channel
+      fFEBChannel2AuxDetID[std::make_pair(mac5, chan)] = auxDetID;
+    }
+
+    fin.close();
+  }
 }
 
 void CAFMaker::InitVolumes() {
@@ -1598,7 +1640,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   //#######################################################
   // Fill detector & reco
   //#######################################################
-
+  
   //Beam gate and Trigger info
   art::Handle<sbn::ExtraTriggerInfo> extratrig_handle;
   GetByLabelStrict(evt, fParams.TriggerLabel().encode(), extratrig_handle);
@@ -1610,16 +1652,40 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   if (!isRealData)
     GetByLabelStrict(evt, fParams.UnshiftedTriggerLabel().encode(), unshifted_trig_handle);
 
+  //Trigger emulation handles
+  art::Handle<std::vector<int>> monpulses_handle;
+  GetByLabelStrict(evt, fParams.MonPulsesTriggerLabel().encode(), monpulses_handle);
+
+  art::Handle<std::vector<int>> monpulse_sizes_handle;
+  GetByLabelStrict(evt, fParams.MonPulseSizesTriggerLabel().encode(), monpulse_sizes_handle);
+
+  art::Handle<int> pairs_handle;
+  GetByLabelStrict(evt, fParams.PairsTriggerLabel().encode(), pairs_handle);
+
+  art::Handle<bool> trigemu_handle;
+  GetByLabelStrict(evt, fParams.EmulatedTriggerLabel().encode(), trigemu_handle);
+
+  // Check trigger handles
   const bool isValidTrigger = extratrig_handle.isValid() && trig_handle.isValid() && trig_handle->size() == 1;
   const bool isValidUnshiftedTrigger = unshifted_trig_handle.isValid() && unshifted_trig_handle->size() == 1;
+  const bool isValidEmulationTrigger = monpulses_handle.isValid() && monpulse_sizes_handle.isValid() && pairs_handle.isValid() && trigemu_handle.isValid();
 
   const double triggerShift = (isValidUnshiftedTrigger && isValidTrigger)?
     unshifted_trig_handle->at(0).TriggerTime() - trig_handle->at(0).TriggerTime() : 0.;
+
+  // Fill local ExtraTriggerInfo struct
+  sbn::ExtraTriggerInfo extratrig;
+  if (extratrig_handle.isValid()) extratrig = *extratrig_handle;
 
   caf::SRTrigger srtrigger;
   if (isValidTrigger) {
       FillTrigger(*extratrig_handle, trig_handle->at(0), srtrigger, triggerShift);
   }
+  // Fill trigger emulation information
+  if (isValidEmulationTrigger) { 
+      FillTriggerEmulation(monpulses_handle, monpulse_sizes_handle, pairs_handle, trigemu_handle, srtrigger);
+  }
+
   // If not real data, fill in enough of the SRTrigger to make (e.g.) the CRT
   // time referencing work. TODO: add more stuff to a "MC"-Trigger?
   // No longer needed with incorporation of trigger emulation in the MC.
@@ -1628,6 +1694,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // }
 
   // try to find the result of the Flash trigger if it was run
+  mf::LogInfo("CAFMaker") << "   New Trigger Time   = " << srtrigger.global_trigger_det_time << " us\n"
+			  << "   New Beam Gate Time =  " << srtrigger.beam_gate_det_time << " us";
   bool pass_flash_trig = false;
   art::Handle<bool> flashtrig_handle;
   GetByLabelStrict(evt, fParams.FlashTrigLabel(), flashtrig_handle);
@@ -1648,16 +1716,36 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   caf::SRSBNDFrameShiftInfo srsbndframeshiftinfo;
   caf::SRSBNDTimingInfo srsbndtiminginfo;
 
+  // Mapping of (feb, channel) to truth information (AuxDetSimChannel) -- filled for ICARUS
+  std::map<std::pair<int, int>, sim::AuxDetSimChannel> crtsimchanmap;
+
   if(fDet == kICARUS)
     {
       art::Handle<std::vector<sbn::crt::CRTHit>> crthits_handle;
       GetByLabelStrict(evt, fParams.CRTHitLabel(), crthits_handle);
+
+      art::Handle<std::vector<sim::AuxDetSimChannel>> auxdetsimchan_handle;
+      GetByLabelStrict(evt, fParams.CRTSimChanLabel(), auxdetsimchan_handle);
+
       // fill into event
       if (crthits_handle.isValid()) {
         const std::vector<sbn::crt::CRTHit> &crthits = *crthits_handle;
+
+        std::vector<sim::AuxDetSimChannel> empty;
+        const std::vector<sim::AuxDetSimChannel> &crtsimchanvec = (auxdetsimchan_handle.isValid()) ? *auxdetsimchan_handle : empty;
+        // Turn the AuxDetSimChannel's into a map that can be looked up from a CRT Hit
+        for (const sim::AuxDetSimChannel &crtsimchan: crtsimchanvec) {
+          for (auto const &map_pair: fFEBChannel2AuxDetID) {
+            if (map_pair.second == (int)crtsimchan.AuxDetID()) {
+              crtsimchanmap[map_pair.first] = crtsimchan;
+              break;
+            }
+          }
+        }
+
         for (unsigned i = 0; i < crthits.size(); i++) {
           srcrthits.emplace_back();
-          FillCRTHit(crthits[i], fParams.CRTUseTS0(), CRT_T0_reference_time, CRT_T1_reference_time, srcrthits.back());
+          FillCRTHit(crthits[i], fParams.CRTUseTS0(), CRT_T0_reference_time, CRT_T1_reference_time, crtsimchanmap, srcrthits.back());
         }
       }
 
@@ -1898,6 +1986,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           fParams.TPCPMTBarycenterMatchLabel() + slice_tag_suff);
     const sbn::TPCPMTBarycenterMatch *barycenterMatch
       = foTPCPMTBarycenterMatch.isValid()? foTPCPMTBarycenterMatch.at(0).get(): nullptr;
+
+
+    art::FindManyP<sbn::CorrectedOpFlashTiming> fmCorrectedOpFlash =
+      FindManyPStrict<sbn::CorrectedOpFlashTiming>(sliceList, evt,
+          fParams.CorrectedOpFlashLabel() + slice_tag_suff);
+    std::vector<art::Ptr<sbn::CorrectedOpFlashTiming>> slcCorrectedOpFlash;
+     if (fmCorrectedOpFlash.isValid())
+      slcCorrectedOpFlash = fmCorrectedOpFlash.at(0);
+
 
     art::FindOneP<lcvn::Result> foCVNResult =
       FindOnePStrict<lcvn::Result>(sliceList, evt,
@@ -2154,6 +2251,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceOpT0Finder(slcOpT0, recslc);
     FillSliceBarycenter(slcHits, slcSpacePoints, recslc);
     FillTPCPMTBarycenterMatch(barycenterMatch, recslc);
+    FillCorrectedOpFlashTiming(slcCorrectedOpFlash, recslc);
     FillCVNScores(cvnResult, recslc);
     
     // select slice
@@ -2253,7 +2351,24 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       }
 
       const larpandoraobj::PFParticleMetadata *pfpMeta = (fmPFPMeta.at(iPart).empty()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
-      FillPFPVars(thisParticle, primary, pfpMeta, thisPFPT0, pfp);
+      caf::CAFMakerParams::PFOCharLabels_t const& pfoCharParams
+        = fParams.PFOCharLabels().value_or(caf::CAFMakerParams::PFOCharLabels_t{});
+      const caf::PFOCharLabelsStruct pfoCharLabels {
+        pfoCharParams.EndFractionName(),
+        pfoCharParams.FractionalSpreadName(),
+        pfoCharParams.DiffStraightLineMeanName(),
+        pfoCharParams.LengthName(),
+        pfoCharParams.MaxFitGapLengthName(),
+        pfoCharParams.SlidingLinearFitRMSName(),
+        pfoCharParams.AngleDiffName(),
+        pfoCharParams.SecondaryPCARatioName(),
+        pfoCharParams.TertiaryPCARatioName(),
+        pfoCharParams.VertexDistanceName(),
+        pfoCharParams.HaloTotalRatioName(),
+        pfoCharParams.ConcentrationName(),
+        pfoCharParams.ConicalnessName()
+      };
+      FillPFPVars(thisParticle, primary, pfpMeta, thisPFPT0, pfp, pfoCharLabels);
 
       if (fmCNNScores.isValid()) {
         const sbn::PFPCNNScore *cnnScores = fmCNNScores.at(iPart).at(0).get();
@@ -2328,7 +2443,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
             crthittagginginfo = fmCRTHitMatchInfo.at(iPart);
           }          
           
-          FillTrackCRTHit(fmCRTHitMatch.at(iPart), crthitmatch, crthittagginginfo, fParams.CRTUseTS0(), CRT_T0_reference_time, CRT_T1_reference_time, trk);
+          FillTrackCRTHit(fmCRTHitMatch.at(iPart), crthitmatch, crthittagginginfo, fParams.CRTUseTS0(), CRT_T0_reference_time, CRT_T1_reference_time, crtsimchanmap, trk);
         }
         // NOTE: SEE TODO AT fmCRTTrackMatch
         if (fmCRTTrackMatch.isValid() && fDet == kICARUS) {
@@ -2526,6 +2641,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.hdr.ismc    = !isRealData;
   rec.hdr.det     = fDet;
   rec.hdr.fno     = fFileNumber;
+
   if(fFirstInSubRun)
   {
     rec.hdr.nbnbinfo = fBNBInfo.size();
@@ -2566,13 +2682,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   else {
     std::cout << "Did not find this event in the spill info map." << std::endl;
   }
-
+  
   if(fRecTree){
     // Save the standard-record
     StandardRecord* prec = &rec;
+
     fRecTree->SetBranchAddress("rec", &prec);
     fRecTree->Fill();
-
     if(fFlatTree){
       fFlatRecord->Clear();
       fFlatRecord->Fill(rec);

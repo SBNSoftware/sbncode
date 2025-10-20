@@ -25,6 +25,7 @@
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "lardataobj/RecoBase/MCSFitResult.h"
+#include "lardataobj/Simulation/AuxDetSimChannel.h"
 #include "larrecodnn/CVN/func/Result.h"
 #include "sbnobj/Common/Reco/Stub.h"
 #include "sbnobj/Common/Reco/RangeP.h"
@@ -36,6 +37,7 @@
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
 #include "sbnobj/Common/Reco/OpT0FinderResult.h"
 #include "sbnobj/Common/Reco/TPCPMTBarycenterMatch.h"
+#include "sbnobj/Common/Reco/CorrectedOpFlashTiming.h"
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "sbnobj/Common/CRT/CRTTrack.hh"
 #include "sbnobj/SBND/CRT/CRTSpacePoint.hh"
@@ -140,12 +142,29 @@ namespace caf
                    caf::SRHit& srhit,
                    bool allowEmpty = false);
 
+  struct PFOCharLabelsStruct {
+    std::string EndFractionName;
+    std::string FractionalSpreadName;
+    std::string DiffStraightLineMeanName;
+    std::string LengthName;
+    std::string MaxFitGapLengthName;
+    std::string SlidingLinearFitRMSName;
+    std::string AngleDiffName;
+    std::string SecondaryPCARatioName;
+    std::string TertiaryPCARatioName;
+    std::string VertexDistanceName;
+    std::string HaloTotalRatioName;
+    std::string ConcentrationName;
+    std::string ConicalnessName;
+  };
+
   void FillPFPVars(const recob::PFParticle &particle,
                    const recob::PFParticle *primary,
                    const larpandoraobj::PFParticleMetadata *pfpMeta,
                    const art::Ptr<anab::T0> t0,
                    caf::SRPFP& srpfp,
-                   bool allowEmpty= false);
+                   const PFOCharLabelsStruct& pfoCharLabels,
+                   bool allowEmpty = false);
 
   void FillCNNScores(const recob::PFParticle &particle,
                      const sbn::PFPCNNScore *cnnscore,
@@ -175,6 +194,7 @@ namespace caf
                        bool use_ts0,
                        int64_t CRT_T0_reference_time, // ns, signed
                        double CRT_T1_reference_time, // us
+                       const std::map<std::pair<int, int>, sim::AuxDetSimChannel> &crtsimchanmap,
                        caf::SRTrack &srtrack,
                        bool allowEmpty = false);
 
@@ -242,6 +262,7 @@ namespace caf
                   bool use_ts0,
                   int64_t CRT_T0_reference_time, // ns, signed
                   double CRT_T1_reference_time, // us
+                  const std::map<std::pair<int, int>, sim::AuxDetSimChannel> &crtsimchanmap,
                   caf::SRCRTHit &srhit,
                   bool allowEmpty = false);
   void FillCRTTrack(const sbn::crt::CRTTrack &track,
@@ -275,6 +296,9 @@ namespace caf
 		       bool allowEmpty = false);
 
   void FillTPCPMTBarycenterMatch(const sbn::TPCPMTBarycenterMatch *matchInfo,
+                           caf::SRSlice& slice);
+
+  void FillCorrectedOpFlashTiming(const std::vector<art::Ptr<sbn::CorrectedOpFlashTiming>> &slcCorrectedOpFlash,
                            caf::SRSlice& slice);
 
   void FillCVNScores(const lcvn::Result *cvnResult,
