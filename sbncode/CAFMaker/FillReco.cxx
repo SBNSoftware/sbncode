@@ -892,6 +892,53 @@ namespace caf
     }
   }
 
+  void FillPlaneLikePID(const anab::ParticleID &particle_id, caf::SRTrkLikePID &srlikepid) {
+
+    // Assign dummy values.
+
+    srlikepid.lambda_muon = 0.;
+    srlikepid.lambda_pion = 0.;
+    srlikepid.lambda_proton = 0.;
+    srlikepid.pid_ndof = 0;
+
+    // Loop over algorithm scores and extract the ones we want.
+    // Get the ndof from any likelihood pid algorithm
+
+    std::vector<anab::sParticleIDAlgScores> AlgScoresVec = particle_id.ParticleIDAlgScores();
+    for (size_t i_algscore=0; i_algscore<AlgScoresVec.size(); i_algscore++){
+      anab::sParticleIDAlgScores AlgScore = AlgScoresVec.at(i_algscore);
+      if (AlgScore.fAlgName == "Likelihood"){
+        if (TMath::Abs(AlgScore.fAssumedPdg) == 13) { // lambda_mu
+          srlikepid.lambda_muon = AlgScore.fValue;
+          srlikepid.pid_ndof = AlgScore.fNdf;
+        }
+        else if (TMath::Abs(AlgScore.fAssumedPdg) == 211) { // lambda_pi
+          srlikepid.lambda_pion = AlgScore.fValue;
+          srlikepid.pid_ndof = AlgScore.fNdf;
+        }
+        else if (TMath::Abs(AlgScore.fAssumedPdg) == 2212) { // lambda_pr
+          srlikepid.lambda_proton = AlgScore.fValue;
+          srlikepid.pid_ndof = AlgScore.fNdf;
+        }
+      }
+    }
+  }
+
+  void FillTrackLikePID(const std::vector<art::Ptr<anab::ParticleID>> particleIDs,
+                        caf::SRTrack& srtrack,
+                        bool allowEmpty)
+  {
+    // get the particle ID's
+    for (unsigned i = 0; i < particleIDs.size(); i++) {
+      const anab::ParticleID &particle_id = *particleIDs[i];
+      if (particle_id.PlaneID()) {
+        unsigned plane_id  = particle_id.PlaneID().Plane;
+        assert(plane_id < 3);
+        FillPlaneLikePID(particle_id, srtrack.likepid[plane_id]);
+      }
+    }
+  }
+
   void FillTrackPlaneCalo(const anab::Calorimetry &calo, 
         const std::vector<art::Ptr<recob::Hit>> &hits,
         bool fill_calo_points, float fillhit_rrstart, float fillhit_rrend, 

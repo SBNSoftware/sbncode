@@ -226,6 +226,10 @@ namespace caf
   void FillTrackChi2PID(const std::vector<art::Ptr<anab::ParticleID>> particleIDs,
                         caf::SRTrack& srtrack,
                         bool allowEmpty = false);
+  void FillPlaneLikePID(const anab::ParticleID &particle_id, caf::SRTrkLikePID &srlikepid);
+  void FillTrackLikePID(const std::vector<art::Ptr<anab::ParticleID>> particleIDs,
+                        caf::SRTrack& srtrack,
+                        bool allowEmptySRTrkLikePID);
 
   void FillTrackPlaneCalo(const anab::Calorimetry &calo, 
                      const std::vector<art::Ptr<recob::Hit>> &hits,
