@@ -896,10 +896,10 @@ namespace caf
 
     // Assign dummy values.
 
-    srlikepid.lambda_muon = 0.;
-    srlikepid.lambda_pion = 0.;
-    srlikepid.lambda_proton = 0.;
-    srlikepid.pid_ndof = 0;
+    srlikepid.lambda_muon = -5.;
+    srlikepid.lambda_pion = -5.;
+    srlikepid.lambda_proton = -5.;
+    srlikepid.pid_ndof = -5;
 
     // Loop over algorithm scores and extract the ones we want.
     // Get the ndof from any likelihood pid algorithm
