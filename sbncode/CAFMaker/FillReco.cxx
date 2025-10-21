@@ -896,9 +896,9 @@ namespace caf
 
     // Assign dummy values.
 
-    srlikepid.lambda_muon = -5.;
-    srlikepid.lambda_pion = -5.;
-    srlikepid.lambda_proton = -5.;
+    srlikepid.lambda_muon = -9999.;
+    srlikepid.lambda_pion = -9999.;
+    srlikepid.lambda_proton = -9999.;
     srlikepid.pid_ndof = -5;
 
     // Loop over algorithm scores and extract the ones we want.
