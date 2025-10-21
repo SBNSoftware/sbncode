@@ -892,7 +892,7 @@ namespace caf
     }
   }
 
-  void FillPlaneLikePID(const anab::ParticleID &particle_id, caf::SRTrkLikePID &srlikepid) {
+  void FillPlaneLikePID(const anab::ParticleID &particle_id, caf::SRTrkLikelihoodPID &srlikepid) {
 
     // Assign dummy values.
 
