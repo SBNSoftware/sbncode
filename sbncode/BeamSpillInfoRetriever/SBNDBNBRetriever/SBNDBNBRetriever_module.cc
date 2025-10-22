@@ -72,7 +72,7 @@ sbn::SBNDBNBRetriever::SBNDBNBRetriever(fhicl::ParameterSet const & params)
   vp873->set_epsilon(0.02);
  
   offsets = ifbeam_handle->getBeamFolder(params.get<std::string>("OffsetBundle"), params.get<std::string>("URL"), timeWindow);
-  offsets->set_epsilon(1200);
+  offsets->set_epsilon(600);
 
 }
 
