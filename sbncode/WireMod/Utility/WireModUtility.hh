@@ -42,6 +42,9 @@ namespace sys {
       bool   applyXZAngleScale;                           // do we scale with XZ angle?
       bool   applyYZAngleScale;                           // do we scale with YZ angle?
       bool   applydEdXScale;                              // do we scale with dEdx?
+      bool   applyXXZAngleScale;                          // do we scale with X vs XZ angle?
+      bool   applyXdQdXScale;                             // do we scale with X vs dQ/dX?
+      bool   applyXZAngledQdXScale;                       // do we scale with XZ angle vs dQ/dX?
       double readoutWindowTicks;                          // how many ticks are in the readout window?
       double tickOffset;                                  // do we want an offset in the ticks?
 
@@ -58,6 +61,13 @@ namespace sys {
       std::vector<TGraph2D*> graph2Ds_Charge_YZ;          // the graphs for the charge correction in YZ
       std::vector<TGraph2D*> graph2Ds_Sigma_YZ;           // the graphs for the width correction in YZ
 
+      std::vector<TGraph2D*> graph2Ds_Charge_XXZAngle;    // the graphs for the charge correction in X vs XZ angle
+      std::vector<TGraph2D*> graph2Ds_Sigma_XXZAngle;     // the graphs for the width correction in X vs XZ angle
+      std::vector<TGraph2D*> graph2Ds_Charge_XdQdX;       // the graphs for charge correction in X vs dQ/dX
+      std::vector<TGraph2D*> graph2Ds_Sigma_XdQdX;        // the graphs for width correction in X vs dQ/dX
+      std::vector<TGraph2D*> graph2Ds_Charge_XZAngledQdX; // the graphs for charge correction in XZ angle vs dQ/dX
+      std::vector<TGraph2D*> graph2Ds_Sigma_XZAngledQdX;  // the graphs for width correction in XZ angle vs dQ/dX
+
       // lets try making a constructor here
       // assume we can get a geometry service, a detector clcok, and a detector properties
       // pass the CryoStat and TPC IDs because it's IDs all the way down
@@ -71,6 +81,9 @@ namespace sys {
                      const bool& arg_ApplyXZAngleScale = true,
                      const bool& arg_ApplyYZAngleScale = true,
                      const bool& arg_ApplydEdXScale = true,
+                     const bool& arg_ApplyXXZAngleScale = false,
+                     const bool& arg_ApplyXdQdXScale = false,
+                     const bool& arg_ApplyXZAngledQdXScale = false,
                      const double& arg_TickOffset = 0)
       : geometry(geom),
         wireReadout(wireRead),
@@ -81,6 +94,9 @@ namespace sys {
         applyXZAngleScale(arg_ApplyXZAngleScale),
         applyYZAngleScale(arg_ApplyYZAngleScale),
         applydEdXScale(arg_ApplydEdXScale),
+        applyXXZAngleScale(arg_ApplyXXZAngleScale),
+        applyXdQdXScale(arg_ApplyXdQdXScale),
+        applyXZAngledQdXScale(arg_ApplyXZAngledQdXScale),
         readoutWindowTicks(detProp.ReadOutWindowSize()),                                               // the default A2795 (ICARUS TPC readout board) readout window is 4096 samples
         tickOffset(arg_TickOffset)                                                                     // tick offset is for MC truth, default to zero and set only as necessary
       {
@@ -136,6 +152,7 @@ namespace sys {
         double dxdr;
         double dydr;
         double dzdr;
+        double dqdr;
         double dedr;
         ScaleValues_t scales_avg[3];
       } TruthProperties_t;
