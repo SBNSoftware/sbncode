@@ -264,8 +264,8 @@ class CAFMaker : public art::EDProducer {
   double       fGenieEvtRec_brEvtXSec   = 0.0; ////< Cross section for selected event (1e-38 cm2)
   double       fGenieEvtRec_brEvtDXSec  = 0.0; ////< Cross section for selected event kinematics (1e-38 cm2 / {K^n})
   unsigned int fGenieEvtRec_brEvtKPS    = 0; ////< Kinematic phase space variables. See $GENIE/src/Framework/Conventions/KinePhaseSpace.h -> KinePhaseSpace_t
-  int				fGenieEvtRec_brSctType   = 0; ////< See ScatteringType.h
-  int				fGenieEvtRec_brIntType   = 0; ////< See InteractionType.h
+  int          fGenieEvtRec_brSctType   = 0; ///< See [`genie::EScatteringType`](https://hep.ph.liv.ac.uk/~costasa/genie_doxygen/master/html/namespacegenie.html#ab97d2b4d1f37af8d967dadd15be88d0b)
+  int          fGenieEvtRec_brIntType   = 0; ///< See [`genie::EInteractionType`](https://hep.ph.liv.ac.uk/~costasa/genie_doxygen/master/html/namespacegenie.html#a554f81bb9954c9e46bbabadfcd403111)
   double       fGenieEvtRec_brEvtWght   = 0.0; ////< Weight for that event
   double       fGenieEvtRec_brEvtProb   = 0.0; ////< Probability for that event (given cross section, path lengths, etc)
   double       fGenieEvtRec_brEvtVtx[4] = {0.0}; ////< Event vertex position in detector coord syst (SI)
