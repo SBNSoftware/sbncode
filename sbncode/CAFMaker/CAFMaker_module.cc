@@ -2125,6 +2125,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<anab::ParticleID>(slcTracks, evt,
           fParams.TrackChi2PidLabel() + slice_tag_suff);
 
+    art::FindManyP<anab::ParticleID> fmLikePID =
+      FindManyPStrict<anab::ParticleID>(slcTracks, evt,
+          fParams.TrackLikePidLabel() + slice_tag_suff);
+
     art::FindManyP<sbn::ScatterClosestApproach> fmScatterClosestApproach =
       FindManyPStrict<sbn::ScatterClosestApproach>(slcTracks, evt,
           fParams.TrackScatterClosestApproachLabel() + slice_tag_suff);
@@ -2415,6 +2419,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
         if (fmChi2PID.isValid()) {
            FillTrackChi2PID(fmChi2PID.at(iPart), trk);
+        }
+        if (fmLikePID.isValid()) {
+           FillTrackLikePID(fmLikePID.at(iPart), trk);
         }
         if (fmScatterClosestApproach.isValid() && fmScatterClosestApproach.at(iPart).size()==1) {
            FillTrackScatterClosestApproach(fmScatterClosestApproach.at(iPart).front(), trk);

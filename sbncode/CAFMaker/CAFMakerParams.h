@@ -255,6 +255,12 @@ namespace caf
       "pandoraPid"
     };
 
+    Atom<string> TrackLikePidLabel {
+      Name("TrackLikePidLabel"),
+      Comment("Base label of track likelihood particle-id producer."),
+      "pandoraLikePid"
+    };
+
     Atom<string> TrackScatterClosestApproachLabel {
       Name("TrackScatterClosestApproachLabel"),
       Comment("Base label of track track scatter closestapproach producer."),
