@@ -34,21 +34,17 @@ namespace caf
   void FillTriggerICARUS(const sbn::ExtraTriggerInfo& addltrig_info,
                          caf::SRTrigger& triggerInfo) 
   {
-    // Per-cryostat additional trigger information, straight from the trigger hardware
-    const auto& addltrig_info_cryoE = addltrig_info.cryostats[sbn::ExtraTriggerInfo::EastCryostat];
-    const auto& addltrig_info_cryoW = addltrig_info.cryostats[sbn::ExtraTriggerInfo::WestCryostat];
-
     // Choose the cryostat that triggered first (if both are available)
-    if (addltrig_info_cryoE.hasTrigger() && (!addltrig_info_cryoW.hasTrigger() || (addltrig_info_cryoE.beamToTrigger <= addltrig_info_cryoW.beamToTrigger))) {
-      triggerInfo.trigger_cryo_source  = 0; ///< East
-      triggerInfo.trigger_logic_bits   = addltrig_info_cryoE.triggerLogicBits;
-      triggerInfo.beam_to_trigger_time = addltrig_info_cryoE.beamToTrigger;
-    }
-    else if (addltrig_info_cryoW.hasTrigger()) {
-      triggerInfo.trigger_cryo_source  = 1; ///< West
-      triggerInfo.trigger_logic_bits   = addltrig_info_cryoW.triggerLogicBits;
-      triggerInfo.beam_to_trigger_time = addltrig_info_cryoW.beamToTrigger;
-    }
+    int const cryo = addltrig_info.cryostats[sbn::ExtraTriggerInfo::EastCryostat].beamToTrigger < addltrig_info.cryostats[sbn::ExtraTriggerInfo::WestCryostat].beamToTrigger
+      ? sbn::ExtraTriggerInfo::EastCryostat 
+      : sbn::ExtraTriggerInfo::WestCryostat;
+
+    sbn::ExtraTriggerInfo::CryostatInfo const& cryoInfo = addltrig_info.cryostats[cryo];
+    if (cryoInfo.hasTrigger()) {
+      triggerInfo.trigger_cryo_source  = cryo;
+      triggerInfo.trigger_logic_bits   = cryoInfo.triggerLogicBits;
+      triggerInfo.gate_to_trigger_time = static_cast<float>(cryoInfo.beamToTrigger) / 1000.0f; // [us]
+    }  
   }
 
 }
