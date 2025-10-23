@@ -19,7 +19,6 @@
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/Wire.h"
 #include "lardataobj/Simulation/SimEnergyDeposit.h"
-#include "lardataobj/Simulation/SimChannel.h"
 #include "larcoreobj/SimpleTypesAndConstants/PhysicalConstants.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
@@ -43,6 +42,12 @@ namespace sys {
       bool   applyXZAngleScale;                           // do we scale with XZ angle?
       bool   applyYZAngleScale;                           // do we scale with YZ angle?
       bool   applydEdXScale;                              // do we scale with dEdx?
+<<<<<<< HEAD
+=======
+      bool   applyXXZAngleScale;                          // do we scale with X vs XZ angle?
+      bool   applyXdQdXScale;                             // do we scale with X vs dQ/dX?
+      bool   applyXZAngledQdXScale;                       // do we scale with XZ angle vs dQ/dX?
+>>>>>>> feature/hhausner_wiremod_v10_MoreScalingEnabled
       double readoutWindowTicks;                          // how many ticks are in the readout window?
       double tickOffset;                                  // do we want an offset in the ticks?
 
@@ -59,6 +64,16 @@ namespace sys {
       std::vector<TGraph2D*> graph2Ds_Charge_YZ;          // the graphs for the charge correction in YZ
       std::vector<TGraph2D*> graph2Ds_Sigma_YZ;           // the graphs for the width correction in YZ
 
+<<<<<<< HEAD
+=======
+      std::vector<TGraph2D*> graph2Ds_Charge_XXZAngle;    // the graphs for the charge correction in X vs XZ angle
+      std::vector<TGraph2D*> graph2Ds_Sigma_XXZAngle;     // the graphs for the width correction in X vs XZ angle
+      std::vector<TGraph2D*> graph2Ds_Charge_XdQdX;       // the graphs for charge correction in X vs dQ/dX
+      std::vector<TGraph2D*> graph2Ds_Sigma_XdQdX;        // the graphs for width correction in X vs dQ/dX
+      std::vector<TGraph2D*> graph2Ds_Charge_XZAngledQdX; // the graphs for charge correction in XZ angle vs dQ/dX
+      std::vector<TGraph2D*> graph2Ds_Sigma_XZAngledQdX;  // the graphs for width correction in XZ angle vs dQ/dX
+
+>>>>>>> feature/hhausner_wiremod_v10_MoreScalingEnabled
       // lets try making a constructor here
       // assume we can get a geometry service, a detector clcok, and a detector properties
       // pass the CryoStat and TPC IDs because it's IDs all the way down
@@ -72,6 +87,12 @@ namespace sys {
                      const bool& arg_ApplyXZAngleScale = true,
                      const bool& arg_ApplyYZAngleScale = true,
                      const bool& arg_ApplydEdXScale = true,
+<<<<<<< HEAD
+=======
+                     const bool& arg_ApplyXXZAngleScale = false,
+                     const bool& arg_ApplyXdQdXScale = false,
+                     const bool& arg_ApplyXZAngledQdXScale = false,
+>>>>>>> feature/hhausner_wiremod_v10_MoreScalingEnabled
                      const double& arg_TickOffset = 0)
       : geometry(geom),
         wireReadout(wireRead),
@@ -82,6 +103,12 @@ namespace sys {
         applyXZAngleScale(arg_ApplyXZAngleScale),
         applyYZAngleScale(arg_ApplyYZAngleScale),
         applydEdXScale(arg_ApplydEdXScale),
+<<<<<<< HEAD
+=======
+        applyXXZAngleScale(arg_ApplyXXZAngleScale),
+        applyXdQdXScale(arg_ApplyXdQdXScale),
+        applyXZAngledQdXScale(arg_ApplyXZAngledQdXScale),
+>>>>>>> feature/hhausner_wiremod_v10_MoreScalingEnabled
         readoutWindowTicks(detProp.ReadOutWindowSize()),                                               // the default A2795 (ICARUS TPC readout board) readout window is 4096 samples
         tickOffset(arg_TickOffset)                                                                     // tick offset is for MC truth, default to zero and set only as necessary
       {
@@ -137,6 +164,10 @@ namespace sys {
         double dxdr;
         double dydr;
         double dzdr;
+<<<<<<< HEAD
+=======
+        double dqdr;
+>>>>>>> feature/hhausner_wiremod_v10_MoreScalingEnabled
         double dedr;
         ScaleValues_t scales_avg[3];
       } TruthProperties_t;
@@ -206,7 +237,6 @@ namespace sys {
 
       void FillROIMatchedEdepMap(std::vector<sim::SimEnergyDeposit> const&, std::vector<recob::Wire> const&, double offset);
       void FillROIMatchedHitMap(std::vector<recob::Hit> const&, std::vector<recob::Wire> const&);
-      void FillROIMatchedIDEMap(std::vector<sim::SimChannel> const& simchVec, std::vector<recob::Wire> const& wireVec, double offset);
 
       std::vector<SubROIProperties_t> CalcSubROIProperties(ROIProperties_t const&, std::vector<const recob::Hit*> const&);
 
