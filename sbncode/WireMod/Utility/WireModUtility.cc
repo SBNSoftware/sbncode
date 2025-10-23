@@ -108,11 +108,6 @@ std::vector<std::pair<unsigned int, unsigned int>> sys::WireModUtility::GetHitTa
   return target_roi_vec;
 }
 
-//--- FillROIMatchedIDEMap ---
-void sys::WireModUtility::FillROIMatchedIDEMap(std::vector<sim::SimChannel> const& simchVec, std::vector<recob::Wire> const& wireVec, double offset)
-{
-}
-
 //--- FillROIMatchedEdepMap ---
 void sys::WireModUtility::FillROIMatchedEdepMap(std::vector<sim::SimEnergyDeposit> const& edepVec, std::vector<recob::Wire> const& wireVec, double offset)
 {
@@ -367,7 +362,6 @@ sys::WireModUtility::TruthProperties_t sys::WireModUtility::CalcPropertiesFromEd
     edep_props.dydr = (edep_ptr->EndY() - edep_ptr->StartY()) / edep_ptr->StepLength();
     edep_props.dzdr = (edep_ptr->EndZ() - edep_ptr->StartZ()) / edep_ptr->StepLength();
 
-    edep_props.dqdr = edep_ptr->NumElectrons() / edep_ptr->StepLength();
     edep_props.dedr = edep_ptr->E() / edep_ptr->StepLength();
 
     total_energy_all += edep_ptr->E();
@@ -416,7 +410,6 @@ sys::WireModUtility::TruthProperties_t sys::WireModUtility::CalcPropertiesFromEd
   edep_col_properties.dydr = 0.;
   edep_col_properties.dzdr = 0.;
 
-  edep_col_properties.dqdr = 0.;
   edep_col_properties.dedr = 0.;
 
   double total_energy = 0.0;
@@ -436,7 +429,6 @@ sys::WireModUtility::TruthProperties_t sys::WireModUtility::CalcPropertiesFromEd
     edep_col_properties.dydr += edep_ptr->E()*(edep_ptr->EndY() - edep_ptr->StartY()) / edep_ptr->StepLength();
     edep_col_properties.dzdr += edep_ptr->E()*(edep_ptr->EndZ() - edep_ptr->StartZ()) / edep_ptr->StepLength();
 
-    edep_col_properties.dqdr += edep_ptr->E()*edep_ptr->NumElectrons() / edep_ptr->StepLength();
     edep_col_properties.dedr += edep_ptr->E()*edep_ptr->E() / edep_ptr->StepLength();
   }
 
@@ -449,7 +441,6 @@ sys::WireModUtility::TruthProperties_t sys::WireModUtility::CalcPropertiesFromEd
     edep_col_properties.dydr = edep_col_properties.dydr / total_energy;
     edep_col_properties.dzdr = edep_col_properties.dzdr / total_energy;
 
-    edep_col_properties.dqdr = edep_col_properties.dqdr / total_energy;
     edep_col_properties.dedr = edep_col_properties.dedr / total_energy;
   }
 
