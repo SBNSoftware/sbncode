@@ -894,13 +894,6 @@ namespace caf
 
   void FillPlaneLikePID(const anab::ParticleID &particle_id, caf::SRTrkLikelihoodPID &srlikepid) {
 
-    // Assign dummy values.
-
-    srlikepid.lambda_muon = -9999.;
-    srlikepid.lambda_pion = -9999.;
-    srlikepid.lambda_proton = -9999.;
-    srlikepid.pid_ndof = -5;
-
     // Loop over algorithm scores and extract the ones we want.
     // Get the ndof from any likelihood pid algorithm
 
