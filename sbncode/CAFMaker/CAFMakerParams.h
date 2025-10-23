@@ -368,6 +368,12 @@ namespace caf
       "" //Empty by default, please set to e.g. art::InputTag("NuGraph","semantic")
     };
 
+    Atom<bool> UsePandoraAfterNuGraph {
+      Name("UsePandoraAfterNuGraph"),
+      Comment("Whether to use the second pass Pandora outputs for NuGraph reco."),
+      false
+    };
+
     Atom<string> OpFlashLabel {
       Name("OpFlashLabel"),
       Comment("Label of PMT flash."),

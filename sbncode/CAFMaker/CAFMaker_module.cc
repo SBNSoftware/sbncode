@@ -1727,8 +1727,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     GetByLabelStrict(evt, fParams.PFParticleLabel() + pandora_tag_suffix, thisSlices);
     if (thisSlices.isValid()) {
       art::fill_ptr_vector(slices, thisSlices);
-      const std::vector<art::Ptr<recob::Slice>>& tempNuGraphSlices = evt.getProduct<std::vector<art::Ptr<recob::Slice>>>(fParams.NuGraphSlicesLabel().label() + pandora_tag_suffix);
-      nuGraphSlices.insert(nuGraphSlices.end(), tempNuGraphSlices.begin(), tempNuGraphSlices.end());
+      nuGraphSlices = evt.getProduct<std::vector<art::Ptr<recob::Slice>>>(fParams.NuGraphSlicesLabel().label() + pandora_tag_suffix);
+      if (fParams.UsePandoraAfterNuGraph()) {
+        nuGraphSlices = slices;
+      }
       for (unsigned i = 0; i < thisSlices->size(); i++) {
         slice_tag_suffixes.push_back(pandora_tag_suffix);
         slice_tag_indices.push_back(i_tag);
