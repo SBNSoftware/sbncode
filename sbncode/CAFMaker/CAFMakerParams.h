@@ -321,6 +321,12 @@ namespace caf
       "crthit" // icarus
     };
 
+    Atom<string> CRTSimChanLabel {
+      Name("CRTSimChanLabel"),
+      Comment("Label of AuxDetSimChannels."),
+      "genericcrt" // icarus
+    };
+
     Atom<string> CRTTrackLabel {
       Name("CRTTrackLabel"),
       Comment("Label of sbn CRT tracks."),
@@ -415,6 +421,30 @@ namespace caf
       Name("UnshiftedTriggerLabel"),
       Comment("Label of trigger emulation before applying trigger time shifts."),
       "emuTriggerUnshifted"
+    };
+
+    Atom<art::InputTag> MonPulsesTriggerLabel {
+      Name("MonPulsesTriggerLabel"),
+      Comment("Label of trigger emulation product MonPulses (number of PMT pairs above threshold for all channels) for all flashes."),
+      art::InputTag("opdaq", "MonPulses", "DetSim")
+    };
+
+    Atom<art::InputTag> MonPulseSizesTriggerLabel {
+      Name("MonPulseSizesTriggerLabel"),
+      Comment("Label of trigger emulation product MonPulses Sizes, which gives the length of each trigger response in MonPulses."),
+      art::InputTag("opdaq", "MonPulseSizes", "DetSim")
+    };
+
+    Atom<art::InputTag> PairsTriggerLabel {
+      Name("PairsTriggerLabel"),
+      Comment("Label of number of PMT pairs over threshold."),
+      art::InputTag("opdaq", "pairsOverThreshold", "DetSim")
+    };
+
+    Atom<art::InputTag> EmulatedTriggerLabel {
+      Name("EmulatedTriggerLabel"),
+      Comment("Label of bool of passing the trigger."),
+      art::InputTag("opdaq", "triggerEmulation", "DetSim")
     };
 
     Atom<string> FlashTrigLabel {
