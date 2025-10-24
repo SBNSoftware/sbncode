@@ -2736,29 +2736,26 @@ void CAFMaker::endSubRun(art::SubRun& sr) {
 
 //......................................................................
 void CAFMaker::endJob() {
-  if (fTotalEvents == 0) {
 
-    std::cerr << "No events processed in this file. Aborting rather than "
-                 "produce an empty CAF."
+  // Only produce empty recTree/GenieTree since it relies on non-zero art events.
+  // Still want to keep POT histograms.
+  if (fTotalEvents == 0) {
+    std::cerr << "No events processed in this file. Producing empty recTree/GenieTree."
               << std::endl;
-    // n.b. changed abort() to return so that eny exceptions thrown during startup
-    // still get printed to the user by art
-    return;
   }
 
-
-
   if(fFile){
-
     AddHistogramsToFile(fFile);
-    fRecTree->SetDirectory(fFile);
-    if(fGenieTree){
-      fGenieTree->BuildIndex("SourceFileHash", "GENIEEntry");
-      fGenieTree->SetDirectory(fFile);
-    }
-    if (fParams.CreateBlindedCAF()) {
-      fRecTreeb->SetDirectory(fFileb);
-      fRecTreep->SetDirectory(fFilep);
+    if (fTotalEvents > 0) {
+      if(fGenieTree){
+        fGenieTree->BuildIndex("SourceFileHash", "GENIEEntry");
+        fGenieTree->SetDirectory(fFile);
+      }
+      fRecTree->SetDirectory(fFile);
+      if (fParams.CreateBlindedCAF()) {
+        fRecTreeb->SetDirectory(fFileb);
+        fRecTreep->SetDirectory(fFilep);
+      }
     }
     fFile->cd();
     fFile->Write();
@@ -2774,17 +2771,20 @@ void CAFMaker::endJob() {
   }
 
   if(fFlatFile){
-
     AddHistogramsToFile(fFlatFile);
-    fFlatTree->SetDirectory(fFlatFile);
-    if(fFlatGenieTree){
-      fFlatGenieTree->BuildIndex("SourceFileHash", "GENIEEntry");
-      fFlatGenieTree->SetDirectory(fFlatFile);
+    if (fTotalEvents > 0) {
+      if(fFlatGenieTree){
+        fFlatGenieTree->BuildIndex("SourceFileHash", "GENIEEntry");
+        fFlatGenieTree->SetDirectory(fFlatFile);
+      }
+      fFlatTree->SetDirectory(fFlatFile);
+      if (fParams.CreateBlindedCAF() && fFlatFileb) {
+        fFlatTreeb->SetDirectory(fFlatFileb);
+        fFlatTreep->SetDirectory(fFlatFilep);
+      }
     }
-    if (fParams.CreateBlindedCAF() && fFlatFileb) {
-      fFlatTreeb->SetDirectory(fFlatFileb);
-      fFlatTreep->SetDirectory(fFlatFilep);
-    }
+    std::cout << "here4" << std::endl;
+
     fFlatFile->cd();
     fFlatFile->Write();
     if (fParams.CreateBlindedCAF()) {
