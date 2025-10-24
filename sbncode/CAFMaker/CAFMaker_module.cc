@@ -2597,7 +2597,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // For more information, see: 
   // https://sbn-docdb.fnal.gov/cgi-bin/sso/RetrieveFile?docid=43090
 
-  if (isRealData && (fDet == kSBND))
+  if (isRealData && (fDet == kSBND) && fSubRunPOT > 0)
   {
     // Fill trigger info
     FillTriggerSBND(srsbndtiminginfo, srtrigger);
