@@ -2783,7 +2783,6 @@ void CAFMaker::endJob() {
         fFlatTreep->SetDirectory(fFlatFilep);
       }
     }
-    std::cout << "here4" << std::endl;
 
     fFlatFile->cd();
     fFlatFile->Write();
