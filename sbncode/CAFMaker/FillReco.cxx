@@ -897,33 +897,34 @@ namespace caf
     // Loop over algorithm scores and extract the ones we want.
     // Get the ndof from any likelihood pid algorithm
 
-    std::vector<anab::sParticleIDAlgScores> AlgScoresVec = particle_id.ParticleIDAlgScores();
-    for (size_t i_algscore=0; i_algscore<AlgScoresVec.size(); i_algscore++){
-      anab::sParticleIDAlgScores AlgScore = AlgScoresVec.at(i_algscore);
+    std::vector<anab::sParticleIDAlgScores> const& AlgScoresVec = particle_id.ParticleIDAlgScores();
+    for (anab::sParticleIDAlgScores const& AlgScore: AlgScoresVec){
       if (AlgScore.fAlgName == "Likelihood"){
-        if (TMath::Abs(AlgScore.fAssumedPdg) == 13) { // lambda_mu
-          srlikepid.lambda_muon = AlgScore.fValue;
-          srlikepid.pid_ndof = AlgScore.fNdf;
-        }
-        else if (TMath::Abs(AlgScore.fAssumedPdg) == 211) { // lambda_pi
-          srlikepid.lambda_pion = AlgScore.fValue;
-          srlikepid.pid_ndof = AlgScore.fNdf;
-        }
-        else if (TMath::Abs(AlgScore.fAssumedPdg) == 2212) { // lambda_pr
-          srlikepid.lambda_proton = AlgScore.fValue;
-          srlikepid.pid_ndof = AlgScore.fNdf;
+        switch (std::abs(AlgScore.fAssumedPdg)) {
+          case 13: // lambda_mu
+            srlikepid.lambda_muon = AlgScore.fValue;
+            srlikepid.pid_ndof = AlgScore.fNdf;
+            break;
+          case 211: // lambda_pi
+            srlikepid.lambda_pion = AlgScore.fValue;
+            srlikepid.pid_ndof = AlgScore.fNdf;
+            break;
+          case 2212: // lambda_pr
+            srlikepid.lambda_proton = AlgScore.fValue;
+            srlikepid.pid_ndof = AlgScore.fNdf;
+            break;
         }
       }
     }
   }
 
-  void FillTrackLikePID(const std::vector<art::Ptr<anab::ParticleID>> particleIDs,
+  void FillTrackLikePID(const std::vector<art::Ptr<anab::ParticleID>>& particleIDs,
                         caf::SRTrack& srtrack,
                         bool allowEmpty)
   {
     // get the particle ID's
-    for (unsigned i = 0; i < particleIDs.size(); i++) {
-      const anab::ParticleID &particle_id = *particleIDs[i];
+    for (art::Ptr<anab::ParticleID> const& pidPtr: particleIDs) {
+      const anab::ParticleID &particle_id = *pidPtr;
       if (particle_id.PlaneID()) {
         unsigned plane_id  = particle_id.PlaneID().Plane;
         assert(plane_id < 3);

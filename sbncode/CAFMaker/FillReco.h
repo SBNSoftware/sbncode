@@ -227,7 +227,7 @@ namespace caf
                         caf::SRTrack& srtrack,
                         bool allowEmpty = false);
   void FillPlaneLikePID(const anab::ParticleID &particle_id, caf::SRTrkLikelihoodPID &srlikepid);
-  void FillTrackLikePID(const std::vector<art::Ptr<anab::ParticleID>> particleIDs,
+  void FillTrackLikePID(const std::vector<art::Ptr<anab::ParticleID>>& particleIDs,
                         caf::SRTrack& srtrack,
                         bool allowEmpty = false);
 
