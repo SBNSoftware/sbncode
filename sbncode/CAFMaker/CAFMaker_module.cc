@@ -1788,18 +1788,17 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       // Fill CRT Veto 
       art::Handle<std::vector<sbnd::crt::CRTVeto>> sbndcrtveto_handle;
       GetByLabelStrict(evt, fParams.SBNDCRTVetoLabel(), sbndcrtveto_handle);
-      std::vector<art::Ptr<sbnd::crt::CRTVeto>> vetoPtrs;
       // fill into event
       if (sbndcrtveto_handle.isValid()) {
-        art::fill_ptr_vector(vetoPtrs, sbndcrtveto_handle);
+        const std::vector<sbnd::crt::CRTVeto> &sbndcrtveto_vec = *sbndcrtveto_handle;
         // Only one valid veto per event
-        if (vetoPtrs.size() == 1) {
+        if (sbndcrtveto_vec.size() == 1) {
           // And associated SpacePoint objects
           art::FindManyP<sbnd::crt::CRTSpacePoint> spAssoc(sbndcrtveto_handle, evt, fParams.SBNDCRTVetoLabel());
           if (spAssoc.isValid()) {
             // There is one vector of SpacePoints per Veto --> can be empty if no veto condition was satisfied     
-            const std::vector<art::Ptr<sbnd::crt::CRTSpacePoint>> veto_sp_v(spAssoc.at(vetoPtrs[0].key())); 
-            FillSBNDCRTVeto(vetoPtrs[0], veto_sp_v, srsbndcrtveto);
+            const std::vector<art::Ptr<sbnd::crt::CRTSpacePoint>> veto_sp_v(spAssoc.at(0)); 
+            FillSBNDCRTVeto(sbndcrtveto_vec[0], veto_sp_v, srsbndcrtveto);
           }
         }
       }
