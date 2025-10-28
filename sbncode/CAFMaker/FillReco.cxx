@@ -896,6 +896,7 @@ namespace caf
 
     // Loop over algorithm scores and extract the ones we want.
     // Get the ndof from any likelihood pid algorithm
+    srlikepid.setDefault();
 
     std::vector<anab::sParticleIDAlgScores> const& AlgScoresVec = particle_id.ParticleIDAlgScores();
     for (anab::sParticleIDAlgScores const& AlgScore: AlgScoresVec){
