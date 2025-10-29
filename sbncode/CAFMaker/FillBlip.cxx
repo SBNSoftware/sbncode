@@ -33,6 +33,7 @@ namespace caf
                 FillMCTruthBlip( &CurrentBlip, &NewBlip );
             }
             FillBlipRealtedHitCluster( &CurrentBlip, &NewBlip );
+            CAF_Blips->push_back(NewBlip);
         }
 
     }
