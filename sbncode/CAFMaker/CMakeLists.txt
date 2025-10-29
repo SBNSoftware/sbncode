@@ -42,6 +42,7 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   lardataalg::DetectorInfo
                   art::Framework_Services_System_TriggerNamesService_service
                   sbncode_Metadata_MetadataSBN_service
+                  sbndcode_BlipUtils
                   larsim::Utils
 		  larevt::SpaceCharge
                   systematicstools::interface
