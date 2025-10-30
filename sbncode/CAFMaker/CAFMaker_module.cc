@@ -1797,7 +1797,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           art::FindManyP<sbnd::crt::CRTSpacePoint> spAssoc(sbndcrtveto_handle, evt, fParams.SBNDCRTVetoLabel());
           if (spAssoc.isValid()) {
             // There is one vector of SpacePoints per Veto --> can be empty if no veto condition was satisfied     
-            const std::vector<art::Ptr<sbnd::crt::CRTSpacePoint>> veto_sp_v(spAssoc.at(0)); 
+            const std::vector<art::Ptr<sbnd::crt::CRTSpacePoint>>& veto_sp_v(spAssoc.at(0)); 
             FillSBNDCRTVeto(sbndcrtveto_vec[0], veto_sp_v, srsbndcrtveto);
           }
         }
