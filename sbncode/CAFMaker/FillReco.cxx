@@ -202,7 +202,7 @@ namespace caf
     // add the CRTSpacePoint associations to the SR Veto
     for(auto const& sp : points) {
       srsbndcrtveto.sp_position.emplace_back(sp->X(), sp->Y(), sp->Z());   
-      srsbndcrtveto.sp_time.emplace_back(sp->Ts0()); /// ns for SBND CRT SpacePoints   
+      srsbndcrtveto.sp_time.emplace_back(sp->Ts0()); // ns for SBND CRT SpacePoints   
       srsbndcrtveto.sp_pe.emplace_back(sp->PE());   
     }
   }
