@@ -277,13 +277,20 @@ namespace sbn::pot{
     }
   }
 
-  sbn::pot::MWRdata_t extractSpillTimes(TriggerInfo_t const& triggerInfo, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp_mwr, double fTimePad, double MWRtoroidDelay, sbn::MWRData mwrdata) {
+  sbn::pot::MWRdata_t extractSpillTimes(TriggerInfo_t const& triggerInfo, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp_mwr, std::unique_ptr<ifbeam_ns::BeamFolder> const& vp873, std::unique_ptr<ifbeam_ns::BeamFolder> const& offsets, double fTimePad, double MWRtoroidDelay, sbn::MWRData mwrdata) {
     
     // These lines get everything primed within the IFBeamDB.
     try{bfp->FillCache((triggerInfo.t_current_event)+fTimePad);} catch (WebAPIException &we) {};     
     try{bfp->FillCache((triggerInfo.t_previous_event)-fTimePad);} catch (WebAPIException &we) {};      
     try{bfp_mwr->FillCache((triggerInfo.t_current_event)+fTimePad);} catch (WebAPIException &we) {};
     try{bfp_mwr->FillCache((triggerInfo.t_previous_event)-fTimePad);} catch (WebAPIException &we) {};
+
+    // Added Oct 30 by N. Rowe
+    try{vp873->FillCache((triggerInfo.t_current_event)+fTimePad);} catch (WebAPIException &we) {};
+    try{vp873->FillCache((triggerInfo.t_previous_event)-fTimePad);} catch (WebAPIException &we) {};
+    try{offsets->FillCache((triggerInfo.t_current_event)+fTimePad);} catch (WebAPIException &we) {};
+    try{offsets->FillCache((triggerInfo.t_previous_event)-fTimePad);} catch (WebAPIException &we) {};
+
   
     // The multiwire chambers provide their
     // data in a vector format but we'll have 
