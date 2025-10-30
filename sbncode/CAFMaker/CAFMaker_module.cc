@@ -20,6 +20,7 @@
 #include "sbncode/CAFMaker/FillExposure.h"
 #include "sbncode/CAFMaker/FillTrigger.h"
 #include "sbncode/CAFMaker/Utils.h"
+#include "sbncode/CAFMaker/FillBlip.h"
 
 // C/C++ includes
 #include <fenv.h>
@@ -1874,6 +1875,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
   }
 
+  //Fill blips. art::handle for blips and then call fill blips for each one. Make a vector to hold all of them. I handle for loop in Fill blip
+  art::Handle<std::vector<blip::Blip>> blipHandle;
+  std::vector<caf::SRBlips>> srblips;
+  if(evt.GetByLabel( fBlipTag, blipHandle)) //fill SR blips
+  {
+    FillBlip(   (*LarBlips) , srblips);
+  }
   // collect the TPC slices
   std::vector<art::Ptr<recob::Slice>> slices;
   std::vector<std::string> slice_tag_suffixes;
@@ -2543,6 +2551,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.nsbnd_crt_tracks = srsbndcrttracks.size();
   rec.opflashes        = srflashes;
   rec.nopflashes       = srflashes.size();
+  rec.blips            = srblips;
   rec.sbnd_frames      = srsbndframeshiftinfo;
   rec.sbnd_timings     = srsbndtiminginfo;
 
