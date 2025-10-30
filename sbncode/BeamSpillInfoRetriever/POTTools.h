@@ -71,7 +71,7 @@ namespace sbn::pot{
    * @param MWRtoroidDelay Delay between MWR and toroids
    * @param mwrdata MWRData to unpack 
    */
-  MWRdata_t extractSpillTimes(TriggerInfo_t const& triggerInfo, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp_mwr, double fTimePad, double MWRtoroidDelay, sbn::MWRData mwrdata );
+  MWRdata_t extractSpillTimes(TriggerInfo_t const& triggerInfo, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp_mwr, std::unique_ptr<ifbeam_ns::BeamFolder> const& offsets, std::unique_ptr<ifbeam_ns::BeamFolder> const& vp873, double fTimePad, double MWRtoroidDelay, sbn::MWRData mwrdata );
   /**
    * @brief Compile spill information into BNBSpillInfo object 
    */

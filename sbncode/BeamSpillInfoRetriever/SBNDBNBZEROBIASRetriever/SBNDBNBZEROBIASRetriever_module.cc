@@ -97,9 +97,8 @@ void sbn::SBNDBNBZEROBIASRetriever::produce(art::Event & e)
     e.put(std::move(p));
     return;
   }
-
   TotalBeamSpills += triggerInfo.number_of_gates_since_previous_event;
-  sbn::pot::MWRdata_t const MWRdata = extractSpillTimes(triggerInfo, bfp, bfp_mwr, fTimePad, MWRtoroidDelay, mwrdata);
+  sbn::pot::MWRdata_t const MWRdata = extractSpillTimes(triggerInfo, bfp, bfp_mwr, vp873, offsets, fTimePad, MWRtoroidDelay, mwrdata);
 
   matchMultiWireData(e.id(), triggerInfo, MWRdata, fOutbeamInfos);
   fOutbeamInfosTotal.insert(fOutbeamInfosTotal.end(),fOutbeamInfos.begin(),fOutbeamInfos.end());

@@ -287,8 +287,8 @@ void sbn::ICARUSBNBRetriever::produce(art::Event& e)
   // Keep track of the number of beam gates the DAQ thinks 
   //   are in this job
   TotalBeamSpills += triggerInfo.number_of_gates_since_previous_event;
-  sbn::pot::MWRdata_t const MWRdata = extractSpillTimes(triggerInfo, bfp, bfp_mwr, fTimePad, MWRtoroidDelay, mwrdata);
-  
+  sbn::pot::MWRdata_t const MWRdata = extractSpillTimes(triggerInfo, bfp, bfp_mwr, vp873, offsets, fTimePad, MWRtoroidDelay, mwrdata);
+ 
   int const spill_count = matchMultiWireData(e.id(), triggerInfo, MWRdata, fOutbeamInfos);
   
   if(spill_count > int(triggerInfo.number_of_gates_since_previous_event))
