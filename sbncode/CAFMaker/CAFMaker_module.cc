@@ -226,7 +226,7 @@ class CAFMaker : public art::EDProducer {
   double fTotalEvents;
   double fBlindEvents;
   double fPrescaleEvents;
-  double fNGenEvents;
+  double fTotalGenEvents;
   std::vector<caf::SRBNBInfo> fBNBInfo; ///< Store detailed BNB info to save into the first StandardRecord of the output file
   std::vector<caf::SRNuMIInfo> fNuMIInfo; ///< Store detailed NuMI info to save into the first StandardRecord of the output file
   std::map<unsigned int,sbn::BNBSpillInfo> fBNBInfoEventMap; ///< Store detailed BNB info to save for the particular spills of events
@@ -869,7 +869,7 @@ void CAFMaker::beginRun(art::Run& run) {
         int max_events = gen_config->get<int>("source.maxEvents");
         std::string module_type = gen_config->get<std::string>("source.module_type");
         if (module_type == "EmptyEvent") {
-          fNGenEvents += max_events;
+          fTotalGenEvents += max_events;
         }
       }
     }
@@ -1228,7 +1228,7 @@ void CAFMaker::InitializeOutfiles()
   fTotalEvents = 0;
   fBlindEvents = 0;
   fPrescaleEvents = 0;
-  fNGenEvents = 0;
+  fTotalGenEvents = 0;
   fIndexInFile = SRHeader::NoSourceIndex;
   fFirstInSubRun = false;
   fFirstBlindInSubRun = false;
@@ -2791,7 +2791,7 @@ void CAFMaker::endSubRun(art::SubRun& sr) {
 
   TH1* hPOT = new TH1D("TotalPOT", "TotalPOT;; POT", 1, 0, 1);
   TH1* hEvents = new TH1D("TotalEvents", "TotalEvents;; Events", 1, 0, 1);
-  TH1* hGen = new TH1D("NGenEvents", "NGenEvents;; Events", 1, 0, 1);
+  TH1* hGen = new TH1D("TotalGenEvents", "TotalGenEvents;; Events", 1, 0, 1);
 
   if (isBlindPOT) {
     hPOT->Fill(0.5,fTotalPOT*(1-(1/fParams.PrescaleFactor()))*GetBlindPOTScale());
@@ -2803,7 +2803,7 @@ void CAFMaker::endSubRun(art::SubRun& sr) {
     hPOT->Fill(0.5,fTotalPOT);
   }
   hEvents->Fill(0.5,fTotalEvents);
-  hGen->Fill(0.5,fNGenEvents);
+  hGen->Fill(0.5,fTotalGenEvents);
 
   hPOT->Write();
   hEvents->Write();
