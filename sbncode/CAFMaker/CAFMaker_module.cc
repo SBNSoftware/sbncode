@@ -118,10 +118,10 @@
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
 #include "sbnobj/Common/Reco/OpT0FinderResult.h"
+#include "sbnobj/SBND/CRT/CRTVeto.hh"
 #include "sbnobj/Common/Reco/CorrectedOpFlashTiming.h"
 #include "sbnobj/SBND/Timing/TimingInfo.hh"
 #include "sbnobj/SBND/Timing/FrameShiftInfo.hh"
-
 
 // GENIE
 #include "Framework/EventGen/EventRecord.h"
@@ -267,6 +267,8 @@ class CAFMaker : public art::EDProducer {
   double       fGenieEvtRec_brEvtXSec   = 0.0; ////< Cross section for selected event (1e-38 cm2)
   double       fGenieEvtRec_brEvtDXSec  = 0.0; ////< Cross section for selected event kinematics (1e-38 cm2 / {K^n})
   unsigned int fGenieEvtRec_brEvtKPS    = 0; ////< Kinematic phase space variables. See $GENIE/src/Framework/Conventions/KinePhaseSpace.h -> KinePhaseSpace_t
+  int          fGenieEvtRec_brSctType   = 0; ///< See [`genie::EScatteringType`](https://hep.ph.liv.ac.uk/~costasa/genie_doxygen/master/html/namespacegenie.html#ab97d2b4d1f37af8d967dadd15be88d0b)
+  int          fGenieEvtRec_brIntType   = 0; ///< See [`genie::EInteractionType`](https://hep.ph.liv.ac.uk/~costasa/genie_doxygen/master/html/namespacegenie.html#a554f81bb9954c9e46bbabadfcd403111)
   double       fGenieEvtRec_brEvtWght   = 0.0; ////< Weight for that event
   double       fGenieEvtRec_brEvtProb   = 0.0; ////< Probability for that event (given cross section, path lengths, etc)
   double       fGenieEvtRec_brEvtVtx[4] = {0.0}; ////< Event vertex position in detector coord syst (SI)
@@ -1198,6 +1200,8 @@ void CAFMaker::InitializeOutfiles()
       fFlatGenieTree->Branch("GenieEvtRec.EvtXSec",  &fGenieEvtRec_brEvtXSec,  "GenieEvtRec.EvtXSec/D"   );
       fFlatGenieTree->Branch("GenieEvtRec.EvtDXSec", &fGenieEvtRec_brEvtDXSec, "GenieEvtRec.EvtDXSec/D"  );
       fFlatGenieTree->Branch("GenieEvtRec.EvtKPS",   &fGenieEvtRec_brEvtKPS,   "GenieEvtRec.EvtKPS/i"    );
+      fFlatGenieTree->Branch("GenieEvtRec.SctType",  &fGenieEvtRec_brSctType,  "GenieEvtRec.SctType/I"    );
+      fFlatGenieTree->Branch("GenieEvtRec.IntType",  &fGenieEvtRec_brIntType,  "GenieEvtRec.IntType/I"    );
       fFlatGenieTree->Branch("GenieEvtRec.EvtWght",  &fGenieEvtRec_brEvtWght,  "GenieEvtRec.EvtWght/D"   );
       fFlatGenieTree->Branch("GenieEvtRec.EvtProb",  &fGenieEvtRec_brEvtProb,  "GenieEvtRec.EvtProb/D"   );
       fFlatGenieTree->Branch("GenieEvtRec.EvtVtx",    fGenieEvtRec_brEvtVtx,   "GenieEvtRec.EvtVtx[4]/D" );
@@ -1564,6 +1568,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 	  fGenieEvtRec_brEvtXSec  = genie_rec->XSec() * (1e+38/genie::units::cm2);
 	  fGenieEvtRec_brEvtDXSec = genie_rec->DiffXSec() * (1e+38/genie::units::cm2);
 	  fGenieEvtRec_brEvtKPS   = genie_rec->DiffXSecVars();
+	  fGenieEvtRec_brSctType  = genie_rec->Summary()->ProcInfo().ScatteringTypeId();
+	  fGenieEvtRec_brIntType  = genie_rec->Summary()->ProcInfo().InteractionTypeId();
 	  fGenieEvtRec_brEvtWght  = genie_rec->Weight();
 	  fGenieEvtRec_brEvtProb  = genie_rec->Probability();
 	  fGenieEvtRec_brEvtVtx[0] = genie_rec->Vertex()->X();
@@ -1730,6 +1736,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   std::vector<caf::SRCRTTrack> srcrttracks;
   std::vector<caf::SRCRTSpacePoint> srcrtspacepoints;
   std::vector<caf::SRSBNDCRTTrack> srsbndcrttracks;
+  caf::SRSBNDCRTVeto srsbndcrtveto;
   caf::SRSBNDFrameShiftInfo srsbndframeshiftinfo;
   caf::SRSBNDTimingInfo srsbndtiminginfo;
 
@@ -1798,6 +1805,24 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         for (unsigned i = 0; i < sbndcrttracks.size(); i++) {
           srsbndcrttracks.emplace_back();
           FillSBNDCRTTrack(sbndcrttracks[i], srsbndcrttracks.back());
+        }
+      }
+     
+      // Fill CRT Veto 
+      art::Handle<std::vector<sbnd::crt::CRTVeto>> sbndcrtveto_handle;
+      GetByLabelStrict(evt, fParams.SBNDCRTVetoLabel(), sbndcrtveto_handle);
+      // fill into event
+      if (sbndcrtveto_handle.isValid()) {
+        const std::vector<sbnd::crt::CRTVeto> &sbndcrtveto_vec = *sbndcrtveto_handle;
+        // Only one valid veto per event
+        if (sbndcrtveto_vec.size() == 1) {
+          // And associated SpacePoint objects
+          art::FindManyP<sbnd::crt::CRTSpacePoint> spAssoc(sbndcrtveto_handle, evt, fParams.SBNDCRTVetoLabel());
+          if (spAssoc.isValid()) {
+            // There is one vector of SpacePoints per Veto --> can be empty if no veto condition was satisfied     
+            const std::vector<art::Ptr<sbnd::crt::CRTSpacePoint>>& veto_sp_v(spAssoc.at(0)); 
+            FillSBNDCRTVeto(sbndcrtveto_vec[0], veto_sp_v, srsbndcrtveto);
+          }
         }
       }
     
@@ -2558,6 +2583,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.ncrt_spacepoints = srcrtspacepoints.size();
   rec.sbnd_crt_tracks  = srsbndcrttracks;
   rec.nsbnd_crt_tracks = srsbndcrttracks.size();
+  rec.sbnd_crt_veto    = srsbndcrtveto;
   rec.opflashes        = srflashes;
   rec.nopflashes       = srflashes.size();
   rec.sbnd_frames      = srsbndframeshiftinfo;
