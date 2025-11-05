@@ -207,6 +207,8 @@ class CAFMaker : public art::EDProducer {
 
   std::string fSourceFile;
   std::uint32_t fSourceFileHash;
+
+  bool fNewInputFile;
  
   bool fOverrideRealData;
   bool fFirstInSubRun;
@@ -224,6 +226,7 @@ class CAFMaker : public art::EDProducer {
   double fTotalEvents;
   double fBlindEvents;
   double fPrescaleEvents;
+  double fTotalGenEvents;
   std::vector<caf::SRBNBInfo> fBNBInfo; ///< Store detailed BNB info to save into the first StandardRecord of the output file
   std::vector<caf::SRNuMIInfo> fNuMIInfo; ///< Store detailed NuMI info to save into the first StandardRecord of the output file
   std::map<unsigned int,sbn::BNBSpillInfo> fBNBInfoEventMap; ///< Store detailed BNB info to save for the particular spills of events
@@ -785,6 +788,7 @@ void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
   // so should be less than or equal to 32-bit
   fSourceFileHash = static_cast<std::uint32_t>(fSourceFileHashFull);
 
+  fNewInputFile = true;
 }
 
 //......................................................................
@@ -860,6 +864,18 @@ void CAFMaker::beginRun(art::Run& run) {
     fDet = override;
   }
 
+  if (std::exchange(fNewInputFile, false)){
+    for (const art::ProcessConfiguration &process: run.processHistory()) {
+      std::optional<fhicl::ParameterSet> gen_config = run.getProcessParameterSet(process.processName());
+      if (gen_config && gen_config->has_key("source") && gen_config->has_key("source.maxEvents") && gen_config->has_key("source.module_type") ) {
+        int max_events = gen_config->get<int>("source.maxEvents");
+        std::string module_type = gen_config->get<std::string>("source.module_type");
+        if (module_type == "EmptyEvent") {
+          fTotalGenEvents += max_events;
+        }
+      }
+    }
+  }
 
   if(fParams.SystWeightLabels().empty()) return; // no need for globalTree
 
@@ -1216,6 +1232,7 @@ void CAFMaker::InitializeOutfiles()
   fTotalEvents = 0;
   fBlindEvents = 0;
   fPrescaleEvents = 0;
+  fTotalGenEvents = 0;
   fIndexInFile = SRHeader::NoSourceIndex;
   fFirstInSubRun = false;
   fFirstBlindInSubRun = false;
@@ -2796,11 +2813,11 @@ void CAFMaker::endSubRun(art::SubRun& sr) {
 //......................................................................
   void CAFMaker::AddHistogramsToFile(TFile* outfile,bool isBlindPOT = false, bool isPrescalePOT = false) const
 {
-
   outfile->cd();
 
   TH1* hPOT = new TH1D("TotalPOT", "TotalPOT;; POT", 1, 0, 1);
   TH1* hEvents = new TH1D("TotalEvents", "TotalEvents;; Events", 1, 0, 1);
+  TH1* hGen = new TH1D("TotalGenEvents", "TotalGenEvents;; Events", 1, 0, 1);
 
   if (isBlindPOT) {
     hPOT->Fill(0.5,fTotalPOT*(1-(1/fParams.PrescaleFactor()))*GetBlindPOTScale());
@@ -2812,13 +2829,15 @@ void CAFMaker::endSubRun(art::SubRun& sr) {
     hPOT->Fill(0.5,fTotalPOT);
   }
   hEvents->Fill(0.5,fTotalEvents);
+  hGen->Fill(0.5,fTotalGenEvents);
 
   hPOT->Write();
   hEvents->Write();
+  hGen->Write();
 
   if (fParams.CreateBlindedCAF()) {
     TH1*hBlindEvents = new TH1D("BlindEvents", "BlindEvents;; Events", 1, 0, 1);
-    TH1* hPrescaleEvents = new TH1D("PrescaleEvents", "PrescaleEvents;; Events", 1, 0, 1);
+    TH1*hPrescaleEvents = new TH1D("PrescaleEvents", "PrescaleEvents;; Events", 1, 0, 1);
     hBlindEvents->Fill(0.5, fBlindEvents);
     hPrescaleEvents->Fill(0.5, fPrescaleEvents);
     hBlindEvents->Write();
@@ -2828,29 +2847,26 @@ void CAFMaker::endSubRun(art::SubRun& sr) {
 
 //......................................................................
 void CAFMaker::endJob() {
-  if (fTotalEvents == 0) {
 
-    std::cerr << "No events processed in this file. Aborting rather than "
-                 "produce an empty CAF."
+  // Only produce empty recTree/GenieTree since it relies on non-zero art events.
+  // Still want to keep POT histograms.
+  if (fTotalEvents == 0) {
+    std::cerr << "No events processed in this file. Producing empty recTree/GenieTree."
               << std::endl;
-    // n.b. changed abort() to return so that eny exceptions thrown during startup
-    // still get printed to the user by art
-    return;
   }
 
-
-
   if(fFile){
-
     AddHistogramsToFile(fFile);
-    fRecTree->SetDirectory(fFile);
-    if(fGenieTree){
-      fGenieTree->BuildIndex("SourceFileHash", "GENIEEntry");
-      fGenieTree->SetDirectory(fFile);
-    }
-    if (fParams.CreateBlindedCAF()) {
-      fRecTreeb->SetDirectory(fFileb);
-      fRecTreep->SetDirectory(fFilep);
+    if (fTotalEvents > 0) {
+      if(fGenieTree){
+        fGenieTree->BuildIndex("SourceFileHash", "GENIEEntry");
+        fGenieTree->SetDirectory(fFile);
+      }
+      fRecTree->SetDirectory(fFile);
+      if (fParams.CreateBlindedCAF()) {
+        fRecTreeb->SetDirectory(fFileb);
+        fRecTreep->SetDirectory(fFilep);
+      }
     }
     fFile->cd();
     fFile->Write();
@@ -2866,17 +2882,19 @@ void CAFMaker::endJob() {
   }
 
   if(fFlatFile){
-
     AddHistogramsToFile(fFlatFile);
-    fFlatTree->SetDirectory(fFlatFile);
-    if(fFlatGenieTree){
-      fFlatGenieTree->BuildIndex("SourceFileHash", "GENIEEntry");
-      fFlatGenieTree->SetDirectory(fFlatFile);
+    if (fTotalEvents > 0) {
+      if(fFlatGenieTree){
+        fFlatGenieTree->BuildIndex("SourceFileHash", "GENIEEntry");
+        fFlatGenieTree->SetDirectory(fFlatFile);
+      }
+      fFlatTree->SetDirectory(fFlatFile);
+      if (fParams.CreateBlindedCAF() && fFlatFileb) {
+        fFlatTreeb->SetDirectory(fFlatFileb);
+        fFlatTreep->SetDirectory(fFlatFilep);
+      }
     }
-    if (fParams.CreateBlindedCAF() && fFlatFileb) {
-      fFlatTreeb->SetDirectory(fFlatFileb);
-      fFlatTreep->SetDirectory(fFlatFilep);
-    }
+
     fFlatFile->cd();
     fFlatFile->Write();
     if (fParams.CreateBlindedCAF()) {
