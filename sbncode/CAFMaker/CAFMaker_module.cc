@@ -118,10 +118,10 @@
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
 #include "sbnobj/Common/Reco/OpT0FinderResult.h"
+#include "sbnobj/SBND/CRT/CRTVeto.hh"
 #include "sbnobj/Common/Reco/CorrectedOpFlashTiming.h"
 #include "sbnobj/SBND/Timing/TimingInfo.hh"
 #include "sbnobj/SBND/Timing/FrameShiftInfo.hh"
-
 
 // GENIE
 #include "Framework/EventGen/EventRecord.h"
@@ -1713,6 +1713,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   std::vector<caf::SRCRTTrack> srcrttracks;
   std::vector<caf::SRCRTSpacePoint> srcrtspacepoints;
   std::vector<caf::SRSBNDCRTTrack> srsbndcrttracks;
+  caf::SRSBNDCRTVeto srsbndcrtveto;
   caf::SRSBNDFrameShiftInfo srsbndframeshiftinfo;
   caf::SRSBNDTimingInfo srsbndtiminginfo;
 
@@ -1781,6 +1782,24 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         for (unsigned i = 0; i < sbndcrttracks.size(); i++) {
           srsbndcrttracks.emplace_back();
           FillSBNDCRTTrack(sbndcrttracks[i], srsbndcrttracks.back());
+        }
+      }
+     
+      // Fill CRT Veto 
+      art::Handle<std::vector<sbnd::crt::CRTVeto>> sbndcrtveto_handle;
+      GetByLabelStrict(evt, fParams.SBNDCRTVetoLabel(), sbndcrtveto_handle);
+      // fill into event
+      if (sbndcrtveto_handle.isValid()) {
+        const std::vector<sbnd::crt::CRTVeto> &sbndcrtveto_vec = *sbndcrtveto_handle;
+        // Only one valid veto per event
+        if (sbndcrtveto_vec.size() == 1) {
+          // And associated SpacePoint objects
+          art::FindManyP<sbnd::crt::CRTSpacePoint> spAssoc(sbndcrtveto_handle, evt, fParams.SBNDCRTVetoLabel());
+          if (spAssoc.isValid()) {
+            // There is one vector of SpacePoints per Veto --> can be empty if no veto condition was satisfied     
+            const std::vector<art::Ptr<sbnd::crt::CRTSpacePoint>>& veto_sp_v(spAssoc.at(0)); 
+            FillSBNDCRTVeto(sbndcrtveto_vec[0], veto_sp_v, srsbndcrtveto);
+          }
         }
       }
     
@@ -2541,6 +2560,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.ncrt_spacepoints = srcrtspacepoints.size();
   rec.sbnd_crt_tracks  = srsbndcrttracks;
   rec.nsbnd_crt_tracks = srsbndcrttracks.size();
+  rec.sbnd_crt_veto    = srsbndcrtveto;
   rec.opflashes        = srflashes;
   rec.nopflashes       = srflashes.size();
   rec.sbnd_frames      = srsbndframeshiftinfo;
