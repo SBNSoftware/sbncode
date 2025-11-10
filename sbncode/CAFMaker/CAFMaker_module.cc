@@ -140,6 +140,7 @@
 #include "sbnanaobj/StandardRecord/Flat/FlatRecord.h"
 #include "lardataobj/RawData/ExternalTrigger.h"
 #include "lardataobj/RawData/TriggerData.h"
+#include "lardataobj/Simulation/AuxDetSimChannel.h"
 
 // // CAFMaker
 #include "sbncode/CAFMaker/AssociationUtil.h"
@@ -205,6 +206,8 @@ class CAFMaker : public art::EDProducer {
 
   std::string fSourceFile;
   std::uint32_t fSourceFileHash;
+
+  bool fNewInputFile;
  
   bool fOverrideRealData;
   bool fFirstInSubRun;
@@ -222,6 +225,7 @@ class CAFMaker : public art::EDProducer {
   double fTotalEvents;
   double fBlindEvents;
   double fPrescaleEvents;
+  double fTotalGenEvents;
   std::vector<caf::SRBNBInfo> fBNBInfo; ///< Store detailed BNB info to save into the first StandardRecord of the output file
   std::vector<caf::SRNuMIInfo> fNuMIInfo; ///< Store detailed NuMI info to save into the first StandardRecord of the output file
   std::map<unsigned int,sbn::BNBSpillInfo> fBNBInfoEventMap; ///< Store detailed BNB info to save for the particular spills of events
@@ -287,6 +291,11 @@ class CAFMaker : public art::EDProducer {
   std::vector<std::vector<geo::BoxBoundedGeo>> fTPCVolumes;
   std::vector<geo::BoxBoundedGeo> fActiveVolumes;
 
+  // CRT geometry info
+  //
+  // ICARUS
+  std::map<std::pair<int, int>, int> fFEBChannel2AuxDetID;
+
   // random number generator for fake reco
   CLHEP::HepRandomEngine& fFakeRecoRandomEngine;
 
@@ -315,6 +324,7 @@ class CAFMaker : public art::EDProducer {
   double GetBlindPOTScale() const;
 
   void InitVolumes(); ///< Initialize volumes from Gemotry service
+  void InitCRTMapping(); ///< Initialize CRT mapping
 
   void FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_time);
   void FixCRTReferenceTimes(StandardRecord &rec, double CRTT0_reference_time, double CRTT1_reference_time);
@@ -422,6 +432,9 @@ class CAFMaker : public art::EDProducer {
 
   // setup volume definitions
   InitVolumes();
+
+  // setup CRT mapping
+  InitCRTMapping();
 
   fSaveGENIEEventRecord = fParams.SaveGENIEEventRecord();
 
@@ -596,6 +609,36 @@ void CAFMaker::FixCRTReferenceTimes(StandardRecord &rec, double CRTT0_reference_
 
 }
 
+void CAFMaker::InitCRTMapping() {
+
+  // ICARUS
+  cet::search_path searchPath("FW_SEARCH_PATH");
+  std::string fullFileName;
+  searchPath.find_file("feb_map.txt",fullFileName);
+  std::ifstream fin;
+  fin.open(fullFileName, std::ios::in);
+
+  if (fin.good()) {
+    std::string line;
+
+    while(std::getline(fin,line)) {
+      std::vector<std::string> row;
+      std::string word;
+
+      std::stringstream s(line);
+      while (std::getline(s, word, ',')) {
+        row.push_back(word);
+      }
+      int auxDetID = std::stoi(row[0]); // auxDetID
+      int mac5 = std::stoi(row[1]); // FEB ID
+      int chan = std::stoi(row[2]); // FEB channel
+      fFEBChannel2AuxDetID[std::make_pair(mac5, chan)] = auxDetID;
+    }
+
+    fin.close();
+  }
+}
+
 void CAFMaker::InitVolumes() {
   const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
 
@@ -742,6 +785,7 @@ void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
   // so should be less than or equal to 32-bit
   fSourceFileHash = static_cast<std::uint32_t>(fSourceFileHashFull);
 
+  fNewInputFile = true;
 }
 
 //......................................................................
@@ -817,6 +861,18 @@ void CAFMaker::beginRun(art::Run& run) {
     fDet = override;
   }
 
+  if (std::exchange(fNewInputFile, false)){
+    for (const art::ProcessConfiguration &process: run.processHistory()) {
+      std::optional<fhicl::ParameterSet> gen_config = run.getProcessParameterSet(process.processName());
+      if (gen_config && gen_config->has_key("source") && gen_config->has_key("source.maxEvents") && gen_config->has_key("source.module_type") ) {
+        int max_events = gen_config->get<int>("source.maxEvents");
+        std::string module_type = gen_config->get<std::string>("source.module_type");
+        if (module_type == "EmptyEvent") {
+          fTotalGenEvents += max_events;
+        }
+      }
+    }
+  }
 
   if(fParams.SystWeightLabels().empty()) return; // no need for globalTree
 
@@ -1171,6 +1227,7 @@ void CAFMaker::InitializeOutfiles()
   fTotalEvents = 0;
   fBlindEvents = 0;
   fPrescaleEvents = 0;
+  fTotalGenEvents = 0;
   fIndexInFile = SRHeader::NoSourceIndex;
   fFirstInSubRun = false;
   fFirstBlindInSubRun = false;
@@ -1649,16 +1706,36 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   caf::SRSBNDFrameShiftInfo srsbndframeshiftinfo;
   caf::SRSBNDTimingInfo srsbndtiminginfo;
 
+  // Mapping of (feb, channel) to truth information (AuxDetSimChannel) -- filled for ICARUS
+  std::map<std::pair<int, int>, sim::AuxDetSimChannel> crtsimchanmap;
+
   if(fDet == kICARUS)
     {
       art::Handle<std::vector<sbn::crt::CRTHit>> crthits_handle;
       GetByLabelStrict(evt, fParams.CRTHitLabel(), crthits_handle);
+
+      art::Handle<std::vector<sim::AuxDetSimChannel>> auxdetsimchan_handle;
+      GetByLabelStrict(evt, fParams.CRTSimChanLabel(), auxdetsimchan_handle);
+
       // fill into event
       if (crthits_handle.isValid()) {
         const std::vector<sbn::crt::CRTHit> &crthits = *crthits_handle;
+
+        std::vector<sim::AuxDetSimChannel> empty;
+        const std::vector<sim::AuxDetSimChannel> &crtsimchanvec = (auxdetsimchan_handle.isValid()) ? *auxdetsimchan_handle : empty;
+        // Turn the AuxDetSimChannel's into a map that can be looked up from a CRT Hit
+        for (const sim::AuxDetSimChannel &crtsimchan: crtsimchanvec) {
+          for (auto const &map_pair: fFEBChannel2AuxDetID) {
+            if (map_pair.second == (int)crtsimchan.AuxDetID()) {
+              crtsimchanmap[map_pair.first] = crtsimchan;
+              break;
+            }
+          }
+        }
+
         for (unsigned i = 0; i < crthits.size(); i++) {
           srcrthits.emplace_back();
-          FillCRTHit(crthits[i], fParams.CRTUseTS0(), CRT_T0_reference_time, CRT_T1_reference_time, srcrthits.back());
+          FillCRTHit(crthits[i], fParams.CRTUseTS0(), CRT_T0_reference_time, CRT_T1_reference_time, crtsimchanmap, srcrthits.back());
         }
       }
 
@@ -2318,7 +2395,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
             crthittagginginfo = fmCRTHitMatchInfo.at(iPart);
           }          
           
-          FillTrackCRTHit(fmCRTHitMatch.at(iPart), crthitmatch, crthittagginginfo, fParams.CRTUseTS0(), CRT_T0_reference_time, CRT_T1_reference_time, trk);
+          FillTrackCRTHit(fmCRTHitMatch.at(iPart), crthitmatch, crthittagginginfo, fParams.CRTUseTS0(), CRT_T0_reference_time, CRT_T1_reference_time, crtsimchanmap, trk);
         }
         // NOTE: SEE TODO AT fmCRTTrackMatch
         if (fmCRTTrackMatch.isValid() && fDet == kICARUS) {
@@ -2644,11 +2721,11 @@ void CAFMaker::endSubRun(art::SubRun& sr) {
 //......................................................................
   void CAFMaker::AddHistogramsToFile(TFile* outfile,bool isBlindPOT = false, bool isPrescalePOT = false) const
 {
-
   outfile->cd();
 
   TH1* hPOT = new TH1D("TotalPOT", "TotalPOT;; POT", 1, 0, 1);
   TH1* hEvents = new TH1D("TotalEvents", "TotalEvents;; Events", 1, 0, 1);
+  TH1* hGen = new TH1D("TotalGenEvents", "TotalGenEvents;; Events", 1, 0, 1);
 
   if (isBlindPOT) {
     hPOT->Fill(0.5,fTotalPOT*(1-(1/fParams.PrescaleFactor()))*GetBlindPOTScale());
@@ -2660,13 +2737,15 @@ void CAFMaker::endSubRun(art::SubRun& sr) {
     hPOT->Fill(0.5,fTotalPOT);
   }
   hEvents->Fill(0.5,fTotalEvents);
+  hGen->Fill(0.5,fTotalGenEvents);
 
   hPOT->Write();
   hEvents->Write();
+  hGen->Write();
 
   if (fParams.CreateBlindedCAF()) {
     TH1*hBlindEvents = new TH1D("BlindEvents", "BlindEvents;; Events", 1, 0, 1);
-    TH1* hPrescaleEvents = new TH1D("PrescaleEvents", "PrescaleEvents;; Events", 1, 0, 1);
+    TH1*hPrescaleEvents = new TH1D("PrescaleEvents", "PrescaleEvents;; Events", 1, 0, 1);
     hBlindEvents->Fill(0.5, fBlindEvents);
     hPrescaleEvents->Fill(0.5, fPrescaleEvents);
     hBlindEvents->Write();
@@ -2676,29 +2755,26 @@ void CAFMaker::endSubRun(art::SubRun& sr) {
 
 //......................................................................
 void CAFMaker::endJob() {
-  if (fTotalEvents == 0) {
 
-    std::cerr << "No events processed in this file. Aborting rather than "
-                 "produce an empty CAF."
+  // Only produce empty recTree/GenieTree since it relies on non-zero art events.
+  // Still want to keep POT histograms.
+  if (fTotalEvents == 0) {
+    std::cerr << "No events processed in this file. Producing empty recTree/GenieTree."
               << std::endl;
-    // n.b. changed abort() to return so that eny exceptions thrown during startup
-    // still get printed to the user by art
-    return;
   }
 
-
-
   if(fFile){
-
     AddHistogramsToFile(fFile);
-    fRecTree->SetDirectory(fFile);
-    if(fGenieTree){
-      fGenieTree->BuildIndex("SourceFileHash", "GENIEEntry");
-      fGenieTree->SetDirectory(fFile);
-    }
-    if (fParams.CreateBlindedCAF()) {
-      fRecTreeb->SetDirectory(fFileb);
-      fRecTreep->SetDirectory(fFilep);
+    if (fTotalEvents > 0) {
+      if(fGenieTree){
+        fGenieTree->BuildIndex("SourceFileHash", "GENIEEntry");
+        fGenieTree->SetDirectory(fFile);
+      }
+      fRecTree->SetDirectory(fFile);
+      if (fParams.CreateBlindedCAF()) {
+        fRecTreeb->SetDirectory(fFileb);
+        fRecTreep->SetDirectory(fFilep);
+      }
     }
     fFile->cd();
     fFile->Write();
@@ -2714,17 +2790,19 @@ void CAFMaker::endJob() {
   }
 
   if(fFlatFile){
-
     AddHistogramsToFile(fFlatFile);
-    fFlatTree->SetDirectory(fFlatFile);
-    if(fFlatGenieTree){
-      fFlatGenieTree->BuildIndex("SourceFileHash", "GENIEEntry");
-      fFlatGenieTree->SetDirectory(fFlatFile);
+    if (fTotalEvents > 0) {
+      if(fFlatGenieTree){
+        fFlatGenieTree->BuildIndex("SourceFileHash", "GENIEEntry");
+        fFlatGenieTree->SetDirectory(fFlatFile);
+      }
+      fFlatTree->SetDirectory(fFlatFile);
+      if (fParams.CreateBlindedCAF() && fFlatFileb) {
+        fFlatTreeb->SetDirectory(fFlatFileb);
+        fFlatTreep->SetDirectory(fFlatFilep);
+      }
     }
-    if (fParams.CreateBlindedCAF() && fFlatFileb) {
-      fFlatTreeb->SetDirectory(fFlatFileb);
-      fFlatTreep->SetDirectory(fFlatFilep);
-    }
+
     fFlatFile->cd();
     fFlatFile->Write();
     if (fParams.CreateBlindedCAF()) {
