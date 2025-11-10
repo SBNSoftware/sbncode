@@ -284,6 +284,7 @@ class CAFMaker : public art::EDProducer {
   int          fGenieEvtRec_brStdHepLd    [250] = {0}; ////< Last  daughter
   int          fGenieEvtRec_brStdHepFm    [250] = {0}; ////< First mother
   int          fGenieEvtRec_brStdHepLm    [250] = {0}; ////< Last  mother
+  //std::string fBlipTag;
 
   flat::Flat<caf::StandardRecord>* fFlatRecord = 0;
   flat::Flat<caf::StandardRecord>* fFlatRecordb = 0;
@@ -1919,10 +1920,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   //Fill blips. art::handle for blips and then call fill blips for each one. Make a vector to hold all of them. I handle for loop in Fill blip
   art::Handle<std::vector<blip::Blip>> blipHandle;
-  std::vector<caf::SRBlips>> srblips;
-  if(evt.GetByLabel( fBlipTag, blipHandle)) //fill SR blips
+  std::vector<caf::SRBlip> srblips;
+  if(evt.getByLabel( fParams.fBlipTag(), blipHandle)) //fill SR blips
   {
-    FillBlip(   (*LarBlips) , srblips);
+    FillBlip( (*blipHandle), srblips);
+    //for(int i=0; i<int(*(blipHandle)->size()); i++)
+    //  {
+    //   auto LarBlips = (*(blipHandle))[i];
+    //	FillBlip(   (LarBlips) , srblips);
+    //  }
   }
   // collect the TPC slices
   std::vector<art::Ptr<recob::Slice>> slices;
