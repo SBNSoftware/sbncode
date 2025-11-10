@@ -12,10 +12,7 @@ namespace caf
     triggerInfo.beam_gate_time_abs = addltrig_info.beamGateTimestamp;
     triggerInfo.beam_gate_det_time = trig.BeamGateTime() + time_offset;
     triggerInfo.global_trigger_det_time = trig.TriggerTime() + time_offset;
-	std::cout << "Gen triggerInfo.global_trigger_det_time: " << triggerInfo.global_trigger_det_time << std::endl;
-	std::cout << "Gen triggerInfo.beam_gate_det_time: " << triggerInfo.beam_gate_det_time << std::endl;
     double diff_ts = triggerInfo.global_trigger_det_time - triggerInfo.beam_gate_det_time;
-    std::cout << "diff_ts: " << diff_ts << std::endl;
     triggerInfo.trigger_within_gate = diff_ts;
     triggerInfo.prev_global_trigger_time = addltrig_info.previousTriggerTimestamp;
     triggerInfo.source_type = sbn::bits::value(addltrig_info.sourceType);
@@ -55,10 +52,7 @@ namespace caf
       
     triggerInfo.global_trigger_time = timingInfo.hltEtrig;
     triggerInfo.beam_gate_time_abs = timingInfo.hltBeamGate;
-    std::cout << "triggerInfo.global_trigger_det_time: " << triggerInfo.global_trigger_det_time << std::endl;
-	std::cout << "triggerInfo.beam_gate_det_time: " << triggerInfo.beam_gate_det_time << std::endl;
     double diff_ts = triggerInfo.global_trigger_det_time - triggerInfo.beam_gate_det_time;
-	std::cout << "diff_ts: " << diff_ts << std::endl;
     triggerInfo.trigger_within_gate = diff_ts;
   }
 
