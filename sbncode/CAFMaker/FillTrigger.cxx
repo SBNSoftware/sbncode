@@ -1,4 +1,4 @@
-
+#include<iostream>
 #include "sbncode/CAFMaker/FillTrigger.h"
 
 namespace caf
@@ -12,7 +12,10 @@ namespace caf
     triggerInfo.beam_gate_time_abs = addltrig_info.beamGateTimestamp;
     triggerInfo.beam_gate_det_time = trig.BeamGateTime() + time_offset;
     triggerInfo.global_trigger_det_time = trig.TriggerTime() + time_offset;
+	std::cout << "Gen triggerInfo.global_trigger_det_time: " << triggerInfo.global_trigger_det_time << std::endl;
+	std::cout << "Gen triggerInfo.beam_gate_det_time: " << triggerInfo.beam_gate_det_time << std::endl;
     double diff_ts = triggerInfo.global_trigger_det_time - triggerInfo.beam_gate_det_time;
+    std::cout << "diff_ts: " << diff_ts << std::endl;
     triggerInfo.trigger_within_gate = diff_ts;
     triggerInfo.prev_global_trigger_time = addltrig_info.previousTriggerTimestamp;
     triggerInfo.source_type = sbn::bits::value(addltrig_info.sourceType);
@@ -22,6 +25,7 @@ namespace caf
     triggerInfo.trigger_count = addltrig_info.triggerCount;
     triggerInfo.gate_count = addltrig_info.gateCount;
     triggerInfo.gate_delta = addltrig_info.gateCountFromPreviousTrigger;
+
   }
 
   void FillTriggerMC(double absolute_time, caf::SRTrigger& triggerInfo) 
@@ -45,6 +49,30 @@ namespace caf
       triggerInfo.trigger_logic_bits   = cryoInfo.triggerLogicBits;
       triggerInfo.gate_to_trigger_time = static_cast<float>(cryoInfo.beamToTrigger) / 1000.0f; // [us]
     }  
+  }
+
+  void FillTriggerSBND(caf::SRSBNDTimingInfo& timingInfo, caf::SRTrigger& triggerInfo){
+      
+    triggerInfo.global_trigger_time = timingInfo.hltEtrig;
+    triggerInfo.beam_gate_time_abs = timingInfo.hltBeamGate;
+    std::cout << "triggerInfo.global_trigger_det_time: " << triggerInfo.global_trigger_det_time << std::endl;
+	std::cout << "triggerInfo.beam_gate_det_time: " << triggerInfo.beam_gate_det_time << std::endl;
+    double diff_ts = triggerInfo.global_trigger_det_time - triggerInfo.beam_gate_det_time;
+	std::cout << "diff_ts: " << diff_ts << std::endl;
+    triggerInfo.trigger_within_gate = diff_ts;
+  }
+
+  void FillTriggerEmulation(art::Handle<std::vector<int>> const& monpulsesFlat,
+                             art::Handle<std::vector<int>> const& monpulseSizes,
+                             art::Handle<int> const& numPairs,
+                             art::Handle<bool> const& passedTrig,
+                             caf::SRTrigger& triggerInfo) {
+
+    triggerInfo.monpulses_flat = *monpulsesFlat;
+    triggerInfo.monpulse_sizes = *monpulseSizes;
+    triggerInfo.num_pairs_over_threshold = *numPairs;
+    triggerInfo.passed_trigger = *passedTrig;
+
   }
 
 }
