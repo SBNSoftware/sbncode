@@ -327,8 +327,8 @@ class CAFMaker : public art::EDProducer {
   void FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_time);
   void FixCRTReferenceTimes(StandardRecord &rec, double CRTT0_reference_time, double CRTT1_reference_time);
 
-  void SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame) const;
-  void SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame) const;
+  //void SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame) const;
+  //void SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame) const;
 
   /// Equivalent of FindManyP except a return that is !isValid() prints a
   /// messsage and aborts if StrictMode is true.
@@ -516,43 +516,43 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
   }
 }
 
-void CAFMaker::SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame) const {
-
-  //CRT Space Point
-  for (SRCRTSpacePoint &sp: rec.crt_spacepoints){
-    sp.time += SBNDFrame; //ns
-  }
-  
-  //CRT Track
-  for (SRSBNDCRTTrack &trk: rec.sbnd_crt_tracks){
-    trk.time += SBNDFrame; //ns
-  }
-
-  //TODO: CRT Space Point and Track Match
-  for (SRSlice &slc: rec.slc){
-    for (SRPFP &pfp: slc.reco.pfp){
-      if(!std::isnan(pfp.trk.crtspacepoint.score)) pfp.trk.crtspacepoint.spacepoint.time += SBNDFrame;
-
-      if(!std::isnan(pfp.trk.crtsbndtrack.score)) pfp.trk.crtsbndtrack.track.time += SBNDFrame;
-    }
-  }
-}
-
-void CAFMaker::SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame) const {
-
-  double SBNDFrame_us = SBNDFrame / 1000.0; //convert ns to us
-
-  //Op Flash
-  for (SROpFlash &opf: rec.opflashes) {
-    opf.time += SBNDFrame_us;
-    opf.firsttime += SBNDFrame_us;
-  }
-  
-  //OpT0 match to slice
-  for (SRSlice &s: rec.slc) {
-    s.opt0.time += SBNDFrame_us;
-  }
-}
+//void CAFMaker::SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame) const {
+//
+//  //CRT Space Point
+//  for (SRCRTSpacePoint &sp: rec.crt_spacepoints){
+//    sp.time += SBNDFrame; //ns
+//  }
+//  
+//  //CRT Track
+//  for (SRSBNDCRTTrack &trk: rec.sbnd_crt_tracks){
+//    trk.time += SBNDFrame; //ns
+//  }
+//
+//  //TODO: CRT Space Point and Track Match
+//  for (SRSlice &slc: rec.slc){
+//    for (SRPFP &pfp: slc.reco.pfp){
+//      if(!std::isnan(pfp.trk.crtspacepoint.score)) pfp.trk.crtspacepoint.spacepoint.time += SBNDFrame;
+//
+//      if(!std::isnan(pfp.trk.crtsbndtrack.score)) pfp.trk.crtsbndtrack.track.time += SBNDFrame;
+//    }
+//  }
+//}
+//
+//void CAFMaker::SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame) const {
+//
+//  double SBNDFrame_us = SBNDFrame / 1000.0; //convert ns to us
+//
+//  //Op Flash
+//  for (SROpFlash &opf: rec.opflashes) {
+//    opf.time += SBNDFrame_us;
+//    opf.firsttime += SBNDFrame_us;
+//  }
+//  
+//  //OpT0 match to slice
+//  for (SRSlice &s: rec.slc) {
+//    s.opt0.time += SBNDFrame_us;
+//  }
+//}
 
 void CAFMaker::FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_time) {
   // Fix the flashes
@@ -2587,27 +2587,27 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   // TODO: TPC?
   
-  // SBND: Fix the Reference time in data depending on the stream
-  // For more information, see: 
-  // https://sbn-docdb.fnal.gov/cgi-bin/sso/RetrieveFile?docid=43090
+  //// SBND: Fix the Reference time in data depending on the stream
+  //// For more information, see: 
+  //// https://sbn-docdb.fnal.gov/cgi-bin/sso/RetrieveFile?docid=43090
 
-  if (isRealData && (fDet == kSBND) && fSubRunPOT > 0)
-  {
-    // Fill trigger info
-    FillTriggerSBND(srsbndtiminginfo, srtrigger);
+  //if (isRealData && (fDet == kSBND) && fSubRunPOT > 0)
+  //{
+  //  // Fill trigger info
+  //  FillTriggerSBND(srsbndtiminginfo, srtrigger);
 
-    // Shift timing reference frame
-    if (!std::isnan(rec.sbnd_frames.frameApplyAtCaf) && (rec.sbnd_frames.frameApplyAtCaf != 0.0)){
-      mf::LogInfo("CAFMaker") << "Setting Reference Timing for timing object in SBND \n"
-                              << "    Shift Apply At Caf Level = " << rec.sbnd_frames.frameApplyAtCaf << " ns\n";
-      
-      //shift reference frame for CRT objects: crt trk, crt sp, crt sp match, crt trk match
-      SBNDShiftCRTReference(rec, rec.sbnd_frames.frameApplyAtCaf);
+  //  // Shift timing reference frame
+  //  if (!std::isnan(rec.sbnd_frames.frameApplyAtCaf) && (rec.sbnd_frames.frameApplyAtCaf != 0.0)){
+  //    mf::LogInfo("CAFMaker") << "Setting Reference Timing for timing object in SBND \n"
+  //                            << "    Shift Apply At Caf Level = " << rec.sbnd_frames.frameApplyAtCaf << " ns\n";
+  //    
+  //    //shift reference frame for CRT objects: crt trk, crt sp, crt sp match, crt trk match
+  //    SBNDShiftCRTReference(rec, rec.sbnd_frames.frameApplyAtCaf);
 
-      //shift reference frame for PMT objects: opflash, opt0
-      SBNDShiftPMTReference(rec, rec.sbnd_frames.frameApplyAtCaf);
-    }
-  }
+  //    //shift reference frame for PMT objects: opflash, opt0
+  //    SBNDShiftPMTReference(rec, rec.sbnd_frames.frameApplyAtCaf);
+  //  }
+  //}
 
   // Get metadata information for header
   unsigned int run = evt.run();

@@ -192,13 +192,14 @@ namespace caf
                         caf::SRSBNDFrameShiftInfo &srsbndframe,
                         bool allowEmpty)
   {
-    srsbndframe.timingType = frame.TimingType();
-    srsbndframe.frameTdcCrtt1 = frame.FrameTdcCrtt1();
-    srsbndframe.frameTdcBes = frame.FrameTdcBes();
-    srsbndframe.frameTdcRwm = frame.FrameTdcRwm();
-    srsbndframe.frameHltCrtt1 = frame.FrameHltCrtt1();
-    srsbndframe.frameHltBeamGate = frame.FrameHltBeamGate();
-    srsbndframe.frameApplyAtCaf = frame.FrameApplyAtCaf();
+    std::cout << "FIX ME: FillSBNDFrameShiftInfo" << std::endl;
+    //srsbndframe.timingType = frame.TimingType();
+    //srsbndframe.frameTdcCrtt1 = frame.FrameTdcCrtt1();
+    //srsbndframe.frameTdcBes = frame.FrameTdcBes();
+    //srsbndframe.frameTdcRwm = frame.FrameTdcRwm();
+    //srsbndframe.frameHltCrtt1 = frame.FrameHltCrtt1();
+    //srsbndframe.frameHltBeamGate = frame.FrameHltBeamGate();
+    //srsbndframe.frameApplyAtCaf = frame.FrameApplyAtCaf();
   }
 
   void FillSBNDTimingInfo(const sbnd::timing::TimingInfo &timing,
