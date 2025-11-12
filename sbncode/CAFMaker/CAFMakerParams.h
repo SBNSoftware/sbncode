@@ -357,6 +357,12 @@ namespace caf
       "" // sbnd
     };
 
+    Atom<string> SBNDSoftwareTriggerLabel{
+      Name("SBNDSoftwareTriggerLabel"),
+      Comment("Label for software trigger producer"),
+      "" // sbnd
+    };
+
     Atom<string> CRTPMTLabel {
       Name("CRTPMTLabel"),
       Comment("Label for the CRTPMT Matched variables from the crtpmt data product"),
