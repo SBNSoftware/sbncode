@@ -1,6 +1,6 @@
 #include "sbndbnbdefaults.fcl"
 
-process_name: SBNDBNBEXTInfoGen
+process_name: SBNDBNBEXTInfoGenRerunning
 
 services:{
   
@@ -23,6 +23,7 @@ services:{
 
 
 source: {
+  inputCommands: [ "keep *_*_*_*", "drop *_*_*_SBNDBNBEXTInfoGen" ]
 }
 
 physics: {
