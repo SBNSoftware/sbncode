@@ -2,7 +2,7 @@
 #define CAF_FILLBLIP_H
 #include<iostream>
 #include "sbnanaobj/StandardRecord/SRBlip.h"
-#include "sbndcode/BlipRecoSBND/Utils/BlipUtils.h"
+#include "sbnobj/SBND/Blip/BlipDataTypes.h"
 
 #include <vector>
 
