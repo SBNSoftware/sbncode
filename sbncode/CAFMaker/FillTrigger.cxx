@@ -61,7 +61,7 @@ namespace caf
     triggerInfo.passed_trigger = *passedTrig;
   }
 
-  void FillSoftwareTrigger(const sbnd::trigger::pmtSoftwareTrigger& softInfo, caf::SRSoftwareTrigger& caf_softInfo){
+  void FillSoftwareTriggerSBND(const sbnd::trigger::pmtSoftwareTrigger& softInfo, caf::SRSoftwareTrigger& caf_softInfo){
     caf_softInfo.npmts = softInfo.nAboveThreshold;
     caf_softInfo.flash_peakpe = softInfo.peakPE;
     caf_softInfo.flash_peaktime = softInfo.peaktime + softInfo.trig_ts*1e-3; 

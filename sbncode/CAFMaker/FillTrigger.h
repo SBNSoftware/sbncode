@@ -29,7 +29,7 @@ namespace caf
                              art::Handle<int> const& numPairs,
                              art::Handle<bool> const& passedTrig,
                              caf::SRTrigger& triggerInfo);
-  void FillSoftwareTrigger(const sbnd::trigger::pmtSoftwareTrigger& softInfo, caf::SRSoftwareTrigger& caf_softInfo);
+  void FillSoftwareTriggerSBND(const sbnd::trigger::pmtSoftwareTrigger& softInfo, caf::SRSoftwareTrigger& caf_softInfo);
 }
 
 #endif

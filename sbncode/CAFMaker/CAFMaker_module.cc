@@ -1806,7 +1806,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       if (sbndsofttrig_handle.isValid()){
         const std::vector<sbnd::trigger::pmtSoftwareTrigger> &sbndsofttrig = *sbndsofttrig_handle;
         if (sbndsofttrig.size()==1){
-          FillSoftwareTrigger(sbndsofttrig.at(0), srsbndsofttrig);
+          FillSoftwareTriggerSBND(sbndsofttrig.at(0), srsbndsofttrig);
         }
       }
     }
