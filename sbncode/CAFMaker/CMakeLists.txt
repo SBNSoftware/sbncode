@@ -43,9 +43,6 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   sbncode_Metadata_MetadataSBN_service
                   larsim::Utils
 		  larevt::SpaceCharge
-                  systematicstools::interface
-                  systematicstools::interpreters
-                  systematicstools::utility
                   ${GENIE_LIB_LIST}
                   nugen::EventGeneratorBase_GENIE
                   )

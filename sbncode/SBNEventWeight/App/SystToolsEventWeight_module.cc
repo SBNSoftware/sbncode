@@ -17,6 +17,7 @@
 #include "art/Persistency/Common/PtrMaker.h"
 #include "canvas/Persistency/Common/Assns.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
+#include "nusimdata/SimulationBase/GTruth.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
@@ -28,6 +29,8 @@
 #include "systematicstools/interpreters/ParamHeaderHelper.hh"
 #include "systematicstools/utility/ParameterAndProviderConfigurationUtility.hh"
 #include "systematicstools/utility/exceptions.hh"
+#include "nusystematics/utility/response_helper.hh"
+#include "nugen/EventGeneratorBase/GENIE/GENIE2ART.h"
 
 #include "canvas/Persistency/Common/Assns.h"
 #include "art/Framework/Principal/Run.h"
@@ -53,9 +56,7 @@ private:
   bool fAllowMissingTruth;
   bool fDebugMode;
 
-  systtools::provider_list_t fSystProviders;
-  systtools::param_header_map_t fParamHeaderMap;
-  systtools::ParamHeaderHelper fParamHeaderHelper;
+  nusyst::response_helper fParamHeaderHelper;
 
 };
 
@@ -68,13 +69,7 @@ SystToolsEventWeight::SystToolsEventWeight(fhicl::ParameterSet const& p)
   fAllowMissingTruth = p.get<bool>("AllowMissingTruth");
   fDebugMode = p.get<bool>("DebugMode", false);
 
-  fhicl::ParameterSet syst_provider_config = p.get<fhicl::ParameterSet>("generated_systematic_provider_configuration");
-
-  MF_LOG_DEBUG("SystToolsEventWeight") << "Configuring ISystProvider";
-
-  fSystProviders = systtools::ConfigureISystProvidersFromParameterHeaders(syst_provider_config);
-  fParamHeaderMap = systtools::BuildParameterHeaders(fSystProviders);
-  fParamHeaderHelper = systtools::ParamHeaderHelper(fParamHeaderMap);
+  fParamHeaderHelper.LoadProvidersAndHeaders( p.get<fhicl::ParameterSet>("generated_systematic_provider_configuration") );
 
   MF_LOG_DEBUG("SystToolsEventWeight") << "ISystProvider is configuered";
 
@@ -93,8 +88,18 @@ void SystToolsEventWeight::produce(art::Event& e) {
   art::PtrMaker<sbn::evwgh::EventWeightMap> makeWeightPtr(e);
 
   std::vector<art::Ptr<simb::MCTruth> > mclist;
-  art::Handle<std::vector<simb::MCTruth>> mcTruthHandle;
-  if(!fGenieModuleLabel.empty()) mcTruthHandle = e.getHandle<std::vector<simb::MCTruth>>(fGenieModuleLabel);
+  art::Handle<std::vector<simb::MCTruth>> mcTruthHandle= e.getHandle<std::vector<simb::MCTruth>>(fGenieModuleLabel);
+  art::Handle<std::vector<simb::GTruth>> gTruthHandle = e.getHandle<std::vector<simb::GTruth>>(fGenieModuleLabel);
+
+  size_t NEventUnits = mcTruthHandle->size();
+  if (mcTruthHandle->size() != gTruthHandle->size()) {
+    NEventUnits = std::min(mcTruthHandle->size(), gTruthHandle->size());
+  }
+  std::vector<std::unique_ptr<genie::EventRecord>> gheps; // TODO If we alread have genie::EventRecord, use that instead of making it through RetrieveGHEP
+  for (size_t eu_it = 0; eu_it < NEventUnits; ++eu_it) {
+    gheps.emplace_back(evgb::RetrieveGHEP(mcTruthHandle->at(eu_it),
+                                          gTruthHandle->at(eu_it)));
+  }
 
   // Prooceed even with missing handle if we want to require the MCTruth to be
   // found, so that an exception will be thrown explaining the problem.
@@ -104,12 +109,13 @@ void SystToolsEventWeight::produce(art::Event& e) {
 
     if(fDebugMode){
       std::cout << "[SystToolsEventWeight::produce] mclist.size() = " << mclist.size() << "\n"
-                << "[SystToolsEventWeight::produce] fSystProviders.size() = " << fSystProviders.size() << std::endl;
+                << "[SystToolsEventWeight::produce] fParamHeaderHelper.GetSystProvider().size() = " << fParamHeaderHelper.GetSystProvider().size() << std::endl;
     }
 
-    for( auto &sp : fSystProviders ){
+    for( auto &sp : fParamHeaderHelper.GetSystProvider() ){
 
-      std::unique_ptr<systtools::EventResponse> syst_resp = sp->GetEventResponse(e);
+      std::unique_ptr<systtools::EventResponse> syst_resp = sp->GetEventResponses(gheps);
+
       if( !syst_resp ){
         throw cet::exception{ "SystToolsEventWeight" }
           << "Got nullptr systtools::EventResponse from provider "
@@ -198,7 +204,7 @@ void SystToolsEventWeight::produce(art::Event& e) {
 void SystToolsEventWeight::beginRun(art::Run& run) {
 
   auto p = std::make_unique<std::vector<sbn::evwgh::EventWeightParameterSet> >();
-  for( auto &sp : fSystProviders ) {
+  for( auto &sp : fParamHeaderHelper.GetSystProvider() ) {
     MF_LOG_INFO("SystToolsEventWeight") << "sp->GetToolType() = " << sp->GetToolType() << "\n"
                                   << "sp->GetFullyQualifiedName() = " << sp->GetFullyQualifiedName() << "\n"
                                   << "sp->GetInstanceName() = " << sp->GetInstanceName() << "\n"
