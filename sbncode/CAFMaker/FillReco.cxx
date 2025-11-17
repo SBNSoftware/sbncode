@@ -395,11 +395,14 @@ namespace caf
     // It's sth like this but not quite. And will need to pass a simb::MCtruth object vtx position anyway.
     // srshower.conversion_gap = (shower.ShowerStart() - vertex.Position()).Mag();
 
-    if(shower.best_plane() != -999){
-      srshower.bestplane        = shower.best_plane();
-      srshower.bestplane_dEdx   = srshower.plane[shower.best_plane()].dEdx;
-      srshower.bestplane_energy = srshower.plane[shower.best_plane()].energy;
-    }
+    srshower.bestplane_for_energy = shower.best_plane_energy();
+    srshower.bestplane_for_dedx   = shower.best_plane_dedx();
+
+    if(srshower.bestplane_for_energy != -999)
+      srshower.bestplane_energy = srshower.plane[srshower.bestplane_for_energy].energy;
+
+    if(srshower.bestplane_for_dedx != -999)
+      srshower.bestplane_dEdx   = srshower.plane[srshower.bestplane_for_dedx].dEdx;
 
     if(shower.has_open_angle())
       srshower.open_angle = shower.OpenAngle();
