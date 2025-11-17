@@ -11,9 +11,15 @@ cet_build_plugin(SBNEventWeight art::module
 cet_build_plugin(SystToolsEventWeight art::module
   LIBRARIES
   sbnobj::Common_SBNEventWeight sbncode_SBNEventWeight_Base
-  systematicstools::interface
-  systematicstools::interpreters
-  systematicstools::utility)
+  systtools::interface
+  systtools::interpreters
+  systtools::utility
+  nusyst::interface
+  nusyst::systproviders
+  nusyst::responsecalculators
+  nugen::EventGeneratorBase_GENIE
+  ${GENIE_LIB_LIST}
+  )
 
 install_headers()
 install_fhicl()
