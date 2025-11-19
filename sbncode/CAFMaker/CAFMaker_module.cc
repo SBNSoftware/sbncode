@@ -97,6 +97,7 @@
 #include "lardataobj/RecoBase/MCSFitResult.h"
 #include "lardataobj/RecoBase/Cluster.h"
 #include "lardataobj/AnalysisBase/MVAOutput.h"
+#include "lardataobj/Simulation/SimEnergyDeposit.h"
 
 #include "nusimdata/SimulationBase/MCFlux.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
@@ -119,6 +120,7 @@
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
 #include "sbnobj/Common/Reco/OpT0FinderResult.h"
 #include "sbnobj/Common/Reco/CorrectedOpFlashTiming.h"
+#include "sbnobj/Common/Reco/LightCalo.h"
 #include "sbnobj/SBND/Timing/TimingInfo.hh"
 #include "sbnobj/SBND/Timing/FrameShiftInfo.hh"
 
@@ -1422,6 +1424,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::fill_ptr_vector(simchannels, simchannel_handle);
   }
 
+  // get sim energy deposits if they're there
+  ::art::Handle<std::vector<sim::SimEnergyDeposit>> sed_handle;
+  GetByLabelStrict(evt, fParams.SimEnergyDepositLabel().encode(), sed_handle);
+
+  std::vector<art::Ptr<sim::SimEnergyDeposit>> seds; 
+  if (sed_handle.isValid()){
+    art::fill_ptr_vector(seds, sed_handle);
+  }
+
   art::Handle<std::vector<simb::MCFlux>> mcflux_handle;
   GetByLabelStrict(evt, std::string("generator"), mcflux_handle);
 
@@ -1613,6 +1624,34 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       } // end for wgtmap
     } // end for fm
   } // end for i (mctruths)
+
+
+  if (!isRealData && sed_handle.isValid()){
+    art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
+
+    srtruthbranch.dep.reserve(mctruths.size());
+    for (size_t n=0; n<mctruths.size();n++){
+      SRTrueDeposit init;
+      init.electrons = 0;
+      init.photons = 0;
+      init.energy = 0; 
+      srtruthbranch.dep.push_back(init);
+    }
+
+    for (size_t n_dep=0; n_dep < seds.size(); n_dep++){
+      auto sed = seds[n_dep];
+      const auto trackID = sed->TrackID();
+
+      art::Ptr<simb::MCTruth> mctruth = pi_serv->TrackIdToMCTruth_P(trackID);
+      auto it = std::find(mctruths.begin(), mctruths.end(), mctruth);
+      if (it == mctruths.end()) continue; 
+
+      auto idx = std::distance(mctruths.begin(), it);
+      srtruthbranch.dep.at(idx).energy    += sed->Energy()*1e-3; // GeV
+      srtruthbranch.dep.at(idx).photons   += sed->NumPhotons();
+      srtruthbranch.dep.at(idx).electrons += sed->NumElectrons();
+    }
+  }
 
   // get the number of events generated in the gen stage
   unsigned n_gen_evt = 0;
@@ -1995,6 +2034,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
      if (fmCorrectedOpFlash.isValid())
       slcCorrectedOpFlash = fmCorrectedOpFlash.at(0);
 
+    art::FindOneP<sbn::LightCalo> foLightCalo =
+      FindOnePStrict<sbn::LightCalo>(sliceList,evt,
+        fParams.LightCaloLabel() + slice_tag_suff);
+    const sbn::LightCalo *slcLightCalo = nullptr;
+    if (foLightCalo.isValid()) {
+      slcLightCalo = foLightCalo.at(0).get();
+    }
 
     art::FindOneP<lcvn::Result> foCVNResult =
       FindOnePStrict<lcvn::Result>(sliceList, evt,
@@ -2250,6 +2296,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceCRUMBS(slcCRUMBS, recslc);
     FillSliceOpT0Finder(slcOpT0, recslc);
     FillSliceBarycenter(slcHits, slcSpacePoints, recslc);
+    FillSliceLightCalo(slcLightCalo, recslc);
     FillTPCPMTBarycenterMatch(barycenterMatch, recslc);
     FillCorrectedOpFlashTiming(slcCorrectedOpFlash, recslc);
     FillCVNScores(cvnResult, recslc);

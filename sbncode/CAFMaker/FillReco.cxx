@@ -634,6 +634,17 @@ namespace caf
     }
   }
 
+  void FillSliceLightCalo(const sbn::LightCalo *lightcalo,
+                          caf::SRSlice &slice)
+  {
+    if (lightcalo != nullptr) {
+      slice.lightcalo.charge    = lightcalo->charge;
+      slice.lightcalo.light     = lightcalo->light;
+      slice.lightcalo.energy    = lightcalo->energy;
+      slice.lightcalo.bestplane = lightcalo->bestplane; 
+    }
+  }
+
   void FillSliceBarycenter(const std::vector<art::Ptr<recob::Hit>> &inputHits,
                            const std::vector<art::Ptr<recob::SpacePoint>> &inputPoints,
                            caf::SRSlice &slice)

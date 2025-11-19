@@ -47,7 +47,7 @@
 #include "sbnobj/Common/PMT/Data/PMTBeamSignal.hh"
 #include "sbnobj/SBND/Timing/TimingInfo.hh"
 #include "sbnobj/SBND/Timing/FrameShiftInfo.hh"
-
+#include "sbnobj/Common/Reco/LightCalo.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 
@@ -107,6 +107,9 @@ namespace caf
 
   void FillSliceOpT0Finder(const std::vector<art::Ptr<sbn::OpT0Finder>> &opt0_v,
                            caf::SRSlice &slice);
+
+  void FillSliceLightCalo(const sbn::LightCalo *lightcalo,
+                          caf::SRSlice& slice);
 
   void FillSliceBarycenter(const std::vector<art::Ptr<recob::Hit>> &inputHits,
                            const std::vector<art::Ptr<recob::SpacePoint>> &inputPoints,
