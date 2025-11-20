@@ -55,7 +55,7 @@ namespace caf
       CAF_Blip.truthBlip.LeadG4PDG =LarBlip.truth.LeadG4PDG;
       CAF_Blip.truthBlip.LeadCharge =LarBlip.truth.LeadCharge;
       CAF_Blip.truthBlip.Position =LarBlip.truth.Position;
-        CAF_Blip.truthBlip.Energy = CAF_Blip.truthBlip.Energy/1000.; //convert to GeV
+      CAF_Blip.truthBlip.Energy = CAF_Blip.truthBlip.Energy/1000.; //convert to GeV
     }
 
     void FillBlipRealtedHitCluster(blip::Blip& LarBlip, caf::SRBlip &CAF_Blip)
@@ -69,7 +69,7 @@ namespace caf
 	  CAF_Blip.clusters[iPlane].CenterWire = LarBlip.clusters[iPlane].CenterWire;
 	  CAF_Blip.clusters[iPlane].isTruthMatched = LarBlip.clusters[iPlane].isTruthMatched;
 	  CAF_Blip.clusters[iPlane].isMerged = LarBlip.clusters[iPlane].isMerged;
-          CAF_Blip.clusters[iPlane].isMatched = LarBlip.clusters[iPlane].isMatched;
+	  CAF_Blip.clusters[iPlane].isMatched = LarBlip.clusters[iPlane].isMatched;
           CAF_Blip.clusters[iPlane].DeadWireSep = LarBlip.clusters[iPlane].DeadWireSep;
           CAF_Blip.clusters[iPlane].Cryostat = LarBlip.clusters[iPlane].Cryostat;
           CAF_Blip.clusters[iPlane].TPC = LarBlip.clusters[iPlane].TPC;

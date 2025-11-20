@@ -284,7 +284,6 @@ class CAFMaker : public art::EDProducer {
   int          fGenieEvtRec_brStdHepLd    [250] = {0}; ////< Last  daughter
   int          fGenieEvtRec_brStdHepFm    [250] = {0}; ////< First mother
   int          fGenieEvtRec_brStdHepLm    [250] = {0}; ////< Last  mother
-  //std::string fBlipTag;
 
   flat::Flat<caf::StandardRecord>* fFlatRecord = 0;
   flat::Flat<caf::StandardRecord>* fFlatRecordb = 0;
