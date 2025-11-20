@@ -188,6 +188,25 @@ namespace caf
     srsbndcrttrack.tof      = track.ToF();
   }
 
+  void FillSBNDCRTVeto(const sbnd::crt::CRTVeto &veto,
+		       const std::vector<art::Ptr<sbnd::crt::CRTSpacePoint>> &points,
+                       caf::SRSBNDCRTVeto &srsbndcrtveto,
+                       bool allowEmpty)
+  {
+    srsbndcrtveto.V0     = veto.V0();
+    srsbndcrtveto.V1     = veto.V1();
+    srsbndcrtveto.V2     = veto.V2();
+    srsbndcrtveto.V3     = veto.V3();
+    srsbndcrtveto.V4     = veto.V4();
+
+    // add the CRTSpacePoint associations to the SR Veto
+    for(auto const& sp : points) {
+      srsbndcrtveto.sp_position.emplace_back(sp->X(), sp->Y(), sp->Z());   
+      srsbndcrtveto.sp_time.push_back(sp->Ts0()); // ns for SBND CRT SpacePoints   
+      srsbndcrtveto.sp_pe.push_back(sp->PE());   
+    }
+  }
+
   void FillSBNDFrameShiftInfo(const sbnd::timing::FrameShiftInfo &frame,
                         caf::SRSBNDFrameShiftInfo &srsbndframe,
                         bool allowEmpty)
@@ -349,13 +368,10 @@ namespace caf
     slice.correctedOpFlash.setDefault();
     if ( slcCorrectedOpFlash.empty()==false ) {
       const sbn::CorrectedOpFlashTiming &_correctedOpFlash = *slcCorrectedOpFlash[0];
-      //TODO: use the score of the match to fill the information accordingly
       slice.correctedOpFlash.OpFlashT0  = _correctedOpFlash.OpFlashT0;
-      slice.correctedOpFlash.UpstreamTime_lightonly  = _correctedOpFlash.UpstreamTime_lightonly;
-      slice.correctedOpFlash.UpstreamTime_tpczcorr  = _correctedOpFlash.UpstreamTime_tpczcorr;
-      slice.correctedOpFlash.UpstreamTime_propcorr_tpczcorr  = _correctedOpFlash.UpstreamTime_propcorr_tpczcorr;
-      slice.correctedOpFlash.FMScore  = _correctedOpFlash.FMScore;
-      slice.correctedOpFlash.SliceNuScore  = _correctedOpFlash.SliceNuScore;
+      slice.correctedOpFlash.NuToFLight  = _correctedOpFlash.NuToFLight;
+      slice.correctedOpFlash.NuToFCharge  = _correctedOpFlash.NuToFCharge;
+      slice.correctedOpFlash.OpFlashT0Corrected  = _correctedOpFlash.OpFlashT0Corrected;
     }
   }
 
