@@ -1703,6 +1703,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   caf::SRTrigger srtrigger;
   if (isValidTrigger) {
       FillTrigger(*extratrig_handle, trig_handle->at(0), srtrigger, triggerShift);
+      if (fDet == kICARUS) 
+        FillTriggerICARUS(*extratrig_handle, srtrigger);
   }
   // Fill trigger emulation information
   if (isValidEmulationTrigger) { 

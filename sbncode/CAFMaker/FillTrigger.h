@@ -8,11 +8,8 @@
 #include "lardataobj/RawData/TriggerData.h"
 #include "art/Framework/Principal/Handle.h"
 
-#include <vector>
-
 namespace caf
 {
-
   void FillTrigger(const sbn::ExtraTriggerInfo& addltrig_info,
                    const raw::Trigger& trig_info,
                    caf::SRTrigger& triggerInfo,
@@ -20,6 +17,9 @@ namespace caf
 
   void FillTriggerMC(double absolute_time, caf::SRTrigger& triggerInfo);
 
+  void FillTriggerICARUS(const sbn::ExtraTriggerInfo& addltrig_info,
+                         caf::SRTrigger& triggerInfo);            
+                                        
   void FillTriggerSBND(caf::SRSBNDTimingInfo& timingInfo, caf::SRTrigger& triggerInfo);
 
   void FillTriggerEmulation(art::Handle<std::vector<int>> const& monpulsesFlat,
