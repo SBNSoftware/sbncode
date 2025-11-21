@@ -70,6 +70,7 @@ namespace caf
                       const geo::WireReadoutGeom& wireReadout,
                       unsigned producer,
                       caf::SRShower& srshower,
+                      Det_t det,
                       bool allowEmpty = false);
 
   void FillShowerRazzle(const art::Ptr<sbn::MVAPID> razzle,
@@ -225,6 +226,10 @@ namespace caf
 
   void FillPlaneChi2PID(const anab::ParticleID &particle_id, caf::SRTrkChi2PID &srpid);
   void FillTrackChi2PID(const std::vector<art::Ptr<anab::ParticleID>> particleIDs,
+                        caf::SRTrack& srtrack,
+                        bool allowEmpty = false);
+  void FillPlaneLikePID(const anab::ParticleID &particle_id, caf::SRTrkLikelihoodPID &srlikepid);
+  void FillTrackLikePID(const std::vector<art::Ptr<anab::ParticleID>>& particleIDs,
                         caf::SRTrack& srtrack,
                         bool allowEmpty = false);
 

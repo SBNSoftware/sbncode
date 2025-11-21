@@ -1703,6 +1703,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   caf::SRTrigger srtrigger;
   if (isValidTrigger) {
       FillTrigger(*extratrig_handle, trig_handle->at(0), srtrigger, triggerShift);
+      if (fDet == kICARUS) 
+        FillTriggerICARUS(*extratrig_handle, srtrigger);
   }
   // Fill trigger emulation information
   if (isValidEmulationTrigger) { 
@@ -1739,6 +1741,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   caf::SRSBNDCRTVeto srsbndcrtveto;
   caf::SRSBNDFrameShiftInfo srsbndframeshiftinfo;
   caf::SRSBNDTimingInfo srsbndtiminginfo;
+  caf::SRSoftwareTrigger srsbndsofttrig; 
 
   // Mapping of (feb, channel) to truth information (AuxDetSimChannel) -- filled for ICARUS
   std::map<std::pair<int, int>, sim::AuxDetSimChannel> crtsimchanmap;
@@ -1840,6 +1843,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       if (sbndtiminginfo_handle.isValid()) {
         sbnd::timing::TimingInfo const& sbndtiminginfo(*sbndtiminginfo_handle);
         FillSBNDTimingInfo(sbndtiminginfo, srsbndtiminginfo);
+      }
+
+      art::Handle<std::vector<sbnd::trigger::pmtSoftwareTrigger>> sbndsofttrig_handle;
+      GetByLabelStrict(evt, fParams.SBNDSoftwareTriggerLabel(), sbndsofttrig_handle);
+      if (sbndsofttrig_handle.isValid()){
+        const std::vector<sbnd::trigger::pmtSoftwareTrigger> &sbndsofttrig = *sbndsofttrig_handle;
+        if (sbndsofttrig.size()==1){
+          FillSoftwareTriggerSBND(sbndsofttrig.at(0), srsbndsofttrig);
+        }
       }
     }
 
@@ -2167,6 +2179,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<anab::ParticleID>(slcTracks, evt,
           fParams.TrackChi2PidLabel() + slice_tag_suff);
 
+    art::FindManyP<anab::ParticleID> fmLikePID =
+      FindManyPStrict<anab::ParticleID>(slcTracks, evt,
+          fParams.TrackLikePidLabel() + slice_tag_suff);
+
     art::FindManyP<sbn::ScatterClosestApproach> fmScatterClosestApproach =
       FindManyPStrict<sbn::ScatterClosestApproach>(slcTracks, evt,
           fParams.TrackScatterClosestApproachLabel() + slice_tag_suff);
@@ -2458,6 +2474,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         if (fmChi2PID.isValid()) {
            FillTrackChi2PID(fmChi2PID.at(iPart), trk);
         }
+        if (fmLikePID.isValid()) {
+           FillTrackLikePID(fmLikePID.at(iPart), trk);
+        }
         if (fmScatterClosestApproach.isValid() && fmScatterClosestApproach.at(iPart).size()==1) {
            FillTrackScatterClosestApproach(fmScatterClosestApproach.at(iPart).front(), trk);
         }
@@ -2523,7 +2542,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         assert(thisShower.size() == 1);
 
         SRShower& shw = pfp.shw;
-        FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), wireReadout, producer, shw);
+        FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), wireReadout, producer, shw, fDet);
 
         // We may have many residuals per shower depending on how many showers ar in the slice
         if (fmShowerRazzle.isValid() && fmShowerRazzle.at(iPart).size()==1) {
@@ -2588,6 +2607,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.nopflashes       = srflashes.size();
   rec.sbnd_frames      = srsbndframeshiftinfo;
   rec.sbnd_timings     = srsbndtiminginfo;
+  rec.soft_trig        = srsbndsofttrig; 
 
   if (fParams.FillTrueParticles()) {
     rec.true_particles  = true_particles;

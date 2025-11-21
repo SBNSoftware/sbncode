@@ -255,6 +255,12 @@ namespace caf
       "pandoraPid"
     };
 
+    Atom<string> TrackLikePidLabel {
+      Name("TrackLikePidLabel"),
+      Comment("Base label of track likelihood particle-id producer."),
+      "pandoraLikePid"
+    };
+
     Atom<string> TrackScatterClosestApproachLabel {
       Name("TrackScatterClosestApproachLabel"),
       Comment("Base label of track track scatter closestapproach producer."),
@@ -360,6 +366,12 @@ namespace caf
     Atom<string> SBNDTimingInfoLabel {
       Name("SBNDTimingInfoLabel"),
       Comment("Label of sbnd timing shift."),
+      "" // sbnd
+    };
+
+    Atom<string> SBNDSoftwareTriggerLabel{
+      Name("SBNDSoftwareTriggerLabel"),
+      Comment("Label for software trigger producer"),
       "" // sbnd
     };
 
