@@ -4,9 +4,11 @@
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbnobj/Common/Trigger/BeamBits.h"
 #include "sbnanaobj/StandardRecord/SRTrigger.h"
+#include "sbnanaobj/StandardRecord/SRSoftwareTrigger.h"
 #include "sbnanaobj/StandardRecord/SRSBNDTimingInfo.h"
 #include "lardataobj/RawData/TriggerData.h"
 #include "art/Framework/Principal/Handle.h"
+#include "sbndaq-artdaq-core/Obj/SBND/pmtSoftwareTrigger.hh"
 
 namespace caf
 {
@@ -27,6 +29,7 @@ namespace caf
                              art::Handle<int> const& numPairs,
                              art::Handle<bool> const& passedTrig,
                              caf::SRTrigger& triggerInfo);
+  void FillSoftwareTriggerSBND(const sbnd::trigger::pmtSoftwareTrigger& softInfo, caf::SRSoftwareTrigger& caf_softInfo);
 }
 
 #endif
