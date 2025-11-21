@@ -140,7 +140,7 @@ double PionPartialWidth(double pion_mass, double higs_mass, double mixing) {
 }
 
 double PiPlusPartialWidth(double higs_mass, double mixing) {
-  return PionPartialWidth(Constants::Instance().piplus_mass, higs_mass, mixing);
+  return 2*PionPartialWidth(Constants::Instance().piplus_mass, higs_mass, mixing);
 }
 
 double PiZeroPartialWidth(double higs_mass, double mixing) {

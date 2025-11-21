@@ -2525,7 +2525,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         assert(thisShower.size() == 1);
 
         SRShower& shw = pfp.shw;
-        FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), wireReadout, producer, shw);
+        FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), wireReadout, producer, shw, fDet);
 
         // We may have many residuals per shower depending on how many showers ar in the slice
         if (fmShowerRazzle.isValid() && fmShowerRazzle.at(iPart).size()==1) {
