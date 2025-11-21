@@ -70,6 +70,7 @@ namespace caf
                       const geo::WireReadoutGeom& wireReadout,
                       unsigned producer,
                       caf::SRShower& srshower,
+                      Det_t det,
                       bool allowEmpty = false);
 
   void FillShowerRazzle(const art::Ptr<sbn::MVAPID> razzle,
