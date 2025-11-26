@@ -192,14 +192,22 @@ namespace caf
                         caf::SRSBNDFrameShiftInfo &srsbndframe,
                         bool allowEmpty)
   {
-    std::cout << "FIX ME: FillSBNDFrameShiftInfo" << std::endl;
-    //srsbndframe.timingType = frame.TimingType();
-    //srsbndframe.frameTdcCrtt1 = frame.FrameTdcCrtt1();
-    //srsbndframe.frameTdcBes = frame.FrameTdcBes();
-    //srsbndframe.frameTdcRwm = frame.FrameTdcRwm();
-    //srsbndframe.frameHltCrtt1 = frame.FrameHltCrtt1();
-    //srsbndframe.frameHltBeamGate = frame.FrameHltBeamGate();
-    //srsbndframe.frameApplyAtCaf = frame.FrameApplyAtCaf();
+    srsbndframe.frameCrtt1         = frame.FrameCrtt1();
+    srsbndframe.timingTypeCrtt1    = frame.TimingTypeCrtt1();
+    srsbndframe.timingChannelCrtt1 = frame.TimingChannelCrtt1();
+
+    srsbndframe.frameBeamGate         = frame.FrameBeamGate();
+    srsbndframe.timingTypeBeamGate    = frame.TimingTypeBeamGate();
+    srsbndframe.timingChannelBeamGate = frame.TimingChannelBeamGate();
+
+    srsbndframe.frameEtrig         = frame.FrameEtrig();
+    srsbndframe.timingTypeEtrig    = frame.TimingTypeEtrig();
+    srsbndframe.timingChannelEtrig = frame.TimingChannelEtrig();
+
+    srsbndframe.frameDefault         = frame.FrameDefault();
+    srsbndframe.timingTypeDefault    = frame.TimingTypeDefault();
+    srsbndframe.timingChannelDefault = frame.TimingChannelDefault();
+
   }
 
   void FillSBNDTimingInfo(const sbnd::timing::TimingInfo &timing,

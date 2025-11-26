@@ -39,13 +39,21 @@ namespace caf
   }
 
   void FillTriggerSBND(caf::SRSBNDTimingInfo& timingInfo, caf::SRTrigger& triggerInfo){
-      
-    triggerInfo.global_trigger_time = timingInfo.hltEtrig;
-    triggerInfo.beam_gate_time_abs = timingInfo.hltBeamGate;
-    std::cout << "triggerInfo.global_trigger_det_time: " << triggerInfo.global_trigger_det_time << std::endl;
-	std::cout << "triggerInfo.beam_gate_det_time: " << triggerInfo.beam_gate_det_time << std::endl;
-    double diff_ts = triggerInfo.global_trigger_det_time - triggerInfo.beam_gate_det_time;
-	std::cout << "diff_ts: " << diff_ts << std::endl;
+
+    if (timingInfo.hltEtrig != std::numeric_limits<uint64_t>::max()) triggerInfo.global_trigger_time = timingInfo.hltEtrig;
+    if (timingInfo.hltBeamGate != std::numeric_limits<uint64_t>::max()) triggerInfo.beam_gate_time_abs = timingInfo.hltBeamGate;
+
+    double diff_ts = std::numeric_limits<double>::max();
+
+    if ((triggerInfo.global_trigger_time != std::numeric_limits<uint64_t>::max()) & (triggerInfo.beam_gate_time_abs != std::numeric_limits<uint64_t>::max())){
+
+      if (triggerInfo.global_trigger_time > triggerInfo.beam_gate_time_abs){
+        diff_ts = triggerInfo.global_trigger_time - triggerInfo.beam_gate_time_abs;
+      }
+      else{
+        diff_ts = (triggerInfo.beam_gate_time_abs - triggerInfo.global_trigger_time)*(double)-1;
+      }
+    }
     triggerInfo.trigger_within_gate = diff_ts;
   }
 
