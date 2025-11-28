@@ -1260,7 +1260,27 @@ caf::Wall_t caf::GetWallCross(const geo::BoxBoundedGeo &volume, const TVector3 p
   TVector3 direction = (p1 - p0) * ( 1. / (p1 - p0).Mag());
   std::vector<TVector3> intersections = volume.GetIntersections(p0, direction);
 
-  assert(intersections.size() == 2);
+  //assert(intersections.size() == 2);
+  /*
+   * There are either infinity, two, or one, or zero intersection points.
+   * As per larcorealg/Geometry/BoxBoundedGeo.h documentation:
+   * If the return std::vector is empty the trajectory does not intersect with the box.
+   * Normally the return value should have one (if the trajectory originates in the box) or two (else) entries.
+   * If the return value has two entries the first represents the entry point and the second the exit point
+   */
+  switch( intersections.size() ) {
+  case 0: // Set kWallNone and return
+    return caf::kWallNone;
+    break;
+  case 1: // Set the second intersection to be the same as the first, and fall through
+    intersections.emplace_back(intersections.front());
+    [[fallthrough]];
+  case 2:
+    break;
+  default: // There are infinity points to consider. Just use the first two.
+    intersections.resize(2);
+    break;
+  }
 
   // get the intersection point closer to p0
   int intersection_i = ((intersections[0] - p0).Mag() < (intersections[1] - p0).Mag()) ? 0 : 1;
