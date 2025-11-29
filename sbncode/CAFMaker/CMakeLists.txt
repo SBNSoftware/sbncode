@@ -39,11 +39,10 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   sbnobj::Common_Trigger
                   sbnobj::SBND_CRT
                   sbnobj::SBND_Timing
-		  sbndobj_BlipDataTypes
+                  sbnobj::SBND_Blip
                   lardataalg::DetectorInfo
                   art::Framework_Services_System_TriggerNamesService_service
                   sbncode_Metadata_MetadataSBN_service
-                  #sbndcode_BlipUtils
                   larsim::Utils
 		  larevt::SpaceCharge
                   systematicstools::interface
