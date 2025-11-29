@@ -24,7 +24,7 @@ namespace caf
             NewBlip.ProxTrkDist = CurrentBlip.ProxTrkDist; 
             NewBlip.ProxTrkID = CurrentBlip.ProxTrkID;
             NewBlip.inCylinder = CurrentBlip.inCylinder;
-            NewBlip.Position = CurrentBlip.Position;
+            NewBlip.Position.SetXYZ(CurrentBlip.Position.X(), CurrentBlip.Position.Y(), CurrentBlip.Position.Z());
             NewBlip.SigmaYZ = CurrentBlip.SigmaYZ;
             NewBlip.dX = CurrentBlip.dX;
             NewBlip.dYZ = CurrentBlip.dYZ;
@@ -54,7 +54,7 @@ namespace caf
       CAF_Blip.truthBlip.LeadG4Index =LarBlip.truth.LeadG4Index;
       CAF_Blip.truthBlip.LeadG4PDG =LarBlip.truth.LeadG4PDG;
       CAF_Blip.truthBlip.LeadCharge =LarBlip.truth.LeadCharge;
-      CAF_Blip.truthBlip.Position =LarBlip.truth.Position;
+      CAF_Blip.truthBlip.Position.SetXYZ(LarBlip.truth.Position.X(), LarBlip.truth.Position.Y(), LarBlip.truth.Position.Z());
       CAF_Blip.truthBlip.Energy = CAF_Blip.truthBlip.Energy/1000.; //convert to GeV
     }
 
