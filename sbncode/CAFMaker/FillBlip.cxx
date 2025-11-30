@@ -40,12 +40,10 @@ namespace caf
 
     void FillMCTruthBlip( blip::Blip& LarBlip, caf::SRBlip &CAF_Blip )
     {
-      //CAF_Blip.truthBlip = LarBlip.truth;
       CAF_Blip.truthBlip.ID = LarBlip.truth.ID;
       CAF_Blip.truthBlip.Cryostat =LarBlip.truth.Cryostat;
       CAF_Blip.truthBlip.TPC =LarBlip.truth.TPC;
       CAF_Blip.truthBlip.Time =LarBlip.truth.Time;
-      CAF_Blip.truthBlip.TimeTick =LarBlip.truth.TimeTick;
       CAF_Blip.truthBlip.DriftTime =LarBlip.truth.DriftTime;
       CAF_Blip.truthBlip.Energy =LarBlip.truth.Energy;
       CAF_Blip.truthBlip.DepElectrons =LarBlip.truth.DepElectrons;
@@ -68,7 +66,6 @@ namespace caf
             CAF_Blip.clusters[iPlane].CenterChan = LarBlip.clusters[iPlane].CenterChan;
             CAF_Blip.clusters[iPlane].CenterWire = LarBlip.clusters[iPlane].CenterWire;
             CAF_Blip.clusters[iPlane].isTruthMatched = LarBlip.clusters[iPlane].isTruthMatched;
-            CAF_Blip.clusters[iPlane].isMerged = LarBlip.clusters[iPlane].isMerged;
             CAF_Blip.clusters[iPlane].isMatched = LarBlip.clusters[iPlane].isMatched;
             CAF_Blip.clusters[iPlane].DeadWireSep = LarBlip.clusters[iPlane].DeadWireSep;
             CAF_Blip.clusters[iPlane].Cryostat = LarBlip.clusters[iPlane].Cryostat;
@@ -82,8 +79,6 @@ namespace caf
             CAF_Blip.clusters[iPlane].SigmaCharge = LarBlip.clusters[iPlane].SigmaCharge;
             CAF_Blip.clusters[iPlane].TimeTick = LarBlip.clusters[iPlane].TimeTick;
             CAF_Blip.clusters[iPlane].Time = LarBlip.clusters[iPlane].Time;
-            CAF_Blip.clusters[iPlane].StartHitTime = LarBlip.clusters[iPlane].StartHitTime;
-            CAF_Blip.clusters[iPlane].EndHitTime = LarBlip.clusters[iPlane].EndHitTime;
             CAF_Blip.clusters[iPlane].StartTime = LarBlip.clusters[iPlane].StartTime;
             CAF_Blip.clusters[iPlane].EndTime = LarBlip.clusters[iPlane].EndTime;
             CAF_Blip.clusters[iPlane].Timespan = LarBlip.clusters[iPlane].Timespan;
