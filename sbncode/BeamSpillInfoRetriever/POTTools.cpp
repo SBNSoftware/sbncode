@@ -68,42 +68,42 @@ namespace sbn::pot{
     // initializing all of our device carriers
     // device definitions can be found in BNBSpillInfo.h
     
-    double TOR860 = 0; // units e12 protons
-    double TOR875 = 0; // units e12 protons
-    double LM875A = 0; // units R/s
-    double LM875B = 0; // units R/s
-    double LM875C = 0; // units R/s
-    double HP873 = 0; // units mm
-    double VP873 = 0; // units mm; not in the first IFBeam query bunch
-    double HP875 = 0; // units mm
-    double VP875 = 0; // units mm
-    double HPTG1 = 0; // units mm
-    double VPTG1 = 0; // units mm
-    double HPTG2 = 0; // units mm
-    double VPTG2 = 0; // units mm
-    double BTJT2 = 0; // units Deg C
-    double THCURR = 0; // units kiloAmps
-    double M875HS = 0; // units mm
-    double M875VS = 0; // units mm
-    double M875HM = 0; // units mm
-    double M875VM = 0; // units mm
-    double M876HS = 0; // units mm
-    double M876VS = 0; // units mm
-    double M876HM = 0; // units mm
-    double M876VM = 0; // units mm
+    double TOR860 = -999; // units e12 protons
+    double TOR875 = -999; // units e12 protons
+    double LM875A = -999; // units R/s
+    double LM875B = -999; // units R/s
+    double LM875C = -999; // units R/s
+    double HP873 = -999; // units mm
+    double VP873 = -999; // units mm; not in the first IFBeam query bunch
+    double HP875 = -999; // units mm
+    double VP875 = -999; // units mm
+    double HPTG1 = -999; // units mm
+    double VPTG1 = -999; // units mm
+    double HPTG2 = -999; // units mm
+    double VPTG2 = -999; // units mm
+    double BTJT2 = -999; // units Deg C
+    double THCURR = -999; // units kiloAmps
+    double M875HS = -999; // units mm
+    double M875VS = -999; // units mm
+    double M875HM = -999; // units mm
+    double M875VM = -999; // units mm
+    double M876HS = -999; // units mm
+    double M876VS = -999; // units mm
+    double M876HM = -999; // units mm
+    double M876VM = -999; // units mm
     
 
-    double HP875Offset =0;//units mm; make a another separate IFBeam query bunch for offsets
-    double VP875Offset =0;//units mm
-    double VP873Offset =0;//units mm
-    double HPTG1Offset =0;//units mm
-    double HPTG2Offset =0;//units mm
-    double VPTG1Offset =0;//units mm
-    double VPTG2Offset =0;//units mm
+    double HP875Offset =-999;//units mm; make a another separate IFBeam query bunch for offsets
+    double VP875Offset =-999;//units mm
+    double VP873Offset =-999;//units mm
+    double HPTG1Offset =-999;//units mm
+    double HPTG2Offset =-999;//units mm
+    double VPTG1Offset =-999;//units mm
+    double VPTG2Offset =-999;//units mm
 
-    double TOR860_time = 0; // units s
+    double TOR860_time = -999; // units s
 
-    double FOM =0; 
+    double FOM =-999; 
 
     // Here we request all the devices
     // since sometimes devices fail to report we'll
@@ -116,7 +116,7 @@ namespace sbn::pot{
     try{bfp->GetNamedData(time, "E:LM875B",&LM875B);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
     try{bfp->GetNamedData(time, "E:LM875C",&LM875C);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
     try{bfp->GetNamedData(time, "E:HP873",&HP873);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-    try{bfp->GetNamedData(time, "E:VP873",&VP873);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{vp873->GetNamedData(time, "E:VP873",&VP873);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
     try{bfp->GetNamedData(time, "E:HP875",&HP875);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
     try{bfp->GetNamedData(time, "E:VP875",&VP875);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
     try{bfp->GetNamedData(time, "E:HPTG1",&HPTG1);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
@@ -231,21 +231,21 @@ namespace sbn::pot{
 
   bool BrokenClock(double time, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp)
   {
-    double TOR860 = 0; // units e12 protons
-    double TOR875 = 0; // units e12 protons
-    double LM875A = 0; // units R/s
-    double LM875B = 0; // units R/s
-    double LM875C = 0; // units R/s
-    double HP875 = 0; // units mm
-    double VP875 = 0; // units mm
-    double HPTG1 = 0; // units mm
-    double VPTG1 = 0; // units mm
-    double HPTG2 = 0; // units mm
-    double VPTG2 = 0; // units mm
-    double BTJT2 = 0; // units Deg C
-    double THCURR = 0; // units kiloAmps
+    double TOR860 = -999; // units e12 protons
+    double TOR875 = -999; // units e12 protons
+    double LM875A = -999; // units R/s
+    double LM875B = -999; // units R/s
+    double LM875C = -999; // units R/s
+    double HP875 = -999; // units mm
+    double VP875 = -999; // units mm
+    double HPTG1 = -999; // units mm
+    double VPTG1 = -999; // units mm
+    double HPTG2 = -999; // units mm
+    double VPTG2 = -999; // units mm
+    double BTJT2 = -999; // units Deg C
+    double THCURR = -999; // units kiloAmps
     
-    double TOR860_time = 0; // units s
+    double TOR860_time = -999; // units s
     
     // Here we request all the devices
     // since sometimes devices fail to report we'll

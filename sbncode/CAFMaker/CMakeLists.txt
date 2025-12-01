@@ -44,12 +44,13 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   art::Framework_Services_System_TriggerNamesService_service
                   sbncode_Metadata_MetadataSBN_service
                   larsim::Utils
-		  larevt::SpaceCharge
+          		   larevt::SpaceCharge
                   systematicstools::interface
                   systematicstools::interpreters
                   systematicstools::utility
                   ${GENIE_LIB_LIST}
                   nugen::EventGeneratorBase_GENIE
+                  sbndaq_artdaq_core::sbndaq-artdaq-core_Obj_SBND
                   )
 
 cet_build_plugin ( CAFMaker art::module

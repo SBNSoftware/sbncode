@@ -12,7 +12,7 @@ sbndbnbspillinfo: {
     OffsetBundle: "BNB_BPM_settings"
 
     TimeWindow: "700" #seconds
-    MWR_TimeWindow: "3601" #seconds
+    MWR_TimeWindow: "700" #seconds
     DeviceUsedForTiming: "E:TOR860"
 }
 

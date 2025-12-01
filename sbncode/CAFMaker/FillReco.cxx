@@ -391,6 +391,7 @@ namespace caf
                       const geo::WireReadoutGeom& wireReadout,
                       unsigned producer,
                       caf::SRShower &srshower,
+                      Det_t det,
                       bool allowEmpty)
   {
 
@@ -411,11 +412,56 @@ namespace caf
     // It's sth like this but not quite. And will need to pass a simb::MCtruth object vtx position anyway.
     // srshower.conversion_gap = (shower.ShowerStart() - vertex.Position()).Mag();
 
-    if(shower.best_plane() != -999){
-      srshower.bestplane        = shower.best_plane();
-      srshower.bestplane_dEdx   = srshower.plane[shower.best_plane()].dEdx;
-      srshower.bestplane_energy = srshower.plane[shower.best_plane()].energy;
-    }
+    for(int p = 0; p < 3; ++p) srshower.plane[p].nHits = 0;
+    for (auto const& hit:hits) ++srshower.plane[hit->WireID().Plane].nHits;
+
+    if(det == kSBND)
+      {
+        int bestplane_for_energy = -999;
+        int mosthits = -1;
+        for(int p = 0; p < 3; ++p)
+          {
+            if((int)srshower.plane[p].nHits > mosthits)
+              {
+                mosthits = srshower.plane[p].nHits;
+                bestplane_for_energy = p;
+              }
+          }
+
+        if(bestplane_for_energy != -999)
+          {
+            srshower.bestplane_for_energy = bestplane_for_energy;
+            srshower.bestplane_energy     = srshower.plane[bestplane_for_energy].energy;
+          }
+
+        if(shower.best_plane() != -999 && srshower.plane[shower.best_plane()].dEdx != -999)
+          {
+            srshower.bestplane_for_dedx = shower.best_plane();
+            srshower.bestplane_dEdx     = srshower.plane[shower.best_plane()].dEdx;
+          }
+        else
+          {
+            for(int p = 2; p >= 0; --p)
+              {
+                if(srshower.plane[p].dEdx != -999)
+                  {
+                    srshower.bestplane_for_dedx = p;
+                    srshower.bestplane_dEdx     = srshower.plane[shower.best_plane()].dEdx;
+                    break;
+                  }
+              }
+          }
+      }
+    else
+      {
+        if(shower.best_plane() != -999)
+          {
+            srshower.bestplane_for_energy = shower.best_plane();
+            srshower.bestplane_for_dedx   = shower.best_plane();
+            srshower.bestplane_dEdx       = srshower.plane[shower.best_plane()].dEdx;
+            srshower.bestplane_energy     = srshower.plane[shower.best_plane()].energy;
+          }
+      }
 
     if(shower.has_open_angle())
       srshower.open_angle = shower.OpenAngle();
@@ -437,9 +483,6 @@ namespace caf
     if (shower.Direction().Z()>-990 && shower.ShowerStart().Z()>-990 && shower.Length()>0) {
       srshower.end = shower.ShowerStart()+ (shower.Length() * shower.Direction());
     }
-
-    for(int p = 0; p < 3; ++p) srshower.plane[p].nHits = 0;
-    for (auto const& hit:hits) ++srshower.plane[hit->WireID().Plane].nHits;
 
     for (geo::PlaneGeo const& plane: wireReadout.Iterate<geo::PlaneGeo>()) {
 
@@ -904,6 +947,48 @@ namespace caf
         unsigned plane_id  = particle_id.PlaneID().Plane;
         assert(plane_id < 3);
         FillPlaneChi2PID(particle_id, srtrack.chi2pid[plane_id]);
+      }
+    }
+  }
+
+  void FillPlaneLikePID(const anab::ParticleID &particle_id, caf::SRTrkLikelihoodPID &srlikepid) {
+
+    // Loop over algorithm scores and extract the ones we want.
+    // Get the ndof from any likelihood pid algorithm
+    srlikepid.setDefault();
+
+    std::vector<anab::sParticleIDAlgScores> const& AlgScoresVec = particle_id.ParticleIDAlgScores();
+    for (anab::sParticleIDAlgScores const& AlgScore: AlgScoresVec){
+      if (AlgScore.fAlgName == "Likelihood"){
+        switch (std::abs(AlgScore.fAssumedPdg)) {
+          case 13: // lambda_mu
+            srlikepid.lambda_muon = AlgScore.fValue;
+            srlikepid.pid_ndof = AlgScore.fNdf;
+            break;
+          case 211: // lambda_pi
+            srlikepid.lambda_pion = AlgScore.fValue;
+            srlikepid.pid_ndof = AlgScore.fNdf;
+            break;
+          case 2212: // lambda_pr
+            srlikepid.lambda_proton = AlgScore.fValue;
+            srlikepid.pid_ndof = AlgScore.fNdf;
+            break;
+        }
+      }
+    }
+  }
+
+  void FillTrackLikePID(const std::vector<art::Ptr<anab::ParticleID>>& particleIDs,
+                        caf::SRTrack& srtrack,
+                        bool allowEmpty)
+  {
+    // get the particle ID's
+    for (art::Ptr<anab::ParticleID> const& pidPtr: particleIDs) {
+      const anab::ParticleID &particle_id = *pidPtr;
+      if (particle_id.PlaneID()) {
+        unsigned plane_id  = particle_id.PlaneID().Plane;
+        assert(plane_id < 3);
+        FillPlaneLikePID(particle_id, srtrack.likepid[plane_id]);
       }
     }
   }
