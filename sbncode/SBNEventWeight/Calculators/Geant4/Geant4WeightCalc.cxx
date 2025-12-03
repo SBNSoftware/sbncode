@@ -297,7 +297,7 @@ std::vector<float> Geant4WeightCalc::GetWeight(art::Event& e, size_t itruth ) {
         double Z = p.Position(i).Z();
         geo::Point_t testpoint1 { X, Y, Z };
         const TGeoMaterial* testmaterial1 = fGeometryService->Material( testpoint1 );
-	if( ! testmaterial1 || testmaterial1 == nullptr ) {  
+	if( ! testmaterial1 ) {  
 	  break; // The trajectory point is outside the world, or the geometry service is unable to handle the point
 	}
         //For now, just going to reweight the points within the LAr of the TPC
