@@ -1269,8 +1269,6 @@ caf::Wall_t caf::GetWallCross(const geo::BoxBoundedGeo &volume, const TVector3 p
    */
 
   if( intersections.empty() ) return caf::kWallNone;
-  // ensure intersections has two points. No op if already 2
-  intersections.resize( 2, intersections.front() );
 
   // get the intersection point closer to p0
   TVector3 closestIntersection;
