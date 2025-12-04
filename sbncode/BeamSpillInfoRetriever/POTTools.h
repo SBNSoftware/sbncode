@@ -13,6 +13,7 @@
 
 #include "sbncode/BeamSpillInfoRetriever/MWRData.h"
 #include "larcorealg/CoreUtils/counter.h"
+#include <vector>
 
 namespace sbn::pot{
 
@@ -20,6 +21,8 @@ namespace sbn::pot{
     double currPTBTimeStamp  = 1e20;
     double prevPTBTimeStamp  = 0;
     unsigned int GateCounter = 0;
+    bool isHLT = false;            
+    uint64_t triggerWord = 0;        
   } PTBInfo_t;
 
   typedef struct TriggerInfo_t {
@@ -36,12 +39,20 @@ namespace sbn::pot{
   } MWRdata_t;
 
   /**
-   * @brief Extracts information from PTB for use in SBND POT accounting.
+   * @brief Extracts information from PTB for a single HLT for use in SBND POT accounting.
    * 
    * @param cont_frags The PTB fragments to examine.
    * @param HLT The high level trigger we are searching for.
    */
   PTBInfo_t extractPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags, int HLT);
+
+  /**
+   * @brief Extracts ALL PTB information for using in SBND CAF files.
+   * 
+   * @param cont_frags The PTB fragments to examine.
+   * @return Vector of PTBInfo_t containing all triggers found.
+   */
+  std::vector<PTBInfo_t> extractAllPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags);
 
   /**
    * @brief Extracts information from TDC for use in SBND POT accounting.

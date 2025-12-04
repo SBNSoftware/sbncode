@@ -73,4 +73,28 @@ namespace caf
     caf_softInfo.flash_peakpe = softInfo.peakPE;
     caf_softInfo.flash_peaktime = softInfo.peaktime + softInfo.trig_ts*1e-3; 
   }
+
+  void FillPTBTriggersSBND(const std::vector<sbn::pot::PTBInfo_t>& ptb_triggers, caf::SRTrigger& triggerInfo) {
+    triggerInfo.ptb_hlt_timestamp.clear();
+    triggerInfo.ptb_hlt_bit.clear();
+    triggerInfo.ptb_llt_timestamp.clear();
+    triggerInfo.ptb_llt_bit.clear();
+    
+    // Decode trigger words: each set bit becomes a separate entry with the same timestamp
+    for(const auto& trig : ptb_triggers) {
+      std::uint64_t triggerWord = trig.triggerWord;
+      for(int bit = 0; bit < 64; ++bit) {
+        std::uint64_t bitMask = 1ULL << bit;
+        if(triggerWord & bitMask) {
+          if(trig.isHLT) {
+            triggerInfo.ptb_hlt_timestamp.push_back(trig.currPTBTimeStamp);
+            triggerInfo.ptb_hlt_bit.push_back(bit);
+          } else {
+            triggerInfo.ptb_llt_timestamp.push_back(trig.currPTBTimeStamp);
+            triggerInfo.ptb_llt_bit.push_back(bit);
+          }
+        }
+      }
+    }
+  }
 }

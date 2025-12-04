@@ -115,6 +115,8 @@
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
 #include "sbnobj/Common/POTAccounting/EXTCountInfo.h"
 #include "sbnobj/Common/POTAccounting/NuMISpillInfo.h"
+#include "sbncode/BeamSpillInfoRetriever/POTTools.h"
+#include "artdaq-core/Data/ContainerFragment.hh"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
 #include "sbnobj/Common/Reco/OpT0FinderResult.h"
@@ -1709,6 +1711,23 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // Fill trigger emulation information
   if (isValidEmulationTrigger) { 
       FillTriggerEmulation(monpulses_handle, monpulse_sizes_handle, pairs_handle, trigemu_handle, srtrigger);
+  }
+
+  
+  // Fill PTB (Penn Trigger Board) information for SBND real data
+  if (isRealData && fDet == kSBND) {
+    art::InputTag PTB_itag("daq", "ContainerPTB");
+    art::Handle<artdaq::Fragments> ptb_frags_handle;
+    evt.getByLabel(PTB_itag, ptb_frags_handle);
+    if (ptb_frags_handle.isValid()) {
+      try {
+        std::vector<sbn::pot::PTBInfo_t> ptb_triggers = sbn::pot::extractAllPTBInfo(ptb_frags_handle);
+        FillPTBTriggersSBND(ptb_triggers, srtrigger);
+      }
+      catch (...) {
+        std::cout << "CAFMaker: Failed to extract PTB triggers" << std::endl;
+      }
+    }
   }
 
   // If not real data, fill in enough of the SRTrigger to make (e.g.) the CRT

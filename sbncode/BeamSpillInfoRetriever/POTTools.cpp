@@ -43,6 +43,36 @@ namespace sbn::pot{
     }
   }
 
+  std::vector<PTBInfo_t> extractAllPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags) {
+    std::vector<PTBInfo_t> PTBInfoVec;
+    for (auto const& cont : *cont_frags)
+    {
+      artdaq::ContainerFragment cont_frag(cont);
+      for (size_t fragi = 0; fragi < cont_frag.block_count(); ++fragi)
+      {
+        artdaq::Fragment frag = *cont_frag[fragi];
+        sbndaq::CTBFragment ctb_frag(frag);   
+        for(size_t word_i = 0; word_i < ctb_frag.NWords(); ++word_i)
+        {
+          if(ctb_frag.Trigger(word_i)){
+            PTBInfo_t PTBInfo;
+            uint64_t RawprevPTBTimeStamp = ctb_frag.PTBWord(word_i)->prevTS;
+            uint64_t RawcurrPTBTimeStamp = ctb_frag.Trigger(word_i)->timestamp;
+            double currTS_candidate = std::bitset<64>(RawcurrPTBTimeStamp).to_ullong()/50e6;
+            PTBInfo.prevPTBTimeStamp = std::bitset<64>(RawprevPTBTimeStamp).to_ullong()/50e6;
+            PTBInfo.currPTBTimeStamp = currTS_candidate;
+            PTBInfo.GateCounter = ctb_frag.Trigger(word_i)->gate_counter;
+            PTBInfo.isHLT = ctb_frag.Trigger(word_i)->IsHLT();
+            PTBInfo.triggerWord = ctb_frag.Trigger(word_i)->trigger_word;
+            PTBInfoVec.push_back(PTBInfo);
+          }
+        } 
+      } 
+    } 
+  
+    return PTBInfoVec;
+  }
+
   double extractTDCTimeStamp(art::Handle<std::vector<artdaq::Fragment> > cont_frags) {
   
     double TDCTimeStamp = 0;
