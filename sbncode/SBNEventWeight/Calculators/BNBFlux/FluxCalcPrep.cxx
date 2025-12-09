@@ -323,7 +323,6 @@ namespace sbn {
       if (std::find(fprimaryHad.begin(), fprimaryHad.end(),(flux.ftptype)) == fprimaryHad.end() ){//if it does not contain any particles we need get 1
           weights.resize( NUni);
           std::fill(weights.begin(), weights.end(), 1);
-          std::cout << "We don't need this parent, returning." << std::endl;
           return weights;//done, all 1
         }// Hadronic parent check
 
