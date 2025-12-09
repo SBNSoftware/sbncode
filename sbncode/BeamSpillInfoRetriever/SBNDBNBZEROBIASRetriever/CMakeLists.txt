@@ -3,7 +3,8 @@ find_package(ifdh_art)
 
 cet_build_plugin(SBNDBNBZEROBIASRetriever art::module
     LIBRARIES
-        sbn_SBNDPOTTools
+        sbn_POTTools
+	sbn_getFOM
 )
 
 install_headers()

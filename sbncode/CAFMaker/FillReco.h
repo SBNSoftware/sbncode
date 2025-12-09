@@ -25,6 +25,7 @@
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "lardataobj/RecoBase/MCSFitResult.h"
+#include "lardataobj/Simulation/AuxDetSimChannel.h"
 #include "larrecodnn/CVN/func/Result.h"
 #include "sbnobj/Common/Reco/Stub.h"
 #include "sbnobj/Common/Reco/RangeP.h"
@@ -36,12 +37,18 @@
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
 #include "sbnobj/Common/Reco/OpT0FinderResult.h"
 #include "sbnobj/Common/Reco/TPCPMTBarycenterMatch.h"
+#include "sbnobj/Common/Reco/CorrectedOpFlashTiming.h"
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "sbnobj/Common/CRT/CRTTrack.hh"
 #include "sbnobj/SBND/CRT/CRTSpacePoint.hh"
 #include "sbnobj/SBND/CRT/CRTTrack.hh"
+#include "sbnobj/SBND/CRT/CRTVeto.hh"
 #include "sbnobj/Common/CRT/CRTPMTMatching.hh"
 #include "sbnobj/Common/CRT/CRTHitT0TaggingInfo.hh"
+#include "sbnobj/Common/PMT/Data/PMTBeamSignal.hh"
+#include "sbnobj/SBND/Timing/TimingInfo.hh"
+#include "sbnobj/SBND/Timing/FrameShiftInfo.hh"
+
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 
@@ -63,6 +70,7 @@ namespace caf
                       const geo::WireReadoutGeom& wireReadout,
                       unsigned producer,
                       caf::SRShower& srshower,
+                      Det_t det,
                       bool allowEmpty = false);
 
   void FillShowerRazzle(const art::Ptr<sbn::MVAPID> razzle,
@@ -136,12 +144,29 @@ namespace caf
                    caf::SRHit& srhit,
                    bool allowEmpty = false);
 
+  struct PFOCharLabelsStruct {
+    std::string EndFractionName;
+    std::string FractionalSpreadName;
+    std::string DiffStraightLineMeanName;
+    std::string LengthName;
+    std::string MaxFitGapLengthName;
+    std::string SlidingLinearFitRMSName;
+    std::string AngleDiffName;
+    std::string SecondaryPCARatioName;
+    std::string TertiaryPCARatioName;
+    std::string VertexDistanceName;
+    std::string HaloTotalRatioName;
+    std::string ConcentrationName;
+    std::string ConicalnessName;
+  };
+
   void FillPFPVars(const recob::PFParticle &particle,
                    const recob::PFParticle *primary,
                    const larpandoraobj::PFParticleMetadata *pfpMeta,
                    const art::Ptr<anab::T0> t0,
                    caf::SRPFP& srpfp,
-                   bool allowEmpty= false);
+                   const PFOCharLabelsStruct& pfoCharLabels,
+                   bool allowEmpty = false);
 
   void FillCNNScores(const recob::PFParticle &particle,
                      const sbn::PFPCNNScore *cnnscore,
@@ -171,6 +196,7 @@ namespace caf
                        bool use_ts0,
                        int64_t CRT_T0_reference_time, // ns, signed
                        double CRT_T1_reference_time, // us
+                       const std::map<std::pair<int, int>, sim::AuxDetSimChannel> &crtsimchanmap,
                        caf::SRTrack &srtrack,
                        bool allowEmpty = false);
 
@@ -200,6 +226,10 @@ namespace caf
 
   void FillPlaneChi2PID(const anab::ParticleID &particle_id, caf::SRTrkChi2PID &srpid);
   void FillTrackChi2PID(const std::vector<art::Ptr<anab::ParticleID>> particleIDs,
+                        caf::SRTrack& srtrack,
+                        bool allowEmpty = false);
+  void FillPlaneLikePID(const anab::ParticleID &particle_id, caf::SRTrkLikelihoodPID &srlikepid);
+  void FillTrackLikePID(const std::vector<art::Ptr<anab::ParticleID>>& particleIDs,
                         caf::SRTrack& srtrack,
                         bool allowEmpty = false);
 
@@ -238,6 +268,7 @@ namespace caf
                   bool use_ts0,
                   int64_t CRT_T0_reference_time, // ns, signed
                   double CRT_T1_reference_time, // us
+                  const std::map<std::pair<int, int>, sim::AuxDetSimChannel> &crtsimchanmap,
                   caf::SRCRTHit &srhit,
                   bool allowEmpty = false);
   void FillCRTTrack(const sbn::crt::CRTTrack &track,
@@ -252,10 +283,16 @@ namespace caf
   void FillSBNDCRTTrack(const sbnd::crt::CRTTrack &track,
                         caf::SRSBNDCRTTrack &srsbndcrttrack,
                         bool allowEmpty = false);
+  
+  void FillSBNDCRTVeto(const sbnd::crt::CRTVeto &veto,
+                       const std::vector<art::Ptr<sbnd::crt::CRTSpacePoint>> &points,
+                       caf::SRSBNDCRTVeto &srsbndcrtveto,
+                       bool allowEmpty = false);
 
   void FillICARUSOpFlash(const recob::OpFlash &flash,
                   std::vector<recob::OpHit const*> const& hits,
                   int cryo,
+                  std::vector<sbn::timing::PMTBeamSignal> RWMTimes,
                   caf::SROpFlash &srflash,
                   bool allowEmpty = false);
 
@@ -272,12 +309,23 @@ namespace caf
   void FillTPCPMTBarycenterMatch(const sbn::TPCPMTBarycenterMatch *matchInfo,
                            caf::SRSlice& slice);
 
+  void FillCorrectedOpFlashTiming(const std::vector<art::Ptr<sbn::CorrectedOpFlashTiming>> &slcCorrectedOpFlash,
+                           caf::SRSlice& slice);
+
   void FillCVNScores(const lcvn::Result *cvnResult,
                      caf::SRSlice& slice);
 
   void FillPFPRazzled(const art::Ptr<sbn::MVAPID> razzled,
                       caf::SRPFP& srpfp,
                       bool allowEmpty = false);
+
+  void FillSBNDFrameShiftInfo(const sbnd::timing::FrameShiftInfo &frame,
+                        caf::SRSBNDFrameShiftInfo &srsbndframe,
+                        bool allowEmpty = false);
+
+  void FillSBNDTimingInfo(const sbnd::timing::TimingInfo &timing,
+                        caf::SRSBNDTimingInfo &srsbndtiming,
+                        bool allowEmpty = false);
 
   template<class T, class U>
   void CopyPropertyIfSet( const std::map<std::string, T>& props, const std::string& search, U& value );

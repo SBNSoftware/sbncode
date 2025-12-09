@@ -269,7 +269,7 @@ namespace sbn {
 
         //Let's make a weights based on the calculator you have requested 
 
-        if(fParameterSet.fRWType == EventWeightParameterSet::kMultisim){
+        if(fParameterSet.fRWType == EventWeightParameterSet::kMultiSim){
 
           for (size_t i=0;i<weights.size();i++) {
             double randomN = (fParameterSet.fParameterMap.begin())->second[i];
@@ -326,7 +326,7 @@ namespace sbn {
           return weights;//done, all 1
         }// Hadronic parent check
 
-        if(fParameterSet.fRWType == EventWeightParameterSet::kMultisim){
+        if(fParameterSet.fRWType == EventWeightParameterSet::kMultiSim){
 
           for (unsigned int i = 0; int(weights.size()) < NUni; i++) {//if all weights are 1, no need to calculate weights;
             std::pair<bool, double> test_weight;
@@ -370,7 +370,7 @@ namespace sbn {
             };
 
           }//Iterate through the number of universes      
-        }//Yes, Multisim
+        }//Yes, MultiSim
       }
 
       if(count_weights){
