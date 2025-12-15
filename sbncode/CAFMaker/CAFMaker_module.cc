@@ -1935,11 +1935,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   if(evt.getByLabel( fParams.fBlipTag(), blipHandle)) //fill SR blips
   {
     FillBlip( (*blipHandle), srblips);
-    //for(int i=0; i<int(*(blipHandle)->size()); i++)
-    //  {
-    //   auto LarBlips = (*(blipHandle))[i];
-    //	FillBlip(   (LarBlips) , srblips);
-    //  }
   }
   // collect the TPC slices
   std::vector<art::Ptr<recob::Slice>> slices;
