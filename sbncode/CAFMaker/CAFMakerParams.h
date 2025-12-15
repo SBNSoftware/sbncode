@@ -634,11 +634,12 @@ namespace caf
       Comment("Label of CVN scores."),
       "cvn" 
     };
-    Atom<std::string> fBlipTag { Name("BlipTag"),
-	Comment("Provide a string to label the blip input"), "blipreco"
-	};
-
     
+    Atom<std::string> fBlipTag { 
+      Name("BlipTag"),
+      Comment("Provide a string to label the blip input"), 
+      "blipreco"
+    };
   };
 }
 
