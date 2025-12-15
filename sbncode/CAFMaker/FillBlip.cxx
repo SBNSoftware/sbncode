@@ -4,10 +4,8 @@ namespace caf
 {
     void FillBlip(   const std::vector<blip::Blip>& LarBlips, std::vector<caf::SRBlip>& CAF_Blips)
     {
-        int NBlips = LarBlips.size();
-        for(int iBlip=0; iBlip<NBlips; iBlip++)
+        for(blip::Blip const& CurrentBlip: LarBlips)
         {
-            blip::Blip CurrentBlip = LarBlips[iBlip];
             caf::SRBlip NewBlip;
             NewBlip.ID = CurrentBlip.ID;
             NewBlip.isValid = CurrentBlip.isValid;
