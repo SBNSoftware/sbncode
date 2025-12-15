@@ -30,7 +30,7 @@ namespace caf
             {
                 FillMCTruthBlip( CurrentBlip.truth, NewBlip.truthBlip );
             }
-            for(int iPlane=0; iPlane<int(CurrentBlip.kNplanes); iPlane++)
+            for(int iPlane=0; iPlane<int(blip::kNplanes); iPlane++)
             {
                 FillBlipRealtedHitCluster( CurrentBlip.clusters[iPlane], NewBlip.clusters[iPlane] );
             }
