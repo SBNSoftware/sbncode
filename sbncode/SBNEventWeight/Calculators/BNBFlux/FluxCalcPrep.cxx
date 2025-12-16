@@ -302,23 +302,19 @@ namespace sbn {
       flux.ftpy = fluxlist[inu].ftpy;
       flux.ftpz = fluxlist[inu].ftpz;
 
-      // int tptype = fluxlist[inu].ftptype;
-
       // If Dk2Nu flux, use ancestors to evaluate tptype
       if (fluxlist[inu].fFluxType == simb::kDk2Nu) {
 
-        // Find the first inelastic interaction
-        int firstInelastic = 0;
-        while (dk2nu_v->at(inu).ancestor[firstInelastic].proc.find("HadronInelastic")==std::string::npos||dk2nu_v->at(inu).ancestor[firstInelastic].proc.find("QEBooNE")!=std::string::npos) firstInelastic++;
-        
-        // Get the parent/ancestor (this should be the secondary in the p+Be interaction)        
-        flux.ftptype = dk2nu_v->at(inu).ancestor[firstInelastic].pdg;
-        flux.ftpx = dk2nu_v->at(inu).ancestor[firstInelastic].startpx;
-        flux.ftpy = dk2nu_v->at(inu).ancestor[firstInelastic].startpy;
-        flux.ftpz = dk2nu_v->at(inu).ancestor[firstInelastic].startpz;
-
+        for( const bsim::Ancestor & ancestor : dk2nu_v->at(inu).ancestor ) {
+          std::string aproc = ancestor.proc;
+          if( (aproc.find("BooNEHadronInelastic:BooNEpBeInteraction") != std::string::npos) && (aproc.find("QEBooNE") == std::string::npos) ) {
+            flux.ftptype = ancestor.pdg;
+            flux.ftpx = ancestor.startpx;
+            flux.ftpy = ancestor.startpy;
+            flux.ftpz = ancestor.startpz;
+          } // found it
+        } // find first inelastic
       }
-
 
       if (std::find(fprimaryHad.begin(), fprimaryHad.end(),(flux.ftptype)) == fprimaryHad.end() ){//if it does not contain any particles we need get 1
           weights.resize( NUni);
