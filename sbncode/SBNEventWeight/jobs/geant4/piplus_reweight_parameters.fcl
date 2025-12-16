@@ -1,0 +1,55 @@
+BEGIN_PROLOG
+
+## PiPlus available process keys: "abs", "cex", "prod", "dcex", "inel"
+
+PiPlusParameters: [
+  {
+    Name:       "fPiPlusInelLow"
+    Cut:        "inel"
+    Range:      [10., 200.]
+    Nominal:    1.0
+    Sigma:      0.2
+  } ,
+  {
+    Name:       "fPiPlusInelHigh"
+    Cut:        "inel"
+    Range:      [700., 2005.]
+    Nominal:    1.0
+    Sigma:      0.2
+  } ,
+
+  {
+    Name:       "fPiPlusAbs"
+    Cut:        "abs"
+    Range:      [10.0, 2005.00]
+    Nominal:    1.0
+    Sigma:      0.2
+  },
+
+  {
+    Name:       "fPiPlusCex"
+    Cut:        "cex"
+    Range:      [10.0, 2005.00]
+    Nominal:    1.0
+    Sigma:      0.2
+  },
+
+  {
+    Name:       "fPiPlusDCex"
+    Cut:        "dcex"
+    Range:      [10.0, 2005.00]
+    Nominal:    1.0
+    Sigma:      0.2
+  },
+
+  {
+    Name:       "fPiPlusPiProd"
+    Cut:        "prod"
+    Range:      [10.0, 2005.00]
+    Nominal:    1.0
+    Sigma:      0.2
+  }
+
+]
+
+END_PROLOG
