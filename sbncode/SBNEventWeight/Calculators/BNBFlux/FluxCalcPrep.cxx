@@ -213,8 +213,16 @@ namespace sbn {
 //      std::cout<<"SBNEventWeight : getweight for the "<<inu<<" th particles of an event"<< std::endl;
       //MCFlux & MCTruth
       art::Handle< std::vector<simb::MCFlux> > mcFluxHandle;
-      e.getByLabel(fGeneratorModuleLabel,mcFluxHandle);
+      e.getByLabel(fGeneratorModuleLabel, mcFluxHandle);
       std::vector<simb::MCFlux> const& fluxlist = *mcFluxHandle;
+
+      art::Handle< std::vector<bsim::Dk2Nu> > dk2nuHandle;
+      std::vector<bsim::Dk2Nu> const* dk2nu_v = nullptr;
+      e.getByLabel(fGeneratorModuleLabel, dk2nuHandle);
+      if (dk2nuHandle.isValid()) {
+        dk2nu_v = dk2nuHandle.product(); 
+      }
+
       //or do the above 3 lines in one line
 //      auto const& mclist = *e.getValidHandle<std::vector<simb::MCTruth>>(fGeneratorModuleLabel);
 
@@ -287,7 +295,28 @@ namespace sbn {
 
         // First let's check that the parent of the neutrino we are looking for is 
         //  the particle we intended it to be, if not set all weights to 1
-      if (std::find(fprimaryHad.begin(), fprimaryHad.end(),(fluxlist[inu].ftptype)) == fprimaryHad.end() ){//if it does not contain any particles we need get 1
+
+      simb::MCFlux flux;
+      flux.ftptype = fluxlist[inu].ftptype;
+      flux.ftpx = fluxlist[inu].ftpx;
+      flux.ftpy = fluxlist[inu].ftpy;
+      flux.ftpz = fluxlist[inu].ftpz;
+
+      // If Dk2Nu flux, use ancestors to evaluate tptype
+      if (fluxlist[inu].fFluxType == simb::kDk2Nu) {
+
+        for( const bsim::Ancestor & ancestor : dk2nu_v->at(inu).ancestor ) {
+          std::string aproc = ancestor.proc;
+          if( (aproc.find("BooNEHadronInelastic:BooNEpBeInteraction") != std::string::npos) && (aproc.find("QEBooNE") == std::string::npos) ) {
+            flux.ftptype = ancestor.pdg;
+            flux.ftpx = ancestor.startpx;
+            flux.ftpy = ancestor.startpy;
+            flux.ftpz = ancestor.startpz;
+          } // found it
+        } // find first inelastic
+      }
+
+      if (std::find(fprimaryHad.begin(), fprimaryHad.end(),(flux.ftptype)) == fprimaryHad.end() ){//if it does not contain any particles we need get 1
           weights.resize( NUni);
           std::fill(weights.begin(), weights.end(), 1);
           return weights;//done, all 1
@@ -301,19 +330,18 @@ namespace sbn {
             std::vector< float > Vrandom = (fParameterSet.fParameterMap.begin())->second;//vector of random #
             std::vector< float > subVrandom;//sub-vector of random numbers;
             if( CalcType == "PrimaryHadronNormalization"){//Normalization
-              test_weight = PHNWeightCalc(fluxlist[inu], Vrandom[i]);
+              test_weight = PHNWeightCalc(flux, Vrandom[i]);
 
             } else {
               subVrandom = {Vrandom.begin()+i*FitCov->GetNcols(), Vrandom.begin()+(i+1)*FitCov->GetNcols()};
               if( CalcType == "PrimaryHadronFeynmanScaling"){//FeynmanScaling
-                test_weight = PHFSWeightCalc(fluxlist[inu], subVrandom);
+                test_weight = PHFSWeightCalc(flux, subVrandom);
 
               } else if( CalcType == "PrimaryHadronSanfordWang"){//SanfordWang
-                test_weight = PHSWWeightCalc(fluxlist[inu], subVrandom);
+                test_weight = PHSWWeightCalc(flux, subVrandom);
 
               } else if( CalcType == "PrimaryHadronSWCentralSplineVariation"){//SWCentaralSplineVariation
-                test_weight = PHSWCSVWeightCalc(fluxlist[inu], subVrandom);
-
+                test_weight = PHSWCSVWeightCalc(flux, subVrandom);
               } else throw cet::exception(__PRETTY_FUNCTION__) << GetName() << ": this shouldnt happen.."<<std::endl;
             }
 
