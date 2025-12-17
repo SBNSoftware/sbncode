@@ -392,10 +392,13 @@ std::vector<float> Geant4WeightCalc::GetWeight(art::Event& e, size_t itruth ) {
 
         theTraj.AddStep( theStep );
 
-        for( size_t k = 0; k < daughter_PDGs.size(); ++k ){
-          theTraj.AddChild( new G4ReweightTraj(daughter_IDs[k], daughter_PDGs[k], mcpID, event_num, std::make_pair(0,0) ) );
-        }
       } // end loop over nSteps (istep)
+     
+      // add daughters 
+      for( size_t k = 0; k < daughter_PDGs.size(); ++k ){
+         theTraj.AddChild( new G4ReweightTraj(daughter_IDs[k], daughter_PDGs[k], mcpID, event_num, std::make_pair(0,0) ) );
+      }
+
       p_track_length = theTraj.GetTotalLength();
 
       p_init_momentum = sqrt( theTraj.GetEnergy()*theTraj.GetEnergy() - mass*mass );
