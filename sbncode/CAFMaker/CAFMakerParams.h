@@ -320,6 +320,12 @@ namespace caf
       "crthit" // icarus
     };
 
+    Atom<string> CRTSimChanLabel {
+      Name("CRTSimChanLabel"),
+      Comment("Label of AuxDetSimChannels."),
+      "genericcrt" // icarus
+    };
+
     Atom<string> CRTTrackLabel {
       Name("CRTTrackLabel"),
       Comment("Label of sbn CRT tracks."),
@@ -336,6 +342,18 @@ namespace caf
       Name("SBNDCRTTrackLabel"),
       Comment("Label of sbnd CRT tracks."),
       "crttracks" // sbnd
+    };
+
+    Atom<string> SBNDFrameShiftInfoLabel {
+      Name("SBNDFrameShiftInfoLabel"),
+      Comment("Label of sbnd frame shift."),
+      "" // sbnd
+    };
+
+    Atom<string> SBNDTimingInfoLabel {
+      Name("SBNDTimingInfoLabel"),
+      Comment("Label of sbnd timing shift."),
+      "" // sbnd
     };
 
     Atom<string> CRTPMTLabel {

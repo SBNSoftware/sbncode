@@ -51,8 +51,8 @@
 
 #include "larevt/SpaceCharge/SpaceCharge.h"
 #include "larevt/SpaceChargeServices/SpaceChargeService.h"
-#include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+#include "lardataalg/DetectorInfo/DetectorPropertiesData.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "larcorealg/Geometry/fwd.h"
 
@@ -63,8 +63,13 @@
 #include "sbnobj/Common/Calibration/TrackCaloSkimmerObj.h"
 #include "sbnobj/Common/CRT/CRTHitT0TaggingInfo.hh"
 #include "sbnobj/Common/CRT/CRTHitT0TaggingTruthInfo.hh"
+#include "sbnobj/SBND/CRT/CRTTrack.hh"
+#include "sbnobj/SBND/CRT/CRTSpacePoint.hh"
 
 #include "ITCSSelectionTool.h"
+
+// Useful functions
+#include "sbncode/CAFMaker/RecoUtils/RecoUtils.h" // sbn::ReadoutIDE, sbn::PrepTrueHits()...
 
 namespace sbn {
   class TrackCaloSkimmer;
@@ -98,9 +103,12 @@ private:
     double  t0Pandora;
     double  t0CRTTrack;
     double  t0CRTHit;
+    double  t0CRTSpacePoint;
     bool    hasT0Pandora;
     bool    hasT0CRTTrack;
     bool    hasT0CRTHit;
+    bool    hasT0CRTSpacePoint;
+    double  crtMatchingScore;
   };
 
   // Internal data struct
@@ -111,7 +119,6 @@ private:
     geo::Vector_t enddir;
     int ID;
   };
-
 
   // Represents a "Snippet" of ADCs shared by a set of hits on a wire
   struct Snippet {
@@ -161,7 +168,7 @@ private:
     const std::vector<art::Ptr<simb::MCParticle>> &mcparticles,
     const std::vector<geo::BoxBoundedGeo> &active_volumes,
     const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
-    const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map,
+    const std::map<int, std::vector<sbn::ReadoutIDE>> id_to_ide_map,
     const std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map,
     const detinfo::DetectorPropertiesData &dprop,
     const geo::GeometryCore *geo,
@@ -178,7 +185,8 @@ private:
     const geo::WireReadoutGeom *wireReadout,
     const detinfo::DetectorClocksData &dclock,
     const cheat::BackTrackerService *bt_serv,
-    const detinfo::DetectorPropertiesData &dprop);
+    const detinfo::DetectorPropertiesData &dprop,
+    const float &xshift);
   void FillTrackCRTHitInfo(const std::vector<art::Ptr<sbn::crt::CRTHitT0TaggingInfo>> &tag);
 
   // helpers
@@ -192,6 +200,7 @@ private:
   art::InputTag fPFPT0producer;
   art::InputTag fCRTTrackT0producer;
   art::InputTag fCRTHitT0producer;
+  art::InputTag fCRTSpacePointT0producer;
   art::InputTag fCALOproducer;
   art::InputTag fTRKproducer;
   art::InputTag fTRKHMproducer;

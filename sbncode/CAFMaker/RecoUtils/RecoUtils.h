@@ -24,11 +24,13 @@
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/Shower.h"
+#include "sbnanaobj/StandardRecord/SREnums.h"
 //#include "lardataobj/AnalysisBase/MVAPIDResult.h"
 //#include "lardataobj/AnalysisBase/ParticleID.h"
 #include "larsim/MCCheater/BackTrackerService.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
 #include "larcore/Geometry/Geometry.h"
+#include "larcorealg/Geometry/WireReadoutGeom.h"
 
 // c++
 #include <vector>
@@ -36,6 +38,25 @@
 
 // ROOT
 #include "TTree.h"
+
+namespace sim {
+  class IDE;
+}
+
+namespace sbn {
+  struct ReadoutIDE {
+    geo::WireID wire;              ///< Wire on a given plane closest to the drift path of the charge.
+    unsigned short tick = 0;       ///< Time tick at which the charge passes closest to the wire.
+    const sim::IDE *ide = nullptr; ///< Deposited charge information.
+  };
+  
+  // Helpers
+  std::map<int, std::vector<sbn::ReadoutIDE>> PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels, const geo::WireReadoutGeom &wireReadout);
+  std::map<int, std::vector<art::Ptr<recob::Hit>>> PrepTrueHits(const std::vector<art::Ptr<recob::Hit>> &allHits,
+    const detinfo::DetectorClocksData &clockData, const cheat::BackTrackerService &backtracker);
+  caf::Wall_t GetWallCross( const geo::BoxBoundedGeo &volume, const TVector3 p0, const TVector3 p1);
+  caf::g4_process_ GetG4ProcessID(const std::string &name);
+}
 
 namespace CAFRecoUtils{
 
@@ -47,4 +68,7 @@ namespace CAFRecoUtils{
 
   int GetShowerPrimary(const int g4ID);
 }
+
+
+
 #endif

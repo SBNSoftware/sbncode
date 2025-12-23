@@ -65,7 +65,7 @@ namespace sbn{
   // Collect device information to make BNBSpillInfo object. Used in
   // ICARUS and SBND modules.
   sbn::BNBSpillInfo makeBNBSpillInfo
-    (art::EventID const& eventID, double time, MWRdata_t const& MWRdata, std::vector<int> const& matched_MWR, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp)
+  (art::EventID const& eventID, double time, MWRdata_t const& MWRdata, std::vector<int> const& matched_MWR, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp,  const std::unique_ptr<ifbeam_ns::BeamFolder> & offsets,const  std::unique_ptr<ifbeam_ns::BeamFolder> & vp873)
   {
     
     auto const& [ MWR_times, unpacked_MWR ] = MWRdata; // alias
@@ -73,22 +73,34 @@ namespace sbn{
     // initializing all of our device carriers
     // device definitions can be found in BNBSpillInfo.h
     
-    double TOR860 = 0; // units e12 protons
-    double TOR875 = 0; // units e12 protons
-    double LM875A = 0; // units R/s
-    double LM875B = 0; // units R/s
-    double LM875C = 0; // units R/s
-    double HP875 = 0; // units mm
-    double VP875 = 0; // units mm
-    double HPTG1 = 0; // units mm
-    double VPTG1 = 0; // units mm
-    double HPTG2 = 0; // units mm
-    double VPTG2 = 0; // units mm
-    double BTJT2 = 0; // units Deg C
-    double THCURR = 0; // units kiloAmps
+    double TOR860 = -999; // units e12 protons
+    double TOR875 = -999; // units e12 protons
+    double LM875A = -999; // units R/s
+    double LM875B = -999; // units R/s
+    double LM875C = -999; // units R/s
+    double HP875 = -999; // units mm
+    double VP875 = -999; // units mm
+    double HPTG1 = -999; // units mm
+    double VPTG1 = -999; // units mm
+    double HPTG2 = -999; // units mm
+    double VPTG2 = -999; // units mm
+    double BTJT2 = -999; // units Deg C
+    double THCURR = -999; // units kiloAmps
     
-    double TOR860_time = 0; // units s
-    
+
+    double VP873 = -999; //units mm; not in the first IFBeam query bunch
+    double HP875Offset = -999;//units mm; make a another separate IFBeam query bunch for offsets
+    double VP875Offset = -999;//units mm
+    double VP873Offset = -999;//units mm
+    double HPTG1Offset = -999;//units mm
+    double HPTG2Offset = -999;//units mm
+    double VPTG1Offset = -999;//units mm
+    double VPTG2Offset = -999;//units mm
+
+    double TOR860_time = -999; // units s
+
+    double FOM = -999; 
+
     // Here we request all the devices
     // since sometimes devices fail to report we'll
     // allow each to throw an exception but still move forward
@@ -107,6 +119,21 @@ namespace sbn{
     try{bfp->GetNamedData(time, "E:VPTG2",&VPTG2);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
     try{bfp->GetNamedData(time, "E:BTJT2",&BTJT2);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
     try{bfp->GetNamedData(time, "E:THCURR",&THCURR);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+
+
+    
+    try{vp873->GetNamedData(time, "E:VP873",&VP873);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    
+    try{offsets->GetNamedData(time, "E_VP873S",&VP873Offset);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{offsets->GetNamedData(time, "E_HP875S",&HP875Offset);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{offsets->GetNamedData(time, "E_VP875S",&VP875Offset);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{offsets->GetNamedData(time, "E_HPTG1S",&HPTG1Offset);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{offsets->GetNamedData(time, "E_HPTG2S",&HPTG2Offset);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{offsets->GetNamedData(time, "E_VPTG1S",&VPTG1Offset);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    try{offsets->GetNamedData(time, "E_VPTG2S",&VPTG2Offset);}catch (WebAPIException &we) {mf::LogDebug("SBNDBNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+
+
+
   
     //crunch the times 
     unsigned long int time_closest_int = (int) TOR860_time;
@@ -129,6 +156,17 @@ namespace sbn{
     beamInfo.THCURR = THCURR;
     beamInfo.spill_time_s = time_closest_int;
     beamInfo.spill_time_ns = time_closest_ns;    
+    beamInfo.VP873 = VP873;
+    beamInfo.VP873Offset = VP873Offset;
+    beamInfo.HP875Offset = HP875Offset;
+    beamInfo.VP875Offset = VP875Offset;
+    beamInfo.HPTG1Offset = HPTG1Offset;
+    beamInfo.HPTG2Offset = HPTG2Offset;
+    beamInfo.VPTG1Offset = VPTG1Offset;
+    beamInfo.VPTG2Offset = VPTG2Offset;
+    beamInfo.FOM = FOM;
+
+       
   
     for(auto const& MWRdata: unpacked_MWR){
       std::ignore = MWRdata;
@@ -166,7 +204,11 @@ namespace sbn{
     // information, so we'll write it to the SubRun
     
     beamInfo.event = eventID.event(); // the rest of ID is known by art::SubRun
-   
+    
+    //for(size_t m=0; m< beamInfo.M875BB.size(); m++){
+    //std::cout << "M875BB:  " <<beamInfo.M875BB[m] << " | M876BB: " << beamInfo.M876BB[m] << " | MMTBB: " << beamInfo.MMBTBB[m] <<std::endl;
+    //}
+    
     return beamInfo;
   }
 
@@ -175,21 +217,21 @@ namespace sbn{
   // if time is just a single outlier.
   bool BrokenClock(double time, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp)
   {
-    double TOR860 = 0; // units e12 protons
-    double TOR875 = 0; // units e12 protons
-    double LM875A = 0; // units R/s
-    double LM875B = 0; // units R/s
-    double LM875C = 0; // units R/s
-    double HP875 = 0; // units mm
-    double VP875 = 0; // units mm
-    double HPTG1 = 0; // units mm
-    double VPTG1 = 0; // units mm
-    double HPTG2 = 0; // units mm
-    double VPTG2 = 0; // units mm
-    double BTJT2 = 0; // units Deg C
-    double THCURR = 0; // units kiloAmps
+    double TOR860 = -999; // units e12 protons
+    double TOR875 = -999; // units e12 protons
+    double LM875A = -999; // units R/s
+    double LM875B = -999; // units R/s
+    double LM875C = -999; // units R/s
+    double HP875 = -999; // units mm
+    double VP875 = -999; // units mm
+    double HPTG1 = -999; // units mm
+    double VPTG1 = -999; // units mm
+    double HPTG2 = -999; // units mm
+    double VPTG2 = -999; // units mm
+    double BTJT2 = -999; // units Deg C
+    double THCURR = -999; // units kiloAmps
     
-    double TOR860_time = 0; // units s
+    double TOR860_time = -999; // units s
     
     // Here we request all the devices
     // since sometimes devices fail to report we'll
@@ -331,4 +373,8 @@ namespace sbn{
     
     return { std::move(MWR_times), std::move(unpacked_MWR) };
   }
+
 }
+
+
+

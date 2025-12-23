@@ -25,6 +25,7 @@ cet_build_plugin( TrackCaloSkimmer art::module
                             sbncode_CAFMaker
                             sbnobj::Common_Calibration_dict
                             larevt::SpaceCharge
+                            caf_RecoUtils
 )
 
 cet_build_plugin(TrackCaloSkimmerSelectStoppingTrack art::tool
@@ -61,6 +62,16 @@ cet_build_plugin(TrackCaloSkimmerSelectAnode2CathodeTrack art::tool
 )
 
 cet_build_plugin(TrackCaloSkimmerSelectAllTrack art::tool
+                      LIBRARIES
+			    sbnobj::Common_Calibration_dict
+                            art::Persistency_Common
+                            art::Utilities canvas::canvas
+                            larcore::Geometry_Geometry_service
+                            cetlib::cetlib cetlib_except::cetlib_except
+                            ROOT::X3d
+)
+
+cet_build_plugin(TrackCaloSkimmerSelectClearCosmicMuon art::tool
                       LIBRARIES
 			    sbnobj::Common_Calibration_dict
                             art::Persistency_Common

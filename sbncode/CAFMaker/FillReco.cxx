@@ -68,6 +68,7 @@ namespace caf
                   bool use_ts0,
                   int64_t CRT_T0_reference_time, // ns, signed
                   double CRT_T1_reference_time, // us
+                  const std::map<std::pair<int, int>, sim::AuxDetSimChannel> &crtsimchanmap,
                   caf::SRCRTHit &srhit,
                   bool allowEmpty) {
 
@@ -85,6 +86,52 @@ namespace caf
 
     srhit.pe = hit.peshit;
     srhit.plane = hit.plane;
+
+    // lookup truth matching information
+    std::map<int, float> true_energy;
+    std::set<std::pair<int, int>> checked; // keep track of what AuxDetSimChannels we have looked at
+    for (auto const &mac_to_pes: hit.pesmap) {
+      int mac = (int)mac_to_pes.first;
+      for (const std::pair<int,float> &chan_pe: mac_to_pes.second) {
+        int chan = chan_pe.first;
+
+        // check for the 3-pos Minos ("m") modules, or the 1-pos other modules
+        bool is_minos_module = mac < 94;
+        int pos = is_minos_module ? (chan/10 + 1) : 1;
+
+        std::pair<int, int> key {mac, pos};
+        if (checked.count(key)) continue; // already looked here
+
+        checked.insert(key);
+   
+        if (crtsimchanmap.count(key)) {
+          const sim::AuxDetSimChannel &crtsimchan = crtsimchanmap.at(key);
+          for (const sim::AuxDetIDE &ide: crtsimchan.AuxDetIDEs()) {
+            double hit_time_us = srhit.time;
+            double tru_time_us = ide.entryT/1e3; // ns -> us 
+
+            // 1us cut on truth matching
+            if (abs(hit_time_us - tru_time_us) < 1) {
+            // std::cout << "Hit at time: " << (srhit.time/1e3) << " " << (srhit.t0/1e3) << " " << (srhit.t1/1e3) << " pes: " << chan_pe.second << " of " << srhit.pe << " on FEB: " << mac << " channel: " << chan << " matched to AuxDetID: " << crtsimchan.AuxDetID() << " G4ID: " << ide.trackID << " E: " << ide.energyDeposited << " T: " << (ide.entryT/1e6) << std::endl;
+              true_energy[ide.trackID] += ide.energyDeposited;
+            }
+
+          }
+        }
+      }
+    }
+
+    // sort results by energy
+    std::vector<std::pair<float, int>> true_energy_list;
+    for (auto const &pair: true_energy) true_energy_list.push_back(std::make_pair(pair.second, pair.first));
+    std::sort(true_energy_list.begin(), true_energy_list.end(), std::greater<>());
+
+    // Save to the SRCRTHit truth
+    for (auto const &pair: true_energy_list) {
+      srhit.truth.match_e.push_back(pair.first);
+      srhit.truth.match_id.push_back(pair.second);
+    }
+    if (true_energy_list.size() > 0) srhit.truth.bestmatch_id = true_energy_list[0].second;
 
   }
 
@@ -139,6 +186,33 @@ namespace caf
     srsbndcrttrack.time_err = track.Ts0Err();
     srsbndcrttrack.pe       = track.PE();
     srsbndcrttrack.tof      = track.ToF();
+  }
+
+  void FillSBNDFrameShiftInfo(const sbnd::timing::FrameShiftInfo &frame,
+                        caf::SRSBNDFrameShiftInfo &srsbndframe,
+                        bool allowEmpty)
+  {
+    srsbndframe.timingType = frame.TimingType();
+    srsbndframe.frameTdcCrtt1 = frame.FrameTdcCrtt1();
+    srsbndframe.frameTdcBes = frame.FrameTdcBes();
+    srsbndframe.frameTdcRwm = frame.FrameTdcRwm();
+    srsbndframe.frameHltCrtt1 = frame.FrameHltCrtt1();
+    srsbndframe.frameHltBeamGate = frame.FrameHltBeamGate();
+    srsbndframe.frameApplyAtCaf = frame.FrameApplyAtCaf();
+  }
+
+  void FillSBNDTimingInfo(const sbnd::timing::TimingInfo &timing,
+                        caf::SRSBNDTimingInfo &srsbndtiming,
+                        bool allowEmpty)
+  {
+    srsbndtiming.rawDAQHeaderTimestamp = timing.RawDAQHeaderTimestamp();
+    srsbndtiming.tdcCrtt1 = timing.TdcCrtt1();
+    srsbndtiming.tdcBes = timing.TdcBes();
+    srsbndtiming.tdcRwm = timing.TdcRwm();
+    srsbndtiming.tdcEtrig = timing.TdcEtrig();
+    srsbndtiming.hltCrtt1 = timing.HltCrtt1();
+    srsbndtiming.hltEtrig = timing.HltEtrig();
+    srsbndtiming.hltBeamGate = timing.HltBeamGate();
   }
 
   void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,
@@ -608,6 +682,7 @@ namespace caf
                        bool use_ts0,
                        int64_t CRT_T0_reference_time, // ns, signed
                        double CRT_T1_reference_time, // us
+                       const std::map<std::pair<int, int>, sim::AuxDetSimChannel> &crtsimchanmap,
                        caf::SRTrack &srtrack,
                        bool allowEmpty)
   {
@@ -634,7 +709,7 @@ namespace caf
       srtrack.crthit.hit.plane = t0match[0]->fID;
     }
     if (hitmatch.size()) {
-      FillCRTHit(*hitmatch[0], use_ts0, CRT_T0_reference_time, CRT_T1_reference_time, srtrack.crthit.hit, allowEmpty);
+      FillCRTHit(*hitmatch[0], use_ts0, CRT_T0_reference_time, CRT_T1_reference_time, crtsimchanmap, srtrack.crthit.hit, allowEmpty);
     }
   }
 
@@ -794,10 +869,30 @@ namespace caf
     }
   }
 
+  // Helper function: get the e field
+  double GetEfield(const detinfo::DetectorPropertiesData& dprop, spacecharge::SpaceCharge const& sce, const geo::Point_t& loc) {
+
+    double EField = dprop.Efield();
+    if (sce.EnableSimEfieldSCE()) {
+      // Gets fractional E field distortions w.r.t. the nominal field on x-axis
+      geo::Vector_t EFieldOffsets = sce.GetEfieldOffsets(loc);
+      // Add 1 in X direction as this is the direction of the drift field, not caring if it is +x or -x direction, since we only want |E|
+      EFieldOffsets += geo::Vector_t{1, 0, 0};
+      // Convert to Absolute E Field from relative
+      EFieldOffsets *= EField;
+      // We only care about the magnitude for recombination
+      EField = EFieldOffsets.r();
+    }
+    return EField;
+  }
+
   void FillTrackPlaneCalo(const anab::Calorimetry &calo, 
+        const recob::Track& track,
         const std::vector<art::Ptr<recob::Hit>> &hits,
+        const std::vector<const recob::TrackHitMeta*>& thms,
         bool fill_calo_points, float fillhit_rrstart, float fillhit_rrend, 
         const detinfo::DetectorPropertiesData &dprop,
+        const spacecharge::SpaceCharge &sce,
         caf::SRTrackCalo &srcalo) {
 
     // Collect info from Calorimetry
@@ -832,7 +927,8 @@ namespace caf
 
         // lookup the wire -- the Calorimery object makes this
         // __way__ harder than it should be
-        for (const art::Ptr<recob::Hit> &h: hits) {
+        for (unsigned i_hit = 0; i_hit < hits.size(); i_hit++) {
+          const art::Ptr<recob::Hit> &h = hits[i_hit];
           if (h.key() == tps[i]) {
             p.wire = h->WireID().Wire;
             p.tpc = h->WireID().TPC;
@@ -844,6 +940,19 @@ namespace caf
             p.mult = h->Multiplicity();
             p.start = h->StartTick();
             p.end = h->EndTick();
+
+
+            // Get the trajectory point index from this hit. Again -- this is too hard. 
+            //
+            // Use this to get the (SCE corrected) efield and the angle to the drift direction
+            unsigned traj_point_index = thms.at(i_hit)->Index();
+            if (track.HasValidPoint(traj_point_index)) {
+              float costh_drift = track.DirectionAtPoint(traj_point_index).X();
+              float phi  = acos(abs(costh_drift));
+              float efield = GetEfield(dprop, sce, track.LocationAtPoint(traj_point_index));
+              p.efield = efield;
+              p.phi = phi;
+            }
           }
         }
 
@@ -897,9 +1006,12 @@ namespace caf
   }
 
   void FillTrackCalo(const std::vector<art::Ptr<anab::Calorimetry>> &calos,
+                     const recob::Track& track,
                      const std::vector<art::Ptr<recob::Hit>> &hits,
+                     const std::vector<const recob::TrackHitMeta*>& thms,
                      bool fill_calo_points, float fillhit_rrstart, float fillhit_rrend,
                      const detinfo::DetectorPropertiesData &dprop,
+                     const spacecharge::SpaceCharge &sce,
                      caf::SRTrack& srtrack,
                      bool allowEmpty)
   {
@@ -912,7 +1024,7 @@ namespace caf
       if (calo.PlaneID()) {
         unsigned plane_id = calo.PlaneID().Plane;
         assert(plane_id < 3);
-        FillTrackPlaneCalo(calo, hits, fill_calo_points, fillhit_rrstart, fillhit_rrend, dprop, srtrack.calo[plane_id]);
+        FillTrackPlaneCalo(calo, track, hits, thms, fill_calo_points, fillhit_rrstart, fillhit_rrend, dprop, sce, srtrack.calo[plane_id]);
       }
     }
 
@@ -1127,6 +1239,8 @@ namespace caf
       slice.barycenterFM.deltaZ_Trigger  = matchInfo->deltaZ_Trigger;
       slice.barycenterFM.deltaY_Trigger  = matchInfo->deltaY_Trigger;
       slice.barycenterFM.radius_Trigger  = matchInfo->radius_Trigger;
+      slice.barycenterFM.score  = matchInfo->score;
+      slice.barycenterFM.chi2  = matchInfo->chi2;
     }
   }
 

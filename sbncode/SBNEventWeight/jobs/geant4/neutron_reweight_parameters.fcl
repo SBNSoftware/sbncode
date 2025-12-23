@@ -1,0 +1,15 @@
+BEGIN_PROLOG
+
+## Neutron available process keys: "total"
+
+NeutronParameters: [ 
+  {
+    Name:       "fNeutronTotal"
+    Cut:        "total"
+    Range:      [100.0, 2005.0]
+    Nominal:    1.0
+    Sigma:      0.2
+  }
+]
+
+END_PROLOG 

@@ -29,6 +29,7 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   larcorealg::Geometry
                   larcore::Geometry_Geometry_service
                   larcorealg::GeoAlgo
+                  lardataalg::headers
                   larsim::MCCheater_BackTrackerService_service
                   nusimdata::SimulationBase
                   larsim::MCCheater_ParticleInventoryService_service
@@ -36,6 +37,7 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   sbnobj::Common_Reco
                   sbnobj::Common_Analysis
                   sbnobj::SBND_CRT
+                  sbnobj::SBND_Timing
                   lardataalg::DetectorInfo
                   art::Framework_Services_System_TriggerNamesService_service
                   sbncode_Metadata_MetadataSBN_service
@@ -65,6 +67,7 @@ cet_build_plugin ( CAFMaker art::module
                hep_concurrency::hep_concurrency
                lardataobj::RecoBase
                nurandom::RandomUtils_NuRandomService_service
+               lardata::DetectorPropertiesService
                lardata::DetectorClocksService
                BASENAME_ONLY
             )

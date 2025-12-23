@@ -16,7 +16,7 @@
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
 find_package(cetmodules 3.20.00 REQUIRED)
-project(sbncode VERSION 10.06.00.01 LANGUAGES CXX)
+project(sbncode VERSION 10.06.00.09 LANGUAGES CXX)
 
 message(STATUS "\n\n  ==========================   ${PROJECT_NAME}   ==========================")
 
@@ -77,6 +77,7 @@ find_package( CLHEP REQUIRED )
 find_package( ROOT REQUIRED )
 find_package( Geant4 REQUIRED )
 find_package( Boost COMPONENTS system filesystem REQUIRED )
+find_package( geant4reweight REQUIRED )
 
 # macros for dictionary and simple_plugin
 include(ArtDictionary)

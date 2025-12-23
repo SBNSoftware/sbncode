@@ -5,15 +5,18 @@
 
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
-#include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
+#include "lardataalg/DetectorInfo/DetectorPropertiesData.h"
 
 // LArSoft includes
 #include "larcorealg/Geometry/fwd.h"
+
+#include "larevt/SpaceCharge/SpaceCharge.h"
 
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Shower.h"
 #include "lardataobj/RecoBase/Slice.h"
 #include "lardataobj/RecoBase/Track.h"
+#include "lardataobj/RecoBase/TrackHitMeta.h"
 #include "lardataobj/RecoBase/Vertex.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/SpacePoint.h"
@@ -25,6 +28,7 @@
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "lardataobj/RecoBase/MCSFitResult.h"
+#include "lardataobj/Simulation/AuxDetSimChannel.h"
 #include "larrecodnn/CVN/func/Result.h"
 #include "sbnobj/Common/Reco/Stub.h"
 #include "sbnobj/Common/Reco/RangeP.h"
@@ -42,6 +46,9 @@
 #include "sbnobj/SBND/CRT/CRTTrack.hh"
 #include "sbnobj/Common/CRT/CRTPMTMatching.hh"
 #include "sbnobj/Common/CRT/CRTHitT0TaggingInfo.hh"
+#include "sbnobj/SBND/Timing/TimingInfo.hh"
+#include "sbnobj/SBND/Timing/FrameShiftInfo.hh"
+
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 
@@ -171,6 +178,7 @@ namespace caf
                        bool use_ts0,
                        int64_t CRT_T0_reference_time, // ns, signed
                        double CRT_T1_reference_time, // us
+                       const std::map<std::pair<int, int>, sim::AuxDetSimChannel> &crtsimchanmap,
                        caf::SRTrack &srtrack,
                        bool allowEmpty = false);
 
@@ -204,9 +212,12 @@ namespace caf
                         bool allowEmpty = false);
 
   void FillTrackPlaneCalo(const anab::Calorimetry &calo, 
+                     const recob::Track& track,
                      const std::vector<art::Ptr<recob::Hit>> &hits,
+                     const std::vector<const recob::TrackHitMeta*>& thms,
                      bool fill_calo_points, float fillhit_rrstart, float fillhit_rrend, 
                      const detinfo::DetectorPropertiesData &dprop,
+                     spacecharge::SpaceCharge const& sce,
                      caf::SRTrackCalo &srcalo);
 
   void FillTrackScatterClosestApproach(const art::Ptr<sbn::ScatterClosestApproach> closestapproach,
@@ -222,9 +233,12 @@ namespace caf
                         bool allowEmpty = false);
 
   void FillTrackCalo(const std::vector<art::Ptr<anab::Calorimetry>> &calos,
+                     const recob::Track& track,
                      const std::vector<art::Ptr<recob::Hit>> &hits,
+                     const std::vector<const recob::TrackHitMeta*>& thms,
                      bool fill_calo_points, float fillhit_rrstart, float fillhit_rrend,
                      const detinfo::DetectorPropertiesData &dprop,
+                     spacecharge::SpaceCharge const& sce,
                      caf::SRTrack& srtrack,
                      bool allowEmpty = false);
 
@@ -238,6 +252,7 @@ namespace caf
                   bool use_ts0,
                   int64_t CRT_T0_reference_time, // ns, signed
                   double CRT_T1_reference_time, // us
+                  const std::map<std::pair<int, int>, sim::AuxDetSimChannel> &crtsimchanmap,
                   caf::SRCRTHit &srhit,
                   bool allowEmpty = false);
   void FillCRTTrack(const sbn::crt::CRTTrack &track,
@@ -278,6 +293,14 @@ namespace caf
   void FillPFPRazzled(const art::Ptr<sbn::MVAPID> razzled,
                       caf::SRPFP& srpfp,
                       bool allowEmpty = false);
+
+  void FillSBNDFrameShiftInfo(const sbnd::timing::FrameShiftInfo &frame,
+                        caf::SRSBNDFrameShiftInfo &srsbndframe,
+                        bool allowEmpty = false);
+
+  void FillSBNDTimingInfo(const sbnd::timing::TimingInfo &timing,
+                        caf::SRSBNDTimingInfo &srsbndtiming,
+                        bool allowEmpty = false);
 
   template<class T, class U>
   void CopyPropertyIfSet( const std::map<std::string, T>& props, const std::string& search, U& value );
