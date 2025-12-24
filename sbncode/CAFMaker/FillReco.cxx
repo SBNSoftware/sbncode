@@ -583,20 +583,51 @@ namespace caf
   void FillSliceNuGraph(const std::vector<art::Ptr<recob::Hit>> &inputHits,
 			const std::vector<art::Ptr<anab::FeatureVector<1>>> &ngFilterResult,
 			const std::vector<art::Ptr<anab::FeatureVector<5>>> &ngSemanticResult,
+      const float vtx_wire[3], 
+      const float vtx_tick[3],
 			caf::SRSlice &slice)
   {
 
-    //need to double check that the slice processed by NuGraph is the same under consideration
-    // std::cout << "sizes=" << inputHits.size() << " " << " " << ngFilterResult.size() << " " << ngSemanticResult.size() << std::endl;
+    // nugraph filter fraction
     unsigned int nHits = inputHits.size();
-    // implementing this same-slice check with the updated architecture would be a major headache and I believe is not required given how inputHits is retrieved.
-    // if (nHits==0 || nHits!=sliceHitsMap.size() || inputHits[0].key()!=sliceHitsMap[0]) return;//not the same slice!
-
     unsigned int npass = 0;
+
+    std::cout << "number of hits: " << nHits << std::endl;
+
     for ( unsigned int i = 0; i < nHits; i++ ) {
       if (ngFilterResult.at(i)->at(0)>=ng_filter_cut) npass++;
     }
     slice.ng_filt_pass_frac = float(npass)/nHits;
+
+    // nugraph HIP vertex tagging
+    for (unsigned int plane = 0; plane < 3; ++plane) {
+
+      unsigned int nHIPHits = 0;
+
+      for ( unsigned int i = 0; i < nHits; i++ ) {
+        const recob::Hit& hit = *inputHits.at(i);
+        if (hit.WireID().Plane != plane) continue;
+
+        auto const& sem = *ngSemanticResult.at(i);
+        std::vector<float> semVec;
+        for (size_t k = 0; k < sem.size(); ++k) semVec.push_back(sem.at(k));
+        auto highestScoreIdx = std::distance(
+          semVec.begin(), 
+          std::max_element(semVec.begin(), semVec.end())
+        );
+        if (highestScoreIdx != 1) continue; // look for HIP hits
+
+        float dwire = std::abs(float(hit.WireID().Wire) - vtx_wire[plane]);
+        if (dwire > 10) continue; 
+
+        float dtick = std::abs(hit.PeakTime() - vtx_tick[plane]);
+        if (dtick > 50) continue;
+
+        nHIPHits += 1;
+      }
+
+      slice.ng_plane[plane].ng_vtx_hip_hits = nHIPHits;
+    }
   }
 
   //......................................................................

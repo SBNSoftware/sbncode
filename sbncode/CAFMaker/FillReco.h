@@ -109,9 +109,10 @@ namespace caf
   /**
    * @brief Fills the results from NuGraph at slice level
    * @param inputHits (pointers to) the hits associated to the slice
-   * @param sliceHitsMap maps position of hits in collection input to NuGraph (slice only) to the one input to Pandora (all gaus hits)
    * @param ngFilterResult NuGraph filter result, for each hit
    * @param ngSemanticResult NuGraph semnatic result, for each hit (MIP track, HIP, shower, Michel electron, diffuse activity)
+   * @param vtx_wire vertex coordinates projected onto wires, per plane
+   * @param vtx_tick vertex coordinates projected onto ticks, per plane
    * @param[out] slice the destination slice object
    *
    * Hits with filter value (`ngFilterResult`) lower than `ng_filter_cut` are counted as background.
@@ -119,6 +120,8 @@ namespace caf
   void FillSliceNuGraph(const std::vector<art::Ptr<recob::Hit>> &inputHits,
 			const std::vector<art::Ptr<anab::FeatureVector<1>>> &ngFilterResult,
 			const std::vector<art::Ptr<anab::FeatureVector<5>>> &ngSemanticResult,
+      const float vtx_wire[3], 
+      const float vtx_tick[3],
 			caf::SRSlice &slice);
 
   bool SelectSlice(const caf::SRSlice &slice, bool cut_clear_cosmic);
