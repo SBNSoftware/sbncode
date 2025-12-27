@@ -20,7 +20,6 @@ project(sbncode VERSION 10.14.02 LANGUAGES CXX)
 
 message(STATUS "\n\n  ==========================   ${PROJECT_NAME}   ==========================")
 
-
 include(CetCMakeEnv)
 cet_cmake_env()
 
@@ -84,6 +83,7 @@ find_package( geant4reweight REQUIRED )
 include(ArtDictionary)
 include(ArtMake)
 include(BuildPlugins)
+include(SBNutils)
 
 add_subdirectory(sbncode)
 add_subdirectory(fcl)
