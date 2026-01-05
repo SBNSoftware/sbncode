@@ -34,7 +34,7 @@ physics: {
  stream1: [ out1 ]
 }
 
-physics.producers.sbndbnbextinfo.module_type: "SBNDBNBEXTRetriever"
+physics.producers.bnbextinfo.module_type: "SBNDBNBEXTRetriever"
 
 outputs: {
  out1: {
@@ -44,4 +44,4 @@ outputs: {
    compressionLevel: 1
  }
 }
-physics.producers.sbndbnbextinfo.fileNames: @local::outputs.out1.fileName
+physics.producers.bnbextinfo.fileNames: @local::outputs.out1.fileName
