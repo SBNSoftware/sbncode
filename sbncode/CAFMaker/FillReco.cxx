@@ -592,8 +592,6 @@ namespace caf
     unsigned int nHits = inputHits.size();
     unsigned int npass = 0;
 
-    std::cout << "number of hits: " << nHits << std::endl;
-
     for ( unsigned int i = 0; i < nHits; i++ ) {
       if (ngFilterResult.at(i)->at(0)>=ng_filter_cut) npass++;
     }
@@ -602,7 +600,7 @@ namespace caf
     // nugraph HIP vertex tagging
     for (unsigned int plane = 0; plane < 3; ++plane) {
 
-      unsigned int nHIPHits = 0;
+      int nHIPHits = 0;
 
       for ( unsigned int i = 0; i < nHits; i++ ) {
         const recob::Hit& hit = *inputHits.at(i);
