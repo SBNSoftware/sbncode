@@ -73,6 +73,7 @@ private:
   double fReferenceRayDistance;
   double fReferenceHiggsMass;
   double fReferenceHiggsMixing;
+  bool fNewFormFactor;
   double fReferenceHiggsEnergy;
   double fReferenceHiggsKaonEnergy;
 
@@ -132,7 +133,17 @@ double PionPartialWidth(double pion_mass, double higs_mass, double mixing) {
 
   double higgs_vev = Constants::Instance().higgs_vev;
 
-  double form_factor = (2. / 9.) * higs_mass * higs_mass + (11. / 9.) * pion_mass * pion_mass;
+  double form_factor = 0.;
+  if (fNewFormFactor) {
+    // New, improved form factor based on the plot in arXiv:1909.11670v4
+    // This form factor is significnatly different than in older versions
+    // The expression is a fit to the Fig. 1 left panel in arXiv:1909.11670v4
+    form_factor = 0.289 * pow(higs_mass - 2 * Constants::Instance().pizero_mass,1.5);
+  }
+  else {
+    // Old form factor
+    (2. / 9.) * higs_mass * higs_mass + (11. / 9.) * pion_mass * pion_mass;
+  }
 
   double width = (mixing * mixing * 3 * form_factor * form_factor / (32 * M_PI * higgs_vev * higgs_vev * higs_mass)) * pow(1- 4. * pion_mass * pion_mass / (higs_mass * higs_mass), 1. / 2.);
 
@@ -166,6 +177,7 @@ void HiggsMakeDecay::configure(fhicl::ParameterSet const &pset)
   fReferenceRayDistance = pset.get<double>("ReferenceRayDistance", 0.);
   fReferenceHiggsMass = pset.get<double>("ReferenceHiggsMass", -1);
   fReferenceHiggsMixing = pset.get<double>("ReferenceHiggsMixing", -1);
+  fReferenceHiggsMass = pset.get<bool>("NewFormFactor", -1);
   fReferenceHiggsEnergy = pset.get<double>("ReferenceHiggsEnergy", -1);
   fReferenceHiggsKaonEnergy = pset.get<double>("ReferenceHiggsEnergyFromKaonEnergy", -1.);
 
