@@ -583,12 +583,13 @@ namespace caf
   void FillSliceNuGraph(const std::vector<art::Ptr<recob::Hit>> &inputHits,
 			const std::vector<art::Ptr<anab::FeatureVector<1>>> &ngFilterResult,
 			const std::vector<art::Ptr<anab::FeatureVector<5>>> &ngSemanticResult,
+      const std::vector<std::vector<art::Ptr<recob::Hit>>> &fmPFPartHits,
       const float vtx_wire[3], 
       const float vtx_tick[3],
 			caf::SRSlice &slice)
   {
 
-    // nugraph filter fraction
+    // NuGraph2 filter fraction
     unsigned int nHits = inputHits.size();
     unsigned int npass = 0;
 
@@ -597,10 +598,20 @@ namespace caf
     }
     slice.ng_filt_pass_frac = float(npass)/nHits;
 
-    // nugraph HIP vertex tagging
+    // look-up between hits and PFPs
+    std::set<art::Ptr<recob::Hit>> pfpHitSet;
+    for (const auto& pfpHits : fmPFPartHits) {
+      for (const auto& hit : pfpHits) {
+        if (hit) pfpHitSet.insert(hit);
+      }
+    }
+
+    // NuGraph2 plane-by-plane slice variables
     for (unsigned int plane = 0; plane < 3; ++plane) {
 
-      int nHIPHits = 0;
+      int nHIPHits = 0;             ///< HIP tagging at interaction vertex
+      int nShrHits = 0;             ///< shower hits in the slice
+      int nUnclusteredShrHits = 0;  ///< shower hits in the slice not belonging to a PFP
 
       for ( unsigned int i = 0; i < nHits; i++ ) {
         const recob::Hit& hit = *inputHits.at(i);
@@ -613,18 +624,30 @@ namespace caf
           semVec.begin(), 
           std::max_element(semVec.begin(), semVec.end())
         );
-        if (highestScoreIdx != 1) continue; // look for HIP hits
 
+        // HIP tagging
         float dwire = std::abs(float(hit.WireID().Wire) - vtx_wire[plane]);
-        if (dwire > 10) continue; 
-
         float dtick = std::abs(hit.PeakTime() - vtx_tick[plane]);
-        if (dtick > 50) continue;
+        if ((highestScoreIdx == 1) && (dwire <= 10) && (dtick <= 50))
+          nHIPHits += 1;
 
-        nHIPHits += 1;
+        // shower hits
+        if (highestScoreIdx == 2) {
+
+          // all shower hits
+          nShrHits += 1;
+
+          // unclustered shower hits
+          art::Ptr<recob::Hit> hitPtr = inputHits.at(i);
+          if (pfpHitSet.find(hitPtr) == pfpHitSet.end()) {
+            nUnclusteredShrHits += 1;
+          }
+        }
       }
 
       slice.ng_plane[plane].ng_vtx_hip_hits = nHIPHits;
+      slice.ng_plane[plane].shr_hits = nShrHits;
+      slice.ng_plane[plane].unclustered_shr_hits = nUnclusteredShrHits;
     }
   }
 

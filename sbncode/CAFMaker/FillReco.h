@@ -110,7 +110,8 @@ namespace caf
    * @brief Fills the results from NuGraph at slice level
    * @param inputHits (pointers to) the hits associated to the slice
    * @param ngFilterResult NuGraph filter result, for each hit
-   * @param ngSemanticResult NuGraph semnatic result, for each hit (MIP track, HIP, shower, Michel electron, diffuse activity)
+   * @param ngSemanticResult NuGraph semantic result, for each hit (MIP track, HIP, shower, Michel electron, diffuse activity)
+   * @param fmPFPartHits vector of pointers-to-hits lists, for each PFP
    * @param vtx_wire vertex coordinates projected onto wires, per plane
    * @param vtx_tick vertex coordinates projected onto ticks, per plane
    * @param[out] slice the destination slice object
@@ -120,6 +121,7 @@ namespace caf
   void FillSliceNuGraph(const std::vector<art::Ptr<recob::Hit>> &inputHits,
 			const std::vector<art::Ptr<anab::FeatureVector<1>>> &ngFilterResult,
 			const std::vector<art::Ptr<anab::FeatureVector<5>>> &ngSemanticResult,
+      const std::vector<std::vector<art::Ptr<recob::Hit>>> &fmPFPartHits,
       const float vtx_wire[3], 
       const float vtx_tick[3],
 			caf::SRSlice &slice);
