@@ -138,7 +138,7 @@ double PionPartialWidth(double pion_mass, double higs_mass, double mixing, bool 
     // New, improved form factor based on the plot in arXiv:1909.11670v4
     // This form factor is significnatly different than in older versions
     // The expression is a fit to the Fig. 1 left panel in arXiv:1909.11670v4
-    form_factor = pow(0.289 * pow(higs_mass - 2 * Constants::Instance().pizero_mass,1.5),0.5);
+    form_factor = 0.537569 * pow(higs_mass - 2 * Constants::Instance().pizero_mass,0.75);
   }
   else {
     // Old form factor
