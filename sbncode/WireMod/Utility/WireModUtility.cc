@@ -552,6 +552,19 @@ sys::WireModUtility::ScaleValues_t sys::WireModUtility::GetViewScaleValues(sys::
     if(temp_scale>0.001) scales.r_sigma *= temp_scale;
   }
 
+  if (applyXXWScale)
+  {
+    if (graph2Ds_Charge_XXW[plane] == nullptr || 
+        graph2Ds_Sigma_XXW [plane] == nullptr  )
+      throw cet::exception("WireModUtility")
+        << "Tried to apply XXW scale factor, but could not find graphs. Check that you have set those in the utility.";
+    temp_scale = graph2Ds_Charge_XXW[plane]->Interpolate(truth_props.x, ThetaXW(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()));
+    if(temp_scale>0.001) scales.r_Q *= temp_scale;
+
+    temp_scale  = graph2Ds_Sigma_YZ [plane]->Interpolate(truth_props.x, ThetaXW(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()));
+    if(temp_scale>0.001) scales.r_sigma *= temp_scale;
+  }
+
   if (applyXZAngleScale)
   {
     if (splines_Charge_XZAngle[plane] == nullptr || 

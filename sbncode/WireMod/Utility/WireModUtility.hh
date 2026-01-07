@@ -43,6 +43,7 @@ namespace sys {
       bool   applyXZAngleScale;                           // do we scale with XZ angle?
       bool   applyYZAngleScale;                           // do we scale with YZ angle?
       bool   applydEdXScale;                              // do we scale with dEdx?
+      bool   applyXXWScale;                               // do we scale with X vs ThXW?
       double readoutWindowTicks;                          // how many ticks are in the readout window?
       double tickOffset;                                  // do we want an offset in the ticks?
 
@@ -58,6 +59,8 @@ namespace sys {
       std::vector<TSpline3*> splines_Sigma_dEdX;          // the splines for the width correction in dEdX
       std::vector<TGraph2D*> graph2Ds_Charge_YZ;          // the graphs for the charge correction in YZ
       std::vector<TGraph2D*> graph2Ds_Sigma_YZ;           // the graphs for the width correction in YZ
+      std::vector<TGraph2D*> graph2Ds_Charge_XXW;         // the graphs for the charge correction in XXW
+      std::vector<TGraph2D*> graph2Ds_Sigma_XXW;          // the graphs for the width correction in XXW
 
       // lets try making a constructor here
       // assume we can get a geometry service, a detector clcok, and a detector properties
@@ -72,6 +75,7 @@ namespace sys {
                      const bool& arg_ApplyXZAngleScale = true,
                      const bool& arg_ApplyYZAngleScale = true,
                      const bool& arg_ApplydEdXScale = true,
+                     const bool& arg_ApplyXXWScale = true,
                      const double& arg_TickOffset = 0)
       : geometry(geom),
         wireReadout(wireRead),
@@ -82,6 +86,7 @@ namespace sys {
         applyXZAngleScale(arg_ApplyXZAngleScale),
         applyYZAngleScale(arg_ApplyYZAngleScale),
         applydEdXScale(arg_ApplydEdXScale),
+        applyXXWScale(arg_ApplyXXWScale),
         readoutWindowTicks(detProp.ReadOutWindowSize()),                                               // the default A2795 (ICARUS TPC readout board) readout window is 4096 samples
         tickOffset(arg_TickOffset)                                                                     // tick offset is for MC truth, default to zero and set only as necessary
       {
@@ -196,6 +201,32 @@ namespace sys {
 
         double theta = std::atan2(dydrPlaneRel, dzdrPlaneRel);
         return FoldAngle(theta);
+      }
+
+      double ThetaXY_PlaneRel(double dxdr, double dydr, double dzdr, double planeAngle)
+      {
+        double planeAngleRad = planeAngle * (util::pi() / 180.0);
+        double sinPlaneAngle = std::sin(planeAngleRad);
+        double cosPlaneAngle = std::cos(planeAngleRad);
+
+        double dydrPlaneRel = dydr * cosPlaneAngle - dzdr * sinPlaneAngle;
+        //double dzdrPlaneRel = dzdr * cosPlaneAngle + dydr * sinPlaneAngle; // don't need to rotate Z for this angle
+
+        double theta = std::atan2(dxdr, dydrPlaneRel);
+        return FoldAngle(theta);
+      }
+
+      double ThetaXW(double dxdr, double dydr, double dzdr, double planeAngle)
+      {
+        double planeAngleRad = planeAngle * (util::pi() / 180.0);
+        double sinPlaneAngle = std::sin(planeAngleRad);
+        double cosPlaneAngle = std::cos(planeAngleRad);
+
+        double dydrPlaneRel = dydr * cosPlaneAngle - dzdr * sinPlaneAngle;
+        //double dzdrPlaneRel = dzdr * cosPlaneAngle + dydr * sinPlaneAngle; // don't need to rotate Z for this angle
+
+        double theta = std::atan2(dxdr, dydrPlaneRel);
+        return theta; // don't fold, let run from -pi to pi
       }
       
       // theste are set in the .cc file
