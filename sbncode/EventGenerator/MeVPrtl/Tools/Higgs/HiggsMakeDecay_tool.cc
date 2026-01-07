@@ -177,7 +177,7 @@ void HiggsMakeDecay::configure(fhicl::ParameterSet const &pset)
   fReferenceRayDistance = pset.get<double>("ReferenceRayDistance", 0.);
   fReferenceHiggsMass = pset.get<double>("ReferenceHiggsMass", -1);
   fReferenceHiggsMixing = pset.get<double>("ReferenceHiggsMixing", -1);
-  fReferenceHiggsMass = pset.get<bool>("NewFormFactor", -1);
+  fNewFormFactor = pset.get<bool>("NewFormFactor", -1);
   fReferenceHiggsEnergy = pset.get<double>("ReferenceHiggsEnergy", -1);
   fReferenceHiggsKaonEnergy = pset.get<double>("ReferenceHiggsEnergyFromKaonEnergy", -1.);
 
