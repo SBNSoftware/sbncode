@@ -311,7 +311,7 @@ simb::MCFlux BNBKaonGen::MakeMCFlux(const bsim::BooNe &boone) {
                                       << std::endl;
   }
 
-  flux.fFluxType = simb::kDk2Nu;
+  flux.fFluxType = simb::kSimple_Flux;
   flux.fnimpwt   = fBooneNtp.beamwgt;
   flux.fvx       = fBooneNtp.ini_pos[0][0]; //0
   flux.fvy       = fBooneNtp.ini_pos[0][1]; //0
