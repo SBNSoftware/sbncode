@@ -39,7 +39,7 @@ namespace caf
 
     }
 
-    void FillMCTruthBlip( blip::TrueBlip const & TrueLAr_Blip, caf::SRBlipTrueBlip &TrueCAF_Blip )
+    void FillMCTruthBlip( blip::TrueBlip const & TrueLAr_Blip, caf::SRTrueBlip &TrueCAF_Blip )
     {
       TrueCAF_Blip.ID = TrueLAr_Blip.ID;
       TrueCAF_Blip.cryostat = TrueLAr_Blip.Cryostat;
