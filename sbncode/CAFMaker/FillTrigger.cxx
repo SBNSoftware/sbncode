@@ -1,4 +1,5 @@
 #include<iostream>
+#include <bitset>
 #include "sbncode/CAFMaker/FillTrigger.h"
 
 namespace caf
@@ -72,5 +73,28 @@ namespace caf
     caf_softInfo.npmts = softInfo.nAboveThreshold;
     caf_softInfo.flash_peakpe = softInfo.peakPE;
     caf_softInfo.flash_peaktime = softInfo.peaktime + softInfo.trig_ts*1e-3; 
+  }
+
+  void FillPTBTriggersSBND(const std::vector<sbn::pot::PTBInfo_t>& ptb_triggers, caf::SRTrigger& triggerInfo) {
+    triggerInfo.ptb_hlt_timestamp.clear();
+    triggerInfo.ptb_hlt_bit.clear();
+    triggerInfo.ptb_llt_timestamp.clear();
+    triggerInfo.ptb_llt_bit.clear();
+    
+    // Decode trigger words: each set bit becomes a separate entry with the same timestamp
+    for(const auto& trig : ptb_triggers) {
+      // Choose destination vectors based on trigger type
+      auto& ptb_timestamp = trig.isHLT ? triggerInfo.ptb_hlt_timestamp : triggerInfo.ptb_llt_timestamp;
+      auto& ptb_bit = trig.isHLT ? triggerInfo.ptb_hlt_bit : triggerInfo.ptb_llt_bit;
+      
+      std::bitset<64> const triggerWord { trig.triggerWord };
+      // currPTBTimeStamp is already in nanoseconds (uint64_t), use directly
+      // Loop variable is uint8_t since we know bit values are 0-63 (fits in uint8_t)
+      for(std::uint8_t bit = 0; bit < triggerWord.size(); ++bit) {
+        if(!triggerWord[bit]) continue;
+        ptb_timestamp.push_back(trig.currPTBTimeStamp);
+        ptb_bit.push_back(bit);
+      }
+    }
   }
 }

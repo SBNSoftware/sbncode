@@ -115,6 +115,8 @@
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
 #include "sbnobj/Common/POTAccounting/EXTCountInfo.h"
 #include "sbnobj/Common/POTAccounting/NuMISpillInfo.h"
+#include "sbncode/BeamSpillInfoRetriever/POTTools.h"
+#include "artdaq-core/Data/ContainerFragment.hh"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
 #include "sbnobj/Common/Reco/OpT0FinderResult.h"
@@ -1378,6 +1380,7 @@ bool CAFMaker::GetPsetParameter(const fhicl::ParameterSet& pset,
 
 //......................................................................
 void CAFMaker::produce(art::Event& evt) noexcept {
+  mf::LogInfo("CAFMaker") << "CAFMaker::produce called for event: " << evt.id();
 
   bool const firstInFile = (fIndexInFile++ == 0);
 
@@ -1709,6 +1712,24 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // Fill trigger emulation information
   if (isValidEmulationTrigger) { 
       FillTriggerEmulation(monpulses_handle, monpulse_sizes_handle, pairs_handle, trigemu_handle, srtrigger);
+  }
+
+  
+  // Fill PTB (Penn Trigger Board) information for SBND real data
+  if (isRealData && fDet == kSBND) {
+    art::InputTag PTB_itag("daq", "ContainerPTB");
+    art::Handle<artdaq::Fragments> ptb_frags_handle;
+    evt.getByLabel(PTB_itag, ptb_frags_handle);
+    if (ptb_frags_handle.isValid()) {
+      mf::LogDebug("CAFMaker") << "Found ContainerPTB, extracting PTB triggers...";
+      std::vector<sbn::pot::PTBInfo_t> ptb_triggers = sbn::pot::extractAllPTBInfo(*ptb_frags_handle);
+      mf::LogDebug("CAFMaker") << "Extracted " << ptb_triggers.size() << " PTB triggers";
+      FillPTBTriggersSBND(ptb_triggers, srtrigger);
+      mf::LogDebug("CAFMaker") << "PTB HLT triggers: " << srtrigger.ptb_hlt_timestamp.size() 
+                                << ", LLT triggers: " << srtrigger.ptb_llt_timestamp.size();
+    } else {
+      mf::LogDebug("CAFMaker") << "ContainerPTB not found for event " << evt.id();
+    }
   }
 
   // If not real data, fill in enough of the SRTrigger to make (e.g.) the CRT
