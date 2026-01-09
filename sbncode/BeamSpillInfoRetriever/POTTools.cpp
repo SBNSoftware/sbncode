@@ -20,11 +20,11 @@ namespace sbn::pot{
             if (ctb_frag.Trigger(word_i)->IsHLT() && ctb_frag.Trigger(word_i)->IsTrigger(HLT))
             {
               foundHLT = true;
-              uint64_t RawprevPTBTimeStamp = ctb_frag.PTBWord(word_i)->prevTS * 20;
-              uint64_t RawcurrPTBTimeStamp = ctb_frag.Trigger(word_i)->timestamp * 20;
-              double currTS_candidate = std::bitset<64>(RawcurrPTBTimeStamp/20).to_ullong()/50e6;
+              uint64_t RawprevPTBTimeStamp = ctb_frag.PTBWord(word_i)->prevTS;
+              uint64_t RawcurrPTBTimeStamp = ctb_frag.Trigger(word_i)->timestamp;
+              std::uint64_t currTS_candidate = std::bitset<64>(RawcurrPTBTimeStamp).to_ullong() * 20;
               if(currTS_candidate < PTBInfo.currPTBTimeStamp){
-                PTBInfo.prevPTBTimeStamp = std::bitset<64>(RawprevPTBTimeStamp / 20).to_ullong()/50e6;
+                PTBInfo.prevPTBTimeStamp = std::bitset<64>(RawprevPTBTimeStamp).to_ullong() * 20;
                 PTBInfo.currPTBTimeStamp = currTS_candidate;
                 PTBInfo.GateCounter = ctb_frag.Trigger(word_i)->gate_counter;
               }
@@ -43,9 +43,9 @@ namespace sbn::pot{
     }
   }
 
-  std::vector<PTBInfo_t> extractAllPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags) {
+  std::vector<PTBInfo_t> extractAllPTBInfo(std::vector<artdaq::Fragment> const& cont_frags) {
     std::vector<PTBInfo_t> PTBInfoVec;
-    for (auto const& cont : *cont_frags)
+    for (auto const& cont : cont_frags)
     {
       artdaq::ContainerFragment cont_frag(cont);
       for (size_t fragi = 0; fragi < cont_frag.block_count(); ++fragi)
@@ -58,9 +58,8 @@ namespace sbn::pot{
             PTBInfo_t PTBInfo;
             uint64_t RawprevPTBTimeStamp = ctb_frag.PTBWord(word_i)->prevTS;
             uint64_t RawcurrPTBTimeStamp = ctb_frag.Trigger(word_i)->timestamp;
-            double currTS_candidate = std::bitset<64>(RawcurrPTBTimeStamp).to_ullong()/50e6;
-            PTBInfo.prevPTBTimeStamp = std::bitset<64>(RawprevPTBTimeStamp).to_ullong()/50e6;
-            PTBInfo.currPTBTimeStamp = currTS_candidate;
+            PTBInfo.prevPTBTimeStamp = std::bitset<64>(RawprevPTBTimeStamp).to_ullong() * 20;
+            PTBInfo.currPTBTimeStamp = std::bitset<64>(RawcurrPTBTimeStamp).to_ullong() * 20;
             PTBInfo.GateCounter = ctb_frag.Trigger(word_i)->gate_counter;
             PTBInfo.isHLT = ctb_frag.Trigger(word_i)->IsHLT();
             PTBInfo.triggerWord = ctb_frag.Trigger(word_i)->trigger_word;

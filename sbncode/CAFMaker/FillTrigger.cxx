@@ -1,4 +1,5 @@
 #include<iostream>
+#include <bitset>
 #include "sbncode/CAFMaker/FillTrigger.h"
 
 namespace caf
@@ -82,18 +83,17 @@ namespace caf
     
     // Decode trigger words: each set bit becomes a separate entry with the same timestamp
     for(const auto& trig : ptb_triggers) {
-      std::uint64_t triggerWord = trig.triggerWord;
-      for(int bit = 0; bit < 64; ++bit) {
-        std::uint64_t bitMask = 1ULL << bit;
-        if(triggerWord & bitMask) {
-          if(trig.isHLT) {
-            triggerInfo.ptb_hlt_timestamp.push_back(trig.currPTBTimeStamp);
-            triggerInfo.ptb_hlt_bit.push_back(bit);
-          } else {
-            triggerInfo.ptb_llt_timestamp.push_back(trig.currPTBTimeStamp);
-            triggerInfo.ptb_llt_bit.push_back(bit);
-          }
-        }
+      // Choose destination vectors based on trigger type
+      auto& ptb_timestamp = trig.isHLT ? triggerInfo.ptb_hlt_timestamp : triggerInfo.ptb_llt_timestamp;
+      auto& ptb_bit = trig.isHLT ? triggerInfo.ptb_hlt_bit : triggerInfo.ptb_llt_bit;
+      
+      std::bitset<64> const triggerWord { trig.triggerWord };
+      // currPTBTimeStamp is already in nanoseconds (uint64_t), use directly
+      // Loop variable is uint8_t since we know bit values are 0-63 (fits in uint8_t)
+      for(std::uint8_t bit = 0; bit < triggerWord.size(); ++bit) {
+        if(!triggerWord[bit]) continue;
+        ptb_timestamp.push_back(trig.currPTBTimeStamp);
+        ptb_bit.push_back(bit);
       }
     }
   }

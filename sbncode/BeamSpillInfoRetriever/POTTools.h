@@ -18,16 +18,16 @@
 namespace sbn::pot{
 
   typedef struct PTBInfo_t {
-    double currPTBTimeStamp  = 1e20;
-    double prevPTBTimeStamp  = 0;
+    std::uint64_t currPTBTimeStamp  = UINT64_MAX;  ///< Timestamp in UTC nanoseconds since Unix epoch (converted from 20ns clock ticks)
+    std::uint64_t prevPTBTimeStamp  = 0; 
     unsigned int GateCounter = 0;
     bool isHLT = false;            
-    uint64_t triggerWord = 0;        
+    uint64_t triggerWord = 0;  ///< Timestamp in s since beam extraction signal
   } PTBInfo_t;
 
   typedef struct TriggerInfo_t {
     int gate_type = 0; ///< Source of the spill: `1`: BNB, `2`: NuMI
-    double t_current_event  = 0;
+    double t_current_event  = 0;  ///< Timestamp in UTC seconds since Unix epoch (converted from 20ns clock ticks)
     double t_previous_event = 0;
     unsigned int number_of_gates_since_previous_event = 0;
     std::int64_t WR_to_Spill_conversion = 0;
@@ -52,7 +52,7 @@ namespace sbn::pot{
    * @param cont_frags The PTB fragments to examine.
    * @return Vector of PTBInfo_t containing all triggers found.
    */
-  std::vector<PTBInfo_t> extractAllPTBInfo(art::Handle<std::vector<artdaq::Fragment> > cont_frags);
+  std::vector<PTBInfo_t> extractAllPTBInfo(std::vector<artdaq::Fragment> const& cont_frags);
 
   /**
    * @brief Extracts information from TDC for use in SBND POT accounting.

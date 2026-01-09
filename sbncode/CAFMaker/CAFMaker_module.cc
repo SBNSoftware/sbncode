@@ -1380,6 +1380,7 @@ bool CAFMaker::GetPsetParameter(const fhicl::ParameterSet& pset,
 
 //......................................................................
 void CAFMaker::produce(art::Event& evt) noexcept {
+  mf::LogInfo("CAFMaker") << "CAFMaker::produce called for event: " << evt.id();
 
   bool const firstInFile = (fIndexInFile++ == 0);
 
@@ -1720,13 +1721,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::Handle<artdaq::Fragments> ptb_frags_handle;
     evt.getByLabel(PTB_itag, ptb_frags_handle);
     if (ptb_frags_handle.isValid()) {
-      try {
-        std::vector<sbn::pot::PTBInfo_t> ptb_triggers = sbn::pot::extractAllPTBInfo(ptb_frags_handle);
-        FillPTBTriggersSBND(ptb_triggers, srtrigger);
-      }
-      catch (...) {
-        std::cout << "CAFMaker: Failed to extract PTB triggers" << std::endl;
-      }
+      mf::LogDebug("CAFMaker") << "Found ContainerPTB, extracting PTB triggers...";
+      std::vector<sbn::pot::PTBInfo_t> ptb_triggers = sbn::pot::extractAllPTBInfo(*ptb_frags_handle);
+      mf::LogDebug("CAFMaker") << "Extracted " << ptb_triggers.size() << " PTB triggers";
+      FillPTBTriggersSBND(ptb_triggers, srtrigger);
+      mf::LogDebug("CAFMaker") << "PTB HLT triggers: " << srtrigger.ptb_hlt_timestamp.size() 
+                                << ", LLT triggers: " << srtrigger.ptb_llt_timestamp.size();
+    } else {
+      mf::LogDebug("CAFMaker") << "ContainerPTB not found for event " << evt.id();
     }
   }
 
