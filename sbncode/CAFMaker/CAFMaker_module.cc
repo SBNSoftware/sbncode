@@ -2127,7 +2127,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       }
 
       if (ng2_filter_vec.size() > 0 || ng2_semantic_vec.size() > 0) {
-        FillSliceNuGraph(slcHits, ng2_filter_vec, ng2_semantic_vec, fmPFPartHits, vtx_wire, vtx_tick, recslc);
+        FillSliceNuGraph(slcHits, ng2_filter_vec, ng2_semantic_vec, fmPFPartHits, 
+                         vtx_wire, vtx_tick, fParams.NuGraphHIPTagWireDist(), fParams.NuGraphHIPTagTickDist(), 
+                         recslc);
       }
     }
 

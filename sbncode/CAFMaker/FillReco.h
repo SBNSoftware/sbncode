@@ -114,17 +114,21 @@ namespace caf
    * @param fmPFPartHits vector of pointers-to-hits lists, for each PFP
    * @param vtx_wire vertex coordinates projected onto wires, per plane
    * @param vtx_tick vertex coordinates projected onto ticks, per plane
+   * @param vtx_wire_dist TPC wire distance from the vertex used to count NuGraph2–tagged HIP hits
+   * @param vtx_tick_dist TPC tick distance from the vertex used to count NuGraph2–tagged HIP hits
    * @param[out] slice the destination slice object
    *
    * Hits with filter value (`ngFilterResult`) lower than `ng_filter_cut` are counted as background.
    */
   void FillSliceNuGraph(const std::vector<art::Ptr<recob::Hit>> &inputHits,
-			const std::vector<art::Ptr<anab::FeatureVector<1>>> &ngFilterResult,
-			const std::vector<art::Ptr<anab::FeatureVector<5>>> &ngSemanticResult,
-      const std::vector<std::vector<art::Ptr<recob::Hit>>> &fmPFPartHits,
-      const float vtx_wire[3], 
-      const float vtx_tick[3],
-			caf::SRSlice &slice);
+                        const std::vector<art::Ptr<anab::FeatureVector<1>>> &ngFilterResult,
+                        const std::vector<art::Ptr<anab::FeatureVector<5>>> &ngSemanticResult,
+                        const std::vector<std::vector<art::Ptr<recob::Hit>>> &fmPFPartHits,
+                        const float vtx_wire[3], 
+                        const float vtx_tick[3],
+                        const float vtx_wire_dist, 
+                        const float vtx_tick_dist,
+                        caf::SRSlice &slice);
 
   bool SelectSlice(const caf::SRSlice &slice, bool cut_clear_cosmic);
 

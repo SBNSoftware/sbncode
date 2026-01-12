@@ -373,6 +373,18 @@ namespace caf
       Comment("Whether to use the second pass Pandora outputs for NuGraph reco."),
       false
     };
+    
+    Atom<float> NuGraphHIPTagWireDist {
+      Name("NuGraphHIPTagWireDist"),
+      Comment("TPC wire distance from the vertex used to count NuGraph2–tagged HIP hits."),
+      10
+    };
+
+    Atom<float> NuGraphHIPTagTickDist {
+      Name("NuGraphHIPTagTickDist"),
+      Comment("TPC tick distance from the vertex used to count NuGraph-2–tagged HIP hits."),
+      50
+    };
 
     Atom<string> OpFlashLabel {
       Name("OpFlashLabel"),

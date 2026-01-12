@@ -586,6 +586,8 @@ namespace caf
       const std::vector<std::vector<art::Ptr<recob::Hit>>> &fmPFPartHits,
       const float vtx_wire[3], 
       const float vtx_tick[3],
+      const float vtx_wire_dist, 
+      const float vtx_tick_dist,
 			caf::SRSlice &slice)
   {
 
@@ -628,7 +630,7 @@ namespace caf
         // HIP tagging
         float dwire = std::abs(float(hit.WireID().Wire) - vtx_wire[plane]);
         float dtick = std::abs(hit.PeakTime() - vtx_tick[plane]);
-        if ((highestScoreIdx == 1) && (dwire <= 10) && (dtick <= 50))
+        if ((highestScoreIdx == 1) && (dwire <= vtx_wire_dist) && (dtick <= vtx_tick_dist))
           nHIPHits += 1;
 
         // shower hits
