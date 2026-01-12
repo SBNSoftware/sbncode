@@ -374,6 +374,12 @@ namespace caf
       false
     };
     
+    Atom<float> NuGraphFilterCut {
+      Name("NuGraphFilterCut"),
+      Comment("Cut on the NuGraph2 filter score to define hit as signal or noise."),
+      0.5
+    };
+
     Atom<float> NuGraphHIPTagWireDist {
       Name("NuGraphHIPTagWireDist"),
       Comment("TPC wire distance from the vertex used to count NuGraph2–tagged HIP hits."),

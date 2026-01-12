@@ -1722,14 +1722,17 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   std::vector<unsigned> slice_tag_indices;
   for (unsigned i_tag = 0; i_tag < pandora_tag_suffixes.size(); i_tag++) {
     const std::string &pandora_tag_suffix = pandora_tag_suffixes[i_tag];
+
     // Get a handle on the slices
     art::Handle<std::vector<recob::Slice>> thisSlices;
     GetByLabelStrict(evt, fParams.PFParticleLabel() + pandora_tag_suffix, thisSlices);
+
     if (thisSlices.isValid()) {
       art::fill_ptr_vector(slices, thisSlices);
-      nuGraphSlices = evt.getProduct<std::vector<art::Ptr<recob::Slice>>>(fParams.NuGraphSlicesLabel().label() + pandora_tag_suffix);
       if (fParams.UsePandoraAfterNuGraph()) {
         nuGraphSlices = slices;
+      } else {
+        nuGraphSlices = evt.getProduct<std::vector<art::Ptr<recob::Slice>>>(fParams.NuGraphSlicesLabel().label() + pandora_tag_suffix);
       }
       for (unsigned i = 0; i < thisSlices->size(); i++) {
         slice_tag_suffixes.push_back(pandora_tag_suffix);
@@ -2090,24 +2093,16 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
       // filter
       if (findOneFilter.isValid()) {
+        ng2_filter_vec.reserve(slcHits.size());
         for (size_t hitIdx = 0; hitIdx < slcHits.size(); ++hitIdx) {
-          if (findOneFilter.at(hitIdx).isNull()) {
-            slcHits.erase(slcHits.begin()+hitIdx);
-            hitIdx--;
-            continue; 
-          }
           ng2_filter_vec.emplace_back(findOneFilter.at(hitIdx));
         }
       }
 
       // semantic tagging
       if (findOneSemantic.isValid()) {
+        ng2_semantic_vec.reserve(slcHits.size());
         for (size_t hitIdx = 0; hitIdx < slcHits.size(); ++hitIdx) {
-          if (findOneSemantic.at(hitIdx).isNull()) {
-            slcHits.erase(slcHits.begin()+hitIdx);
-            hitIdx--;
-            continue;
-          }
           ng2_semantic_vec.emplace_back(findOneSemantic.at(hitIdx));
         }
       }
@@ -2129,7 +2124,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       if (ng2_filter_vec.size() > 0 || ng2_semantic_vec.size() > 0) {
         FillSliceNuGraph(slcHits, ng2_filter_vec, ng2_semantic_vec, fmPFPartHits, 
                          vtx_wire, vtx_tick, fParams.NuGraphHIPTagWireDist(), fParams.NuGraphHIPTagTickDist(), 
-                         recslc);
+                         fParams.NuGraphFilterCut(), recslc);
       }
     }
 
@@ -2263,30 +2258,24 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         std::vector<art::Ptr<anab::FeatureVector<1>>> ng2_filter_vec;
         std::vector<art::Ptr<anab::FeatureVector<5>>> ng2_semantic_vec;
 
+        // filter
         if (findOneFilter.isValid()) {
+          ng2_filter_vec.reserve(PFPHits.size());
           for (size_t hitIdx = 0; hitIdx < PFPHits.size(); ++hitIdx) {
-            if (findOneFilter.at(hitIdx).isNull()) {
-              PFPHits.erase(PFPHits.begin() + hitIdx);
-              hitIdx--;
-              continue;
-            }
             ng2_filter_vec.emplace_back(findOneFilter.at(hitIdx));
           }
         }
 
+        // semantic tagging
         if (findOneSemantic.isValid()) {
+          ng2_semantic_vec.reserve(PFPHits.size());
           for (size_t hitIdx = 0; hitIdx < PFPHits.size(); ++hitIdx) {
-            if (findOneSemantic.at(hitIdx).isNull()) {
-              PFPHits.erase(PFPHits.begin() + hitIdx);
-              hitIdx--;
-              continue;
-            }
             ng2_semantic_vec.emplace_back(findOneSemantic.at(hitIdx));
           }
         }
 
         if (ng2_filter_vec.size() > 0 || ng2_semantic_vec.size() > 0) {
-          FillPFPNuGraph(PFPHits, ng2_filter_vec, ng2_semantic_vec, pfp);
+          FillPFPNuGraph(PFPHits, ng2_filter_vec, ng2_semantic_vec, fParams.NuGraphFilterCut(), pfp);
         }
       }
 

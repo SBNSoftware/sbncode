@@ -116,6 +116,7 @@ namespace caf
    * @param vtx_tick vertex coordinates projected onto ticks, per plane
    * @param vtx_wire_dist TPC wire distance from the vertex used to count NuGraph2–tagged HIP hits
    * @param vtx_tick_dist TPC tick distance from the vertex used to count NuGraph2–tagged HIP hits
+   * @param filter_cut cut on the NuGraph2 filter score to define hit as signal or noise
    * @param[out] slice the destination slice object
    *
    * Hits with filter value (`ngFilterResult`) lower than `ng_filter_cut` are counted as background.
@@ -128,6 +129,7 @@ namespace caf
                         const float vtx_tick[3],
                         const float vtx_wire_dist, 
                         const float vtx_tick_dist,
+                        const float filter_cut,
                         caf::SRSlice &slice);
 
   bool SelectSlice(const caf::SRSlice &slice, bool cut_clear_cosmic);
@@ -161,6 +163,7 @@ namespace caf
    * @param sliceHitsMap maps position of hits in collection input to NuGraph (slice only) to the one input to Pandora (all gaus hits)
    * @param ngFilterResult NuGraph filter result, for each hit
    * @param ngSemanticResult NuGraph semnatic result, for each hit (MIP track, HIP, shower, Michel electron, diffuse activity)
+   * @param filter_cut cut on the NuGraph2 filter score to define hit as signal or noise
    * @param pfpHits Vector of hits associated to the PFParticle
    * @param[out] srpfp the destination PFParticle object
    *
@@ -169,6 +172,7 @@ namespace caf
   void FillPFPNuGraph(const std::vector<art::Ptr<recob::Hit>> &pfpHits,
 		      const std::vector<art::Ptr<anab::FeatureVector<1>>> &ngFilterResult,
 		      const std::vector<art::Ptr<anab::FeatureVector<5>>> &ngSemanticResult,
+          const float filter_cut,
 		      caf::SRPFP& srpfp,
 		      bool allowEmpty= false);
 
