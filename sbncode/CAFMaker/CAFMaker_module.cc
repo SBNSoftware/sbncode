@@ -1797,39 +1797,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       }
     }
     
-    // if (std::find(nuGraphSlices.begin(), nuGraphSlices.end(), slice) != nuGraphSlices.end()) {
-    //   std::vector<art::Ptr<anab::FeatureVector<1>>> ng2_filter_vec;
-    //   std::vector<art::Ptr<anab::FeatureVector<5>>> ng2_semantic_vec;
-    //   art::FindOneP<anab::FeatureVector<1>> findOneFilter(slcHits, evt, fParams.NuGraphFilterLabel().label() + slice_tag_suff + ":" + fParams.NuGraphFilterLabel().instance());
-    //   art::FindOneP<anab::FeatureVector<5>> findOneSemantic(slcHits, evt, fParams.NuGraphSemanticLabel().label() + slice_tag_suff + ":" + fParams.NuGraphSemanticLabel().instance());
-
-    //   if (findOneFilter.isValid()) {
-    //     for (size_t hitIdx = 0; hitIdx < slcHits.size(); ++hitIdx) {
-    //       if (findOneFilter.at(hitIdx).isNull()) {
-    //         slcHits.erase(slcHits.begin()+hitIdx);
-    //         hitIdx--;
-    //         continue; 
-    //       }
-    //       ng2_filter_vec.emplace_back(findOneFilter.at(hitIdx));
-    //     }
-    //   }
-
-    //   if (findOneSemantic.isValid()) {
-    //     for (size_t hitIdx = 0; hitIdx < slcHits.size(); ++hitIdx) {
-    //       if (findOneSemantic.at(hitIdx).isNull()) {
-    //         slcHits.erase(slcHits.begin()+hitIdx);
-    //         hitIdx--;
-    //         continue;
-    //       }
-    //       ng2_semantic_vec.emplace_back(findOneSemantic.at(hitIdx));
-    //     }
-    //   }
-
-    //   if (ng2_filter_vec.size() > 0 || ng2_semantic_vec.size() > 0) {
-    //     FillSliceNuGraph(slcHits, ng2_filter_vec, ng2_semantic_vec, recslc);
-    //   }
-    // }
-
     art::FindManyP<sbn::OpT0Finder> fmOpT0 =
       FindManyPStrict<sbn::OpT0Finder>(sliceList, evt, fParams.OpT0Label() + slice_tag_suff);
     std::vector<art::Ptr<sbn::OpT0Finder>> slcOpT0;
