@@ -464,6 +464,7 @@ namespace caf {
       const std::vector<geo::BoxBoundedGeo> &active_volumes) {
 
     srneutrino.index = i;
+    srneutrino.cryostat = -1001;
 
     for (int c = 0; c < 2; c++) {
       SRTrueInteractionPlaneInfo init;
@@ -809,7 +810,7 @@ namespace caf {
     srparticle.parent = particle.Mother();
 
     // Set the initial cryostat
-    srparticle.cryostat = -1000;
+    srparticle.cryostat = -1;
     if (entry_point >= 0) {
       for (unsigned c = 0; c < active_volumes.size(); c++) {
         if (active_volumes[c].ContainsPosition(particle.Position(entry_point).Vect())) {
