@@ -108,6 +108,11 @@ std::vector<std::pair<unsigned int, unsigned int>> sys::WireModUtility::GetHitTa
   return target_roi_vec;
 }
 
+//--- FillROIMatchedIDEMap ---
+void sys::WireModUtility::FillROIMatchedIDEMap(std::vector<sim::SimChannel> const& simchVec, std::vector<recob::Wire> const& wireVec, double offset)
+{
+}
+
 //--- FillROIMatchedEdepMap ---
 void sys::WireModUtility::FillROIMatchedEdepMap(std::vector<sim::SimEnergyDeposit> const& edepVec, std::vector<recob::Wire> const& wireVec, double offset)
 {
@@ -361,7 +366,6 @@ sys::WireModUtility::TruthProperties_t sys::WireModUtility::CalcPropertiesFromEd
     edep_props.dxdr = (edep_ptr->EndX() - edep_ptr->StartX()) / edep_ptr->StepLength();
     edep_props.dydr = (edep_ptr->EndY() - edep_ptr->StartY()) / edep_ptr->StepLength();
     edep_props.dzdr = (edep_ptr->EndZ() - edep_ptr->StartZ()) / edep_ptr->StepLength();
-
     edep_props.dedr = edep_ptr->E() / edep_ptr->StepLength();
 
     total_energy_all += edep_ptr->E();
@@ -409,7 +413,6 @@ sys::WireModUtility::TruthProperties_t sys::WireModUtility::CalcPropertiesFromEd
   edep_col_properties.dxdr = 0.;
   edep_col_properties.dydr = 0.;
   edep_col_properties.dzdr = 0.;
-
   edep_col_properties.dedr = 0.;
 
   double total_energy = 0.0;
@@ -428,7 +431,6 @@ sys::WireModUtility::TruthProperties_t sys::WireModUtility::CalcPropertiesFromEd
     edep_col_properties.dxdr += edep_ptr->E()*(edep_ptr->EndX() - edep_ptr->StartX()) / edep_ptr->StepLength();
     edep_col_properties.dydr += edep_ptr->E()*(edep_ptr->EndY() - edep_ptr->StartY()) / edep_ptr->StepLength();
     edep_col_properties.dzdr += edep_ptr->E()*(edep_ptr->EndZ() - edep_ptr->StartZ()) / edep_ptr->StepLength();
-
     edep_col_properties.dedr += edep_ptr->E()*edep_ptr->E() / edep_ptr->StepLength();
   }
 
@@ -440,7 +442,6 @@ sys::WireModUtility::TruthProperties_t sys::WireModUtility::CalcPropertiesFromEd
     edep_col_properties.dxdr = edep_col_properties.dxdr / total_energy;
     edep_col_properties.dydr = edep_col_properties.dydr / total_energy;
     edep_col_properties.dzdr = edep_col_properties.dzdr / total_energy;
-
     edep_col_properties.dedr = edep_col_properties.dedr / total_energy;
   }
 
@@ -551,6 +552,19 @@ sys::WireModUtility::ScaleValues_t sys::WireModUtility::GetViewScaleValues(sys::
     if(temp_scale>0.001) scales.r_sigma *= temp_scale;
   }
 
+  if (applyXXWScale)
+  {
+    if (graph2Ds_Charge_XXW[plane] == nullptr || 
+        graph2Ds_Sigma_XXW [plane] == nullptr  )
+      throw cet::exception("WireModUtility")
+        << "Tried to apply XXW scale factor, but could not find graphs. Check that you have set those in the utility.";
+    temp_scale = graph2Ds_Charge_XXW[plane]->Interpolate(truth_props.x, ThetaXW(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()));
+    if(temp_scale>0.001) scales.r_Q *= temp_scale;
+
+    temp_scale = graph2Ds_Sigma_XXW [plane]->Interpolate(truth_props.x, ThetaXW(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()));
+    if(temp_scale>0.001) scales.r_sigma *= temp_scale;
+  }
+
   if (applyXZAngleScale)
   {
     if (splines_Charge_XZAngle[plane] == nullptr || 
@@ -570,7 +584,7 @@ sys::WireModUtility::ScaleValues_t sys::WireModUtility::GetViewScaleValues(sys::
     scales.r_sigma *= splines_Sigma_YZAngle [plane]->Eval(ThetaYZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()));
   }
 
-  if (applydEdXScale)
+  if(applydEdXScale)
   {
     if (splines_Charge_dEdX[plane] == nullptr || 
         splines_Sigma_dEdX [plane] == nullptr  )
@@ -578,45 +592,6 @@ sys::WireModUtility::ScaleValues_t sys::WireModUtility::GetViewScaleValues(sys::
         << "Tried to apply dEdX scale factor, but could not find splines. Check that you have set those in the utility.";
     scales.r_Q     *= splines_Charge_dEdX[plane]->Eval(truth_props.dedr);
     scales.r_sigma *= splines_Sigma_dEdX [plane]->Eval(truth_props.dedr);
-  }
-
-  if (applyXXZAngleScale)
-  {
-    if (graph2Ds_Charge_XXZAngle[plane] == nullptr || 
-        graph2Ds_Sigma_XXZAngle [plane] == nullptr  )
-      throw cet::exception("WireModUtility")
-        << "Tried to apply XXZAngle scale factor, but could not find graphs. Check that you have set those in the utility.";
-    temp_scale = graph2Ds_Charge_XXZAngle[plane]->Interpolate(truth_props.x, ThetaXZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()));
-    if(temp_scale>0.001) scales.r_Q *= temp_scale;
-
-    temp_scale = graph2Ds_Sigma_XXZAngle [plane]->Interpolate(truth_props.x, ThetaXZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()));
-    if(temp_scale>0.001) scales.r_sigma *= temp_scale;
-  }
-
-  if (applyXdQdXScale)
-  {
-    if (graph2Ds_Charge_XdQdX[plane] == nullptr || 
-        graph2Ds_Sigma_XdQdX [plane] == nullptr  )
-      throw cet::exception("WireModUtility")
-        << "Tried to apply XdQdX scale factor, but could not find graphs. Check that you have set those in the utility.";
-    temp_scale = graph2Ds_Charge_XdQdX[plane]->Interpolate(truth_props.x, truth_props.dqdr); 
-    if(temp_scale>0.001) scales.r_Q *= temp_scale;
-
-    temp_scale = graph2Ds_Sigma_XdQdX [plane]->Interpolate(truth_props.x, truth_props.dqdr); 
-    if(temp_scale>0.001) scales.r_sigma *= temp_scale;
-  }
-
-  if (applyXZAngledQdXScale)
-  {
-    if (graph2Ds_Charge_XZAngledQdX[plane] == nullptr || 
-        graph2Ds_Sigma_XZAngledQdX [plane] == nullptr  )
-      throw cet::exception("WireModUtility")
-        << "Tried to apply XZAngledQdX scale factor, but could not find graphs. Check that you have set those in the utility.";
-    temp_scale = graph2Ds_Charge_XZAngledQdX[plane]->Interpolate(ThetaXZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()), truth_props.dqdr);
-    if(temp_scale>0.001) scales.r_Q *= temp_scale;
-
-    temp_scale = graph2Ds_Sigma_XZAngledQdX [plane]->Interpolate(ThetaXZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()), truth_props.dqdr);
-    if(temp_scale>0.001) scales.r_sigma *= temp_scale;
   }
 
   return scales;
