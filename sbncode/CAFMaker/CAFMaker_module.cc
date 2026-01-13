@@ -664,6 +664,11 @@ void CAFMaker::InitVolumes() {
     double YMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxY() < rhs.MaxY(); })->MaxY();
     double ZMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxZ() < rhs.MaxZ(); })->MaxZ();
 
+    std::cout << "Starting new active volume!" << std::endl;
+	std::cout << "XMin: " << XMin << " XMax: " << XMax  << std::endl;
+	std::cout << "YMin: " << YMin << " YMax: " << YMax  << std::endl;
+	std::cout << "ZMin: " << ZMin << " ZMax: " << ZMax  << std::endl;
+	  
     fActiveVolumes.emplace_back(XMin, XMax, YMin, YMax, ZMin, ZMax);
   }
 }
