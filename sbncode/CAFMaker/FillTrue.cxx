@@ -601,6 +601,7 @@ namespace caf {
 
       // Set the cryostat of the position
       for (int icryo = 0; icryo < 2; icryo++) {
+		std::cout << "You have entered loop!" << std::endl;
         if (active_volumes[icryo].ContainsPosition(nu.Nu().Position().Vect())) {
           srneutrino.cryostat = icryo;
           break;
