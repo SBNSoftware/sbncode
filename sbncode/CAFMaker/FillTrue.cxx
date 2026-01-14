@@ -493,7 +493,7 @@ namespace caf {
 
     // Set of hits per-plane: primary particles
     {
-      std::vector<std::array<std::set<unsigned>, 3>> planehitIDs(active_volumes.size());
+      std::vector<std::array<std::set<unsigned>, 3>> planehitIDs(2);
       for (unsigned i_part = 0; i_part < srparticles.size(); i_part++) {
         if (srparticles[i_part].start_process == caf::kG4primary && srparticles[i_part].interaction_id == (int)i) {
           int track_id = srparticles[i_part].G4ID;
@@ -515,7 +515,7 @@ namespace caf {
 
     // Set of hits per-plane: all particles
     {
-      std::vector<std::array<std::set<unsigned>, 3>> planehitIDs(active_volumes.size());
+      std::vector<std::array<std::set<unsigned>, 3>> planehitIDs(2);
       for (unsigned i_part = 0; i_part < srparticles.size(); i_part++) {
         if (srparticles[i_part].interaction_id == (int)i) {
           int track_id = srparticles[i_part].G4ID;
