@@ -465,7 +465,7 @@ namespace caf {
 
     srneutrino.index = i;
 
-    for (int c = 0; c < (int)active_volumes.size(); c++) {
+    for (int c = 0; c < 2; c++) {
       SRTrueInteractionPlaneInfo init;
       init.visE = 0.;
       init.nhit = 0;
@@ -483,7 +483,7 @@ namespace caf {
 
         // total up the deposited energy
         for(int p = 0; p < 3; ++p) { 
-          for (int i_cryo = 0; i_cryo < (int)active_volumes.size(); i_cryo++) {
+          for (int i_cryo = 0; i_cryo < 2; i_cryo++) {
             srneutrino.plane[i_cryo][p].visE += part.plane[i_cryo][p].visE;
           }
         }
@@ -507,7 +507,7 @@ namespace caf {
       }
 
       for(int p = 0; p < 3; ++p) {
-        for (int i_cryo = 0; i_cryo < (int)active_volumes.size(); i_cryo++) {
+        for (int i_cryo = 0; i_cryo < 2; i_cryo++) {
           srneutrino.plane[i_cryo][p].nhitprim = planehitIDs[i_cryo][p].size();
         }
       }
@@ -529,7 +529,7 @@ namespace caf {
       }
 
       for(int p = 0; p < 3; ++p) {
-        for (int i_cryo = 0; i_cryo < (int)active_volumes.size(); i_cryo++) {
+        for (int i_cryo = 0; i_cryo < 2; i_cryo++) {
           srneutrino.plane[i_cryo][p].nhit = planehitIDs[i_cryo][p].size();
         }
       }
