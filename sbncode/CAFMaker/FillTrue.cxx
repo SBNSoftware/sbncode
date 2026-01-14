@@ -465,7 +465,7 @@ namespace caf {
 
     srneutrino.index = i;
 
-    for (int c = 0; c < 2; c++) {
+    for (int c = 0; c < (int)active_volumes.size(); c++) {
       SRTrueInteractionPlaneInfo init;
       init.visE = 0.;
       init.nhit = 0;
@@ -483,7 +483,7 @@ namespace caf {
 
         // total up the deposited energy
         for(int p = 0; p < 3; ++p) { 
-          for (int i_cryo = 0; i_cryo < 2; i_cryo++) {
+          for (int i_cryo = 0; i_cryo < (int)active_volumes.size(); i_cryo++) {
             srneutrino.plane[i_cryo][p].visE += part.plane[i_cryo][p].visE;
           }
         }
@@ -493,7 +493,7 @@ namespace caf {
 
     // Set of hits per-plane: primary particles
     {
-      std::vector<std::array<std::set<unsigned>, 3>> planehitIDs(2);
+      std::vector<std::array<std::set<unsigned>, 3>> planehitIDs(active_volumes.size());
       for (unsigned i_part = 0; i_part < srparticles.size(); i_part++) {
         if (srparticles[i_part].start_process == caf::kG4primary && srparticles[i_part].interaction_id == (int)i) {
           int track_id = srparticles[i_part].G4ID;
@@ -507,7 +507,7 @@ namespace caf {
       }
 
       for(int p = 0; p < 3; ++p) {
-        for (int i_cryo = 0; i_cryo < 2; i_cryo++) {
+        for (int i_cryo = 0; i_cryo < (int)active_volumes.size(); i_cryo++) {
           srneutrino.plane[i_cryo][p].nhitprim = planehitIDs[i_cryo][p].size();
         }
       }
@@ -515,7 +515,7 @@ namespace caf {
 
     // Set of hits per-plane: all particles
     {
-      std::vector<std::array<std::set<unsigned>, 3>> planehitIDs(2);
+      std::vector<std::array<std::set<unsigned>, 3>> planehitIDs(active_volumes.size());
       for (unsigned i_part = 0; i_part < srparticles.size(); i_part++) {
         if (srparticles[i_part].interaction_id == (int)i) {
           int track_id = srparticles[i_part].G4ID;
@@ -529,7 +529,7 @@ namespace caf {
       }
 
       for(int p = 0; p < 3; ++p) {
-        for (int i_cryo = 0; i_cryo < 2; i_cryo++) {
+        for (int i_cryo = 0; i_cryo < (int)active_volumes.size(); i_cryo++) {
           srneutrino.plane[i_cryo][p].nhit = planehitIDs[i_cryo][p].size();
         }
       }
@@ -599,7 +599,7 @@ namespace caf {
       }
 
       // Set the cryostat of the position
-      for (int icryo = 0; icryo < 2; icryo++) {
+      for (int icryo = 0; icryo < (int)active_volumes.size(); icryo++) {
         if (active_volumes[icryo].ContainsPosition(nu.Nu().Position().Vect())) {
           srneutrino.cryostat = icryo;
           break;
