@@ -119,11 +119,11 @@
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
 #include "sbnobj/Common/Reco/OpT0FinderResult.h"
+#include "sbnobj/SBND/CRT/CRTVeto.hh"
 #include "sbnobj/Common/Reco/CorrectedOpFlashTiming.h"
 #include "sbnobj/Common/Reco/LightCalo.h"
 #include "sbnobj/SBND/Timing/TimingInfo.hh"
 #include "sbnobj/SBND/Timing/FrameShiftInfo.hh"
-
 
 // GENIE
 #include "Framework/EventGen/EventRecord.h"
@@ -209,6 +209,8 @@ class CAFMaker : public art::EDProducer {
 
   std::string fSourceFile;
   std::uint32_t fSourceFileHash;
+
+  bool fNewInputFile;
  
   bool fOverrideRealData;
   bool fFirstInSubRun;
@@ -226,6 +228,7 @@ class CAFMaker : public art::EDProducer {
   double fTotalEvents;
   double fBlindEvents;
   double fPrescaleEvents;
+  double fTotalGenEvents;
   std::vector<caf::SRBNBInfo> fBNBInfo; ///< Store detailed BNB info to save into the first StandardRecord of the output file
   std::vector<caf::SRNuMIInfo> fNuMIInfo; ///< Store detailed NuMI info to save into the first StandardRecord of the output file
   std::map<unsigned int,sbn::BNBSpillInfo> fBNBInfoEventMap; ///< Store detailed BNB info to save for the particular spills of events
@@ -266,6 +269,8 @@ class CAFMaker : public art::EDProducer {
   double       fGenieEvtRec_brEvtXSec   = 0.0; ////< Cross section for selected event (1e-38 cm2)
   double       fGenieEvtRec_brEvtDXSec  = 0.0; ////< Cross section for selected event kinematics (1e-38 cm2 / {K^n})
   unsigned int fGenieEvtRec_brEvtKPS    = 0; ////< Kinematic phase space variables. See $GENIE/src/Framework/Conventions/KinePhaseSpace.h -> KinePhaseSpace_t
+  int          fGenieEvtRec_brSctType   = 0; ///< See [`genie::EScatteringType`](https://hep.ph.liv.ac.uk/~costasa/genie_doxygen/master/html/namespacegenie.html#ab97d2b4d1f37af8d967dadd15be88d0b)
+  int          fGenieEvtRec_brIntType   = 0; ///< See [`genie::EInteractionType`](https://hep.ph.liv.ac.uk/~costasa/genie_doxygen/master/html/namespacegenie.html#a554f81bb9954c9e46bbabadfcd403111)
   double       fGenieEvtRec_brEvtWght   = 0.0; ////< Weight for that event
   double       fGenieEvtRec_brEvtProb   = 0.0; ////< Probability for that event (given cross section, path lengths, etc)
   double       fGenieEvtRec_brEvtVtx[4] = {0.0}; ////< Event vertex position in detector coord syst (SI)
@@ -785,6 +790,7 @@ void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
   // so should be less than or equal to 32-bit
   fSourceFileHash = static_cast<std::uint32_t>(fSourceFileHashFull);
 
+  fNewInputFile = true;
 }
 
 //......................................................................
@@ -860,6 +866,18 @@ void CAFMaker::beginRun(art::Run& run) {
     fDet = override;
   }
 
+  if (std::exchange(fNewInputFile, false)){
+    for (const art::ProcessConfiguration &process: run.processHistory()) {
+      std::optional<fhicl::ParameterSet> gen_config = run.getProcessParameterSet(process.processName());
+      if (gen_config && gen_config->has_key("source") && gen_config->has_key("source.maxEvents") && gen_config->has_key("source.module_type") ) {
+        int max_events = gen_config->get<int>("source.maxEvents");
+        std::string module_type = gen_config->get<std::string>("source.module_type");
+        if (module_type == "EmptyEvent") {
+          fTotalGenEvents += max_events;
+        }
+      }
+    }
+  }
 
   if(fParams.SystWeightLabels().empty()) return; // no need for globalTree
 
@@ -1184,6 +1202,8 @@ void CAFMaker::InitializeOutfiles()
       fFlatGenieTree->Branch("GenieEvtRec.EvtXSec",  &fGenieEvtRec_brEvtXSec,  "GenieEvtRec.EvtXSec/D"   );
       fFlatGenieTree->Branch("GenieEvtRec.EvtDXSec", &fGenieEvtRec_brEvtDXSec, "GenieEvtRec.EvtDXSec/D"  );
       fFlatGenieTree->Branch("GenieEvtRec.EvtKPS",   &fGenieEvtRec_brEvtKPS,   "GenieEvtRec.EvtKPS/i"    );
+      fFlatGenieTree->Branch("GenieEvtRec.SctType",  &fGenieEvtRec_brSctType,  "GenieEvtRec.SctType/I"    );
+      fFlatGenieTree->Branch("GenieEvtRec.IntType",  &fGenieEvtRec_brIntType,  "GenieEvtRec.IntType/I"    );
       fFlatGenieTree->Branch("GenieEvtRec.EvtWght",  &fGenieEvtRec_brEvtWght,  "GenieEvtRec.EvtWght/D"   );
       fFlatGenieTree->Branch("GenieEvtRec.EvtProb",  &fGenieEvtRec_brEvtProb,  "GenieEvtRec.EvtProb/D"   );
       fFlatGenieTree->Branch("GenieEvtRec.EvtVtx",    fGenieEvtRec_brEvtVtx,   "GenieEvtRec.EvtVtx[4]/D" );
@@ -1214,6 +1234,7 @@ void CAFMaker::InitializeOutfiles()
   fTotalEvents = 0;
   fBlindEvents = 0;
   fPrescaleEvents = 0;
+  fTotalGenEvents = 0;
   fIndexInFile = SRHeader::NoSourceIndex;
   fFirstInSubRun = false;
   fFirstBlindInSubRun = false;
@@ -1558,6 +1579,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 	  fGenieEvtRec_brEvtXSec  = genie_rec->XSec() * (1e+38/genie::units::cm2);
 	  fGenieEvtRec_brEvtDXSec = genie_rec->DiffXSec() * (1e+38/genie::units::cm2);
 	  fGenieEvtRec_brEvtKPS   = genie_rec->DiffXSecVars();
+	  fGenieEvtRec_brSctType  = genie_rec->Summary()->ProcInfo().ScatteringTypeId();
+	  fGenieEvtRec_brIntType  = genie_rec->Summary()->ProcInfo().InteractionTypeId();
 	  fGenieEvtRec_brEvtWght  = genie_rec->Weight();
 	  fGenieEvtRec_brEvtProb  = genie_rec->Probability();
 	  fGenieEvtRec_brEvtVtx[0] = genie_rec->Vertex()->X();
@@ -1719,6 +1742,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   caf::SRTrigger srtrigger;
   if (isValidTrigger) {
       FillTrigger(*extratrig_handle, trig_handle->at(0), srtrigger, triggerShift);
+      if (fDet == kICARUS) 
+        FillTriggerICARUS(*extratrig_handle, srtrigger);
   }
   // Fill trigger emulation information
   if (isValidEmulationTrigger) { 
@@ -1752,8 +1777,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   std::vector<caf::SRCRTTrack> srcrttracks;
   std::vector<caf::SRCRTSpacePoint> srcrtspacepoints;
   std::vector<caf::SRSBNDCRTTrack> srsbndcrttracks;
+  caf::SRSBNDCRTVeto srsbndcrtveto;
   caf::SRSBNDFrameShiftInfo srsbndframeshiftinfo;
   caf::SRSBNDTimingInfo srsbndtiminginfo;
+  caf::SRSoftwareTrigger srsbndsofttrig; 
 
   // Mapping of (feb, channel) to truth information (AuxDetSimChannel) -- filled for ICARUS
   std::map<std::pair<int, int>, sim::AuxDetSimChannel> crtsimchanmap;
@@ -1822,6 +1849,24 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           FillSBNDCRTTrack(sbndcrttracks[i], srsbndcrttracks.back());
         }
       }
+     
+      // Fill CRT Veto 
+      art::Handle<std::vector<sbnd::crt::CRTVeto>> sbndcrtveto_handle;
+      GetByLabelStrict(evt, fParams.SBNDCRTVetoLabel(), sbndcrtveto_handle);
+      // fill into event
+      if (sbndcrtveto_handle.isValid()) {
+        const std::vector<sbnd::crt::CRTVeto> &sbndcrtveto_vec = *sbndcrtveto_handle;
+        // Only one valid veto per event
+        if (sbndcrtveto_vec.size() == 1) {
+          // And associated SpacePoint objects
+          art::FindManyP<sbnd::crt::CRTSpacePoint> spAssoc(sbndcrtveto_handle, evt, fParams.SBNDCRTVetoLabel());
+          if (spAssoc.isValid()) {
+            // There is one vector of SpacePoints per Veto --> can be empty if no veto condition was satisfied     
+            const std::vector<art::Ptr<sbnd::crt::CRTSpacePoint>>& veto_sp_v(spAssoc.at(0)); 
+            FillSBNDCRTVeto(sbndcrtveto_vec[0], veto_sp_v, srsbndcrtveto);
+          }
+        }
+      }
     
       art::Handle<sbnd::timing::FrameShiftInfo> sbndframeshiftinfo_handle;
       GetByLabelStrict(evt, fParams.SBNDFrameShiftInfoLabel(), sbndframeshiftinfo_handle);
@@ -1837,6 +1882,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       if (sbndtiminginfo_handle.isValid()) {
         sbnd::timing::TimingInfo const& sbndtiminginfo(*sbndtiminginfo_handle);
         FillSBNDTimingInfo(sbndtiminginfo, srsbndtiminginfo);
+      }
+
+      art::Handle<std::vector<sbnd::trigger::pmtSoftwareTrigger>> sbndsofttrig_handle;
+      GetByLabelStrict(evt, fParams.SBNDSoftwareTriggerLabel(), sbndsofttrig_handle);
+      if (sbndsofttrig_handle.isValid()){
+        const std::vector<sbnd::trigger::pmtSoftwareTrigger> &sbndsofttrig = *sbndsofttrig_handle;
+        if (sbndsofttrig.size()==1){
+          FillSoftwareTriggerSBND(sbndsofttrig.at(0), srsbndsofttrig);
+        }
       }
     }
 
@@ -2171,6 +2225,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<anab::ParticleID>(slcTracks, evt,
           fParams.TrackChi2PidLabel() + slice_tag_suff);
 
+    art::FindManyP<anab::ParticleID> fmLikePID =
+      FindManyPStrict<anab::ParticleID>(slcTracks, evt,
+          fParams.TrackLikePidLabel() + slice_tag_suff);
+
     art::FindManyP<sbn::ScatterClosestApproach> fmScatterClosestApproach =
       FindManyPStrict<sbn::ScatterClosestApproach>(slcTracks, evt,
           fParams.TrackScatterClosestApproachLabel() + slice_tag_suff);
@@ -2463,6 +2521,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         if (fmChi2PID.isValid()) {
            FillTrackChi2PID(fmChi2PID.at(iPart), trk);
         }
+        if (fmLikePID.isValid()) {
+           FillTrackLikePID(fmLikePID.at(iPart), trk);
+        }
         if (fmScatterClosestApproach.isValid() && fmScatterClosestApproach.at(iPart).size()==1) {
            FillTrackScatterClosestApproach(fmScatterClosestApproach.at(iPart).front(), trk);
         }
@@ -2528,7 +2589,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         assert(thisShower.size() == 1);
 
         SRShower& shw = pfp.shw;
-        FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), wireReadout, producer, shw);
+        FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), wireReadout, producer, shw, fDet);
 
         // We may have many residuals per shower depending on how many showers ar in the slice
         if (fmShowerRazzle.isValid() && fmShowerRazzle.at(iPart).size()==1) {
@@ -2588,10 +2649,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.ncrt_spacepoints = srcrtspacepoints.size();
   rec.sbnd_crt_tracks  = srsbndcrttracks;
   rec.nsbnd_crt_tracks = srsbndcrttracks.size();
+  rec.sbnd_crt_veto    = srsbndcrtveto;
   rec.opflashes        = srflashes;
   rec.nopflashes       = srflashes.size();
   rec.sbnd_frames      = srsbndframeshiftinfo;
   rec.sbnd_timings     = srsbndtiminginfo;
+  rec.soft_trig        = srsbndsofttrig; 
 
   if (fParams.FillTrueParticles()) {
     rec.true_particles  = true_particles;
@@ -2817,11 +2880,11 @@ void CAFMaker::endSubRun(art::SubRun& sr) {
 //......................................................................
   void CAFMaker::AddHistogramsToFile(TFile* outfile,bool isBlindPOT = false, bool isPrescalePOT = false) const
 {
-
   outfile->cd();
 
   TH1* hPOT = new TH1D("TotalPOT", "TotalPOT;; POT", 1, 0, 1);
   TH1* hEvents = new TH1D("TotalEvents", "TotalEvents;; Events", 1, 0, 1);
+  TH1* hGen = new TH1D("TotalGenEvents", "TotalGenEvents;; Events", 1, 0, 1);
 
   if (isBlindPOT) {
     hPOT->Fill(0.5,fTotalPOT*(1-(1/fParams.PrescaleFactor()))*GetBlindPOTScale());
@@ -2833,13 +2896,15 @@ void CAFMaker::endSubRun(art::SubRun& sr) {
     hPOT->Fill(0.5,fTotalPOT);
   }
   hEvents->Fill(0.5,fTotalEvents);
+  hGen->Fill(0.5,fTotalGenEvents);
 
   hPOT->Write();
   hEvents->Write();
+  hGen->Write();
 
   if (fParams.CreateBlindedCAF()) {
     TH1*hBlindEvents = new TH1D("BlindEvents", "BlindEvents;; Events", 1, 0, 1);
-    TH1* hPrescaleEvents = new TH1D("PrescaleEvents", "PrescaleEvents;; Events", 1, 0, 1);
+    TH1*hPrescaleEvents = new TH1D("PrescaleEvents", "PrescaleEvents;; Events", 1, 0, 1);
     hBlindEvents->Fill(0.5, fBlindEvents);
     hPrescaleEvents->Fill(0.5, fPrescaleEvents);
     hBlindEvents->Write();
@@ -2849,29 +2914,26 @@ void CAFMaker::endSubRun(art::SubRun& sr) {
 
 //......................................................................
 void CAFMaker::endJob() {
-  if (fTotalEvents == 0) {
 
-    std::cerr << "No events processed in this file. Aborting rather than "
-                 "produce an empty CAF."
+  // Only produce empty recTree/GenieTree since it relies on non-zero art events.
+  // Still want to keep POT histograms.
+  if (fTotalEvents == 0) {
+    std::cerr << "No events processed in this file. Producing empty recTree/GenieTree."
               << std::endl;
-    // n.b. changed abort() to return so that eny exceptions thrown during startup
-    // still get printed to the user by art
-    return;
   }
 
-
-
   if(fFile){
-
     AddHistogramsToFile(fFile);
-    fRecTree->SetDirectory(fFile);
-    if(fGenieTree){
-      fGenieTree->BuildIndex("SourceFileHash", "GENIEEntry");
-      fGenieTree->SetDirectory(fFile);
-    }
-    if (fParams.CreateBlindedCAF()) {
-      fRecTreeb->SetDirectory(fFileb);
-      fRecTreep->SetDirectory(fFilep);
+    if (fTotalEvents > 0) {
+      if(fGenieTree){
+        fGenieTree->BuildIndex("SourceFileHash", "GENIEEntry");
+        fGenieTree->SetDirectory(fFile);
+      }
+      fRecTree->SetDirectory(fFile);
+      if (fParams.CreateBlindedCAF()) {
+        fRecTreeb->SetDirectory(fFileb);
+        fRecTreep->SetDirectory(fFilep);
+      }
     }
     fFile->cd();
     fFile->Write();
@@ -2887,17 +2949,19 @@ void CAFMaker::endJob() {
   }
 
   if(fFlatFile){
-
     AddHistogramsToFile(fFlatFile);
-    fFlatTree->SetDirectory(fFlatFile);
-    if(fFlatGenieTree){
-      fFlatGenieTree->BuildIndex("SourceFileHash", "GENIEEntry");
-      fFlatGenieTree->SetDirectory(fFlatFile);
+    if (fTotalEvents > 0) {
+      if(fFlatGenieTree){
+        fFlatGenieTree->BuildIndex("SourceFileHash", "GENIEEntry");
+        fFlatGenieTree->SetDirectory(fFlatFile);
+      }
+      fFlatTree->SetDirectory(fFlatFile);
+      if (fParams.CreateBlindedCAF() && fFlatFileb) {
+        fFlatTreeb->SetDirectory(fFlatFileb);
+        fFlatTreep->SetDirectory(fFlatFilep);
+      }
     }
-    if (fParams.CreateBlindedCAF() && fFlatFileb) {
-      fFlatTreeb->SetDirectory(fFlatFileb);
-      fFlatTreep->SetDirectory(fFlatFilep);
-    }
+
     fFlatFile->cd();
     fFlatFile->Write();
     if (fParams.CreateBlindedCAF()) {

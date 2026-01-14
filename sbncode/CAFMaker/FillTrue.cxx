@@ -777,6 +777,9 @@ namespace caf {
     if (exit_point < 0 && entry_point >= 0) {
       exit_point = particle.NumberTrajectoryPoints() - 1;
     }
+    if(exit_point >= 0 && entry_point >=0 && exit_point == entry_point && exit_point < static_cast<int>(particle.NumberTrajectoryPoints()) - 1){
+      exit_point++; // to avoid exactly the same start and end positions when single index is inside the active volumne
+    }
     if (exit_point >= 0 && ((unsigned)exit_point) < particle.NumberTrajectoryPoints() - 1) {
       srparticle.wallout = GetWallCross(active_volumes.at(cryostat_index), particle.Position(exit_point).Vect(), particle.Position(exit_point+1).Vect());
     }
@@ -1257,38 +1260,47 @@ caf::Wall_t caf::GetWallCross(const geo::BoxBoundedGeo &volume, const TVector3 p
   TVector3 direction = (p1 - p0) * ( 1. / (p1 - p0).Mag());
   std::vector<TVector3> intersections = volume.GetIntersections(p0, direction);
 
-  assert(intersections.size() == 2);
+  /*
+   * There are either two, or one, or zero intersection points.
+   * As per larcorealg/Geometry/BoxBoundedGeo.h documentation:
+   * If the return std::vector is empty the trajectory does not intersect with the box.
+   * Normally the return value should have one (if the trajectory originates in the box) or two (else) entries.
+   * If the return value has two entries the first represents the entry point and the second the exit point
+   */
+
+  if( intersections.empty() ) return caf::kWallNone;
 
   // get the intersection point closer to p0
-  int intersection_i = ((intersections[0] - p0).Mag() < (intersections[1] - p0).Mag()) ? 0 : 1;
+  TVector3 closestIntersection;
+  double minDistance2 = std::numeric_limits<double>::max();
+
+  for( TVector3 const & point : intersections ) {
+    const double d2 = (point - p0).Mag2();
+    if( d2 > minDistance2 ) continue;
+    minDistance2 = d2;
+    closestIntersection = point;
+  }
 
   double eps = 1e-3;
-  if (abs(intersections[intersection_i].X() - volume.MinX()) < eps) {
-    //std::cout << "Left\n";
+  if (abs(closestIntersection.X() - volume.MinX()) < eps) {
     return caf::kWallLeft;
   }
-  else if (abs(intersections[intersection_i].X() - volume.MaxX()) < eps) {
-    //std::cout << "Right\n";
+  else if (abs(closestIntersection.X() - volume.MaxX()) < eps) {
     return caf::kWallRight;
   }
-  else if (abs(intersections[intersection_i].Y() - volume.MinY()) < eps) {
-    //std::cout << "Bottom\n";
+  else if (abs(closestIntersection.Y() - volume.MinY()) < eps) {
     return caf::kWallBottom;
   }
-  else if (abs(intersections[intersection_i].Y() - volume.MaxY()) < eps) {
-    //std::cout << "Top\n";
+  else if (abs(closestIntersection.Y() - volume.MaxY()) < eps) {
     return caf::kWallTop;
   }
-  else if (abs(intersections[intersection_i].Z() - volume.MinZ()) < eps) {
-    //std::cout << "Front\n";
+  else if (abs(closestIntersection.Z() - volume.MinZ()) < eps) {
     return caf::kWallFront;
   }
-  else if (abs(intersections[intersection_i].Z() - volume.MaxZ()) < eps) {
-    //std::cout << "Back\n";
+  else if (abs(closestIntersection.Z() - volume.MaxZ()) < eps) {
     return caf::kWallBack;
   }
   else assert(false);
-  //std::cout << "None\n";
 
   return caf::kWallNone;
 }//GetWallCross

@@ -42,6 +42,7 @@
 #include "sbnobj/Common/CRT/CRTTrack.hh"
 #include "sbnobj/SBND/CRT/CRTSpacePoint.hh"
 #include "sbnobj/SBND/CRT/CRTTrack.hh"
+#include "sbnobj/SBND/CRT/CRTVeto.hh"
 #include "sbnobj/Common/CRT/CRTPMTMatching.hh"
 #include "sbnobj/Common/CRT/CRTHitT0TaggingInfo.hh"
 #include "sbnobj/Common/PMT/Data/PMTBeamSignal.hh"
@@ -69,6 +70,7 @@ namespace caf
                       const geo::WireReadoutGeom& wireReadout,
                       unsigned producer,
                       caf::SRShower& srshower,
+                      Det_t det,
                       bool allowEmpty = false);
 
   void FillShowerRazzle(const art::Ptr<sbn::MVAPID> razzle,
@@ -229,6 +231,10 @@ namespace caf
   void FillTrackChi2PID(const std::vector<art::Ptr<anab::ParticleID>> particleIDs,
                         caf::SRTrack& srtrack,
                         bool allowEmpty = false);
+  void FillPlaneLikePID(const anab::ParticleID &particle_id, caf::SRTrkLikelihoodPID &srlikepid);
+  void FillTrackLikePID(const std::vector<art::Ptr<anab::ParticleID>>& particleIDs,
+                        caf::SRTrack& srtrack,
+                        bool allowEmpty = false);
 
   void FillTrackPlaneCalo(const anab::Calorimetry &calo, 
                      const std::vector<art::Ptr<recob::Hit>> &hits,
@@ -280,6 +286,11 @@ namespace caf
   void FillSBNDCRTTrack(const sbnd::crt::CRTTrack &track,
                         caf::SRSBNDCRTTrack &srsbndcrttrack,
                         bool allowEmpty = false);
+  
+  void FillSBNDCRTVeto(const sbnd::crt::CRTVeto &veto,
+                       const std::vector<art::Ptr<sbnd::crt::CRTSpacePoint>> &points,
+                       caf::SRSBNDCRTVeto &srsbndcrtveto,
+                       bool allowEmpty = false);
 
   void FillICARUSOpFlash(const recob::OpFlash &flash,
                   std::vector<recob::OpHit const*> const& hits,
