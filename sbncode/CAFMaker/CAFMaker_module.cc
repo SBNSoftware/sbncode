@@ -64,7 +64,7 @@
 #include "art/Framework/Services/System/TriggerNamesService.h"
 #include "nurandom/RandomUtils/NuRandomService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
-#include "lardataalg/DetectorInfo/DetectorPropertiesData.h"
+#include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "larevt/SpaceCharge/SpaceCharge.h"
@@ -92,7 +92,6 @@
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Slice.h"
 #include "lardataobj/RecoBase/Track.h"
-#include "lardataobj/RecoBase/TrackHitMeta.h"
 #include "lardataobj/RecoBase/Vertex.h"
 #include "lardataobj/RecoBase/Shower.h"
 #include "lardataobj/RecoBase/MCSFitResult.h"
@@ -1493,15 +1492,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   }
 
   // Prep truth-to-reco-matching info
-  std::map<int, std::vector<sbn::ReadoutIDE>>  id_to_ide_map;
+  std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map;
   std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map;
   std::map<int, caf::HitsEnergy> id_to_hit_energy_map;
 
   if ( !isRealData ) {
     art::ServiceHandle<cheat::BackTrackerService> bt_serv;
 
-    id_to_ide_map = sbn::PrepSimChannels(simchannels, wireReadout);
-    id_to_truehit_map = sbn::PrepTrueHits(hits, clock_data, *bt_serv);
+    id_to_ide_map = PrepSimChannels(simchannels, wireReadout);
+    id_to_truehit_map = PrepTrueHits(hits, clock_data, *bt_serv);
     id_to_hit_energy_map = SetupIDHitEnergyMap(hits, clock_data, *bt_serv);
   }
 
@@ -1743,9 +1742,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   caf::SRSBNDFrameShiftInfo srsbndframeshiftinfo;
   caf::SRSBNDTimingInfo srsbndtiminginfo;
   caf::SRSoftwareTrigger srsbndsofttrig; 
-
-  // Mapping of (feb, channel) to truth information (AuxDetSimChannel) -- filled for ICARUS
-  std::map<std::pair<int, int>, sim::AuxDetSimChannel> crtsimchanmap;
 
   // Mapping of (feb, channel) to truth information (AuxDetSimChannel) -- filled for ICARUS
   std::map<std::pair<int, int>, sim::AuxDetSimChannel> crtsimchanmap;
@@ -2215,8 +2211,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<recob::Vertex>(fmPFPart, evt,
              fParams.PFParticleLabel() + slice_tag_suff);
 
-    art::FindManyP<recob::Hit, recob::TrackHitMeta> fmTrackHit =
-      FindManyPDStrict<recob::Hit, recob::TrackHitMeta>(slcTracks, evt,
+    art::FindManyP<recob::Hit> fmTrackHit =
+      FindManyPStrict<recob::Hit>(slcTracks, evt,
           fParams.RecoTrackLabel() + slice_tag_suff);
 
     art::FindManyP<recob::Hit> fmShowerHit =
@@ -2491,10 +2487,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
            FillTrackDazzle(fmTrackDazzle.at(iPart).front(), trk);
         }
         if (fmCalo.isValid()) {
-          FillTrackCalo(fmCalo.at(iPart), *thisTrack[0], fmTrackHit.at(iPart), fmTrackHit.data(iPart),
+          FillTrackCalo(fmCalo.at(iPart), fmTrackHit.at(iPart),
               (fParams.FillHitsNeutrinoSlices() && NeutrinoSlice) || fParams.FillHitsAllSlices(),
               fParams.TrackHitFillRRStartCut(), fParams.TrackHitFillRREndCut(),
-              dprop, *sce, trk);
+              dprop, trk);
         }
         
         if (fmCRTHitMatch.isValid() && fDet == kICARUS) {

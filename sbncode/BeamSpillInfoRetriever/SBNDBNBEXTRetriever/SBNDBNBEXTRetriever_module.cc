@@ -33,15 +33,13 @@ private:
   std::vector< sbn::EXTCountInfo > fOutExtInfos;
   sbn::pot::TriggerInfo_t extractTriggerInfo(art::Event const& e) const;
   // input labels
-  float fTotalEXTCounts;
-  int fPTBHLT;
+  float TotalEXTCounts;  
 };
 
 sbn::SBNDBNBEXTRetriever::SBNDBNBEXTRetriever(fhicl::ParameterSet const & params)
   : EDProducer{params} {
   produces< std::vector< sbn::EXTCountInfo >, art::InSubRun >();
-  fTotalEXTCounts = 0;
-  fPTBHLT = params.get<int>("PTBHLT", 4);
+  TotalEXTCounts = 0;
 }
 
 void sbn::SBNDBNBEXTRetriever::produce(art::Event & e)
@@ -51,7 +49,7 @@ void sbn::SBNDBNBEXTRetriever::produce(art::Event & e)
   sbn::pot::PTBInfo_t PTBInfo = sbn::pot::extractPTBInfo(PTB_cont_frags, 4);
   int SingleEventGateCounter = PTBInfo.GateCounter;
  
-  fTotalEXTCounts += SingleEventGateCounter;
+  TotalEXTCounts += SingleEventGateCounter;
   sbn::EXTCountInfo extInfo;
   extInfo.gates_since_last_trigger = SingleEventGateCounter;
   fOutExtInfos.push_back(extInfo);
@@ -59,7 +57,7 @@ void sbn::SBNDBNBEXTRetriever::produce(art::Event & e)
 
 void sbn::SBNDBNBEXTRetriever::beginSubRun(art::SubRun& sr)
 {
-  fTotalEXTCounts = 0;
+  TotalEXTCounts = 0;
   fOutExtInfos = {};
   return;
 }
@@ -69,7 +67,7 @@ void sbn::SBNDBNBEXTRetriever::endSubRun(art::SubRun& sr)
   // We will add all of the EXTCountInfo data-products to the 
   // art::SubRun so it persists 
 
-  mf::LogDebug("SBNDBNBEXTRetriever")<< "Total number of DAQ Spills : " << fTotalEXTCounts << std::endl;
+  mf::LogDebug("SBNDBNBEXTRetriever")<< "Total number of DAQ Spills : " << TotalEXTCounts << std::endl;
   auto p =  std::make_unique< std::vector< sbn::EXTCountInfo > >(fOutExtInfos);
 
   sr.put(std::move(p), art::subRunFragment());

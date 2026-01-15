@@ -33,14 +33,19 @@
 #include "sbnanaobj/StandardRecord/StandardRecord.h"
 #include "sbnanaobj/StandardRecord/SRMeVPrtl.h"
 
-#include "RecoUtils/RecoUtils.h"
-
 namespace caf
 {
   struct HitsEnergy {
     int nHits;
     float totE;
   };
+
+  // Helpers
+  caf::Wall_t GetWallCross( const geo::BoxBoundedGeo &volume,
+        const TVector3 p0,
+        const TVector3 p1);
+
+  caf::g4_process_ GetG4ProcessID(const std::string &name);
 
   void FillSRGlobal(const sbn::evwgh::EventWeightParameterSet& pset,
                     caf::SRGlobal& srglobal,
@@ -68,7 +73,7 @@ namespace caf
   void FillTrueG4Particle(const simb::MCParticle &particle,
         const std::vector<geo::BoxBoundedGeo> &active_volumes,
         const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
-        const std::map<int, std::vector<sbn::ReadoutIDE>> &id_to_ide_map,
+        const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE *>>> &id_to_ide_map,
         const std::map<int, std::vector<art::Ptr<recob::Hit>>> &id_to_truehit_map,
         const cheat::BackTrackerService &backtracker,
         const cheat::ParticleInventoryService &inventory_service,
@@ -98,7 +103,7 @@ namespace caf
                       caf::SRTrack& srtrack,
                       bool allowEmpty = false);
 
-  void FillTrackCaloTruth(const std::map<int, std::vector<sbn::ReadoutIDE>> &id_to_ide_map,
+  void FillTrackCaloTruth(const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> &id_to_ide_map,
                           const std::vector<simb::MCParticle> &mc_particles,
                           const geo::GeometryCore & geometry,
                           const geo::WireReadoutGeom& wireReadout,
@@ -128,6 +133,9 @@ namespace caf
                     CLHEP::HepRandomEngine &rand,
                     std::vector<caf::SRFakeReco> &srfakereco);
 
+  std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels, const geo::WireReadoutGeom &wireReadout);
+  std::map<int, std::vector<art::Ptr<recob::Hit>>> PrepTrueHits(const std::vector<art::Ptr<recob::Hit>> &allHits,
+    const detinfo::DetectorClocksData &clockData, const cheat::BackTrackerService &backtracker);
   std::map<int, caf::HitsEnergy> SetupIDHitEnergyMap(const std::vector<art::Ptr<recob::Hit>> &allHits, const detinfo::DetectorClocksData &clockData,
     const cheat::BackTrackerService &backtracker);
 

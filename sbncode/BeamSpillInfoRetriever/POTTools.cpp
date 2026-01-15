@@ -184,6 +184,7 @@ namespace sbn::pot{
     beamInfo.VPTG2Offset = VPTG2Offset;
     beamInfo.FOM = FOM;
 
+    
     for(auto const& MWRdata: unpacked_MWR){
       std::ignore = MWRdata;
       assert(!MWRdata.empty());

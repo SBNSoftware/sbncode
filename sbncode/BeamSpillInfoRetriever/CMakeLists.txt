@@ -43,18 +43,6 @@ art_make_library(
 	SOURCE getFOM.cpp        
 )
 
-art_make_library(
-	LIBRARIES
-	   
-	ROOT::Hist
-	ROOT::MathCore
-	sbnobj::Common_POTAccounting
-
-
-	LIBRARY_NAME sbn_getFOM
-	SOURCE getFOM.cpp        
-)
-
 install_headers()
 install_fhicl()
 install_source()
