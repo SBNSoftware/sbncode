@@ -119,6 +119,8 @@
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
 #include "sbnobj/Common/Reco/OpT0FinderResult.h"
+#include "sbnobj/SBND/CRT/CRTVeto.hh"
+#include "sbnobj/Common/Reco/CorrectedOpFlashTiming.h"
 #include "sbnobj/SBND/Timing/TimingInfo.hh"
 #include "sbnobj/SBND/Timing/FrameShiftInfo.hh"
 
@@ -266,6 +268,8 @@ class CAFMaker : public art::EDProducer {
   double       fGenieEvtRec_brEvtXSec   = 0.0; ////< Cross section for selected event (1e-38 cm2)
   double       fGenieEvtRec_brEvtDXSec  = 0.0; ////< Cross section for selected event kinematics (1e-38 cm2 / {K^n})
   unsigned int fGenieEvtRec_brEvtKPS    = 0; ////< Kinematic phase space variables. See $GENIE/src/Framework/Conventions/KinePhaseSpace.h -> KinePhaseSpace_t
+  int          fGenieEvtRec_brSctType   = 0; ///< See [`genie::EScatteringType`](https://hep.ph.liv.ac.uk/~costasa/genie_doxygen/master/html/namespacegenie.html#ab97d2b4d1f37af8d967dadd15be88d0b)
+  int          fGenieEvtRec_brIntType   = 0; ///< See [`genie::EInteractionType`](https://hep.ph.liv.ac.uk/~costasa/genie_doxygen/master/html/namespacegenie.html#a554f81bb9954c9e46bbabadfcd403111)
   double       fGenieEvtRec_brEvtWght   = 0.0; ////< Weight for that event
   double       fGenieEvtRec_brEvtProb   = 0.0; ////< Probability for that event (given cross section, path lengths, etc)
   double       fGenieEvtRec_brEvtVtx[4] = {0.0}; ////< Event vertex position in detector coord syst (SI)
@@ -1197,6 +1201,8 @@ void CAFMaker::InitializeOutfiles()
       fFlatGenieTree->Branch("GenieEvtRec.EvtXSec",  &fGenieEvtRec_brEvtXSec,  "GenieEvtRec.EvtXSec/D"   );
       fFlatGenieTree->Branch("GenieEvtRec.EvtDXSec", &fGenieEvtRec_brEvtDXSec, "GenieEvtRec.EvtDXSec/D"  );
       fFlatGenieTree->Branch("GenieEvtRec.EvtKPS",   &fGenieEvtRec_brEvtKPS,   "GenieEvtRec.EvtKPS/i"    );
+      fFlatGenieTree->Branch("GenieEvtRec.SctType",  &fGenieEvtRec_brSctType,  "GenieEvtRec.SctType/I"    );
+      fFlatGenieTree->Branch("GenieEvtRec.IntType",  &fGenieEvtRec_brIntType,  "GenieEvtRec.IntType/I"    );
       fFlatGenieTree->Branch("GenieEvtRec.EvtWght",  &fGenieEvtRec_brEvtWght,  "GenieEvtRec.EvtWght/D"   );
       fFlatGenieTree->Branch("GenieEvtRec.EvtProb",  &fGenieEvtRec_brEvtProb,  "GenieEvtRec.EvtProb/D"   );
       fFlatGenieTree->Branch("GenieEvtRec.EvtVtx",    fGenieEvtRec_brEvtVtx,   "GenieEvtRec.EvtVtx[4]/D" );
@@ -1563,6 +1569,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 	  fGenieEvtRec_brEvtXSec  = genie_rec->XSec() * (1e+38/genie::units::cm2);
 	  fGenieEvtRec_brEvtDXSec = genie_rec->DiffXSec() * (1e+38/genie::units::cm2);
 	  fGenieEvtRec_brEvtKPS   = genie_rec->DiffXSecVars();
+	  fGenieEvtRec_brSctType  = genie_rec->Summary()->ProcInfo().ScatteringTypeId();
+	  fGenieEvtRec_brIntType  = genie_rec->Summary()->ProcInfo().InteractionTypeId();
 	  fGenieEvtRec_brEvtWght  = genie_rec->Weight();
 	  fGenieEvtRec_brEvtProb  = genie_rec->Probability();
 	  fGenieEvtRec_brEvtVtx[0] = genie_rec->Vertex()->X();
@@ -1656,7 +1664,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   //#######################################################
   // Fill detector & reco
   //#######################################################
-
+  
   //Beam gate and Trigger info
   art::Handle<sbn::ExtraTriggerInfo> extratrig_handle;
   GetByLabelStrict(evt, fParams.TriggerLabel().encode(), extratrig_handle);
@@ -1668,16 +1676,42 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   if (!isRealData)
     GetByLabelStrict(evt, fParams.UnshiftedTriggerLabel().encode(), unshifted_trig_handle);
 
+  //Trigger emulation handles
+  art::Handle<std::vector<int>> monpulses_handle;
+  GetByLabelStrict(evt, fParams.MonPulsesTriggerLabel().encode(), monpulses_handle);
+
+  art::Handle<std::vector<int>> monpulse_sizes_handle;
+  GetByLabelStrict(evt, fParams.MonPulseSizesTriggerLabel().encode(), monpulse_sizes_handle);
+
+  art::Handle<int> pairs_handle;
+  GetByLabelStrict(evt, fParams.PairsTriggerLabel().encode(), pairs_handle);
+
+  art::Handle<bool> trigemu_handle;
+  GetByLabelStrict(evt, fParams.EmulatedTriggerLabel().encode(), trigemu_handle);
+
+  // Check trigger handles
   const bool isValidTrigger = extratrig_handle.isValid() && trig_handle.isValid() && trig_handle->size() == 1;
   const bool isValidUnshiftedTrigger = unshifted_trig_handle.isValid() && unshifted_trig_handle->size() == 1;
+  const bool isValidEmulationTrigger = monpulses_handle.isValid() && monpulse_sizes_handle.isValid() && pairs_handle.isValid() && trigemu_handle.isValid();
 
   const double triggerShift = (isValidUnshiftedTrigger && isValidTrigger)?
     unshifted_trig_handle->at(0).TriggerTime() - trig_handle->at(0).TriggerTime() : 0.;
 
+  // Fill local ExtraTriggerInfo struct
+  sbn::ExtraTriggerInfo extratrig;
+  if (extratrig_handle.isValid()) extratrig = *extratrig_handle;
+
   caf::SRTrigger srtrigger;
   if (isValidTrigger) {
       FillTrigger(*extratrig_handle, trig_handle->at(0), srtrigger, triggerShift);
+      if (fDet == kICARUS) 
+        FillTriggerICARUS(*extratrig_handle, srtrigger);
   }
+  // Fill trigger emulation information
+  if (isValidEmulationTrigger) { 
+      FillTriggerEmulation(monpulses_handle, monpulse_sizes_handle, pairs_handle, trigemu_handle, srtrigger);
+  }
+
   // If not real data, fill in enough of the SRTrigger to make (e.g.) the CRT
   // time referencing work. TODO: add more stuff to a "MC"-Trigger?
   // No longer needed with incorporation of trigger emulation in the MC.
@@ -1686,6 +1720,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // }
 
   // try to find the result of the Flash trigger if it was run
+  mf::LogInfo("CAFMaker") << "   New Trigger Time   = " << srtrigger.global_trigger_det_time << " us\n"
+			  << "   New Beam Gate Time =  " << srtrigger.beam_gate_det_time << " us";
   bool pass_flash_trig = false;
   art::Handle<bool> flashtrig_handle;
   GetByLabelStrict(evt, fParams.FlashTrigLabel(), flashtrig_handle);
@@ -1703,8 +1739,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   std::vector<caf::SRCRTTrack> srcrttracks;
   std::vector<caf::SRCRTSpacePoint> srcrtspacepoints;
   std::vector<caf::SRSBNDCRTTrack> srsbndcrttracks;
+  caf::SRSBNDCRTVeto srsbndcrtveto;
   caf::SRSBNDFrameShiftInfo srsbndframeshiftinfo;
   caf::SRSBNDTimingInfo srsbndtiminginfo;
+  caf::SRSoftwareTrigger srsbndsofttrig; 
+
+  // Mapping of (feb, channel) to truth information (AuxDetSimChannel) -- filled for ICARUS
+  std::map<std::pair<int, int>, sim::AuxDetSimChannel> crtsimchanmap;
 
   // Mapping of (feb, channel) to truth information (AuxDetSimChannel) -- filled for ICARUS
   std::map<std::pair<int, int>, sim::AuxDetSimChannel> crtsimchanmap;
@@ -1773,6 +1814,24 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           FillSBNDCRTTrack(sbndcrttracks[i], srsbndcrttracks.back());
         }
       }
+     
+      // Fill CRT Veto 
+      art::Handle<std::vector<sbnd::crt::CRTVeto>> sbndcrtveto_handle;
+      GetByLabelStrict(evt, fParams.SBNDCRTVetoLabel(), sbndcrtveto_handle);
+      // fill into event
+      if (sbndcrtveto_handle.isValid()) {
+        const std::vector<sbnd::crt::CRTVeto> &sbndcrtveto_vec = *sbndcrtveto_handle;
+        // Only one valid veto per event
+        if (sbndcrtveto_vec.size() == 1) {
+          // And associated SpacePoint objects
+          art::FindManyP<sbnd::crt::CRTSpacePoint> spAssoc(sbndcrtveto_handle, evt, fParams.SBNDCRTVetoLabel());
+          if (spAssoc.isValid()) {
+            // There is one vector of SpacePoints per Veto --> can be empty if no veto condition was satisfied     
+            const std::vector<art::Ptr<sbnd::crt::CRTSpacePoint>>& veto_sp_v(spAssoc.at(0)); 
+            FillSBNDCRTVeto(sbndcrtveto_vec[0], veto_sp_v, srsbndcrtveto);
+          }
+        }
+      }
     
       art::Handle<sbnd::timing::FrameShiftInfo> sbndframeshiftinfo_handle;
       GetByLabelStrict(evt, fParams.SBNDFrameShiftInfoLabel(), sbndframeshiftinfo_handle);
@@ -1788,6 +1847,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       if (sbndtiminginfo_handle.isValid()) {
         sbnd::timing::TimingInfo const& sbndtiminginfo(*sbndtiminginfo_handle);
         FillSBNDTimingInfo(sbndtiminginfo, srsbndtiminginfo);
+      }
+
+      art::Handle<std::vector<sbnd::trigger::pmtSoftwareTrigger>> sbndsofttrig_handle;
+      GetByLabelStrict(evt, fParams.SBNDSoftwareTriggerLabel(), sbndsofttrig_handle);
+      if (sbndsofttrig_handle.isValid()){
+        const std::vector<sbnd::trigger::pmtSoftwareTrigger> &sbndsofttrig = *sbndsofttrig_handle;
+        if (sbndsofttrig.size()==1){
+          FillSoftwareTriggerSBND(sbndsofttrig.at(0), srsbndsofttrig);
+        }
       }
     }
 
@@ -1807,6 +1875,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   std::vector<caf::SROpFlash> srflashes;
   if(fDet == kICARUS)
   {
+    //Get all of the special PMT Beam Signals (to use as an opFlash reference time below)
+    art::Handle<std::vector<sbn::timing::PMTBeamSignal>> PMTBeamSignal_handle;
+    GetByLabelIfExists(evt, fParams.PMTBeamSignalLabel(), PMTBeamSignal_handle);
+  
     for (const std::string& pandora_tag_suffix : pandora_tag_suffixes) {
       art::Handle<std::vector<recob::OpFlash>> flashes_handle;
       GetByLabelStrict(evt, fParams.OpFlashLabel() + pandora_tag_suffix, flashes_handle);
@@ -1814,7 +1886,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       if (flashes_handle.isValid()) {
         const std::vector<recob::OpFlash> &opflashes = *flashes_handle;
         int cryostat = ( pandora_tag_suffix.find("W") != std::string::npos ) ? 1 : 0;
-
+        
         // get associated OpHits for each OpFlash
         art::FindMany<recob::OpHit> findManyHits(flashes_handle, evt, fParams.OpFlashLabel() + pandora_tag_suffix);
 
@@ -1824,7 +1896,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           std::vector<recob::OpHit const*> const& ophits = findManyHits.at(iflash);
 
           srflashes.emplace_back();
-          FillICARUSOpFlash(flash, ophits, cryostat, srflashes.back());
+          if(PMTBeamSignal_handle.isValid() && isRealData){
+            const std::vector<sbn::timing::PMTBeamSignal> &pmtbeamsignals = *PMTBeamSignal_handle;
+            FillICARUSOpFlash(flash, ophits, cryostat, pmtbeamsignals, srflashes.back());
+          }
+          else{
+            const std::vector<sbn::timing::PMTBeamSignal> pmtbeamsignals;
+            FillICARUSOpFlash(flash, ophits, cryostat, pmtbeamsignals, srflashes.back());
+          }
           iflash++;
         }
       }
@@ -1966,6 +2045,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     const sbn::TPCPMTBarycenterMatch *barycenterMatch
       = foTPCPMTBarycenterMatch.isValid()? foTPCPMTBarycenterMatch.at(0).get(): nullptr;
 
+
+    art::FindManyP<sbn::CorrectedOpFlashTiming> fmCorrectedOpFlash =
+      FindManyPStrict<sbn::CorrectedOpFlashTiming>(sliceList, evt,
+          fParams.CorrectedOpFlashLabel() + slice_tag_suff);
+    std::vector<art::Ptr<sbn::CorrectedOpFlashTiming>> slcCorrectedOpFlash;
+     if (fmCorrectedOpFlash.isValid())
+      slcCorrectedOpFlash = fmCorrectedOpFlash.at(0);
+
+
     art::FindOneP<lcvn::Result> foCVNResult =
       FindOnePStrict<lcvn::Result>(sliceList, evt,
           fParams.CVNLabel() + slice_tag_suff);
@@ -2095,6 +2183,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<anab::ParticleID>(slcTracks, evt,
           fParams.TrackChi2PidLabel() + slice_tag_suff);
 
+    art::FindManyP<anab::ParticleID> fmLikePID =
+      FindManyPStrict<anab::ParticleID>(slcTracks, evt,
+          fParams.TrackLikePidLabel() + slice_tag_suff);
+
     art::FindManyP<sbn::ScatterClosestApproach> fmScatterClosestApproach =
       FindManyPStrict<sbn::ScatterClosestApproach>(slcTracks, evt,
           fParams.TrackScatterClosestApproachLabel() + slice_tag_suff);
@@ -2221,6 +2313,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceOpT0Finder(slcOpT0, recslc);
     FillSliceBarycenter(slcHits, slcSpacePoints, recslc);
     FillTPCPMTBarycenterMatch(barycenterMatch, recslc);
+    FillCorrectedOpFlashTiming(slcCorrectedOpFlash, recslc);
     FillCVNScores(cvnResult, recslc);
     
     // select slice
@@ -2320,7 +2413,24 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       }
 
       const larpandoraobj::PFParticleMetadata *pfpMeta = (fmPFPMeta.at(iPart).empty()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
-      FillPFPVars(thisParticle, primary, pfpMeta, thisPFPT0, pfp);
+      caf::CAFMakerParams::PFOCharLabels_t const& pfoCharParams
+        = fParams.PFOCharLabels().value_or(caf::CAFMakerParams::PFOCharLabels_t{});
+      const caf::PFOCharLabelsStruct pfoCharLabels {
+        pfoCharParams.EndFractionName(),
+        pfoCharParams.FractionalSpreadName(),
+        pfoCharParams.DiffStraightLineMeanName(),
+        pfoCharParams.LengthName(),
+        pfoCharParams.MaxFitGapLengthName(),
+        pfoCharParams.SlidingLinearFitRMSName(),
+        pfoCharParams.AngleDiffName(),
+        pfoCharParams.SecondaryPCARatioName(),
+        pfoCharParams.TertiaryPCARatioName(),
+        pfoCharParams.VertexDistanceName(),
+        pfoCharParams.HaloTotalRatioName(),
+        pfoCharParams.ConcentrationName(),
+        pfoCharParams.ConicalnessName()
+      };
+      FillPFPVars(thisParticle, primary, pfpMeta, thisPFPT0, pfp, pfoCharLabels);
 
       if (fmCNNScores.isValid()) {
         const sbn::PFPCNNScore *cnnScores = fmCNNScores.at(iPart).at(0).get();
@@ -2367,6 +2477,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
         if (fmChi2PID.isValid()) {
            FillTrackChi2PID(fmChi2PID.at(iPart), trk);
+        }
+        if (fmLikePID.isValid()) {
+           FillTrackLikePID(fmLikePID.at(iPart), trk);
         }
         if (fmScatterClosestApproach.isValid() && fmScatterClosestApproach.at(iPart).size()==1) {
            FillTrackScatterClosestApproach(fmScatterClosestApproach.at(iPart).front(), trk);
@@ -2433,7 +2546,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         assert(thisShower.size() == 1);
 
         SRShower& shw = pfp.shw;
-        FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), wireReadout, producer, shw);
+        FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), wireReadout, producer, shw, fDet);
 
         // We may have many residuals per shower depending on how many showers ar in the slice
         if (fmShowerRazzle.isValid() && fmShowerRazzle.at(iPart).size()==1) {
@@ -2493,10 +2606,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.ncrt_spacepoints = srcrtspacepoints.size();
   rec.sbnd_crt_tracks  = srsbndcrttracks;
   rec.nsbnd_crt_tracks = srsbndcrttracks.size();
+  rec.sbnd_crt_veto    = srsbndcrtveto;
   rec.opflashes        = srflashes;
   rec.nopflashes       = srflashes.size();
   rec.sbnd_frames      = srsbndframeshiftinfo;
   rec.sbnd_timings     = srsbndtiminginfo;
+  rec.soft_trig        = srsbndsofttrig; 
 
   if (fParams.FillTrueParticles()) {
     rec.true_particles  = true_particles;
@@ -2543,7 +2658,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // For more information, see: 
   // https://sbn-docdb.fnal.gov/cgi-bin/sso/RetrieveFile?docid=43090
 
-  if (isRealData && (fDet == kSBND))
+  if (isRealData && (fDet == kSBND) && fSubRunPOT > 0)
   {
     // Fill trigger info
     FillTriggerSBND(srsbndtiminginfo, srtrigger);
@@ -2593,6 +2708,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.hdr.ismc    = !isRealData;
   rec.hdr.det     = fDet;
   rec.hdr.fno     = fFileNumber;
+
   if(fFirstInSubRun)
   {
     rec.hdr.nbnbinfo = fBNBInfo.size();
@@ -2633,13 +2749,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   else {
     std::cout << "Did not find this event in the spill info map." << std::endl;
   }
-
+  
   if(fRecTree){
     // Save the standard-record
     StandardRecord* prec = &rec;
+
     fRecTree->SetBranchAddress("rec", &prec);
     fRecTree->Fill();
-
     if(fFlatTree){
       fFlatRecord->Clear();
       fFlatRecord->Fill(rec);

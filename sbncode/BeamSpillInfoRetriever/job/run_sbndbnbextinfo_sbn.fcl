@@ -1,6 +1,6 @@
 #include "sbndbnbdefaults.fcl"
 
-process_name: SBNDBNBEXTInfoGenRerunning
+process_name: BNBEXTInfoGen
 
 services:{
   
@@ -28,21 +28,21 @@ source: {
 
 physics: {
  producers: {
-   sbndbnbextinfo: @local::sbndbnbspillinfo
+   bnbextinfo: @local::sbndbnbspillinfo
  }
 
- simulate: [sbndbnbextinfo ]
+ simulate: [bnbextinfo ]
  stream1: [ out1 ]
 }
 
-physics.producers.sbndbnbextinfo.module_type: "SBNDBNBEXTRetriever"
+physics.producers.bnbextinfo.module_type: "SBNDBNBEXTRetriever"
 
 outputs: {
  out1: {
    module_type: RootOutput
-   fileName: "%ifb_%tc_sbndbnbextinfo.root"
+   fileName: "%ifb_%tc_bnbextinfo.root"
    dataTier: "raw"
    compressionLevel: 1
  }
 }
-physics.producers.sbndbnbextinfo.fileNames: @local::outputs.out1.fileName
+physics.producers.bnbextinfo.fileNames: @local::outputs.out1.fileName

@@ -36,18 +36,21 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   sbnobj::Common_CRT
                   sbnobj::Common_Reco
                   sbnobj::Common_Analysis
+                  sbnobj::Common_PMT_Data
+                  sbnobj::Common_Trigger
                   sbnobj::SBND_CRT
                   sbnobj::SBND_Timing
                   lardataalg::DetectorInfo
                   art::Framework_Services_System_TriggerNamesService_service
                   sbncode_Metadata_MetadataSBN_service
                   larsim::Utils
-		  larevt::SpaceCharge
+          		   larevt::SpaceCharge
                   systematicstools::interface
                   systematicstools::interpreters
                   systematicstools::utility
                   ${GENIE_LIB_LIST}
                   nugen::EventGeneratorBase_GENIE
+                  sbndaq_artdaq_core::sbndaq-artdaq-core_Obj_SBND
                   )
 
 cet_build_plugin ( CAFMaker art::module

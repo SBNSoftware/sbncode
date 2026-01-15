@@ -225,6 +225,7 @@ private:
   double fTopCRTDistanceCutPassing;
   double fSideCRTDistanceCutStopping;
   double fSideCRTDistanceCutPassing;  
+  bool fAllowShowerLikePFPs;
   
   // tools
   std::vector<std::unique_ptr<sbn::ITCSSelectionTool>> fSelectionTools;
