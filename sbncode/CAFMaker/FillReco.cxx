@@ -1322,6 +1322,7 @@ namespace caf
       slice.barycenterFM.flashPEs  = matchInfo->flashPEs;
       slice.barycenterFM.flashCenter  = SRVector3D (matchInfo->flashCenter.x(), matchInfo->flashCenter.y(), matchInfo->flashCenter.z());
       slice.barycenterFM.flashWidth  = SRVector3D (matchInfo->flashWidth.x(), matchInfo->flashWidth.y(), matchInfo->flashWidth.z());
+      slice.barycenterFM.flashClassification = matchInfo->flashClassification;
       slice.barycenterFM.deltaT  = matchInfo->deltaT;
       slice.barycenterFM.deltaY  = matchInfo->deltaY;
       slice.barycenterFM.deltaZ  = matchInfo->deltaZ;
