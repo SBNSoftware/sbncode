@@ -199,6 +199,7 @@ cet_build_plugin( RayTraceBox art::tool
 add_subdirectory(Higgs)
 add_subdirectory(HNL)
 add_subdirectory(ALP)
+add_subdirectory(LLP)
 
 install_headers()
 install_fhicl()
