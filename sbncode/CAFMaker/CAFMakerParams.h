@@ -635,6 +635,11 @@ namespace caf
       "cvn" 
     };
     
+    Atom<std::string> fBlipTag { 
+      Name("BlipTag"),
+      Comment("Provide a string to label the blip input"), 
+      "blipreco"
+    };
   };
 }
 
