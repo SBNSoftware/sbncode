@@ -611,9 +611,13 @@ namespace caf
     // NuGraph2 plane-by-plane slice variables
     for (unsigned int plane = 0; plane < 3; ++plane) {
 
-      int nHIPHits = 0;             ///< HIP tagging at interaction vertex
-      int nShrHits = 0;             ///< shower hits in the slice
-      int nUnclusteredShrHits = 0;  ///< shower hits in the slice not belonging to a PFP
+      int nMIPHits = 0;             ///< `MIP` hits in the slice
+      int nHIPHits = 0;             ///< `HIP` hits in the slice
+      int nShrHits = 0;             ///< `Shower` hits in the slice
+      int nMhlHits = 0;             ///< `Michel` hits in the slice
+      int nDifHits = 0;             ///< `Diffuse` hits in the slice
+      int nVtxHIPHits = 0;          ///< `HIP` hits in the slice around the vertex
+      int nUnclusteredShrHits = 0;  ///< `Shower` hits in the slice not belonging to a PFP
 
       for ( unsigned int i = 0; i < nHits; i++ ) {
         const recob::Hit& hit = *inputHits.at(i);
@@ -629,28 +633,51 @@ namespace caf
           std::max_element(semVec.begin(), semVec.end())
         );
 
-        // HIP tagging
-        float dwire = std::abs(float(hit.WireID().Wire) - vtx_wire[plane]);
-        float dtick = std::abs(hit.PeakTime() - vtx_tick[plane]);
-        if ((highestScoreIdx == 1) && (dwire <= vtx_wire_dist) && (dtick <= vtx_tick_dist))
+        // `MIP` hits
+        if (highestScoreIdx == SRNuGraphScore::NuGraphCategory::MIP) {
+          nMIPHits += 1;
+        }
+
+        // `HIP` hits
+        if (highestScoreIdx == SRNuGraphScore::NuGraphCategory::HIP) {
           nHIPHits += 1;
 
-        // shower hits
-        if (highestScoreIdx == 2) {
+          // `HIP` hits at vertex
+          float dwire = std::abs(float(hit.WireID().Wire) - vtx_wire[plane]);
+          float dtick = std::abs(hit.PeakTime() - vtx_tick[plane]);    
+          if ((dwire <= vtx_wire_dist) && (dtick <= vtx_tick_dist)) {
+            nVtxHIPHits += 1;
+          }
+        }
 
-          // all shower hits
+        // `Shower` hits
+        if (highestScoreIdx == SRNuGraphScore::NuGraphCategory::Shower) {
           nShrHits += 1;
 
-          // unclustered shower hits
+          // `Shower` hits not clustered by Pandora
           art::Ptr<recob::Hit> hitPtr = inputHits.at(i);
           if (pfpHitSet.find(hitPtr) == pfpHitSet.end()) {
             nUnclusteredShrHits += 1;
           }
         }
+
+        // `Michel` hits
+        if (highestScoreIdx == SRNuGraphScore::NuGraphCategory::Michel) {
+          nMhlHits += 1;
+        }
+
+        // `Diffuse` hits
+        if (highestScoreIdx == SRNuGraphScore::NuGraphCategory::Diffuse) {
+          nDifHits += 1;
+        }
       }
 
-      slice.ng_plane[plane].ng_vtx_hip_hits = nHIPHits;
+      slice.ng_plane[plane].mip_hits = nMIPHits;
+      slice.ng_plane[plane].hip_hits = nHIPHits;
       slice.ng_plane[plane].shr_hits = nShrHits;
+      slice.ng_plane[plane].mhl_hits = nMhlHits;
+      slice.ng_plane[plane].dif_hits = nDifHits;
+      slice.ng_plane[plane].ng_vtx_hip_hits = nVtxHIPHits;
       slice.ng_plane[plane].unclustered_shr_hits = nUnclusteredShrHits;
     }
   }
