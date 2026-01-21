@@ -79,11 +79,11 @@ namespace hit {
     const std::vector<int> fLongMaxHitsVec;    ///<Maximum number hits on a really long pulse train
     const std::vector<int> fLongPulseWidthVec; ///<Sets width of hits used to describe long pulses
 
-    const size_t fMaxMultiHit; ///<maximum hits for multi fit
+    const std::vector<size_t> fMaxMultiHit; ///<maximum hits for multi fit
     const int fAreaMethod;     ///<Type of area calculation
     const std::vector<double>
       fAreaNormsVec;       ///<factors for converting area to same units as peak height
-    const double fChi2NDF; ///maximum Chisquared / NDF allowed for a hit to be saved
+    const std::vector<double> fChi2NDF; ///maximum Chisquared / NDF allowed for a hit to be saved
 
     const std::vector<float> fPulseHeightCuts;
     const std::vector<float> fPulseWidthCuts;
@@ -116,10 +116,10 @@ namespace hit {
     , fLongMaxHitsVec(pset.get<std::vector<int>>("LongMaxHits", std::vector<int>() = {25, 25, 25}))
     , fLongPulseWidthVec(
         pset.get<std::vector<int>>("LongPulseWidth", std::vector<int>() = {16, 16, 16}))
-    , fMaxMultiHit(pset.get<int>("MaxMultiHit"))
+    , fMaxMultiHit(pset.get<std::vector<size_t>>("MaxMultiHitPerPlane", std::vector<size_t>() = {5, 5, 5}))
     , fAreaMethod(pset.get<int>("AreaMethod"))
     , fAreaNormsVec(FillOutHitParameterVector(pset.get<std::vector<double>>("AreaNorms")))
-    , fChi2NDF(pset.get<double>("Chi2NDF"))
+    , fChi2NDF(pset.get<std::vector<double>>("Chi2NDFPerPlane", std::vector<double>() = {500.0, 500.0, 500.0}))
     , fPulseHeightCuts(
         pset.get<std::vector<float>>("PulseHeightCuts", std::vector<float>() = {3.0, 3.0, 3.0}))
     , fPulseWidthCuts(
@@ -365,13 +365,13 @@ namespace hit {
               // #######################################################
               // ### If # requested Gaussians is too large then punt ###
               // #######################################################
-              if (mergedCands.size() <= fMaxMultiHit) {
+              if (mergedCands.size() <= fMaxMultiHit.at(plane)) {
                 fPeakFitterTool->findPeakParameters(
                   range.data(), mergedCands, peakParamsVec, chi2PerNDF, NDF);
 
                 // If the chi2 is infinite then there is a real problem so we bail
                 if (!(chi2PerNDF < std::numeric_limits<double>::infinity())) {
-                  chi2PerNDF = 2. * fChi2NDF;
+                  chi2PerNDF = 2. * fChi2NDF.at(plane);
                   NDF = 2;
                 }
 
@@ -384,7 +384,7 @@ namespace hit {
               // ###   depend on the fhicl parameter fLongPulseWidth ###
               // ### Also do this if chi^2 is too large              ###
               // #######################################################
-              if (mergedCands.size() > fMaxMultiHit || nGausForFit * chi2PerNDF > fChi2NDF) {
+              if (mergedCands.size() > fMaxMultiHit.at(plane) || nGausForFit * chi2PerNDF > fChi2NDF.at(plane)) {
                 int longPulseWidth = fLongPulseWidthVec.at(plane);
                 int nHitsThisPulse = (endT - startT) / longPulseWidth;
 
@@ -401,7 +401,7 @@ namespace hit {
                 peakParamsVec.clear();
                 nGausForFit = nHitsThisPulse;
                 NDF = 1.;
-                chi2PerNDF = chi2PerNDF > fChi2NDF ? chi2PerNDF : -1.;
+                chi2PerNDF = chi2PerNDF > fChi2NDF.at(plane) ? chi2PerNDF : -1.;
 
                 for (int hitIdx = 0; hitIdx < nHitsThisPulse; hitIdx++) {
                   // This hit parameters
