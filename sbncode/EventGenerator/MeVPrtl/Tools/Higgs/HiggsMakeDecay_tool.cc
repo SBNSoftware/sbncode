@@ -82,6 +82,7 @@ private:
   bool fAllowMuonDecay;
   bool fAllowPionDecay;
   bool fAllowPi0Decay;
+  bool fNewFormFactor;
   bool fAddTimeOfFlight;
   
 };
@@ -127,24 +128,34 @@ double MuonPartialWidth(double higs_mass, double mixing) {
   return LeptonPartialWidth(Constants::Instance().muon_mass, higs_mass, mixing);
 }
 
-double PionPartialWidth(double pion_mass, double higs_mass, double mixing) {
+double PionPartialWidth(double pion_mass, double higs_mass, double mixing, bool use_new_ff) {
   if (pion_mass * 2 >= higs_mass) return 0.;
 
   double higgs_vev = Constants::Instance().higgs_vev;
 
-  double form_factor = (2. / 9.) * higs_mass * higs_mass + (11. / 9.) * pion_mass * pion_mass;
+  double form_factor = 0.;
+  if (use_new_ff) {
+    // New, improved form factor based on the plot in arXiv:1909.11670v4
+    // This form factor is significnatly different than in older versions
+    // The expression is a fit to the Fig. 1 left panel in arXiv:1909.11670v4
+    form_factor = 0.537569 * pow(higs_mass - 2 * Constants::Instance().pizero_mass,0.75);
+  }
+  else {
+    // Old form factor
+    form_factor = (2. / 9.) * higs_mass * higs_mass + (11. / 9.) * pion_mass * pion_mass;
+  }
 
   double width = (mixing * mixing * 3 * form_factor * form_factor / (32 * M_PI * higgs_vev * higgs_vev * higs_mass)) * pow(1- 4. * pion_mass * pion_mass / (higs_mass * higs_mass), 1. / 2.);
 
   return width;
 }
 
-double PiPlusPartialWidth(double higs_mass, double mixing) {
-  return 2*PionPartialWidth(Constants::Instance().piplus_mass, higs_mass, mixing);
+double PiPlusPartialWidth(double higs_mass, double mixing, bool use_new_ff) {
+  return 2*PionPartialWidth(Constants::Instance().piplus_mass, higs_mass, mixing, use_new_ff);
 }
 
-double PiZeroPartialWidth(double higs_mass, double mixing) {
-  return PionPartialWidth(Constants::Instance().pizero_mass, higs_mass, mixing);
+double PiZeroPartialWidth(double higs_mass, double mixing, bool use_new_ff) {
+  return PionPartialWidth(Constants::Instance().pizero_mass, higs_mass, mixing, use_new_ff);
 }
 
 HiggsMakeDecay::HiggsMakeDecay(fhicl::ParameterSet const &pset):
@@ -173,6 +184,7 @@ void HiggsMakeDecay::configure(fhicl::ParameterSet const &pset)
   fAllowMuonDecay = pset.get<bool>("AllowMuonDecay", true);
   fAllowPionDecay = pset.get<bool>("AllowPionDecay", true);
   fAllowPi0Decay = pset.get<bool>("AllowPi0Decay", true);
+  fNewFormFactor = pset.get<bool>("NewFormFactor", true);
   fAddTimeOfFlight = pset.get<bool>("AddTimeOfFlight", true);
 
   if (fReferenceHiggsEnergy < 0. && fReferenceHiggsKaonEnergy > 0.) {
@@ -185,8 +197,8 @@ void HiggsMakeDecay::configure(fhicl::ParameterSet const &pset)
     // Get each partial width
     double width_elec = ElectronPartialWidth(fReferenceHiggsMass, fReferenceHiggsMixing);
     double width_muon = MuonPartialWidth(fReferenceHiggsMass, fReferenceHiggsMixing);
-    double width_piplus = PiPlusPartialWidth(fReferenceHiggsMass, fReferenceHiggsMixing);
-    double width_pizero = PiZeroPartialWidth(fReferenceHiggsMass, fReferenceHiggsMixing);
+    double width_piplus = PiPlusPartialWidth(fReferenceHiggsMass, fReferenceHiggsMixing, fNewFormFactor);
+    double width_pizero = PiZeroPartialWidth(fReferenceHiggsMass, fReferenceHiggsMixing, fNewFormFactor);
 
     // total lifetime
     double lifetime_ns = Constants::Instance().hbar / (width_elec + width_muon + width_piplus + width_pizero);
@@ -241,8 +253,8 @@ bool HiggsMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TV
   // Get each partial width
   double width_elec = ElectronPartialWidth(flux.mass, mixing);
   double width_muon = MuonPartialWidth(flux.mass, mixing);
-  double width_piplus = PiPlusPartialWidth(flux.mass, mixing);
-  double width_pizero = PiZeroPartialWidth(flux.mass, mixing);
+  double width_piplus = PiPlusPartialWidth(flux.mass, mixing, fNewFormFactor);
+  double width_pizero = PiZeroPartialWidth(flux.mass, mixing, fNewFormFactor);
 
   // total lifetime
   double lifetime_ns = Constants::Instance().hbar / (width_elec + width_muon + width_piplus + width_pizero);
