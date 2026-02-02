@@ -224,7 +224,7 @@ namespace sbn {
       }
 
       //or do the above 3 lines in one line
-//      auto const& mclist = *e.getValidHandle<std::vector<simb::MCTruth>>(fGeneratorModuleLabel);
+      auto const& mclist = *e.getValidHandle<std::vector<simb::MCTruth>>(fGeneratorModuleLabel);
 
       // If no neutrinos in this event, gives 0 weight;
       int NUni = fParameterSet.fNuniverses;
@@ -264,8 +264,8 @@ namespace sbn {
         }
 
         // Collect neutrino energy; mclist is replaced with fluxlist.
-//        double enu= mclist[inu].GetNeutrino().Nu().E();
         double enu= fluxlist[inu].fnenergyn;
+        if ( enu == -1 ) enu= mclist[inu].GetNeutrino().Nu().E(); //For MeVPrtl generator, not all MCFlux result in a neutrino, so equivalent neutrino energy is computed and saved as MCTruth
 
         //Let's make a weights based on the calculator you have requested 
 
