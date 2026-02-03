@@ -222,14 +222,9 @@ namespace sys {
         double sinPlaneAngle = std::sin(planeAngleRad);
         double cosPlaneAngle = std::cos(planeAngleRad);
 
-        double dydrPlaneRel = dydr * cosPlaneAngle - dzdr * sinPlaneAngle;
-        //double dzdrPlaneRel = dzdr * cosPlaneAngle + dydr * sinPlaneAngle; // don't need to rotate Z for this angle
-
-        //double theta = std::atan2(dxdr, dydrPlaneRel);
-        //return theta;
-
-        double theta = std::atan(dydrPlaneRel / dxdr);
-        return FoldAngle(theta);
+        double cosG = std::abs(dydr * sinPlaneAngle + dzdr * cosPlaneAngle);
+        double theta = std::atan(dxdr / cosG);
+        return std::abs(theta);
       }
       
       // theste are set in the .cc file
