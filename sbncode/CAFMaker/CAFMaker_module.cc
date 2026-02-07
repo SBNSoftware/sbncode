@@ -2649,27 +2649,20 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   FixPMTReferenceTimes(rec, PMT_reference_time);
 
   // TODO: TPC?
-  
-  // SBND: Fix the Reference time in data depending on the stream
-  // For more information, see: 
-  // https://sbn-docdb.fnal.gov/cgi-bin/sso/RetrieveFile?docid=43090
+ 
 
-  if (isRealData && (fDet == kSBND) && fSubRunPOT > 0)
+  if (isRealData && (fDet == kSBND))
   {
     // Fill trigger info
     FillTriggerSBND(srsbndtiminginfo, srtrigger);
 
-    // Shift timing reference frame
-    if (!std::isnan(rec.sbnd_frames.frameApplyAtCaf) && (rec.sbnd_frames.frameApplyAtCaf != 0.0)){
-      mf::LogInfo("CAFMaker") << "Setting Reference Timing for timing object in SBND \n"
-                              << "    Shift Apply At Caf Level = " << rec.sbnd_frames.frameApplyAtCaf << " ns\n";
-      
-      //shift reference frame for CRT objects: crt trk, crt sp, crt sp match, crt trk match
-      SBNDShiftCRTReference(rec, rec.sbnd_frames.frameApplyAtCaf);
+    //// Legacy: Timing correction is being done at decoding/reconstruction level
+    //// SBND: Fix the Reference time in data depending on the stream
+    ////shift reference frame for CRT objects: crt trk, crt sp, crt sp match, crt trk match
+    //SBNDShiftCRTReference(rec, rec.sbnd_frames.frameApplyAtCaf);
 
-      //shift reference frame for PMT objects: opflash, opt0
-      SBNDShiftPMTReference(rec, rec.sbnd_frames.frameApplyAtCaf);
-    }
+    ////shift reference frame for PMT objects: opflash, opt0
+    //SBNDShiftPMTReference(rec, rec.sbnd_frames.frameApplyAtCaf);
   }
 
   // Get metadata information for header
