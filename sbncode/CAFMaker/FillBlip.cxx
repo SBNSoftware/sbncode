@@ -32,7 +32,7 @@ namespace caf
             }
             for(int iPlane=0; iPlane<int(blip::kNplanes); iPlane++)
             {
-                FillBlipRealtedHitCluster( CurrentBlip.clusters[iPlane], NewBlip.clusters[iPlane] );
+                FillBlipRelatedHitCluster( CurrentBlip.clusters[iPlane], NewBlip.clusters[iPlane] );
             }
             CAF_Blips.push_back(NewBlip);
         }
@@ -57,7 +57,7 @@ namespace caf
       TrueCAF_Blip.energy = TrueCAF_Blip.energy/1000.; //convert to GeV
     }
 
-    void FillBlipRealtedHitCluster(blip::HitClust const & LAr_HitClust, caf::SRBlipHitClust &CAF_HitClust)
+    void FillBlipRelatedHitCluster(blip::HitClust const & LAr_HitClust, caf::SRBlipHitClust &CAF_HitClust)
     {
             CAF_HitClust.ID = LAr_HitClust.ID;
             CAF_HitClust.isValid = LAr_HitClust.isValid;
