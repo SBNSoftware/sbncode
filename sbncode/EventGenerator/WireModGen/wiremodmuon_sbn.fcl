@@ -1,0 +1,26 @@
+BEGIN_PROLOG
+
+# needs the corsika config to be added to the table, inside the experimental codebase
+wiremodmuon_icarus: {
+  module_type: WireModMuon
+
+  # CRT bounds
+  #
+  # Each entry (in X0, X1, Y0, Y1, Z0, Z1) is one plane that will be included in the intersection check
+  #
+  # listed as: Top horizontal, Top Rim West, Top Rim East, Top Rim South
+  CRTX0: [-580,  555,   -555,  -560,  -560]
+  CRTX1: [580,   555,   -555,  380,   560]
+  CRTY0: [617.4, 400,   400,   400,   420]
+  CRTY1: [617.4, 600,   600,   600,   620]
+  CRTZ0: [-1180, -1180, -1180, -1143, 1533]
+  CRTZ1: [1460,  1460,  1460,  -1143, 1533]
+
+  # selection config
+  SelectA2C: true
+  SelectCRT: true
+  PrescaleA2C: 1
+  PrescaleCRT: 1
+  NMuonPerEvent: 3
+}
+END_PROLOG

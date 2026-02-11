@@ -5,6 +5,10 @@
 #include "nusimdata/SimulationBase/MCFlux.h" 
 #include "nusimdata/SimulationBase/MCTruth.h"
 
+#include "dk2nu/tree/NuChoice.h"
+#include "dk2nu/tree/dk2nu.h"
+#include "dk2nu/tree/dkmeta.h"
+
 #include "sbncode/SBNEventWeight/Base/WeightCalc.h"
 #include "art/Framework/Principal/Event.h"
 #include "sbncode/SBNEventWeight/Base/WeightCalcCreator.h"

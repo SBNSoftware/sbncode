@@ -1,0 +1,47 @@
+#include "sbndbnbdefaults.fcl"
+
+process_name: BNBEXTInfoGen
+
+services:{
+  
+  message: {
+      debugModules: [ "*" ]
+       destinations: {
+           LogDebugFile:{
+               type:       "file"
+               filename:   "debug.log"
+               append:     false
+               threshold:  "DEBUG"
+               categories: {
+                   default: {}
+               }
+           }
+       }
+  }
+  IFBeam:{}
+}
+
+
+source: {
+}
+
+physics: {
+ producers: {
+   bnbextinfo: @local::sbndbnbspillinfo
+ }
+
+ simulate: [bnbextinfo ]
+ stream1: [ out1 ]
+}
+
+physics.producers.bnbextinfo.module_type: "SBNDBNBEXTRetriever"
+
+outputs: {
+ out1: {
+   module_type: RootOutput
+   fileName: "%ifb_%tc_bnbextinfo.root"
+   dataTier: "raw"
+   compressionLevel: 1
+ }
+}
+physics.producers.bnbextinfo.fileNames: @local::outputs.out1.fileName

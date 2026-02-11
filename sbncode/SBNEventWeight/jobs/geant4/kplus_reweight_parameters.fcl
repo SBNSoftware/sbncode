@@ -1,0 +1,15 @@
+BEGIN_PROLOG
+
+## KPlus available process keys: "total"
+
+KPlusParameters: [
+  {
+    Name:       "fKPlusTotal"
+    Cut:        "total"
+    Range:      [10.0, 2005.0]
+    Nominal:    1.0
+    Sigma:      0.2
+  }
+]
+
+END_PROLOG 

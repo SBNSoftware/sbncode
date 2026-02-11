@@ -1,15 +1,5 @@
 add_subdirectory(PhysicsLists)
 
-cet_build_plugin(G4InfoReducer art::module
-                       LIBRARIES
-                           larsim::Simulation
-                           larcore::Geometry_Geometry_service
-                           lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
-                           art::Persistency_Common
-                           art::Persistency_Provenance
-                           art::Utilities canvas::canvas
-                           BASENAME_ONLY)
-
 set(
   MODULE_LIBRARIES
     art::Utilities
@@ -61,14 +51,5 @@ cet_build_plugin(MergeSimSourcesSBN art::EDProducer
   BASENAME_ONLY
 )
 
-cet_build_plugin(SimpleMerge art::EDProducer
-  LIBRARIES
-  lardataobj::MCBase
-  larcorealg::headers
-  larcorealg::CoreUtils
-  messagefacility::MF_MessageLogger
-)
-
 install_headers()
-install_fhicl()
 install_source()

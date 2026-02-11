@@ -1,0 +1,55 @@
+BEGIN_PROLOG
+
+## PiMinus available process keys: "abs", "cex", "prod", "dcex", "inel"
+
+PiMinusParameters: [ 
+  {
+    Name:       "fPiMinusInelLow"
+    Cut:        "inel"
+    Range:      [10., 200.]
+    Nominal:    1
+    Sigma:      0.2
+  } ,
+  {
+    Name:       "fPiMinusInelHigh"
+    Cut:        "inel"
+    Range:      [700., 2005.]
+    Nominal:    1.0
+    Sigma:      0.2
+  } ,
+
+  {
+    Name:       "fPiMinusAbs"
+    Cut:        "abs"
+    Range:      [10.0, 2005.00]
+    Nominal:    1.0
+    Sigma:      0.2
+  },
+
+  {
+    Name:       "fPiMinusCex"
+    Cut:        "cex"
+    Range:      [10.0, 2005.00]
+    Nominal:    1.0
+    Sigma:      0.2
+  },
+
+  {
+    Name:       "fPiMinusDCex"
+    Cut:        "dcex"
+    Range:      [10.0, 2005.00]
+    Nominal:    1.0
+    Sigma:      0.2
+  },
+
+  {
+    Name:       "fPiMinusPiProd"
+    Cut:        "prod"
+    Range:      [10.0, 2005.00]
+    Nominal:    1.0
+    Sigma:      0.2
+  }
+    
+]
+
+END_PROLOG

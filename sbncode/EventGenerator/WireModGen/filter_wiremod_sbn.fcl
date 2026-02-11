@@ -1,0 +1,9 @@
+BEGIN_PROLOG
+
+filter_primary_simchan: {
+  module_type: FilterPrimarySimEnergyDepo
+  SimEnergyDepoLabel: ionization
+  TrackIDs: [1, 2, 3]
+}
+
+END_PROLOG

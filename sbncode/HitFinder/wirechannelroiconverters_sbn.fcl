@@ -1,0 +1,30 @@
+// from larreco/RecoAlg:
+#include "hitalgorithms.fcl"
+#include "hitfindermodules.fcl"
+
+BEGIN_PROLOG
+
+# This defines a version of the Gauss Hit Finder that uses as input ChannelROIs instead of Wire
+# In principle all default parameters remain the same. 
+
+channelroitowire:
+{
+    module_type:          "ChannelROIToWire"
+    WireModuleLabelVec:   [" "]
+    OutInstanceLabelVec:  [" "]
+    DiagnosticOutput:     false
+}
+
+wiretochannelroi:
+{
+    module_type:          "WireToChannelROI"
+    WireModuleLabelVec:   [" "]
+    OutInstanceLabelVec:  [" "]
+    DiagnosticOutput:     false
+}
+
+# Define sbn versions
+channelroitowire_sbn: @local::channelroitowire
+wiretochannelroi_sbn: @local::wiretochannelroi
+
+END_PROLOG

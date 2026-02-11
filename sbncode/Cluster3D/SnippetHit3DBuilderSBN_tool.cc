@@ -1630,7 +1630,7 @@ geo::WireID SnippetHit3DBuilderSBN::NearestWireID(const Eigen::Vector3f& positio
     catch(std::exception& exc) 
     {
         // This can happen, almost always because the coordinates are **just** out of range
-        mf::LogWarning("Cluster3D") << "Exception caught finding nearest wire, position - " << exc.what() << std::endl;
+        mf::LogDebug("Cluster3D") << "Exception caught finding nearest wire, position - " << exc.what() << std::endl;
 
         // Assume extremum for wire number depending on z coordinate
         if (position[2] < m_geometry->TPC({0,0}).ActiveLength()*0.5) wire = 0;

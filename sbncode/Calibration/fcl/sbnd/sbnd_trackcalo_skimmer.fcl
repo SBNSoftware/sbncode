@@ -27,7 +27,7 @@ caloskim: {
   module_type: TrackCaloSkimmer
   CALOproducer: "caloskimCalorimetry"
   TRKproducer:  "pandoraTrack"
-  T0producers: ["pandora", "crttrackmatching"]
+  PFPT0producer: "pandora"
   PFPproducer: "pandora"
   G4producer: "largeant"
   SimChannelproducer: "simtpc2d:simpleSC"
@@ -83,6 +83,6 @@ a2c_selection: {
 }
 
 caloskim_nodigits_goldentracks: @local::caloskim_nodigits
-caloskim_nodigits_goldentracks.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection]
+caloskim_nodigits_goldentracks.SelectionTools: [ @local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection ]
 
 END_PROLOG
