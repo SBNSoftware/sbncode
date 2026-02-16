@@ -1445,15 +1445,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::fill_ptr_vector(simchannels, simchannel_handle);
   }
 
-  // get sim energy deposits if they're there
-  ::art::Handle<std::vector<sim::SimEnergyDeposit>> sed_handle;
-  GetByLabelStrict(evt, fParams.SimEnergyDepositLabel().encode(), sed_handle);
-
-  std::vector<art::Ptr<sim::SimEnergyDeposit>> seds; 
-  if (sed_handle.isValid()){
-    art::fill_ptr_vector(seds, sed_handle);
-  }
-
   art::Handle<std::vector<simb::MCFlux>> mcflux_handle;
   GetByLabelStrict(evt, std::string("generator"), mcflux_handle);
 
@@ -1648,6 +1639,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     } // end for fm
   } // end for i (mctruths)
 
+  // get sim energy deposits if they're there
+  ::art::Handle<std::vector<sim::SimEnergyDeposit>> sed_handle;
+  GetByLabelStrict(evt, fParams.SimEnergyDepositLabel().encode(), sed_handle);
 
   if (!isRealData && sed_handle.isValid()){
     art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
@@ -1661,18 +1655,17 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       srtruthbranch.dep.push_back(init);
     }
 
-    for (size_t n_dep=0; n_dep < seds.size(); n_dep++){
-      auto sed = seds[n_dep];
-      const auto trackID = sed->TrackID();
+    for (sim::SimEnergyDeposit const& sed: *sed_handle){
+      const auto trackID = sed.TrackID();
 
       art::Ptr<simb::MCTruth> mctruth = pi_serv->TrackIdToMCTruth_P(trackID);
       auto it = std::find(mctruths.begin(), mctruths.end(), mctruth);
       if (it == mctruths.end()) continue; 
 
       auto idx = std::distance(mctruths.begin(), it);
-      srtruthbranch.dep.at(idx).energy    += sed->Energy()*1e-3; // GeV
-      srtruthbranch.dep.at(idx).photons   += sed->NumPhotons();
-      srtruthbranch.dep.at(idx).electrons += sed->NumElectrons();
+      srtruthbranch.dep.at(idx).energy    += sed.Energy()*1e-3; // GeV
+      srtruthbranch.dep.at(idx).photons   += sed.NumPhotons();
+      srtruthbranch.dep.at(idx).electrons += sed.NumElectrons();
     }
   }
 
@@ -2091,10 +2084,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::FindOneP<sbn::LightCalo> foLightCalo =
       FindOnePStrict<sbn::LightCalo>(sliceList,evt,
         fParams.LightCaloLabel() + slice_tag_suff);
-    const sbn::LightCalo *slcLightCalo = nullptr;
-    if (foLightCalo.isValid()) {
-      slcLightCalo = foLightCalo.at(0).get();
-    }
+    const sbn::LightCalo *slcLightCalo = foLightCalo.isValid()? foLightCalo.at(0).get() : nullptr;
 
     art::FindOneP<lcvn::Result> foCVNResult =
       FindOnePStrict<lcvn::Result>(sliceList, evt,
