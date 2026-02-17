@@ -352,6 +352,10 @@ class CAFMaker : public art::EDProducer {
   art::FindOneP<T> FindOnePStrict(const U& from, const art::Event& evt,
 				  const art::InputTag& label) const;
 
+  template <class T, class U>
+  art::FindOneP<T> FindOnePStrictSingle(const U& from, const art::Event& evt,
+                                        const art::InputTag& label) const;
+
   template <class T, class D, class U>
   art::FindOneP<T, D> FindOnePDStrict(const U& from,
                                       const art::Event& evt,
@@ -1300,6 +1304,27 @@ art::FindOneP<T> CAFMaker::FindOnePStrict(const U& from,
 }
 
 //......................................................................
+template <class T, class U>
+art::FindOneP<T> CAFMaker::FindOnePStrictSingle(const U& from,
+                                                const art::Event& evt,
+                                                const art::InputTag& tag) const {
+  std::vector<U> vec = { from };
+
+  art::FindOneP<T> ret(vec, evt, tag);
+
+  if (!tag.label().empty() && !ret.isValid() && fParams.StrictMode()) {
+    std::cout << "CAFMaker: No Assn from '"
+              << cet::demangle_symbol(typeid(from).name()) << "' to '"
+              << cet::demangle_symbol(typeid(T).name())
+              << "' found under label '" << tag << "'. "
+              << "Set 'StrictMode: false' to continue anyway." << std::endl;
+    abort();
+  }
+
+  return ret;
+}
+
+//......................................................................
 template <class T, class D, class U>
 art::FindOneP<T, D> CAFMaker::FindOnePDStrict(const U& from,
                                               const art::Event& evt,
@@ -1791,12 +1816,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     {
       art::Handle<std::vector<sbnd::crt::CRTSpacePoint>> crtspacepoints_handle;
       GetByLabelStrict(evt, fParams.CRTSpacePointLabel(), crtspacepoints_handle);
+      art::FindOneP<sbnd::crt::CRTCluster> foCRTCluster =
+        FindOnePStrict<sbnd::crt::CRTCluster>(crtspacepoints_handle, evt, fParams.CRTSpacePointLabel());
 
       if (crtspacepoints_handle.isValid()) {
         const std::vector<sbnd::crt::CRTSpacePoint> &crtspacepoints = *crtspacepoints_handle;
         for (unsigned i = 0; i < crtspacepoints.size(); i++) {
           srcrtspacepoints.emplace_back();
-          FillCRTSpacePoint(crtspacepoints[i], srcrtspacepoints.back());
+          const art::Ptr<sbnd::crt::CRTCluster> crtcluster = foCRTCluster.at(i);
+          FillCRTSpacePoint(crtspacepoints[i], crtcluster, srcrtspacepoints.back());
         }
       }
 
@@ -2239,6 +2267,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindOnePDStrict<sbnd::crt::CRTSpacePoint, anab::T0>(slcTracks, evt,
                fParams.CRTSpacePointMatchLabel() + slice_tag_suff);
 
+    art::Handle<std::vector<sbnd::crt::CRTSpacePoint>> crtspacepoints_handle;
+    GetByLabelStrict(evt, fParams.CRTSpacePointLabel(), crtspacepoints_handle);
+
     art::FindOneP<sbnd::crt::CRTTrack, anab::T0> foSBNDCRTTrackMatch =
       FindOnePDStrict<sbnd::crt::CRTTrack, anab::T0>(slcTracks, evt,
                fParams.SBNDCRTTrackMatchLabel() + slice_tag_suff);
@@ -2515,8 +2546,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           {
             const art::Ptr<sbnd::crt::CRTSpacePoint> crtspacepoint = foCRTSpacePointMatch.at(iPart);
 
+            art::FindOneP<sbnd::crt::CRTCluster> foCRTCluster =
+              FindOnePStrictSingle<sbnd::crt::CRTCluster>(crtspacepoint, evt, fParams.CRTSpacePointLabel());
+            const art::Ptr<sbnd::crt::CRTCluster> crtcluster = foCRTCluster.at(0);
+
             if(crtspacepoint.isNonnull())
-              FillTrackCRTSpacePoint(foCRTSpacePointMatch.data(iPart).ref(), crtspacepoint, trk);
+              FillTrackCRTSpacePoint(foCRTSpacePointMatch.data(iPart).ref(), crtspacepoint, crtcluster, trk);
           }
         if(foSBNDCRTTrackMatch.isValid() && fDet == kSBND)
           {
