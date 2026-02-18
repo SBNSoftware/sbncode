@@ -821,7 +821,9 @@ namespace caf
                               caf::SRTrack &srtrack,
                               bool allowEmpty)
   {
-    srtrack.crtspacepoint.score = t0match.fTriggerConfidence;
+    srtrack.crtspacepoint.matched = true;
+    srtrack.crtspacepoint.score   = t0match.fTriggerConfidence;
+
     FillCRTSpacePoint(*spacepointmatch, cluster, srtrack.crtspacepoint.spacepoint);
   }
 
@@ -830,7 +832,9 @@ namespace caf
                              caf::SRTrack &srtrack,
                              bool allowEmpty)
   {
-    srtrack.crtsbndtrack.score = t0match.fTriggerConfidence;
+    srtrack.crtsbndtrack.matched = true;
+    srtrack.crtsbndtrack.score   = t0match.fTriggerConfidence;
+
     FillSBNDCRTTrack(*trackmatch, srtrack.crtsbndtrack.track);
   }
 
