@@ -1,19 +1,25 @@
 # Simulates GENIE neutrino interactions from the BNB beam 
 # forcing one interaction per event, inside the TPC volume
 # (with 10 cm padding on each side),
-# selecting only NC events with photons coming out from the Delta
+# selecting only NC events with photons coming out from the delta decay
 
 
-#include "prodgenie_nu_singleinteraction_tpc_sbnd.fcl"
-
-#------ this could be a separated file
 #
 # services
 #
 
+#include "services_sbnd.fcl"
+#include "messages_sbnd.fcl"
+
 #
 # modules
 #
+
+#include "filters_sbnd.fcl"
+#include "emptyevent_sbnd.fcl"
+#include "genie_sbnd.fcl"
+
+
 
 
 
@@ -102,5 +108,5 @@ outputs:
 # override
 # THIS DOES NOT WORK, CHECK! 
 physics.producers.generator.TopVolume: "volTPCActive"
-physics.producers.generator.BeamName: "booster"
-physics.producers.generator.EventGeneratorList: "NCRES"
+#physics.producers.generator.BeamName: "booster"
+#physics.producers.generator.EventGeneratorList: "NCRES"
