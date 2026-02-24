@@ -2,9 +2,9 @@
 
 namespace caf
 {
-    void FillBlip(   const std::vector<blip::BlipReco>& LAr_Blips, std::vector<caf::SRBlip>& CAF_Blips)
+    void FillBlip(   const std::vector<blip::Blip>& LAr_Blips, std::vector<caf::SRBlip>& CAF_Blips)
     {
-        for(blip::BlipReco const& CurrentBlip: LAr_Blips)
+        for(blip::Blip const& CurrentBlip: LAr_Blips)
         {
             caf::SRBlip NewBlip;
             NewBlip.ID = CurrentBlip.ID;
