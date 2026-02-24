@@ -1930,7 +1930,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   }
 
   //Fill blips. art::handle for blips and then call fill blips for each one. Make a vector to hold all of them. I handle for loop in Fill blip
-  art::Handle<std::vector<blip::Blip>> blipHandle;
+  art::Handle<std::vector<blip::BlipReco>> blipHandle;
   std::vector<caf::SRBlip> srblips;
   if(evt.getByLabel( fParams.fBlipTag(), blipHandle)) //fill SR blips
   {
