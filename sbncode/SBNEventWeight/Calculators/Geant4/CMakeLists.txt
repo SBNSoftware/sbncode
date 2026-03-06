@@ -13,6 +13,7 @@ art_make_library(
     art_root_io::TFileService_service
     larcore::Geometry_Geometry_service
     cetlib_except::cetlib_except
+    Geant4::G4ptl
     ReweightBaseLib
     PropBaseLib
     ROOT::Tree
