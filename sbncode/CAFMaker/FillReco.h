@@ -41,6 +41,7 @@
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "sbnobj/Common/CRT/CRTTrack.hh"
 #include "sbnobj/SBND/CRT/CRTSpacePoint.hh"
+#include "sbnobj/SBND/CRT/CRTCluster.hh"
 #include "sbnobj/SBND/CRT/CRTTrack.hh"
 #include "sbnobj/SBND/CRT/CRTVeto.hh"
 #include "sbnobj/Common/CRT/CRTPMTMatching.hh"
@@ -206,6 +207,7 @@ namespace caf
 
   void FillTrackCRTSpacePoint(const anab::T0 &t0match,
                               const art::Ptr<sbnd::crt::CRTSpacePoint> &spacepointmatch,
+                              const art::Ptr<sbnd::crt::CRTCluster> &cluster,
                               caf::SRTrack &srtrack,
                               bool allowEmpty = false);
 
@@ -277,6 +279,7 @@ namespace caf
                   bool allowEmpty = false);
 
   void FillCRTSpacePoint(const sbnd::crt::CRTSpacePoint &spacepoint,
+                         const art::Ptr<sbnd::crt::CRTCluster> &cluster,
                          caf::SRCRTSpacePoint &srspacepoint,
                          bool allowEmpty = false);
 
