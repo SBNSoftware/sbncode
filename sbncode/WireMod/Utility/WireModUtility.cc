@@ -558,10 +558,11 @@ sys::WireModUtility::ScaleValues_t sys::WireModUtility::GetViewScaleValues(sys::
         graph2Ds_Sigma_XXW [plane] == nullptr  )
       throw cet::exception("WireModUtility")
         << "Tried to apply XXW scale factor, but could not find graphs. Check that you have set those in the utility.";
-    temp_scale = graph2Ds_Charge_XXW[plane]->Interpolate(truth_props.x, ThetaXW(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()));
+    double thXW = ThetaXW(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ());
+    temp_scale = graph2Ds_Charge_XXW[plane]->Interpolate(truth_props.x, thXW);
     if(temp_scale>0.001) scales.r_Q *= temp_scale;
 
-    temp_scale = graph2Ds_Sigma_XXW [plane]->Interpolate(truth_props.x, ThetaXW(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()));
+    temp_scale = graph2Ds_Sigma_XXW [plane]->Interpolate(truth_props.x, thXW);
     if(temp_scale>0.001) scales.r_sigma *= temp_scale;
   }
 
