@@ -1,0 +1,16 @@
+/**
+ * @file   ${gitRepoVersionSourceStem}.cxx
+ * @brief  GIT version for repository `${gitRepoName}`.
+ * @author automatically generated;
+ *         template: Gianluca Petrillo (petrillo@slac.stanford.edu)
+ * @date   January 18, 2025
+ * @see    ${gitRepoVersionSourceStem}.h
+ */
+
+#include "${gitRepoVersionSourceStem}.h"
+
+// -----------------------------------------------------------------------------
+const char RepositoryVersion_${gitRepoName}[] = "${gitRepoVersion}";
+
+
+// -----------------------------------------------------------------------------
