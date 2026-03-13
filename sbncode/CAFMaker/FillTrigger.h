@@ -9,6 +9,7 @@
 #include "lardataobj/RawData/TriggerData.h"
 #include "art/Framework/Principal/Handle.h"
 #include "sbndaq-artdaq-core/Obj/SBND/pmtSoftwareTrigger.hh"
+#include "sbncode/BeamSpillInfoRetriever/POTTools.h"
 
 namespace caf
 {
@@ -30,6 +31,8 @@ namespace caf
                              art::Handle<bool> const& passedTrig,
                              caf::SRTrigger& triggerInfo);
   void FillSoftwareTriggerSBND(const sbnd::trigger::pmtSoftwareTrigger& softInfo, caf::SRSoftwareTrigger& caf_softInfo);
+  
+  void FillPTBTriggersSBND(const std::vector<sbn::pot::PTBInfo_t>& ptb_triggers, caf::SRTrigger& triggerInfo);
 }
 
 #endif
