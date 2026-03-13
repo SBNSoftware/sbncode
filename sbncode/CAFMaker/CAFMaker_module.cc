@@ -1308,7 +1308,7 @@ template <class T, class U>
 art::FindOneP<T> CAFMaker::FindOnePStrictSingle(const U& from,
                                                 const art::Event& evt,
                                                 const art::InputTag& tag) const {
-  return FindOnePStrict(std::vector{ from }, evt, tag);
+  return FindOnePStrict<T>(std::vector{ from }, evt, tag);
 }
 
 //......................................................................
@@ -1811,7 +1811,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         for (unsigned i = 0; i < crtspacepoints.size(); i++) {
           srcrtspacepoints.emplace_back();
           const art::Ptr<sbnd::crt::CRTCluster> crtcluster = foCRTCluster.at(i);
-          FillCRTSpacePoint(crtspacepoints[i], crtcluster, srcrtspacepoints.back());
+          FillCRTSpacePoint(crtspacepoints[i], *crtcluster, srcrtspacepoints.back());
         }
       }
 
@@ -2538,7 +2538,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
             const art::Ptr<sbnd::crt::CRTCluster>& crtcluster = foCRTCluster.at(0);
 
             if(crtspacepoint.isNonnull())
-              FillTrackCRTSpacePoint(foCRTSpacePointMatch.data(iPart).ref(), crtspacepoint, crtcluster, trk);
+              FillTrackCRTSpacePoint(foCRTSpacePointMatch.data(iPart).ref(), *crtspacepoint, *crtcluster, trk);
           }
         if(foSBNDCRTTrackMatch.isValid() && fDet == kSBND)
           {
