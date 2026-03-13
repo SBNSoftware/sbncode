@@ -164,7 +164,7 @@ namespace caf
   }
 
   void FillCRTSpacePoint(const sbnd::crt::CRTSpacePoint &spacepoint,
-                         const art::Ptr<sbnd::crt::CRTCluster> &cluster,
+                         const sbnd::crt::CRTCluster &cluster,
                          caf::SRCRTSpacePoint &srspacepoint,
                          bool allowEmpty)
   {
@@ -174,8 +174,8 @@ namespace caf
     srspacepoint.time         = spacepoint.Ts0();
     srspacepoint.time_err     = spacepoint.Ts0Err();
     srspacepoint.complete     = spacepoint.Complete();
-    srspacepoint.nhits        = cluster->NHits();
-    srspacepoint.tagger       = cluster->Tagger();
+    srspacepoint.nhits        = cluster.NHits();
+    srspacepoint.tagger       = cluster.Tagger();
   }
 
   void FillSBNDCRTTrack(const sbnd::crt::CRTTrack &track,
@@ -816,15 +816,15 @@ namespace caf
   }
 
   void FillTrackCRTSpacePoint(const anab::T0 &t0match,
-                              const art::Ptr<sbnd::crt::CRTSpacePoint> &spacepointmatch,
-                              const art::Ptr<sbnd::crt::CRTCluster> &cluster,
+                              const sbnd::crt::CRTSpacePoint &spacepointmatch,
+                              const sbnd::crt::CRTCluster &cluster,
                               caf::SRTrack &srtrack,
                               bool allowEmpty)
   {
     srtrack.crtspacepoint.matched = true;
     srtrack.crtspacepoint.score   = t0match.fTriggerConfidence;
 
-    FillCRTSpacePoint(*spacepointmatch, cluster, srtrack.crtspacepoint.spacepoint);
+    FillCRTSpacePoint(spacepointmatch, cluster, srtrack.crtspacepoint.spacepoint);
   }
 
   void FillTrackSBNDCRTTrack(const anab::T0 &t0match,

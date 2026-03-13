@@ -1308,20 +1308,7 @@ template <class T, class U>
 art::FindOneP<T> CAFMaker::FindOnePStrictSingle(const U& from,
                                                 const art::Event& evt,
                                                 const art::InputTag& tag) const {
-  std::vector<U> vec = { from };
-
-  art::FindOneP<T> ret(vec, evt, tag);
-
-  if (!tag.label().empty() && !ret.isValid() && fParams.StrictMode()) {
-    std::cout << "CAFMaker: No Assn from '"
-              << cet::demangle_symbol(typeid(from).name()) << "' to '"
-              << cet::demangle_symbol(typeid(T).name())
-              << "' found under label '" << tag << "'. "
-              << "Set 'StrictMode: false' to continue anyway." << std::endl;
-    abort();
-  }
-
-  return ret;
+  return FindOnePStrict<T>(std::vector{ from }, evt, tag);
 }
 
 //......................................................................
@@ -1824,7 +1811,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         for (unsigned i = 0; i < crtspacepoints.size(); i++) {
           srcrtspacepoints.emplace_back();
           const art::Ptr<sbnd::crt::CRTCluster> crtcluster = foCRTCluster.at(i);
-          FillCRTSpacePoint(crtspacepoints[i], crtcluster, srcrtspacepoints.back());
+          FillCRTSpacePoint(crtspacepoints[i], *crtcluster, srcrtspacepoints.back());
         }
       }
 
@@ -2548,10 +2535,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
             art::FindOneP<sbnd::crt::CRTCluster> foCRTCluster =
               FindOnePStrictSingle<sbnd::crt::CRTCluster>(crtspacepoint, evt, fParams.CRTSpacePointLabel());
-            const art::Ptr<sbnd::crt::CRTCluster> crtcluster = foCRTCluster.at(0);
+            const art::Ptr<sbnd::crt::CRTCluster>& crtcluster = foCRTCluster.at(0);
 
             if(crtspacepoint.isNonnull())
-              FillTrackCRTSpacePoint(foCRTSpacePointMatch.data(iPart).ref(), crtspacepoint, crtcluster, trk);
+              FillTrackCRTSpacePoint(foCRTSpacePointMatch.data(iPart).ref(), *crtspacepoint, *crtcluster, trk);
           }
         if(foSBNDCRTTrackMatch.isValid() && fDet == kSBND)
           {

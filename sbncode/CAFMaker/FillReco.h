@@ -206,8 +206,8 @@ namespace caf
                        bool allowEmpty = false);
 
   void FillTrackCRTSpacePoint(const anab::T0 &t0match,
-                              const art::Ptr<sbnd::crt::CRTSpacePoint> &spacepointmatch,
-                              const art::Ptr<sbnd::crt::CRTCluster> &cluster,
+                              const sbnd::crt::CRTSpacePoint &spacepointmatch,
+                              const sbnd::crt::CRTCluster &cluster,
                               caf::SRTrack &srtrack,
                               bool allowEmpty = false);
 
@@ -279,7 +279,7 @@ namespace caf
                   bool allowEmpty = false);
 
   void FillCRTSpacePoint(const sbnd::crt::CRTSpacePoint &spacepoint,
-                         const art::Ptr<sbnd::crt::CRTCluster> &cluster,
+                         const sbnd::crt::CRTCluster &cluster,
                          caf::SRCRTSpacePoint &srspacepoint,
                          bool allowEmpty = false);
 
