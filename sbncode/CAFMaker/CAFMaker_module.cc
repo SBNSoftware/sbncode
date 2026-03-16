@@ -2080,11 +2080,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
       if (vertex != NULL) {
         auto const& tpcID = geom->FindTPCAtPosition(vertex->position());
-        for (geo::PlaneID const& p : wireReadout.Iterate<geo::PlaneID>()) {
-          auto const& planeID = geo::PlaneID{tpcID, p.Plane};
-          const geo::PlaneGeo& planeGeo = wireReadout.Plane(planeID);
-          vtx_wire[p.Plane] = planeGeo.WireCoordinate(vertex->position()); ///< wire projection
-          vtx_tick[p.Plane] = dprop.ConvertXToTicks(vertex->position().X(), planeID); ///< drift projection
+        if (tpcID.isValid) {
+          for (geo::PlaneID const& p : wireReadout.Iterate<geo::PlaneID>()) {
+            auto const& planeID = geo::PlaneID{tpcID, p.Plane};
+            const geo::PlaneGeo& planeGeo = wireReadout.Plane(planeID);
+            vtx_wire[p.Plane] = planeGeo.WireCoordinate(vertex->position()); ///< wire projection
+            vtx_tick[p.Plane] = dprop.ConvertXToTicks(vertex->position().X(), planeID); ///< drift projection
+          }
         }
       }
 
