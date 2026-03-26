@@ -254,11 +254,6 @@ std::map<sys::WireModUtility::SubROI_Key_t, std::vector<const sim::SimEnergyDepo
     total_energy += edep_ptr->E();
   }
 
-  // calculate EDep properties by TrackID
-  std::map<int, sys::WireModUtility::TruthProperties_t> TrackIDMatchedPropertyMap;
-  for (auto const& track_edeps : TrackIDMatchedEDepMap)
-    TrackIDMatchedPropertyMap[track_edeps.first] = CalcPropertiesFromEdeps(track_edeps.second, offset);
-
   // map it all out
   std::map<unsigned int, std::vector<unsigned int>> EDepMatchedSubROIMap;        // keys are indexes of edepPtrVec, values are vectors of indexes of subROIPropVec
   std::map<int, std::unordered_set<unsigned int>>   TrackIDMatchedSubROIMap;     // keys are TrackIDs, values are sets of indexes of subROIPropVec
@@ -271,11 +266,18 @@ std::map<sys::WireModUtility::SubROI_Key_t, std::vector<const sim::SimEnergyDepo
     // get EDep properties
     auto edep_ptr  = edepPtrVec[i_e];
     const geo::TPCGeo& curTPCGeom = geometry->PositionToTPC(edep_ptr->MidPoint());
-    const auto plane0 = wireReadout->FirstPlane(curTPCGeom.ID());
-    double ticksPercm = detPropData.GetXTicksCoefficient(); // this should be by TPCID, but isn't building right now
-    double zeroTick = detPropData.ConvertXToTicks(0, plane0.ID());
-    auto edep_tick = ticksPercm * edep_ptr->X() + (zeroTick + offset) + tickOffset;
-    edep_tick = detPropData.ConvertXToTicks(edep_ptr->X(), plane0.ID()) + offset + tickOffset;
+    std::map<readout::ROPID, double> planeProjEdepTick;
+    for (const auto& planeGeom : wireReadout->Iterate<geo::PlaneGeo>(curTPCGeom.ID()))
+    {
+      double projTick = detPropData.ConvertXToTicks(edep_ptr->X(), planeGeom.ID()) + offset + tickOffset;
+      readout::ROPID ropID = wireReadout->WirePlaneToROP(planeGeom.ID());
+      if (planeProjEdepTick.count(ropID) == 1)
+      {
+        std::cout << "MatchEdepsToSubROIs - Warning, overwriting tick projection at" << ropID.toString()
+                  << "\n  Changing from " << planeProjEdepTick[ropID] << " to " << projTick << std::endl; 
+      }
+      planeProjEdepTick[ropID] = projTick;
+    }
 
     // loop over subROIs
     unsigned int closest_hit = std::numeric_limits<unsigned int>::max();
@@ -283,6 +285,8 @@ std::map<sys::WireModUtility::SubROI_Key_t, std::vector<const sim::SimEnergyDepo
     for (unsigned int i_h = 0; i_h < subROIPropVec.size(); ++i_h)
     {
       auto subroi_prop = subROIPropVec[i_h];
+      readout::ROPID subroiROP = wireReadout->ChannelToROP(subroi_prop.channel);
+      double edep_tick = planeProjEdepTick.at(subroiROP);
       if (edep_tick > subroi_prop.center-subroi_prop.sigma && edep_tick < subroi_prop.center+subroi_prop.sigma)
       {
         EDepMatchedSubROIMap[i_e].push_back(i_h);
@@ -455,6 +459,7 @@ sys::WireModUtility::TruthProperties_t sys::WireModUtility::CalcPropertiesFromEd
   if (total_energy > 0)
     edep_col_properties.x_rms = std::sqrt(edep_col_properties.x_rms/total_energy);
 
+  // projecting edep to plane0, so be mindful when accessing the tick value
   const geo::TPCGeo& tpcGeom = geometry->PositionToTPC({edep_col_properties.x, edep_col_properties.y, edep_col_properties.z});
   const auto plane0 = wireReadout->FirstPlane(tpcGeom.ID());
   double ticksPercm = detPropData.GetXTicksCoefficient(); // this should be by TPCID, but isn't building right now

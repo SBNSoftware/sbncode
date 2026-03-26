@@ -135,8 +135,8 @@ namespace sys {
         float total_energy;
         float x_min;
         float x_max;
-        float tick_min;
-        float tick_max;
+        float tick_min; // On Plane0!!
+        float tick_max; // On Plane0!!
         float y;
         float z;
         double dxdr;
@@ -179,9 +179,8 @@ namespace sys {
 
       double ThetaXZ_PlaneRel(double dxdr, double dydr, double dzdr, double planeAngle)
       {
-        double planeAngleRad = planeAngle * (util::pi() / 180.0);
-        double sinPlaneAngle = std::sin(planeAngleRad);
-        double cosPlaneAngle = std::cos(planeAngleRad);
+        double sinPlaneAngle = std::sin(planeAngle);
+        double cosPlaneAngle = std::cos(planeAngle);
 
         //double dydrPlaneRel = dydr * cosPlaneAngle - dzdr * sinPlaneAngle; // don't need to rotate Y for this angle
         double dzdrPlaneRel = dzdr * cosPlaneAngle + dydr * sinPlaneAngle;
@@ -192,9 +191,8 @@ namespace sys {
 
       double ThetaYZ_PlaneRel(double dxdr, double dydr, double dzdr, double planeAngle)
       {
-        double planeAngleRad = planeAngle * (util::pi() / 180.0);
-        double sinPlaneAngle = std::sin(planeAngleRad);
-        double cosPlaneAngle = std::cos(planeAngleRad);
+        double sinPlaneAngle = std::sin(planeAngle);
+        double cosPlaneAngle = std::cos(planeAngle);
 
         double dydrPlaneRel = dydr * cosPlaneAngle - dzdr * sinPlaneAngle;
         double dzdrPlaneRel = dzdr * cosPlaneAngle + dydr * sinPlaneAngle;
@@ -205,9 +203,8 @@ namespace sys {
 
       double ThetaXY_PlaneRel(double dxdr, double dydr, double dzdr, double planeAngle)
       {
-        double planeAngleRad = planeAngle * (util::pi() / 180.0);
-        double sinPlaneAngle = std::sin(planeAngleRad);
-        double cosPlaneAngle = std::cos(planeAngleRad);
+        double sinPlaneAngle = std::sin(planeAngle);
+        double cosPlaneAngle = std::cos(planeAngle);
 
         double dydrPlaneRel = dydr * cosPlaneAngle - dzdr * sinPlaneAngle;
         //double dzdrPlaneRel = dzdr * cosPlaneAngle + dydr * sinPlaneAngle; // don't need to rotate Z for this angle
@@ -218,9 +215,8 @@ namespace sys {
 
       double ThetaXW(double dxdr, double dydr, double dzdr, double planeAngle)
       {
-        double planeAngleRad = planeAngle * (util::pi() / 180.0);
-        double sinPlaneAngle = std::sin(planeAngleRad);
-        double cosPlaneAngle = std::cos(planeAngleRad);
+        double sinPlaneAngle = std::sin(planeAngle);
+        double cosPlaneAngle = std::cos(planeAngle);
 
         double cosG = std::abs(dydr * sinPlaneAngle + dzdr * cosPlaneAngle);
         double theta = std::atan(dxdr / cosG);
