@@ -93,7 +93,7 @@ namespace sys {
       }
 
       // typedefs
-      typedef std::pair<unsigned int,unsigned int>  ROI_Key_t;
+      typedef std::pair<unsigned int, unsigned int>  ROI_Key_t;
       typedef std::pair<ROI_Key_t, unsigned int> SubROI_Key_t;
 
       typedef struct ROIProperties
@@ -147,8 +147,8 @@ namespace sys {
       } TruthProperties_t;
 
       // internal containers
-      std::map< ROI_Key_t,std::vector<size_t> > ROIMatchedEdepMap;
-      std::map< ROI_Key_t,std::vector<size_t> > ROIMatchedHitMap;
+      std::map< ROI_Key_t, std::vector<size_t> > ROIMatchedEdepMap;
+      std::map< ROI_Key_t, std::vector<size_t> > ROIMatchedHitMap;
 
       // some useful functions
       // geometries
@@ -223,7 +223,7 @@ namespace sys {
         return std::abs(theta);
       }
       
-      // theste are set in the .cc file
+      // these are set in the .cc file
       ROIProperties_t CalcROIProperties(recob::Wire const&, size_t const&);
 
       std::vector<std::pair<unsigned int, unsigned int>> GetTargetROIs(sim::SimEnergyDeposit const&, double offset);
