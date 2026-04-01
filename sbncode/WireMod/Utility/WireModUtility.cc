@@ -362,6 +362,12 @@ sys::WireModUtility::TruthProperties_t sys::WireModUtility::CalcPropertiesFromEd
   {
     if (edep_ptr->StepLength() == 0)
       continue;
+    
+    geo::TPCID curTPCID;
+    try {
+      curTPCID = geometry->PositionToTPC(edep_ptr->MidPoint()).ID();
+    }
+    catch(...) {continue;} // ignore non-active depositions
 
     edep_props.x = edep_ptr->X();
     edep_props.y = edep_ptr->Y();
@@ -374,8 +380,7 @@ sys::WireModUtility::TruthProperties_t sys::WireModUtility::CalcPropertiesFromEd
 
     total_energy_all += edep_ptr->E();
 
-    const geo::TPCGeo& curTPCGeom = geometry->PositionToTPC(edep_ptr->MidPoint());
-    for (auto const& plane : wireReadout->Iterate<geo::PlaneGeo>(curTPCGeom.ID())) {
+    for (auto const& plane : wireReadout->Iterate<geo::PlaneGeo>(curTPCID)) {
       int i_p = plane.ID().Plane;
       auto scales = GetViewScaleValues(edep_props, plane.View());
       scales_e_weighted[i_p].r_Q     += edep_ptr->E()*scales.r_Q;
@@ -456,19 +461,28 @@ sys::WireModUtility::TruthProperties_t sys::WireModUtility::CalcPropertiesFromEd
   }
   edep_col_properties.x_rms_noWeight = std::sqrt(edep_col_properties.x_rms_noWeight);
 
-  if (total_energy > 0)
+  if (total_energy > 0) {
     edep_col_properties.x_rms = std::sqrt(edep_col_properties.x_rms/total_energy);
+  }
 
-  // projecting edep to plane0, so be mindful when accessing the tick value
-  const geo::TPCGeo& tpcGeom = geometry->PositionToTPC({edep_col_properties.x, edep_col_properties.y, edep_col_properties.z});
-  const auto plane0 = wireReadout->FirstPlane(tpcGeom.ID());
-  double ticksPercm = detPropData.GetXTicksCoefficient(); // this should be by TPCID, but isn't building right now
-  edep_col_properties.tick              = detPropData.ConvertXToTicks(edep_col_properties.x    , plane0.ID()) + offset + tickOffset;
-  edep_col_properties.tick_rms          = ticksPercm*edep_col_properties.x_rms;
-  edep_col_properties.tick_rms_noWeight = ticksPercm*edep_col_properties.x_rms_noWeight;
-  edep_col_properties.tick_min          = detPropData.ConvertXToTicks(edep_col_properties.x_min, plane0.ID()) + offset + tickOffset;
-  edep_col_properties.tick_max          = detPropData.ConvertXToTicks(edep_col_properties.x_max, plane0.ID()) + offset + tickOffset;
-  edep_col_properties.total_energy      = total_energy;
+  // get ticks, etc. if the deposition is active
+  geo::TPCID tpcGeomID;
+  try {
+    tpcGeomID = geometry->PositionToTPC({edep_col_properties.x, edep_col_properties.y, edep_col_properties.z}).ID();
+  }
+  catch(...) {}
+
+  if (tpcGeomID.isValid) {
+    // projecting edep to plane0, so be mindful when accessing the tick value
+    const auto plane0 = wireReadout->FirstPlane(tpcGeomID);
+    double ticksPercm = detPropData.GetXTicksCoefficient(); // this should be by TPCID, but isn't building right now
+    edep_col_properties.tick              = detPropData.ConvertXToTicks(edep_col_properties.x    , plane0.ID()) + offset + tickOffset;
+    edep_col_properties.tick_rms          = ticksPercm*edep_col_properties.x_rms;
+    edep_col_properties.tick_rms_noWeight = ticksPercm*edep_col_properties.x_rms_noWeight;
+    edep_col_properties.tick_min          = detPropData.ConvertXToTicks(edep_col_properties.x_min, plane0.ID()) + offset + tickOffset;
+    edep_col_properties.tick_max          = detPropData.ConvertXToTicks(edep_col_properties.x_max, plane0.ID()) + offset + tickOffset;
+    edep_col_properties.total_energy      = total_energy;
+  }
   
 
   return edep_col_properties; 
