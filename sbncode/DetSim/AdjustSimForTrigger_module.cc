@@ -13,6 +13,8 @@
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Principal/Run.h"
 #include "art/Framework/Principal/SubRun.h"
+#include "art/Persistency/Common/PtrMaker.h"
+#include "canvas/Persistency/Common/Assns.h"
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
@@ -24,7 +26,10 @@
 #include "lardataobj/Simulation/SimEnergyDeposit.h"
 #include "lardataobj/Simulation/SimEnergyDepositLite.h"
 #include "lardataobj/Simulation/SimPhotons.h"
+#include "sbnobj/ICARUS/PMT/Data/WaveformBaseline.h"
+
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "sbncode/Utilities/AssnsUtils.h" // sbn::RebindAssociatedProducts()
 
 #include <ios> // std::boolalpha
 #include <limits>
@@ -63,6 +68,7 @@ private:
   bool fShiftSimEnergyDepositLites;
   bool fShiftSimPhotons;
   bool fShiftWaveforms;
+  art::InputTag fBindWaveformBaselines; ///< Tag of OpDetWaveform-baseline associations to be rebound.
   double fAdditionalOffset;
   bool fDropTriggerProduct; ///< Do not put the shifted trigger data product into the event.
   static constexpr auto& kModuleName = "AdjustSimForTrigger";
@@ -83,6 +89,7 @@ AdjustSimForTrigger::AdjustSimForTrigger(fhicl::ParameterSet const& p)
   , fShiftSimEnergyDepositLites{p.get<bool>("ShiftSimEnergyDepositLites", false)}
   , fShiftSimPhotons{p.get<bool>("ShiftSimPhotons", false)}
   , fShiftWaveforms{p.get<bool>("ShiftWaveforms", false)}
+  , fBindWaveformBaselines{p.get<art::InputTag>("BindWaveformBaselines", "")}
   , fAdditionalOffset{p.get<double>("AdditionalOffset", 0.)}
   , fDropTriggerProduct{p.get<bool>("DropTriggerProduct", false)}
 {
@@ -91,12 +98,15 @@ AdjustSimForTrigger::AdjustSimForTrigger(fhicl::ParameterSet const& p)
     throw art::Exception(art::errors::EventProcessorFailure)
       << kModuleName << ": NO SHIFTS ENABLED!\n";
   }
+  bool const doWaveformBaselines = fShiftWaveforms && !fBindWaveformBaselines.empty();
   mf::LogInfo(kModuleName) << std::boolalpha << "SHIFTING AUXDETIDES? " << fShiftAuxDetIDEs << '\n'
                            << "SHIFTING BEAMGATEINFO? " << fShiftBeamGateInfo << '\n'
                            << "SHIFTING SIMENERGYDEPOSITS? " << fShiftSimEnergyDeposits << '\n'
                            << "SHIFTING SIMENERGYDEPOSITLITES? " << fShiftSimEnergyDepositLites << '\n'
                            << "SHIFTING SIMPHOTONS? " << fShiftSimPhotons << '\n'
-                           << "SHIFTING OPDETWAVEFORMS? " << fShiftWaveforms;
+                           << "SHIFTING OPDETWAVEFORMS? " << fShiftWaveforms << '\n'
+                           << "   ASSNS OPDETWAVEFORM-BASELINES? " << doWaveformBaselines
+                           << (doWaveformBaselines? (" ('" + fBindWaveformBaselines.encode() + ")"): "");
 
   if (!fDropTriggerProduct) produces<std::vector<raw::Trigger>>();
   if (fShiftAuxDetIDEs) { produces<std::vector<sim::AuxDetSimChannel>>(); }
@@ -104,7 +114,11 @@ AdjustSimForTrigger::AdjustSimForTrigger(fhicl::ParameterSet const& p)
   if (fShiftSimEnergyDeposits) { produces<std::vector<sim::SimEnergyDeposit>>(); }
   if (fShiftSimEnergyDepositLites) { produces<std::vector<sim::SimEnergyDepositLite>>(); }
   if (fShiftSimPhotons) { produces<std::vector<sim::SimPhotons>>(); }
-  if (fShiftWaveforms) { produces<std::vector<raw::OpDetWaveform>>(); }
+  if (fShiftWaveforms) { 
+    produces<std::vector<raw::OpDetWaveform>>(); 
+    if (!fBindWaveformBaselines.empty())
+      produces<art::Assns<raw::OpDetWaveform, icarus::WaveformBaseline>>(); 
+  }
 }
 
 void AdjustSimForTrigger::produce(art::Event& e)
@@ -279,6 +293,21 @@ void AdjustSimForTrigger::produce(art::Event& e)
       waveform.SetTimeStamp(waveform.TimeStamp() + timeShiftForTrigger_us);
     }
     e.put(std::move(pWaveforms));
+    
+    if (!fBindWaveformBaselines.empty()) {
+      // given that the shifting is one-to-one, rebinding is just replacing
+      // each existing waveform pointer with one to the new waveform in the same position
+      auto const& waveformBaselineAssns
+       = e.getProduct<art::Assns<raw::OpDetWaveform, icarus::WaveformBaseline>>(fBindWaveformBaselines);
+      art::PtrMaker<raw::OpDetWaveform> const makeWaveformPtr{ e };
+      
+      auto pWaveformBaselineAssns
+        = std::make_unique<art::Assns<raw::OpDetWaveform, icarus::WaveformBaseline>>
+        (sbn::RebindAssociatedProducts(waveformBaselineAssns, makeWaveformPtr));
+      
+      e.put(std::move(pWaveformBaselineAssns));
+    } // if rebinding associations
+    
   }
 }
 
