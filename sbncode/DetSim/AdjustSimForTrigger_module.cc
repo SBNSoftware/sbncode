@@ -64,12 +64,13 @@ private:
   bool fShiftSimPhotons;
   bool fShiftWaveforms;
   double fAdditionalOffset;
+  bool fDropTriggerProduct; ///< Do not put the shifted trigger data product into the event.
   static constexpr auto& kModuleName = "AdjustSimForTrigger";
 };
 
 AdjustSimForTrigger::AdjustSimForTrigger(fhicl::ParameterSet const& p)
   : EDProducer{p}
-  , fInputTriggerLabel{p.get<art::InputTag>("InputTriggerLabel", "undefined")}
+  , fInputTriggerLabel{p.get<art::InputTag>("InputTriggerLabel")}
   , fInitAuxDetSimChannelLabel(p.get<art::InputTag>("InitAuxDetSimChannelLabel", "undefined"))
   , fInitBeamGateInfoLabel{p.get<art::InputTag>("InitBeamGateInfoLabel", "undefined")}
   , fInitSimEnergyDepositLabel{p.get<art::InputTag>("InitSimEnergyDepositLabel", "undefined")}
@@ -83,6 +84,7 @@ AdjustSimForTrigger::AdjustSimForTrigger(fhicl::ParameterSet const& p)
   , fShiftSimPhotons{p.get<bool>("ShiftSimPhotons", false)}
   , fShiftWaveforms{p.get<bool>("ShiftWaveforms", false)}
   , fAdditionalOffset{p.get<double>("AdditionalOffset", 0.)}
+  , fDropTriggerProduct{p.get<bool>("DropTriggerProduct", false)}
 {
   if (!(fShiftSimEnergyDeposits || fShiftSimPhotons || fShiftWaveforms || fShiftAuxDetIDEs ||
         fShiftBeamGateInfo || fShiftSimEnergyDepositLites)) {
@@ -96,6 +98,7 @@ AdjustSimForTrigger::AdjustSimForTrigger(fhicl::ParameterSet const& p)
                            << "SHIFTING SIMPHOTONS? " << fShiftSimPhotons << '\n'
                            << "SHIFTING OPDETWAVEFORMS? " << fShiftWaveforms;
 
+  if (!fDropTriggerProduct) produces<std::vector<raw::Trigger>>();
   if (fShiftAuxDetIDEs) { produces<std::vector<sim::AuxDetSimChannel>>(); }
   if (fShiftBeamGateInfo) { produces<std::vector<sim::BeamGateInfo>>(); }
   if (fShiftSimEnergyDeposits) { produces<std::vector<sim::SimEnergyDeposit>>(); }
@@ -127,12 +130,31 @@ void AdjustSimForTrigger::produce(art::Event& e)
     trigger.TriggerTime() <
       (std::numeric_limits<double>::max() - std::numeric_limits<double>::epsilon());
 
-  const double timeShiftForTrigger_us =
-    hasValidTriggerTime ? clock_data.TriggerTime() - trigger.TriggerTime() + fAdditionalOffset : 0.;
+  const double newReferenceTime =
+    hasValidTriggerTime ? trigger.TriggerTime() - fAdditionalOffset : clock_data.TriggerTime();
+  const double timeShiftForTrigger_us = clock_data.TriggerTime() - newReferenceTime;
   const double timeShiftForTrigger_ns = 1000. * timeShiftForTrigger_us;
 
   mf::LogInfo(kModuleName) << "FOR THIS EVENT THE TIME SHIFT BEING ASSUMED IS "
                            << timeShiftForTrigger_ns << " ns ...";
+
+  // Shifted trigger (beam gate info, optional, is later)
+  // sbn::ExtraTriggerInfo and raw::ExternalTrigger are not shifted (so far);
+  // it's debatable if they should be, since they only hold absolute timestamps
+  if (!fDropTriggerProduct) {
+    auto pShiftedTriggers = std::make_unique<std::vector<raw::Trigger>>();
+    for (raw::Trigger const& unshiftedTrigger: triggers) { // ok, we required there is just one
+      pShiftedTriggers->emplace_back(
+        unshiftedTrigger.TriggerNumber(),
+        hasValidTriggerTime  // trigger_time
+          ? (unshiftedTrigger.TriggerTime() + timeShiftForTrigger_us)
+          : clock_data.TriggerTime(),
+        unshiftedTrigger.BeamGateTime() + timeShiftForTrigger_us,// beamgate_time
+        unshiftedTrigger.TriggerBits()
+        );
+    } // for all triggers
+    e.put(std::move(pShiftedTriggers));
+  } // if produce shifted trigger
 
   // Loop over the sim::AuxDetIDE and shift time BACK by the TRIGGER
   if (fShiftAuxDetIDEs) {
