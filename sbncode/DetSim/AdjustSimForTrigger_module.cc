@@ -24,9 +24,13 @@
 #include "lardataobj/Simulation/SimEnergyDeposit.h"
 #include "lardataobj/Simulation/SimEnergyDepositLite.h"
 #include "lardataobj/Simulation/SimPhotons.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 
-#include <lardata/DetectorInfoServices/DetectorClocksService.h>
+#include <ios> // std::boolalpha
+#include <limits>
 #include <memory>
+#include <utility> // std::move()
+#include <vector>
 
 class AdjustSimForTrigger;
 
