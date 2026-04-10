@@ -76,7 +76,7 @@ namespace hit {
       auto const& wireReadoutGeom = art::ServiceHandle<geo::WireReadout const>()->Get();
       const unsigned int N_PLANES = wireReadoutGeom.Nplanes();
 
-      if (pset.is_key_to_sequence(key))
+      if (pset.is_key_to_sequence(key)) {
 	auto vec = pset.get<std::vector<T>>(key);
         if (vec.size() != N_PLANES) {
             throw cet::exception("Configuration")
@@ -84,7 +84,7 @@ namespace hit {
                 << " but expected " << N_PLANES << " (number of planes)";
         }
         return pset.get<std::vector<T>>(key);
-      else
+      } else
         return std::vector<T>(N_PLANES, pset.get<T>(key));
     } // getValueOrListOf()
 
