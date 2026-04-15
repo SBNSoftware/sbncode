@@ -1,3 +1,11 @@
+#include "cetlib/search_path.h"
+#include "cetlib_except/exception.h"
+#include "ifdh_art/IFDHService/IFDH_service.h"
+
+#include "art/Framework/Services/Registry/ServiceHandle.h"
+
+#include <utility>
+#include <vector>
 
 #include "art/Utilities/ToolMacros.h"
 #include "fhiclcpp/ParameterSet.h"
@@ -58,7 +66,17 @@ private:
   //  double fCTau_cm = 1.0;
   //  double fBR_ee   = 1.0;
   double fEpsilon = -1.0;
-  std::vector<double> fMassGrid;
+
+  std::vector<std::string> fRequestedTableFiles;
+  std::string fTableSearchPath;
+  std::string fTableCopyMethod;
+  bool fUseIFDHForTables = false;
+  std::vector<std::string> fBRTables;
+
+  std::vector<double> fMassGridE;
+  std::vector<double> fMassGridMu;
+  std::vector<double> fMassGridHad;
+
   std::vector<double> fBRHad;
   std::vector<double> fBRMu;
   std::vector<double> fBRE;
@@ -78,8 +96,13 @@ private:
 
   double Gamma_total(double m, double eps) const;
 
+  std::vector<std::string> LoadTableFiles();
+  void ReadTableFile(const std::string& fname,
+                     std::vector<double>& masses,
+                     std::vector<double>& vals) const;
+
 };
-  
+  /*
   auto load_table = [](const std::string& fname,
 		       std::vector<double>& m,
 		       std::vector<double>& br) {
@@ -89,13 +112,33 @@ private:
       m.push_back(x);
       br.push_back(y);
     }
-  };
+    };*/
 
 
 DPDecay::DPDecay(fhicl::ParameterSet const& pset)
   : IMeVPrtlStage("DPDecay")
 {
   configure(pset);
+  fBRTables = LoadTableFiles();
+  if (fBRTables.size() != 3) {
+    throw cet::exception("DPDecay")
+      << "Expected exactly 3 resolved table files, got "
+      << fBRTables.size() << ".\n";
+  }
+
+  ReadTableFile(fBRTables[0], fMassGridE,   fBRE);
+  ReadTableFile(fBRTables[1], fMassGridMu,  fBRMu);
+  ReadTableFile(fBRTables[2], fMassGridHad, fBRHad);
+
+  if (fVerbose) {
+    mf::LogInfo("DPDecay")
+      << "Loaded table[0]: " << fBRTables[0]
+      << " with " << fBRE.size() << " rows\n"
+      << "Loaded table[1]: " << fBRTables[1]
+      << " with " << fBRMu.size() << " rows\n"
+      << "Loaded table[2]: " << fBRTables[2]
+      << " with " << fBRHad.size() << " rows";
+  }
 }
 
 void DPDecay::configure(fhicl::ParameterSet const& pset)
@@ -120,11 +163,34 @@ void DPDecay::configure(fhicl::ParameterSet const& pset)
   fReferenceCTau_cm     = pset.get<double>("ReferenceCTau_cm", -1.0);
   fReferenceEnergy      = pset.get<double>("ReferenceEnergy", -1.0);
 
+  fRequestedTableFiles = pset.get<std::vector<std::string>>("TableFiles");
+  fTableSearchPath     = pset.get<std::string>("TableSearchPath", "");
+  fTableCopyMethod     = pset.get<std::string>("TableCopyMethod", "DIRECT");
+  fUseIFDHForTables    = pset.get<bool>("UseIFDHForTables", false);
 
+  if (fRequestedTableFiles.size() != 3) {
+    throw cet::exception("DPDecay")
+      << "FHiCL parameter TableFiles must contain exactly 3 entries "
+      << "(ee, mu_mu, hadrons). Got "
+      << fRequestedTableFiles.size() << ".\n";
+  }
+
+  if (fVerbose) {
+    mf::LogInfo("DPDecay")
+      << "Configured DPDecay with table files:\n"
+      << "  [0] " << fRequestedTableFiles[0] << "\n"
+      << "  [1] " << fRequestedTableFiles[1] << "\n"
+      << "  [2] " << fRequestedTableFiles[2] << "\n"
+      << "UseIFDHForTables = " << fUseIFDHForTables << "\n"
+      << "TableCopyMethod  = " << fTableCopyMethod << "\n"
+      << "TableSearchPath  = " << fTableSearchPath;
+  }
+
+  /*
   load_table("bfrac_dark_photon_e_e.txt", fMassGrid, fBRE);
   load_table("bfrac_dark_photon_mu_mu.txt", fMassGrid, fBRMu);
   load_table("bfrac_dark_photon_hadrons.txt", fMassGrid, fBRHad);
-
+  */
   if (fReferenceRayLength > 0 && fReferenceMass > 0 && fReferenceCTau_cm > 0 && fReferenceEnergy > 0) {
     const double mS = fReferenceMass;
 
@@ -140,6 +206,136 @@ void DPDecay::configure(fhicl::ParameterSet const& pset)
     fMaxWeight = -1.;
   }
 }
+  std::vector<std::string> DPDecay::LoadTableFiles()
+  {
+    std::vector<std::string> files;
+    files.reserve(fRequestedTableFiles.size());
+
+    // Case 1: use IFDH similarly to BNBKaonGen
+    if (fUseIFDHForTables) {
+      art::ServiceHandle<IFDH> ifdhp;
+
+      std::vector<std::pair<std::string, long>> selected;
+      selected.reserve(fRequestedTableFiles.size());
+
+      for (const auto& pattern : fRequestedTableFiles) {
+	std::vector<std::pair<std::string, long>> found =
+	  ifdhp->findMatchingFiles(fTableSearchPath, pattern);
+
+	if (found.empty()) {
+	  throw cet::exception("DPDecay")
+	    << "LoadTableFiles: no match found for pattern '"
+	    << pattern << "' in search path '"
+	    << fTableSearchPath << "'.\n";
+	}
+
+	if (found.size() > 1) {
+	  throw cet::exception("DPDecay")
+	    << "LoadTableFiles: multiple matches found for pattern '"
+	    << pattern << "' in search path '"
+	    << fTableSearchPath << "'. "
+	    << "Use a more specific filename/pattern.\n";
+	}
+
+	selected.push_back(found[0]);
+      }
+
+      if (fTableCopyMethod == "DIRECT") {
+	for (const auto& f : selected) {
+	  files.push_back(f.first);
+	}
+	return files;
+      }
+
+      std::vector<std::pair<std::string, long>> localFiles =
+	ifdhp->fetchSharedFiles(selected, fTableCopyMethod);
+
+      if (localFiles.size() != selected.size()) {
+	throw cet::exception("DPDecay")
+	  << "LoadTableFiles: requested " << selected.size()
+	  << " files, but fetched " << localFiles.size() << ".\n";
+      }
+
+      for (const auto& f : localFiles) {
+	files.push_back(f.first);
+      }
+
+      return files;
+    }
+
+    // Case 2: exact/local files or FW_SEARCH_PATH resolution
+    cet::search_path sp("FW_SEARCH_PATH");
+
+    for (const auto& requested : fRequestedTableFiles) {
+      std::string resolved = requested;
+
+      // First try opening exactly as given
+      {
+	std::ifstream test(requested);
+	if (test.good()) {
+	  files.push_back(requested);
+	  continue;
+	}
+      }
+
+      // Then try FW_SEARCH_PATH
+      if (!sp.find_file(requested, resolved)) {
+	char const* fw = std::getenv("FW_SEARCH_PATH");
+	throw cet::exception("DPDecay")
+	  << "LoadTableFiles: could not find table file '"
+	  << requested
+	  << "' either directly or via FW_SEARCH_PATH.\n"
+	  << "FW_SEARCH_PATH is: " << (fw ? fw : "<unset>") << "\n";
+      }
+
+      files.push_back(resolved);
+    }
+
+    return files;
+  }
+
+  void DPDecay::ReadTableFile(const std::string& fname,
+			      std::vector<double>& masses,
+			      std::vector<double>& vals) const
+  {
+    masses.clear();
+    vals.clear();
+
+    std::ifstream f(fname);
+    if (!f.is_open()) {
+      throw cet::exception("DPDecay")
+	<< "ReadTableFile: failed to open file '" << fname << "'.\n";
+    }
+
+    double x, y;
+    while (f >> x >> y) {
+      masses.push_back(x);
+      vals.push_back(y);
+    }
+
+    if (f.bad()) {
+      throw cet::exception("DPDecay")
+	<< "ReadTableFile: I/O error while reading '" << fname << "'.\n";
+    }
+
+    if (masses.empty()) {
+      throw cet::exception("DPDecay")
+	<< "ReadTableFile: file '" << fname << "' had no valid rows.\n";
+    }
+
+    if (masses.size() != vals.size()) {
+      throw cet::exception("DPDecay")
+	<< "ReadTableFile: inconsistent table lengths in '" << fname << "'.\n";
+    }
+
+    for (size_t i = 1; i < masses.size(); ++i) {
+      if (masses[i] < masses[i-1]) {
+	throw cet::exception("DPDecay")
+	  << "ReadTableFile: mass grid in '" << fname
+	  << "' is not sorted ascending at row " << i << ".\n";
+      }
+    }
+  }
 
   double DPDecay::interp(const std::vector<double>& x,
 		const std::vector<double>& y,
@@ -165,7 +361,7 @@ void DPDecay::configure(fhicl::ParameterSet const& pset)
       return Gamma_ll(m, eps, 0.000511) +
 	Gamma_ll(m, eps, 0.105);
     } else {
-      double br_mu = interp(fMassGrid, fBRMu, m);
+      double br_mu = interp(fMassGridMu, fBRMu, m);
       double gmu = Gamma_ll(m, eps, 0.105);
       return (br_mu > 0) ? gmu / br_mu : 0.0;
     }

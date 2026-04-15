@@ -14,14 +14,14 @@ epsilon:   1e-7
 # ======================
 #  FLUX: meson -> gamma + A
 # ======================
-scalar_flux: {
+meson_flux: {
   tool_type: Meson2DP
 
   M:      @local::scalarM
   e: 	  @local::epsilon
 
-  # same semantics as old tool
-  Parents: [111]
+
+  Parents: [221]
   CorrectDK2NU: true
   SecondarySignConvention: "legacy"
 
@@ -31,7 +31,7 @@ scalar_flux: {
   SpillTimeConfig:  "evgb::EvtTimeFNALBeam  booster,  dtbucket=18.936, sigma=1.308"
   GlobalTimeOffset: 0
 
-  Verbose: false
+  Verbose: true
 }
 
 # ======================
@@ -66,7 +66,18 @@ scalar_decay: {
 
   Epsilon: @local::epsilon
 
-  Verbose: false
+  UseIFDHForTables: false
+  TableCopyMethod: "DIRECT"
+  TableSearchPath: "/pnfs/sbnd/persistent/users/rohanr/dp/br/"
+  TableFiles: [
+    "/pnfs/sbnd/persistent/users/rohanr/dp/br/bfrac_dark_photon_e_e.txt",
+    "/pnfs/sbnd/persistent/users/rohanr/dp/br/bfrac_dark_photon_mu_mu.txt",
+    "/pnfs/sbnd/persistent/users/rohanr/dp/br/bfrac_dark_photon_hadrons.txt"
+  ]
+
+
+
+  Verbose: true
 }
 
 # ======================
@@ -77,10 +88,10 @@ dp_generator: {
   Deweight: false
   Produce: true
   AnaOutput: true
-  Verbose: false
+  Verbose: true
 
   MesonGen: @local::bnb_pi0_v2
-  Flux:     @local::scalar_flux
+  Flux:     @local::meson_flux
   RayTrace: @local::mxdraytrace
   Decay:    @local::scalar_decay
 }
