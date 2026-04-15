@@ -149,10 +149,10 @@ bool Meson2DP::MakeFlux(const simb::MCFlux& flux,
 
   const int gamma_pdg = 22;
 
-  const double mPi0 = pdg_mass_GeV(221);
+  const double mMeson = pdg_mass_GeV(221);
   const double mgamma = 0.0;
 
-  const double pstar = twobody_momentum(mPi0, mgamma, mA);
+  const double pstar = twobody_momentum(mMeson, mgamma, mA);
   if (pstar < 0) return false;
 
   const double eA = std::sqrt(pstar*pstar + mA*mA);
