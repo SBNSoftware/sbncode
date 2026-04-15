@@ -69,6 +69,18 @@ namespace hit {
     void beginJob(art::ProcessingFrame const&) override;
 
     std::vector<double> FillOutHitParameterVector(const std::vector<double>& input);
+    
+    template<class T>
+    inline std::vector<T> getValueOrListOf(fhicl::ParameterSet const& pset, std::string const& key) {
+
+      auto const& wireReadoutGeom = art::ServiceHandle<geo::WireReadout const>()->Get();
+      const unsigned int N_PLANES = wireReadoutGeom.Nplanes();
+
+      if (pset.is_key_to_sequence(key))
+        return pset.get<std::vector<T>>(key);
+      else
+        return std::vector<T>(N_PLANES, pset.get<T>(key));
+    } // getValueOrListOf()
 
     const bool fFilterHits;
     const bool fFillHists;
@@ -76,14 +88,14 @@ namespace hit {
     const std::string fCalDataModuleLabel;
     const std::string fAllHitsInstanceName;
 
-    const std::vector<int> fLongMaxHitsVec;    ///<Maximum number hits on a really long pulse train
-    const std::vector<int> fLongPulseWidthVec; ///<Sets width of hits used to describe long pulses
+    const std::vector<int> fLongMaxHitsVec;     ///< Maximum number hits on a really long pulse train
+    const std::vector<int> fLongPulseWidthVec;  ///< Sets width of hits used to describe long pulses
 
-    const std::vector<size_t> fMaxMultiHit; ///<maximum hits for multi fit
-    const int fAreaMethod;     ///<Type of area calculation
+    const std::vector<size_t> fMaxMultiHit;     ///< Maximum hits for multi fit
+    const int fAreaMethod;                      ///< Type of area calculation
     const std::vector<double>
-      fAreaNormsVec;       ///<factors for converting area to same units as peak height
-    const std::vector<double> fChi2NDF; ///maximum Chisquared / NDF allowed for a hit to be saved
+      fAreaNormsVec;                            ///< Factors for converting area to same units as peak height
+    const std::vector<double> fChi2NDF;         ///< Maximum Chisquared / NDF allowed for a hit to be saved
 
     const std::vector<float> fPulseHeightCuts;
     const std::vector<float> fPulseWidthCuts;
@@ -116,10 +128,10 @@ namespace hit {
     , fLongMaxHitsVec(pset.get<std::vector<int>>("LongMaxHits", std::vector<int>() = {25, 25, 25}))
     , fLongPulseWidthVec(
         pset.get<std::vector<int>>("LongPulseWidth", std::vector<int>() = {16, 16, 16}))
-    , fMaxMultiHit(pset.get<std::vector<size_t>>("MaxMultiHitPerPlane", std::vector<size_t>() = {5, 5, 5}))
+    , fMaxMultiHit(getValueOrListOf<size_t>(pset, "MaxMultiHit"))
     , fAreaMethod(pset.get<int>("AreaMethod"))
     , fAreaNormsVec(FillOutHitParameterVector(pset.get<std::vector<double>>("AreaNorms")))
-    , fChi2NDF(pset.get<std::vector<double>>("Chi2NDFPerPlane", std::vector<double>() = {500.0, 500.0, 500.0}))
+    , fChi2NDF(getValueOrListOf<double>(pset, "Chi2NDF"))
     , fPulseHeightCuts(
         pset.get<std::vector<float>>("PulseHeightCuts", std::vector<float>() = {3.0, 3.0, 3.0}))
     , fPulseWidthCuts(
@@ -127,6 +139,10 @@ namespace hit {
     , fPulseRatioCuts(
         pset.get<std::vector<float>>("PulseRatioCuts", std::vector<float>() = {0.35, 0.40, 0.20}))
   {
+    // std::cout << "fChi2NDF=[" << std::flush;
+    // for (auto const& i: fChi2NDF)
+    //   std::cout << i << "," << std::flush;
+    // std::cout << "]" << std::endl;
     if (fFillHists && art::Globals::instance()->nthreads() > 1u) {
       throw art::Exception(art::errors::Configuration)
         << "Cannot fill histograms when multiple threads configured, please set fFillHists to "
@@ -311,6 +327,12 @@ namespace hit {
         // ### Set up to loop over ROI's for this wire   ###
         // #################################################
         const recob::ChannelROI::RegionsOfInterest_f signalROI = channelROI->SignalROIF();
+        // if (channel == 42377) 
+        // {
+        //   std::cout << "[DEBUG Mattia] This is CH:" << channel << ", and there are signalROI.n_ranges " 
+        //             << signalROI.n_ranges()
+        //             << std::endl;
+        // }
 
         tbb::parallel_for(
           static_cast<std::size_t>(0),
@@ -351,6 +373,13 @@ namespace hit {
 
               // === Setting The Number Of Gaussians to try ===
               int nGausForFit = mergedCands.size();
+
+              // if (channel == 42377) 
+              // {
+              //   std::cout << "[DEBUG Mattia] This is CH:"<< channel << ", the size of mergedCands is " 
+              //             << mergedCands.size() << " for this merged group of hit candidates" 
+              //             << std::endl;
+              // }
 
               // ##################################################
               // ### Calling the function for fitting Gaussians ###
@@ -445,6 +474,14 @@ namespace hit {
               float nsigmaADC(2.0);
               float newright(0);
               float newleft(0);
+
+              // if (channel == 42377) 
+              // {
+              //   std::cout << "[DEBUG Mattia] This is CH:42377, the size of the fitted peaks is " 
+              //             << peakParamsVec.size() << " for this merged group of hit candidates" 
+              //             << std::endl;
+              // }
+
               for (const auto& peakParams : peakParamsVec) {
                 // Extract values for this hit
                 float peakAmp = peakParams.peakAmplitude;
@@ -569,6 +606,11 @@ namespace hit {
                 numHits++;
               } // <---End loop over gaussians
 
+              // THIS IS NOT USED
+              // THIS IS NOT USED
+              // THIS IS NOT USED
+              // THIS IS NOT USED
+
               // Should we filter hits?
               if (filteredHitCol && !filteredHitVec.empty()) {
                 // #######################################################################
@@ -627,15 +669,47 @@ namespace hit {
 //
                 if (fFillHists) fChi2->Fill(chi2PerNDF);
               }
+
+              // if (channel == 42377) 
+              // {
+              //   std::cout << "[DEBUG Mattia] This is CH:" << channel << ", after the hit creation the size of the allHitCol is "
+              //             << allHitCol.size() << " for this merged group of hit candidates"
+              //             << std::endl;
+              // }
+
             } //<---End loop over merged candidate hits
           }   //<---End looping over ROI's
         );    //end tbb parallel for
       }       //<---End looping over all the wires
     );        //end tbb parallel for
 
+    // int nHitsInCh{0};
+    // bool thisChannel{false};
+    // std::string planeIndices = "";
     for (size_t i = 0; i < hitstruct_vec.size(); i++) {
+    //   if (hitstruct_vec[i].hit_tbb.Channel() == 42377) 
+    //   {
+    //     thisChannel = true;
+    //     nHitsInCh++;
+    //     planeIndices = Form("%s%d/%d/%d, ", 
+    //       planeIndices.c_str(), 
+    //       hitstruct_vec[i].hit_tbb.WireID().getIndex<2>(), 
+    //       hitstruct_vec[i].hit_tbb.WireID().getIndex<1>(), 
+    //       hitstruct_vec[i].hit_tbb.WireID().getIndex<0>());
+    //   }
       allHitCol.emplace_back(hitstruct_vec[i].hit_tbb, hitstruct_vec[i].channelROI_tbb);
     }
+
+    // if (thisChannel)
+    // {
+    //   std::cout << "[DEBUG Mattia] This is CH:" << 42377 << ", after the hit creation the size of the allHitCol is "
+    //                         << allHitCol.size() << " and hitstruct_vec is "
+    //                         << hitstruct_vec.size() << ", hits in the channel are " 
+    //                         << nHitsInCh << " with planes/tpc/cryo "
+    //                         << planeIndices << " (ind1=0, ind2=1, coll=2)"
+    //                         << std::endl;
+    //   thisChannel = false;
+    // }
 
     for (size_t j = 0; j < filthitstruct_vec.size(); j++) {
       filteredHitCol->emplace_back(filthitstruct_vec[j].hit_tbb, filthitstruct_vec[j].channelROI_tbb);

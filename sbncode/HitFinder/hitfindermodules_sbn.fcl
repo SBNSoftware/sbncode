@@ -12,7 +12,6 @@ gauss_hitfinder:
     module_type:          "GaussHitFinderSBN"
     CalDataModuleLabel:   "caldata"
     MaxMultiHit:          5                       # maximum hits for multi gaussian fit attempt
-    MaxMultiHitPerPlane:  [ 10, 10, 8 ]           # maximum hits per plane for multi gaussia fit attempt
     AreaMethod:           0                       # 0 = area by integral, 1 = area by gaussian area formula
     AreaNorms:            [ 1.0, 1.0, 1.0 ]       # normalizations that put signal area in
                                                   # same scale as peak height.
@@ -20,7 +19,6 @@ gauss_hitfinder:
     LongMaxHits:          [ 25, 25, 25]           # max number hits in long pulse trains
     LongPulseWidth:       [ 5, 5, 5]              # max widths for hits in long pulse trains
     Chi2NDF:              500.                    # maximum Chisquared / NDF allowed to store fit
-    Chi2NDFPerPlane:      [ 2500., 1750., 2500.]  # maximum Chisquared / NDF allowed per plane to store, if fail
                                                   # will use "long" pulse method to return hit
     AllHitsInstanceName:  ""                      # If non-null then this will be the instance name of all hits output to event
                                                   # in this case there will be two hit collections, one filtered and one containing all hits
