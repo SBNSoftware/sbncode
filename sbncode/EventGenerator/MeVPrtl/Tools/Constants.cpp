@@ -22,7 +22,7 @@ Constants::Constants() {
   eta_mass = 0.547862; // GeV
   rho_mass = 0.77526; // GeV https://pdg.lbl.gov/2019/listings/rpp2019-list-rho-770.pdf
   etap_mass = 0.95778; // GeV
-
+  gamma_mass = 0;
   // Couplings
   fine_structure_constant = 7.2973525693e-3;// https://pdg.lbl.gov/2019/reviews/rpp2019-rev-phys-constants.pdf
   Gfermi = 1.166379e-5; // 1/GeV^2 https://pdg.lbl.gov/2020/reviews/rpp2020-rev-phys-constants.pdf
@@ -269,6 +269,8 @@ double PDG2Mass(int pdg) {
       return Constants::Instance().klong_mass;
     case 221:
       return Constants::Instance().eta_mass;
+    case 22:
+      return Constants::Instance().gamma_mass;
     case 11:
     case -11:
       return Constants::Instance().elec_mass;
@@ -280,6 +282,8 @@ double PDG2Mass(int pdg) {
     case 15:
     case -15:
       return Constants::Instance().tau_mass;
+    case 111:
+      return Constants::Instance().pizero_mass;
     case 211:
     case -211:
       return Constants::Instance().piplus_mass;

@@ -21,6 +21,7 @@ private:
 
 public:
   // Masses
+  double gamma_mass;
   double elec_mass;
   double muon_mass;
   double piplus_mass;

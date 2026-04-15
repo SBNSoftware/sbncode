@@ -1,0 +1,46 @@
+#include "dp.fcl"
+#include "simulationservices_sbnd.fcl"
+
+process_name: MeVPrtl
+
+services: {
+  @table::sbnd_simulation_services
+
+  TFileService: { fileName: "hists_mevprtl.root" }
+
+  IFDH: { }
+
+  NuRandomService: {
+    service_type: "NuRandomService"
+    policy: "random"
+  }
+}
+
+source: { module_type: EmptyEvent }
+
+physics: {
+  producers: {
+    generator: @local::dp_generator
+  }
+
+  analyzers: {
+
+  }
+
+  simulate: [ generator ]
+
+  stream: [ out ]
+
+  trigger_paths: [ simulate ]
+  end_paths:     [ stream ]
+}
+
+outputs: {
+  out: {
+    module_type: RootOutput
+    fileName: "mevprtl_art.root"
+    dataTier: "simulated"
+    compressionLevel: 1
+    saveMemoryObjectThreshold: 0
+  }
+}
