@@ -16,8 +16,8 @@ sbnd_bnb_solid_angle_box: 1.3223e-3 #front face / detector distance ^2 = 4*4/110
 sbnd_bnb_solid_angle_cryostat: 0.0133 
 
 
-pi0_energy: 8 #GeV Max energy from pi0 
-pi0_pdg: 111 #pi0
+meson_energy: 8 #GeV Max energy from meson 
+meson_pdg: 221 #eta
 
 ray_trace_box: {
   tool_type: RayTraceBox
@@ -29,8 +29,8 @@ rethrow_ray_trace_box: {
   tool_type: ReThrowRayTraceBox
   Box: @local::sbnd_detector_box
   ReferenceLabSolidAngle: @local::sbnd_bnb_solid_angle_box
-  ReferencePrimaryEnergy: @local::pi0_energy
-  ReferencePrimPDG: @local::pi0_pdg
+  ReferencePrimaryEnergy: @local::meson_energy
+  ReferencePrimPDG: @local::meson_pdg
   Verbose: false
 }
 
@@ -38,8 +38,8 @@ weighted_ray_trace_box: {
   tool_type: WeightedRayTraceBox
   Box: @local::sbnd_detector_box
   ReferenceLabSolidAngle: @local::sbnd_bnb_solid_angle_box
-  ReferencePrimaryEnergy: @local::pi0_energy 
-  ReferencePrimPDG: @local::pi0_pdg
+  ReferencePrimaryEnergy: @local::meson_energy 
+  ReferencePrimPDG: @local::meson_pdg
   Verbose: false
 }
 
@@ -47,8 +47,8 @@ mixedweight_ray_trace_box: {
   tool_type: MixedWeightRayTraceBox
   Box: @local::sbnd_detector_box
   ReferenceLabSolidAngle: @local::sbnd_bnb_solid_angle_box
-  ReferencePrimaryEnergy: @local::pi0_energy
-  ReferencePrimPDG: @local::pi0_pdg
+  ReferencePrimaryEnergy: @local::meson_energy
+  ReferencePrimPDG: @local::meson_pdg
   MaxWeightFudge: 2.
   NThrow: 250
   FixNSuccess: false
