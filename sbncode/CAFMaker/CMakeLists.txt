@@ -52,7 +52,7 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   ${GENIE_LIB_LIST}
                   nugen::EventGeneratorBase_GENIE
                   sbndaq_artdaq_core::sbndaq-artdaq-core_Obj_SBND
-                  sbn_POTTools
+                  sbncode::sbn_POTTools
                   )
 
 cet_build_plugin ( CAFMaker art::module
