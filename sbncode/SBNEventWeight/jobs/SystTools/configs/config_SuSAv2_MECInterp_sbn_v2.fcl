@@ -1,0 +1,180 @@
+SuSAv2ToValencia_MECInterp_q0binned_Tool_Config: {
+
+  tool_type: "MECq0q3InterpWeighting"
+  instance_name: "SuSAv2ToValencia_SBN_v2"
+
+  # ============================================================
+  # Q0-BINNED MODE: Multiple independent dials per q0 bin
+  # 
+  # This configuration creates 4 independent dials:
+  #   dial0: q0 [0.0, 0.2) GeV
+  #   dial1: q0 [0.2, 0.4) GeV
+  #   dial2: q0 [0.4, 0.6) GeV
+  #   dial3: q0 [0.6, 1.0) GeV
+  #
+  # EFFICIENCY: Weight templates are read ONCE and shared across
+  # all dials. Each event activates only the dial for its q0 bin.
+  # ============================================================
+
+  # Define multiple q0-binned dials (one per bin)
+  MECResponse_q0bin0_central_value: 0
+  MECResponse_q0bin0_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+  
+  MECResponse_q0bin1_central_value: 0
+  MECResponse_q0bin1_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+  
+  MECResponse_q0bin2_central_value: 0
+  MECResponse_q0bin2_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+  
+  MECResponse_q0bin3_central_value: 0
+  MECResponse_q0bin3_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+
+  MECResponse_input_manifest: {
+
+    # ============================================================
+    # MODEL SELECTION
+    # ============================================================
+    Model: "valencia"  # Options: "valencia" or "martini"
+    
+    # Base data directory
+    DataBaseDir: "systematics/AR23Plus/MEC"
+
+    # ============================================================
+    # Q0 BINNING: Define bin edges for multiple dials
+    # Format: [edge0, edge1, edge2, ..., edgeN]
+    # Creates N-1 bins: [edge0,edge1), [edge1,edge2), ..., [edgeN-1,edgeN]
+    # 
+    # Example: [0.0, 0.2, 0.4, 0.6, 1.0] creates 4 bins:
+    #   bin0: [0.0, 0.2)  -> dial MECResponse_q0bin0
+    #   bin1: [0.2, 0.4)  -> dial MECResponse_q0bin1
+    #   bin2: [0.4, 0.6)  -> dial MECResponse_q0bin2
+    #   bin3: [0.6, 1.0]  -> dial MECResponse_q0bin3
+    # 
+    # Events outside all bins receive weight=1.0 (no reweighting)
+    # ============================================================
+    Q0Bins: [0.0, 0.2, 0.4, 0.6, 10.0]  # GeV
+
+    # Full energy grid (0.4 to 2.5 GeV, 0.05 GeV step)
+    EnergyGrid : [ 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95,
+                   1.0, 1.05, 1.1, 1.15, 1.2, 1.25, 1.3, 1.35, 1.4, 1.45, 1.5, 1.55,
+                   1.6, 1.65, 1.7, 1.75, 1.8, 1.85, 1.9, 1.95, 2.0, 2.05, 2.1, 2.15,
+                   2.2, 2.25, 2.3, 2.35, 2.4, 2.45, 2.5 ]
+
+    # Weight limits (min, max)
+    WeightLimits : [0.1, 1000.0]
+
+    # Apply window for q0 and q3 (outside these ranges, weight=1.0)
+    # Valencia: q0 up to 1.2 GeV, q3 up to 1.2 GeV (both limited)
+    Q0ApplyMin: 0.0
+    Q0ApplyMax: 1.2
+    Q3ApplyMin: 0.0
+    Q3ApplyMax: 1.2
+
+    # Energy window
+    EnuMin:       0.4
+    EnuMax:       2.5
+    EnuSnapTol:   0.005
+
+    HistNameNP: "h_weights_map;1"
+    HistNameNN: "h_weights_map;1"
+    MapIsQ3xQ0: true
+
+    UseNearestBin: false
+    EdgeClamp: true
+    OutOfRangeWeight: 0.0
+
+  }
+
+}
+
+SuSAv2ToMartini_MECInterp_q0binned_Tool_Config: {
+
+  tool_type: "MECq0q3InterpWeighting"
+  instance_name: "SuSAv2ToMartini_SBN_v2"
+
+  # ============================================================
+  # Q0-BINNED MODE: Multiple independent dials per q0 bin
+  # 
+  # This configuration creates 4 independent dials:
+  #   dial0: q0 [0.0, 0.2) GeV
+  #   dial1: q0 [0.2, 0.4) GeV
+  #   dial2: q0 [0.4, 0.6) GeV
+  #   dial3: q0 [0.6, 1.0) GeV
+  #
+  # EFFICIENCY: Weight templates are read ONCE and shared across
+  # all dials. Each event activates only the dial for its q0 bin.
+  # ============================================================
+
+  # Define multiple q0-binned dials (one per bin)
+  MECResponse_q0bin0_central_value: 0
+  MECResponse_q0bin0_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+  
+  MECResponse_q0bin1_central_value: 0
+  MECResponse_q0bin1_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+  
+  MECResponse_q0bin2_central_value: 0
+  MECResponse_q0bin2_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+  
+  MECResponse_q0bin3_central_value: 0
+  MECResponse_q0bin3_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+
+  MECResponse_input_manifest: {
+
+    # ============================================================
+    # MODEL SELECTION
+    # ============================================================
+    Model: "martini"  # Options: "valencia" or "martini"
+    
+    # Base data directory
+    DataBaseDir: "systematics/AR23Plus/MEC"
+
+    # ============================================================
+    # Q0 BINNING: Define bin edges for multiple dials
+    # Format: [edge0, edge1, edge2, ..., edgeN]
+    # Creates N-1 bins: [edge0,edge1), [edge1,edge2), ..., [edgeN-1,edgeN]
+    # 
+    # Example: [0.0, 0.2, 0.4, 0.6, 1.0] creates 4 bins:
+    #   bin0: [0.0, 0.2)  -> dial MECResponse_q0bin0
+    #   bin1: [0.2, 0.4)  -> dial MECResponse_q0bin1
+    #   bin2: [0.4, 0.6)  -> dial MECResponse_q0bin2
+    #   bin3: [0.6, 1.0]  -> dial MECResponse_q0bin3
+    # 
+    # Events outside all bins receive weight=1.0 (no reweighting)
+    # ============================================================
+    Q0Bins: [0.0, 0.2, 0.4, 0.6, 10.0]  # GeV
+
+    # Full energy grid (0.4 to 2.5 GeV, 0.05 GeV step)
+    EnergyGrid : [ 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95,
+                   1.0, 1.05, 1.1, 1.15, 1.2, 1.25, 1.3, 1.35, 1.4, 1.45, 1.5, 1.55,
+                   1.6, 1.65, 1.7, 1.75, 1.8, 1.85, 1.9, 1.95, 2.0, 2.05, 2.1, 2.15,
+                   2.2, 2.25, 2.3, 2.35, 2.4, 2.45, 2.5 ]
+
+    # Weight limits (min, max)
+    WeightLimits : [0.1, 1000.0]
+
+    # Apply window for q0 and q3 (outside these ranges, weight=1.0)
+    # Martini: q0 up to 0.995 GeV, q3 up to ~2.0 GeV
+    Q0ApplyMin: 0.0
+    Q0ApplyMax: 0.995
+    Q3ApplyMin: 0.0
+    Q3ApplyMax: 2.0
+
+    # Energy window
+    EnuMin:       0.4
+    EnuMax:       2.5
+    EnuSnapTol:   0.005
+
+    HistNameNP: "h_weights_map;1"
+    HistNameNN: "h_weights_map;1"
+    MapIsQ3xQ0: true
+
+    UseNearestBin: false
+    EdgeClamp: true
+    OutOfRangeWeight: 0.0
+  }
+}
+
+syst_providers: [
+SuSAv2ToValencia_MECInterp_q0binned_Tool_Config,
+SuSAv2ToMartini_MECInterp_q0binned_Tool_Config
+]

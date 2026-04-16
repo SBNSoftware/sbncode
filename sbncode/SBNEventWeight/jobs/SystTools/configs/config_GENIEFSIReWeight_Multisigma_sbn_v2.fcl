@@ -1,0 +1,79 @@
+GENIEFSIReWeight_Multisigma_Tool_Config: {
+    tool_type: "GENIEReWeight"
+
+    instance_name: "EDepFSI_SBN_v2"
+
+    # Keep one GENIEReWeight instance per discrete dial tweak in memory
+    # Requires no reconfigures within the event loop
+    UseFullHERG: true
+
+    ignore_parameter_dependence: true
+
+    # Old MEC
+    NormCCMEC_central_value: 0
+    NormCCMEC_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+    NormNCMEC_central_value: 0
+    NormNCMEC_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+    DecayAngMEC_central_value: 0
+    DecayAngMEC_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+
+    # Old QE
+    VecFFCCQEshape_central_value: 0
+    VecFFCCQEshape_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+    CoulombCCQE_central_value: 0
+    CoulombCCQE_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+    
+    # Old (pi) FSI
+    MFP_pi_central_value: 0
+    MFP_pi_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+    FrCEx_pi_central_value: 0
+    FrCEx_pi_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+    FrInel_pi_central_value: 0
+    FrInel_pi_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+    FrAbs_pi_central_value: 0
+    FrAbs_pi_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+    FrPiProd_pi_central_value: 0
+    FrPiProd_pi_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+
+    FrG4_N_central_value: 0
+    FrG4_N_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+    FrINCL_N_central_value: 0
+    FrINCL_N_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+
+    FrG4LoE_N_central_value: 0
+    FrG4LoE_N_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+    FrINCLLoE_N_central_value: 0
+    FrINCLLoE_N_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+
+    FrG4M1E_N_central_value: 0
+    FrG4M1E_N_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+    FrINCLM1E_N_central_value: 0
+    FrINCLM1E_N_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+
+    FrG4M2E_N_central_value: 0
+    FrG4M2E_N_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+    FrINCLM2E_N_central_value: 0
+    FrINCLM2E_N_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+
+    FrG4HiE_N_central_value: 0
+    FrG4HiE_N_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+    FrINCLHiE_N_central_value: 0
+    FrINCLHiE_N_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+
+    FrKin_PiProFix_N_central_value: 0
+    FrKin_PiProFix_N_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+
+    FrKin_PiProBias_N_central_value: 0
+    FrKin_PiProBias_N_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+
+    MFPLoE_N_central_value: 0
+    MFPLoE_N_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+    MFPM1E_N_central_value: 0
+    MFPM1E_N_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+    MFPM2E_N_central_value: 0
+    MFPM2E_N_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+    MFPHiE_N_central_value: 0
+    MFPHiE_N_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+}
+
+syst_providers:[GENIEFSIReWeight_Multisigma_Tool_Config]

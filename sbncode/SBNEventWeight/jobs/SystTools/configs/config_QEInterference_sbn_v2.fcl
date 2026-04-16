@@ -1,0 +1,51 @@
+ QEInterference_Tool_Config: {
+    tool_type: "QEInterference"
+    instance_name: "SBN_v2"
+
+    QEIntf_dial_0_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+    QEIntf_dial_1_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+    QEIntf_dial_2_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+    QEIntf_dial_3_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+    QEIntf_dial_4_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+    QEIntf_dial_5_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+
+    q0_bin_edges: "[0.0, 0.25, 0.5, 0.75, 1.0, 2.0, 3.0]"
+
+    verbosity_level: 5
+
+    QEInterference_input_manifest: {
+      input_file: "systematics/AR23Plus/ACHILLES_weights.root"
+      inputs: [
+          {
+            name: "numu_cc"
+            input_hist: "numu_cc_weights"
+            input_enu_bins: "numu_cc_enu_bins"
+            input_q0_bins: "numu_cc_q0_bins"
+            input_q3_bins: "numu_cc_q3_bins"
+          },
+          {
+            name: "nue_cc"
+            input_hist: "nue_cc_weights"
+            input_enu_bins: "nue_cc_enu_bins"
+            input_q0_bins: "nue_cc_q0_bins"
+            input_q3_bins: "nue_cc_q3_bins"
+          },
+          {
+            name: "numu_nc"
+            input_hist: "numu_nc_weights"
+            input_enu_bins: "numu_nc_enu_bins"
+            input_q0_bins: "numu_nc_q0_bins"
+            input_q3_bins: "numu_nc_q3_bins"
+          },
+          {
+            name: "nue_nc"
+            input_hist: "nue_nc_weights"
+            input_enu_bins: "nue_nc_enu_bins"
+            input_q0_bins: "nue_nc_q0_bins"
+            input_q3_bins: "nue_nc_q3_bins"
+          }
+      ]
+    }
+}
+
+syst_providers: [QEInterference_Tool_Config]

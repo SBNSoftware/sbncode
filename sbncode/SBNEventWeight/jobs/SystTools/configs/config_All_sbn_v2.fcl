@@ -1,0 +1,31 @@
+#include "config_GENIEReWeightMultisigma_sbn_v1.fcl"
+#include "config_GENIEReWeightMultisim_sbn_v1.fcl"
+#include "config_MINERvA_E2p2h_sbn_v1.fcl"
+#include "config_MINERvAq0q3Tune_sbn_v1.fcl"
+#include "config_MiscInteractionSysts_sbn_v1.fcl"
+#include "config_NOvAStyleNonResPion_sbn_v1.fcl"
+#include "config_CCQETemplateSF_sbn_v2.fcl"
+#include "config_QEInterference_sbn_v2.fcl"
+#include "config_GENIEFSIReWeight_Multisigma_sbn_v2.fcl"
+#include "config_zexpansion_weighter_sbn_v2.fcl"
+#include "config_SuSAv2_MECInterp_sbn_v2.fcl"
+#include "config_CCQEXSecCorr_sbn_v2.fcl"
+
+syst_providers: [
+GENIEReWeight_Multisigma_Tool_Config,
+GENIEReWeight_Multisim_Tool_Config,
+MINERvA_E2p2h_Tool_Config,
+MINERvAq0q3Tune_Tool_Config,
+MiscInteractionSysts_Tool_Config,
+NOvAStyleNonResPionNorm_Tool_Config,
+CCQETemplateSF_Tool_Config,
+CCQETemplateHF_Tool_Config,
+CCQETemplateCRPA_Tool_Config,
+QEInterference_Tool_Config,
+GENIEFSIReWeight_Multisigma_Tool_Config,
+zexpansion_weighter_Deuterium_Tool_Config,
+zexpansion_weighter_MINERvA_Tool_Config,
+SuSAv2ToValencia_MECInterp_q0binned_Tool_Config,
+SuSAv2ToMartini_MECInterp_q0binned_Tool_Config,
+CCQEXSecCorr_Tool_Config
+]

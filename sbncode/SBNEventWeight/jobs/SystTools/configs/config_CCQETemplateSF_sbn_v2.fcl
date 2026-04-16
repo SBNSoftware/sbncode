@@ -1,0 +1,63 @@
+CCQETemplateSF_Tool_Config: {
+
+    tool_type: "CCQETemplateReweight"
+    instance_name: "LFGToSF_SBN_v2"
+
+    // weight in four q0 bins
+    q0bin1_central_value: 0
+    q0bin1_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+    q0bin2_central_value: 0
+    q0bin2_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+    q0bin3_central_value: 0
+    q0bin3_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+    q0bin4_central_value: 0
+    q0bin4_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+    q0bin5_central_value: 0
+    q0bin5_variation_descriptor: "[+1,-1,+2,-2,+3,-3]"
+
+    CCQETemplateReweight_input_manifest: {
+      RWMode: "q3q0"
+      ENuBoundary: 10.0
+      input_file: "systematics/AR23Plus/CCQETemplateReweight.root"
+      inputs: [
+          {
+            name: "LowE_WithTemplate"
+            input_hist: "h_ENuq3q0_AR25_SF"
+          },
+          {
+            name: "LowE_WithoutTemplate"
+            input_hist: "h_ENuq3q0_AR23"
+          }
+      ]
+    }
+}
+
+CCQETemplateHF_Tool_Config: @local::CCQETemplateSF_Tool_Config
+CCQETemplateHF_Tool_Config.instance_name: "LFGToHF_SBN_v2"
+CCQETemplateHF_Tool_Config.CCQETemplateReweight_input_manifest.ENuBoundary: 1.0
+CCQETemplateHF_Tool_Config.CCQETemplateReweight_input_manifest.inputs: [
+          {
+            name: "LowE_WithTemplate"
+            input_hist: "LowE/h_ENuq3q0_G21_HF"
+          },
+          {
+            name: "LowE_WithoutTemplate"
+            input_hist: "LowE/h_ENuq3q0_AR23"
+          }
+]
+
+CCQETemplateCRPA_Tool_Config: @local::CCQETemplateSF_Tool_Config
+CCQETemplateCRPA_Tool_Config.instance_name: "LFGToCRPA_SBN_v2"
+CCQETemplateCRPA_Tool_Config.CCQETemplateReweight_input_manifest.ENuBoundary: 1.0
+CCQETemplateCRPA_Tool_Config.CCQETemplateReweight_input_manifest.inputs: [
+  {
+    name: "LowE_WithTemplate"
+    input_hist: "LowE/h_ENuq3q0_G21_HF-CRPA"
+  },
+  {
+    name: "LowE_WithoutTemplate"
+    input_hist: "LowE/h_ENuq3q0_G21_HF"
+  }
+]
+
+syst_providers: [CCQETemplateSF_Tool_Config, CCQETemplateHF_Tool_Config, CCQETemplateCRPA_Tool_Config]

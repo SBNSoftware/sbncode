@@ -1,0 +1,30 @@
+zexpansion_weighter_MINERvA_Tool_Config: {
+    tool_type: "ZExpPCAWeighter"
+    instance_name: "MINERvA_SBN_v2"
+
+    b1_variation_descriptor: "[+1,-1,+2,-2,+3,-3, 0]"
+    b2_variation_descriptor: "[+1,-1,+2,-2,+3,-3, 0]"
+    b3_variation_descriptor: "[+1,-1,+2,-2,+3,-3, 0]"
+    b4_variation_descriptor: "[+1,-1,+2,-2,+3,-3, 0]"
+
+    verbosity_level: 5
+    RWtoPub: "Nature_614_102522"
+}
+
+zexpansion_weighter_Deuterium_Tool_Config: {
+    tool_type: "ZExpPCAWeighter"
+    instance_name: "Deuterium_SBN_v2"
+
+    b1_variation_descriptor: "[+1,-1,+2,-2,+3,-3, 0]"
+    b2_variation_descriptor: "[+1,-1,+2,-2,+3,-3, 0]"
+    b3_variation_descriptor: "[+1,-1,+2,-2,+3,-3, 0]"
+    b4_variation_descriptor: "[+1,-1,+2,-2,+3,-3, 0]"
+
+    verbosity_level: 5
+    RWtoPub: "PRD_93_113015"
+}
+
+syst_providers: [
+zexpansion_weighter_Deuterium_Tool_Config, 
+zexpansion_weighter_MINERvA_Tool_Config
+]
