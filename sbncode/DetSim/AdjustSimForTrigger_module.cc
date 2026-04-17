@@ -1,11 +1,8 @@
-////////////////////////////////////////////////////////////////////////
-// Class:       AdjustSimForTrigger
-// Plugin Type: producer (Unknown Unknown)
-// File:        AdjustSimForTrigger_module.cc
-//
-// Generated at December 2023 by Bruce Howard (howard@fnal.gov) using
-// cetskelgen.
-////////////////////////////////////////////////////////////////////////
+/**
+ * @file    sbncode/DetSim/AdjustSimForTrigger_module.cc
+ * @author  Bruce Howard (howard@fnal.gov)
+ * @date    December 2023
+ */
 
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Core/ModuleMacros.h"
@@ -37,8 +34,154 @@
 #include <utility> // std::move()
 #include <vector>
 
-class AdjustSimForTrigger;
 
+/**
+ * @brief Applies a time shift to selected data products for simulation.
+ * 
+ * This module produces a selection of simulation data products shifting their
+ * time reference to a new "event" (in the sense of something happening, not in
+ * the DAQ sense).
+ * 
+ * The time point of the new reference event is specified in
+ * @ref DetectorClocksElectronicsTime "electronics time scale".
+ * Technically, this module applies a time shift so that the time of that
+ * reference event becomes the previous reference value in electronics time scale.
+ * 
+ * More practically, we start from an electronics time scale where the reference
+ * time is set at `DetectorClocksData::TriggerTime()` (typically `1500.0`
+ * &micro;s).
+ * That time reference may represent a hardware trigger, as the function name
+ * suggest, or anything else. At this point we introduce a new trigger time
+ * (from the simulation; e.g. `1502.0` &micro;s) and we want that time to become
+ * the new reference (and "hardware trigger") of the electronics time scale.
+ * In this example, this module will add a shift of -2 &micro;s to all the
+ * selected data products, so that the time of the new trigger is `1500.0`
+ * and all follows.
+ * 
+ * @note The new trigger time is going to be whatever value is in
+ *       `DetectorClocksData::TriggerTime()`, rather than an hard-coded value
+ *       like `1500.0`. Therefore some care needs to be taken in the workflow
+ *       to make sure that at the time of the execution of this module
+ *       `DetectorClocksService` is yielding the desired new-reference value.
+ *       Also, after this module is called `DetectorClocksService` itself may
+ *       report obsolete values. Specifically, `DetectorClocksServiceStandard`
+ *       will report the old `BeamGateTime()`, which was from ether a
+ *       configuration parameter or from a trigger data product.
+ * 
+ * This module reads the new reference time from a `raw::Trigger` object
+ * (assumed to hold a time on the current electronics scale), and, unless
+ * configured not to (`DropTriggerProduct`) it produces a new trigger data
+ * product with the shifted trigger information. This data product is suitable
+ * for configuring services like `DetectorClocksServiceStandard` for the
+ * following stages of the workflow.
+ * 
+ * If the reference time is not valid, no shift is performed at all.
+ * A reference time is valid if it is neither the maximum nor the minimum value
+ * of a double (`std::numeric_limits<double>::max()` and
+ * `std::numeric_limits<double>::min()`).
+ * 
+ * 
+ * ### Optional shift
+ * 
+ * It is possible to specify a fixed additional shift to the time reference.
+ * This may be useful for example if the simulation of the trigger yields
+ * exactly the time at which the triggering activity is detected, but the
+ * trigger hardware would take still some time in order to tag that time.
+ * Note, however, that the additional shift is also applied to the beam gate
+ * time.
+ * This additional time is specified via the `AdditionalOffset` configuration
+ * parameter.
+ * If the new reference time is invalid, no shift is applied and this offset is
+ * also ignored.
+ * 
+ * 
+ * Input
+ * ------
+ * 
+ * * `std::vector<raw::Trigger>` (`InputTriggerLabel`): the first of the
+ *   triggers in the collection will be used as a new reference.
+ *   If the trigger time value is not valid, no shift at all will be performed.
+ *   However, the beam gate time is still expected to be valid.
+ *   An empty collection is not allowed, even when there is no valid trigger.
+ * 
+ * * `art::Assns<raw::OpDetWaveform, icarus::WaveformBaseline>`
+ *   (`BindWaveformBaselines`): the association of the original optical detector
+ *   waveforms to their baselines.
+ * 
+ * 
+ * Output
+ * -------
+ * 
+ * For each enabled data product to be shifted, the corresponding shifted data
+ * product is produced, with elements in the same order as in the original
+ * collections. Normally, no associations are ported on.
+ * 
+ * * `std::vector<raw::Trigger>`: a collection of shifted triggers is produced;
+ *   the first one is the shifted version of the reference trigger, which can
+ *   then be used as new trigger data product e.g. for
+ *   `DetectorClocksServiceStandard`. If the reference trigger time is not
+ *   valid, the trigger time will be overwritten: the trigger time will be set
+ *   to the value from `DetectorClocksService`, and the beam gate time will
+ *   be the same as the input trigger object. This collection is produced by
+ *   default, but it can be disabled via `DropTriggerProduct` configuration
+ *   parameter.
+ * * `std::vector<sim::BeamGateInfo>`: the beam gate used by the event
+ *   generator, shifted. Generator times and particles from the detector
+ *   simulation (GEANT4) are not shifted, but pretty much everything else is,
+ *   including scintillation photons and energy depositions. Depending on which
+ *   aspect of the simulation is being investigated, either the unshifted
+ *   (input) or shifted (output of this module) gate needs to be used.
+ * * `art::Assns<raw::OpDetWaveform, icarus::WaveformBaseline>`: enabled only
+ *   if the optical waveforms are being shifted _and_ an association data
+ *   product name is specified (`BindWaveformBaselines`), it rebinds the
+ *   original waveform baselines to the shifted waveforms. Note that neither the
+ *   baseline nor the order nor the content of the waveforms change: only their
+ *   start time (and implicitly the end time) does.
+ * 
+ * 
+ * Configuration parameters
+ * -------------------------
+ * 
+ * * `InputTriggerLabel` (input tag, mandatory): the tag of the trigger data
+ *   product with the new reference time. It must be available and not empty.
+ * * `ShiftAuxDetIDE` (bool, default: `false`): enable the shifting of auxiliary
+ *   detector simulation data product at `InitAuxDetSimChannelLabel`.
+ * * `InitAuxDetSimChannelLabel` (input tag): tag of the auxiliary detector
+ *   simulation `sim::AuxDetSimChannel` product to be shifted.
+ * * `ShiftBeamGateInfo` (bool, default: `false`): enable the shifting of
+ *   beam gate data product at `InitBeamGateInfoLabel`.
+ * * `InitBeamGateInfoLabel` (input tag): tag of the simulation beam gate data
+ *   product to be shifted. This can be produced by a LArSoft generation module
+ *   or by a trigger module.
+ * * `ShiftSimEnergyDeposits` (bool, default: `false`): enable the shifting of
+ *   full energy deposit data product at `InitSimEnergyDepositLabel`.
+ * * `InitSimEnergyDepositLabel` (input tag): tag of the simulated energy
+ *   deposition data product to be shifted.
+ * * `ShiftSimEnergyDepositLites` (bool, default: `false`): enable the shifting
+ *   of lightweight energy deposit data product at
+ *   `InitSimEnergyDepositLiteLabel`.
+ * * `InitSimEnergyDepositLiteLabel` (input tag): tag of the lightweight
+ *   simulated energy deposition data product to be shifted. This reduced
+ *   version is typically kept around for tracking back to truth information.
+ * * `ShiftSimPhotons` (bool, default: `false`): enable the shifting of
+ *   scintillation photon data product at `InitSimPhotonsLabel`.
+ * * `InitSimPhotonsLabel` (input tag): tag of the simulated scintillation photon
+ *   data product to be shifted.
+ * * `ShiftWaveforms` (bool, default: `false`): enable the shifting of optical
+ *   detector waveform data product at `InitWaveformLabel`.
+ * * `InitWaveformLabel` (input tag): tag of the simulated optical detector
+ *   waveform data product to be shifted. These waveforms may already be
+ *   available if the worflow extracted the trigger time (new reference) out of
+ *   them.
+ * * `BindWaveformBaselines` (input tag, default: `""`): tag of the association
+ *   between the optical detector waveforms being shifted and their baselines.
+ *   If empty (default), baseline associations will not be produced.
+ * * `AdditionalOffset` (real value, default: `0`): additional offset in
+ *   microseconds to be added to the new reference trigger.
+ * * `DropTriggerProduct` (flag, default: `false`): if set, no shifted trigger
+ *   data product will be produced.
+ * 
+ */
 class AdjustSimForTrigger : public art::EDProducer {
 public:
   explicit AdjustSimForTrigger(fhicl::ParameterSet const& p);
