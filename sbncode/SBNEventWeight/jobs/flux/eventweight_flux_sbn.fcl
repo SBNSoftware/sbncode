@@ -26,7 +26,8 @@ sbn_eventweight_flux: {
     pioninexsec, pionqexsec, piontotxsec,
     nucleoninexsec, nucleonqexsec, nucleontotxsec,
     kplus, kminus, kzero,
-    piplus, piminus
+    piplus, piminus,
+    fluxhist
   ]
 
   horncurrent: {
@@ -128,7 +129,7 @@ sbn_eventweight_flux: {
     mode: multisim
     number_of_multisims: @local::n_universes
     parameter_list: ["nucleonqexsec"]
-	
+    
     calc_type: "Unisim"
     scale_factor_pos: 0.333 #From MiniBooNE 
     scale_factor_neg: 0.573 #From MiniBooNE
@@ -143,7 +144,7 @@ sbn_eventweight_flux: {
     mode: multisim
     number_of_multisims: @local::n_universes
     parameter_list: ["nucleontotxsec"]
-	
+    
     calc_type: "Unisim"
     scale_factor_pos: 1  
     scale_factor_neg: 1
@@ -225,6 +226,22 @@ sbn_eventweight_flux: {
     ExternalData: "beamData/BNBdata/ExternalData/BNBExternalData_uBooNE_SplinesHARP.root"
     ExternalFit: "beamData/BNBdata/ExternalData/BNBExternalData_uBooNE.root"
    }
+
+   fluxhist: {
+    type: Flux
+    random_seed: 3
+    mode: multisim
+    number_of_multisims: @local::n_universes
+    parameter_list: ["fluxhist"]  # just a placeholder
+
+    calc_type: "FluxHist" 
+
+#    cv_hist_file: "/exp/sbnd/app/users/rohanr/larsoft_v10_14_02/srcs/sbncode/sbncode/SBNEventWeight/jobs/flux/nuMom_immParent_merged.root"
+#    rw_hist_file: "/exp/sbnd/app/users/rohanr/larsoft_v10_14_02/srcs/sbncode/sbncode/SBNEventWeight/jobs/flux/nuMom_immParent_oldFiles_correctedName.root"
+    scale_factor_pos: 1
+
+  }
+
 }
 
 

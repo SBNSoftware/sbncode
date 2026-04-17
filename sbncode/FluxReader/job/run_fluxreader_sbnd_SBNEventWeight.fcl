@@ -38,6 +38,7 @@ physics.producers.fluxweight.weight_functions_flux: [horncurrent
                                                    , kzero
                                                    , piplus
                                                    , piminus
+						   , fluxhist
                                                      ]
 
 # Need to overwrite the parameter weight_functions as weight_functions_flux;

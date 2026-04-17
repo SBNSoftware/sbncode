@@ -23,11 +23,58 @@ source:
   module_type:	    FluxReader
   skipEvents:       0
   maxEvents:        -1
-  inputType:        "gsimple"
+  inputType:        "dk2nu"
+  dk2nuConfig: "dk2nu_sbnd_v3"
   nBins:            200
   Elow:             0
   Ehigh:            10
   SelfIncrementRun: true
+  dk2nu_sbnd: {
+        rotmatrix: [ 1, 0, 0, 
+		     0, 1, 0, 
+		     0, 0, 1]
+        userbeam: [ 73.78, 0, 11000]
+
+        #x_detAV: [-200, 200]
+        #y_detAV: [-200, 200]
+        #z_detAV: [0, 500]
+
+	windowBase: [  500,  500, -1000 ]
+        window1:    [  500, -500, -1000 ]
+        window2:    [ -500,  500, -1000 ]
+
+	}	
+  dk2nu_sbnd_v2: {
+        rotmatrix: [ 1, 0, 0, 
+		     0, 1, 0, 
+		     0, 0, 1]
+        userbeam: [ 0, 0, 0, 73.78, 0, 11000]
+
+
+	windowBase: [  500,  500, -1000 ]
+        window1:    [  0, -1000, 0 ]
+        window2:    [ -1000,  0, 0 ]
+
+	}	
+dk2nu_sbnd_v3: {
+         userbeam: [ -73.78, 0, 11000 ]
+         rotmatrix:  [ 1,  0,  0,
+                       0,  1,  0,
+                       0,  0,  1  ]
+         windowBase: [   500,  500, -1000 ]
+         window1:    [  -500,  500, -1000 ]
+         window2:    [   500, -500, -1000 ]
+         }
+  dk2nu_bnb_at_uboone_v1: {
+        userbeam:   [ -130., 0., 47000 ]
+	#userbeam: [ -73.78, 0., -11000.]
+	rotmatrix:  [ 1,  0,  0,
+                   0,  1,  0,
+		   0,  0,  1  ]
+	windowBase: [  630,  500, -1000 ]
+	window1:    [  630, -500, -1000 ]
+	window2:    [ -370,  500, -1000 ]
+  }
 }
 
 outputs:
@@ -38,7 +85,7 @@ outputs:
     fileName:    "fluxreader.root"
     compressionLevel: 1
     dataTier:    "simulated"
-    SelectEvents: [ filter ]
+    SelectEvents: [ filter  ]
   }
 }
 

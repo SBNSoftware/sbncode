@@ -44,6 +44,9 @@ namespace sbn {
       CalcType = pset.get< std::string >("calc_type");//Unisim,PrimaryHadronSWCentralSplineVariation,PrimaryHadronFeynmanScaling,PrimaryHadronSanfordWang,PrimaryHadronNormalization
       std::cout<<"SBNEventWeight Flux: Calculator type: "<<CalcType<<std::endl;
 
+      // For FluxHist
+      fUseFluxHist = pset.get<bool>("use_flux_hist", false);
+
       fScalePos   = pset.get<double>("scale_factor_pos");
       if(!pset.get_if_present("scale_factor_neg",fScaleNeg)){
         std::cout<<"SBNEventWeight Flux: auto-assignment: scale_factor_neg = 1."<<std::endl;
@@ -89,12 +92,84 @@ namespace sbn {
         }//type of hadron parent 
         fcv.Close();
         frwpos.Close();
-        frwneg.Close(); 
+        frwneg.Close();
+
+      }
+
+      // G4BNB to BooNE
+      else if (CalcType == "FluxHist") {
+
+	/*	std::string cv_file = sp.find_file(pset.get<std::string>("cv_hist_file"));
+	std::string rw_file = sp.find_file(pset.get<std::string>("rw_hist_file"));
+	*/
+	std::string cv_file = "/exp/sbnd/app/users/rohanr/larsoft_v10_14_02/srcs/sbncode/sbncode/SBNEventWeight/jobs/flux/nuMom_immParent_merged.root";
+	std::string rw_file = "/exp/sbnd/app/users/rohanr/larsoft_v10_14_02/srcs/sbncode/sbncode/SBNEventWeight/jobs/flux/nuMom_immParent_oldFiles_correctedName.root";
+	TFile fcv(cv_file.c_str());
+	TFile frw(rw_file.c_str());
+	
+	std::string nutype[4] = {"numu", "numubar", "nue", "nuebar"};
+	//	int pdglist[7] = {211, -211, 321, -321, 130, 13, -13};
+
+	std::vector<std::tuple<int,std::string>> validCombinations = {
+	  {211,   "numu"},
+	  {-211,  "numubar"},
+	  {321,   "numu"},
+	  {-321,  "numubar"},
+	  {130,   "nue"},
+	  {13,    "numu"},
+	  {-13,   "numubar"}
+	};
+	/*
+	for (int ip=0; ip<7; ip++) {
+	  for (int in=0; in<4; in++) {
+
+	    std::string hname = Form("hSBND_%d_%s_pz", pdglist[ip], nutype[in].c_str());
+
+	    TH1F* hcv = (TH1F*)fcv.Get(hname.c_str());
+	    TH1F* hrw = (TH1F*)frw.Get(hname.c_str());
+
+	    if (!hcv || !hrw) {
+	      throw cet::exception("FluxHist")
+		<< "Missing histogram: " << hname;
+	    }
+
+	    for (int ib=0; ib<200; ib++) {
+	      fCVHist[ip][in][ib] = hcv->GetBinContent(ib+1);
+	      fRWHist[ip][in][ib] = hrw->GetBinContent(ib+1);
+	    }
+	  }
+	}
+	*/
+
+	for (size_t i = 0; i < validCombinations.size(); ++i) {
+	  int pdg = std::get<0>(validCombinations[i]);
+	  std::string nut = std::get<1>(validCombinations[i]);
+
+	  std::string hname = Form("hSBND_%d_%s_pz", pdg, nut.c_str());
+
+	  TH1F* hcv = (TH1F*)fcv.Get(hname.c_str());
+	  TH1F* hrw = (TH1F*)frw.Get(hname.c_str());
+
+	  if (!hcv || !hrw) {
+	    throw cet::exception("FluxHist")
+	      << "Missing histogram: " << hname;
+	  }
+
+	  for (int ib = 0; ib < 200; ++ib) {
+	    fCVHist[i][ib] = hcv->GetBinContent(ib + 1);
+	    fRWHist[i][ib] = hrw->GetBinContent(ib + 1);
+	  }
+	}
+	fcv.Close();
+	frw.Close();
+      }
+
+
 
       //-------------
       //-- Hadrons --
       //-------------
-      } else if( CalcType.compare(0, 13,"PrimaryHadron") == 0){//Hadron Calculators
+      else if( CalcType.compare(0, 13,"PrimaryHadron") == 0){//Hadron Calculators
 
         fprimaryHad  =   pset.get< std::vector<int>>("PrimaryHadronGeantCode");
 
@@ -224,7 +299,7 @@ namespace sbn {
       }
 
       //or do the above 3 lines in one line
-//      auto const& mclist = *e.getValidHandle<std::vector<simb::MCTruth>>(fGeneratorModuleLabel);
+      auto const& mclist = *e.getValidHandle<std::vector<simb::MCTruth>>(fGeneratorModuleLabel);
 
       // If no neutrinos in this event, gives 0 weight;
       int NUni = fParameterSet.fNuniverses;
@@ -290,7 +365,53 @@ namespace sbn {
       }
           }//Iterate through the number of universes      
         }
-      } else{//then this must be PrimaryHadron
+      }
+
+      else if (CalcType == "FluxHist") {
+
+	weights.resize(NUni);
+
+	int p7 = GetPType7(fluxlist[inu].fptype);
+
+	
+	if (fluxlist[inu].fntype == 14)      ntype7 = 0;
+	else if (fluxlist[inu].fntype == -14) ntype7 = 1;
+	else if (fluxlist[inu].fntype == 12)  ntype7 = 2;
+	else if (fluxlist[inu].fntype == -12) ntype7 = 3;
+	else {
+	  throw cet::exception(__FUNCTION__)
+	    << "Unknown neutrino type " << fluxlist[inu].fntype;
+	}
+
+	double enu = fluxlist[inu].fnenergyn;
+	if (enu <= 0)
+	  enu = mclist[inu].GetNeutrino().Nu().E();
+
+	int bin = std::min(199, int(enu / 0.05));
+
+	if(fParameterSet.fRWType == EventWeightParameterSet::kMultiSim){
+
+	  for (int i = 0; i < NUni; i++) {
+
+	    double randomN = (fParameterSet.fParameterMap.begin())->second[i];
+
+	    //	    double cv = fCVHist[p7][ntype7][bin];
+	    //	    double rw = fRWHist[p7][ntype7][bin];
+	    
+	    double cv = fCVHist[p7][bin];
+	    double rw = fRWHist[p7][bin];
+	    
+	    double w = 1.0;
+
+	    if (cv > 0 && std::isfinite(rw/cv)) {
+	      w = 1 - (1 - rw/cv) * randomN;
+	    }
+
+	    weights[i] = std::isfinite(w) ? w : 1.0;
+	  }
+	}
+      }
+      else{//then this must be PrimaryHadron
 
 
         // First let's check that the parent of the neutrino we are looking for is 
