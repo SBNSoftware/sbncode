@@ -1,0 +1,50 @@
+# Driver fcl file for reading in gsimple files
+# for SBND
+# Add SBNEventWeight -- Keng Lin June 2021
+
+#include "seedservice.fcl"
+#include "services_sbnd.fcl"
+#include "eventweight_flux_sbn.fcl"
+#include "eventweight_genie_sbn.fcl"
+
+#include "run_fluxreader_sbnd.fcl"
+
+
+source.inputType: "boone"
+
+physics.producers.fluxweight:  @local::sbn_eventweight_flux
+# physics.producers.genieweight: @local::sbn_eventweight_genie
+
+physics.filter: [ rns
+                , fluxfilter
+                , fluxweight
+                # , genieweight
+                ]
+
+
+# physics.filters.fluxfilter.volumes: ["volWorld"]
+
+physics.producers.fluxweight.generator_module_label: flux
+
+# Customize what kind of weights we need, i.e. define weight_functions_flux:
+physics.producers.fluxweight.weight_functions_flux: [horncurrent
+                                                   , expskin
+                                                   , pioninexsec
+                                                   , pionqexsec
+                                                   , piontotxsec
+                                                   , nucleoninexsec
+                                                   , nucleonqexsec
+                                                   , nucleontotxsec
+                                                   , kplus
+                                                   , kminus
+                                                   , kzero
+                                                   , piplus
+                                                   , piminus
+						   , fluxhist
+                                                     ]
+
+# Need to overwrite the parameter weight_functions as weight_functions_flux;
+physics.producers.fluxweight.weight_functions: @local::physics.producers.fluxweight.weight_functions_flux
+
+
+

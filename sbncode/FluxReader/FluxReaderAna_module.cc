@@ -35,6 +35,20 @@
 #include "nusimdata/SimulationBase/MCFlux.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 
+
+#include "canvas/Persistency/Common/FindManyP.h"
+#include "canvas/Persistency/Common/Ptr.h"
+#include "canvas/Persistency/Common/PtrVector.h"
+#include "sbnobj/Common/SBNEventWeight/EventWeightMap.h"
+
+
+#include <map>
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <functional>
+#include <cmath>
+
 class FluxReaderAna;
 
 
@@ -101,6 +115,19 @@ private:
   float _nu_other_y; /// Y poisition of neutrino at the front face of the TPC (other)
   float _nu_other_z; /// Z poisition of neutrino at the front face of the TPC (other)
   float _nu_other_t; /// Time of the neutrino (other)
+
+
+  //For weighting:
+  std::string _flux_eventweight_multisim_producer;
+  bool _save_systs_flux;
+
+  int _evtwgt_flux_nfunc; /// Number of flux weight functions
+  std::vector<std::string> _evtwgt_flux_funcname; /// Names of weight functions
+  std::vector<int> _evtwgt_flux_nweight; /// Number of weights per function
+  std::vector<std::vector<float>> _evtwgt_flux_weight; /// Raw weights by function
+  std::vector<float> _evtwgt_flux_oneweight; /// Combined flux multisim weight
+
+
 };
 
 
@@ -122,6 +149,10 @@ FluxReaderAna::FluxReaderAna(fhicl::ParameterSet const& p)
   _x_cut = p.get<float>("XCut"); // cm
   _y_cut = p.get<float>("YCut"); // cm
 
+  _flux_eventweight_multisim_producer =
+    p.get<std::string>("FluxEventWeightProducer", "fluxweight");
+
+  _save_systs_flux = p.get<bool>("SaveSystsFlux", false);
 
   art::ServiceHandle<art::TFileService> fs;
   _tree = fs->make<TTree>("tree", "");
@@ -154,6 +185,14 @@ FluxReaderAna::FluxReaderAna(fhicl::ParameterSet const& p)
   _tree->Branch("nu_other_y", &_nu_other_y, "nu_other_y/F");
   _tree->Branch("nu_other_z", &_nu_other_z, "nu_other_z/F");
   _tree->Branch("nu_other_t", &_nu_other_t, "nu_other_t/F");
+
+  
+  _tree->Branch("evtwgt_flux_nfunc", &_evtwgt_flux_nfunc, "evtwgt_flux_nfunc/I");
+  _tree->Branch("evtwgt_flux_funcname", "std::vector<std::string>", &_evtwgt_flux_funcname);
+  _tree->Branch("evtwgt_flux_nweight", "std::vector<int>", &_evtwgt_flux_nweight);
+  _tree->Branch("evtwgt_flux_weight", "std::vector<std::vector<float>>", &_evtwgt_flux_weight);
+  _tree->Branch("evtwgt_flux_oneweight", "std::vector<float>", &_evtwgt_flux_oneweight);
+
 }
 
 void FluxReaderAna::analyze(art::Event const& e)
@@ -166,6 +205,12 @@ void FluxReaderAna::analyze(art::Event const& e)
   art::Handle< std::vector<simb::MCTruth> > mctruthHandle;
   e.getByLabel(_flux_label, mctruthHandle);
   std::vector<simb::MCTruth> const& mclist = *mctruthHandle;
+
+  std::vector<art::Ptr<simb::MCTruth>> mct_v;
+  art::fill_ptr_vector(mct_v, mctruthHandle);
+
+  art::FindManyP<sbn::evwgh::EventWeightMap> mct_to_fluxewm(mctruthHandle, e, 
+							    _flux_eventweight_multisim_producer);
 
   for(unsigned int inu = 0; inu < mclist.size(); inu++) {
     simb::MCParticle nu = mclist[inu].GetNeutrino().Nu();
@@ -225,6 +270,76 @@ void FluxReaderAna::analyze(art::Event const& e)
     if (_apply_position_cuts) {
       if (_nu_x < -_x_cut || _nu_x > _x_cut || _nu_y < -_y_cut || _nu_y > _y_cut) {
        continue;
+      }
+    }
+
+    // Reset flux systematic containers every neutrino
+    _evtwgt_flux_nfunc = 0;
+    _evtwgt_flux_funcname.clear();
+    _evtwgt_flux_nweight.clear();
+    _evtwgt_flux_weight.clear();
+    _evtwgt_flux_oneweight.clear();
+
+    if (_save_systs_flux) {
+
+      std::vector<art::Ptr<sbn::evwgh::EventWeightMap>> flux_ewm_v = mct_to_fluxewm.at(inu);
+
+      if (flux_ewm_v.size() == 1) {
+
+	std::map<std::string, std::vector<float>> evtwgt_map = *(flux_ewm_v[0]);
+
+	std::vector<float> previous_weights;
+	std::vector<float> final_weights;
+
+        int countFunc = 0;
+
+        for (auto const& it : evtwgt_map) {
+	  std::string const& func_name = it.first;
+	  std::vector<float> const& weight_v = it.second;
+
+          if (previous_weights.empty()) {
+            previous_weights.resize(weight_v.size(), 1.f);
+            final_weights.resize(weight_v.size(), 1.f);
+          }
+
+          // Protect against mismatched universe counts
+          if (weight_v.size() != previous_weights.size()) {
+	    mf::LogWarning("FluxReaderAna")
+              << "Weight function " << func_name
+              << " has size " << weight_v.size()
+              << " but previous combined weight size is "
+              << previous_weights.size()
+              << ". Skipping this function.";
+            continue;
+          }
+
+          _evtwgt_flux_funcname.push_back(func_name);
+          _evtwgt_flux_weight.push_back(weight_v);
+          _evtwgt_flux_nweight.push_back((int)weight_v.size());
+          countFunc++;
+
+	  std::transform(previous_weights.begin(), previous_weights.end(),
+                         weight_v.begin(),
+                         final_weights.begin(),
+                         std::multiplies<float>());
+
+          previous_weights = final_weights;
+        }
+
+        _evtwgt_flux_nfunc = countFunc;
+        _evtwgt_flux_oneweight = final_weights;
+      }
+      else if (flux_ewm_v.empty()) {
+	mf::LogWarning("FluxReaderAna")
+          << "No associated EventWeightMap found for neutrino index "
+          << inu << " from producer " << _flux_eventweight_multisim_producer;
+      }
+      else {
+	mf::LogWarning("FluxReaderAna")
+          << "Found " << flux_ewm_v.size()
+          << " associated EventWeightMaps for neutrino index " << inu
+          << " from producer " << _flux_eventweight_multisim_producer
+          << ", expected 1.";
       }
     }
 

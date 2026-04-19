@@ -97,73 +97,77 @@ namespace sbn {
       }
 
       // G4BNB to BooNE
+
+
       else if (CalcType == "FluxHist") {
 
-	/*	std::string cv_file = sp.find_file(pset.get<std::string>("cv_hist_file"));
-	std::string rw_file = sp.find_file(pset.get<std::string>("rw_hist_file"));
-	*/
-	std::string cv_file = "/exp/sbnd/app/users/rohanr/larsoft_v10_14_02/srcs/sbncode/sbncode/SBNEventWeight/jobs/flux/nuMom_immParent_merged.root";
-	std::string rw_file = "/exp/sbnd/app/users/rohanr/larsoft_v10_14_02/srcs/sbncode/sbncode/SBNEventWeight/jobs/flux/nuMom_immParent_oldFiles_correctedName.root";
-	TFile fcv(cv_file.c_str());
-	TFile frw(rw_file.c_str());
-	
-	std::string nutype[4] = {"numu", "numubar", "nue", "nuebar"};
-	//	int pdglist[7] = {211, -211, 321, -321, 130, 13, -13};
+        // For debugging you can keep hardcoded paths for now.
+        // Later you can switch back to FHiCL-controlled file names.
+	std::string cv_file =
+          "/exp/sbnd/app/users/rohanr/larsoft_v10_14_02/srcs/sbncode/sbncode/SBNEventWeight/jobs/flux/nuMom_immParent_merged.root";
+	std::string rw_file =
+          "/exp/sbnd/app/users/rohanr/larsoft_v10_14_02/srcs/sbncode/sbncode/SBNEventWeight/jobs/flux/nuMom_immParent_oldFiles_correctedName.root";
+
+        TFile fcv(cv_file.c_str());
+        TFile frw(rw_file.c_str());
+
+        if (fcv.IsZombie() || frw.IsZombie()) {
+          throw cet::exception("FluxHist")
+            << "Could not open FluxHist ROOT file(s):\n"
+            << "  CV = " << cv_file << "\n"
+            << "  RW = " << rw_file << "\n";
+        }
 
 	std::vector<std::tuple<int,std::string>> validCombinations = {
-	  {211,   "numu"},
-	  {-211,  "numubar"},
-	  {321,   "numu"},
-	  {-321,  "numubar"},
-	  {130,   "nue"},
-	  {13,    "numu"},
-	  {-13,   "numubar"}
+	  { 211,  "numu"    },
+	  { 211,  "nue"     },
+	  {-211,  "numubar" },
+	  {-211,  "nuebar"  },
+	  { 321,  "numu"    },
+	  { 321,  "nue"     },
+	  {-321,  "numubar" },
+	  {-321,  "nuebar"  },
+	  { 130,  "nue"     },
+	  { 130,  "nuebar"  },
+	  {  13,  "numu"    },
+	  {  13,  "nuebar"  },
+	  { -13,  "numubar" },
+	  { -13,  "nue"     }
 	};
-	/*
-	for (int ip=0; ip<7; ip++) {
-	  for (int in=0; in<4; in++) {
-
-	    std::string hname = Form("hSBND_%d_%s_pz", pdglist[ip], nutype[in].c_str());
-
-	    TH1F* hcv = (TH1F*)fcv.Get(hname.c_str());
-	    TH1F* hrw = (TH1F*)frw.Get(hname.c_str());
-
-	    if (!hcv || !hrw) {
-	      throw cet::exception("FluxHist")
-		<< "Missing histogram: " << hname;
-	    }
-
-	    for (int ib=0; ib<200; ib++) {
-	      fCVHist[ip][in][ib] = hcv->GetBinContent(ib+1);
-	      fRWHist[ip][in][ib] = hrw->GetBinContent(ib+1);
-	    }
-	  }
-	}
-	*/
-
-	for (size_t i = 0; i < validCombinations.size(); ++i) {
-	  int pdg = std::get<0>(validCombinations[i]);
+        for (size_t i = 0; i < validCombinations.size(); ++i) {
+          int pdg = std::get<0>(validCombinations[i]);
 	  std::string nut = std::get<1>(validCombinations[i]);
 
 	  std::string hname = Form("hSBND_%d_%s_pz", pdg, nut.c_str());
 
-	  TH1F* hcv = (TH1F*)fcv.Get(hname.c_str());
-	  TH1F* hrw = (TH1F*)frw.Get(hname.c_str());
+          TH1* hcv = dynamic_cast<TH1*>(fcv.Get(hname.c_str()));
+          TH1* hrw = dynamic_cast<TH1*>(frw.Get(hname.c_str()));
 
-	  if (!hcv || !hrw) {
-	    throw cet::exception("FluxHist")
-	      << "Missing histogram: " << hname;
-	  }
+          if (!hcv || !hrw) {
+            throw cet::exception("FluxHist")
+              << "Missing histogram: " << hname << "\n";
+          }
 
-	  for (int ib = 0; ib < 200; ++ib) {
-	    fCVHist[i][ib] = hcv->GetBinContent(ib + 1);
-	    fRWHist[i][ib] = hrw->GetBinContent(ib + 1);
-	  }
-	}
-	fcv.Close();
-	frw.Close();
+	  /* std::cout << "Loaded histogram: " << hname
+                    << "  CV entries=" << hcv->GetEntries()
+                    << "  RW entries=" << hrw->GetEntries()
+                    << std::endl;
+	  */
+          if (hcv->GetNbinsX() < 200 || hrw->GetNbinsX() < 200) {
+            throw cet::exception("FluxHist")
+              << "Histogram " << hname
+              << " has fewer than 200 bins.\n";
+          }
+
+          for (int ib = 0; ib < 200; ++ib) {
+            fCVHist[i][ib] = hcv->GetBinContent(ib + 1);
+            fRWHist[i][ib] = hrw->GetBinContent(ib + 1);
+          }
+        }
+
+        fcv.Close();
+        frw.Close();
       }
-
 
 
       //-------------
@@ -369,48 +373,91 @@ namespace sbn {
 
       else if (CalcType == "FluxHist") {
 
-	weights.resize(NUni);
+	std::cout << "Entering FluxHist GetWeight for inu = " << inu << std::endl;
 
-	int p7 = GetPType7(fluxlist[inu].fptype);
+        weights.resize(NUni, 1.0);
 
-	
-	if (fluxlist[inu].fntype == 14)      ntype7 = 0;
-	else if (fluxlist[inu].fntype == -14) ntype7 = 1;
-	else if (fluxlist[inu].fntype == 12)  ntype7 = 2;
-	else if (fluxlist[inu].fntype == -12) ntype7 = 3;
-	else {
-	  throw cet::exception(__FUNCTION__)
-	    << "Unknown neutrino type " << fluxlist[inu].fntype;
-	}
+        if (inu >= fluxlist.size()) {
+          throw cet::exception("FluxHist")
+            << "inu out of range for fluxlist: inu=" << inu
+            << " fluxlist.size()=" << fluxlist.size() << "\n";
+        }
 
-	double enu = fluxlist[inu].fnenergyn;
-	if (enu <= 0)
-	  enu = mclist[inu].GetNeutrino().Nu().E();
+        if (inu >= mclist.size()) {
+          throw cet::exception("FluxHist")
+            << "inu out of range for mclist: inu=" << inu
+            << " mclist.size()=" << mclist.size() << "\n";
+        }
 
-	int bin = std::min(199, int(enu / 0.05));
+        int parent_pdg = fluxlist[inu].fptype;
+        int nu_pdg     = fluxlist[inu].fntype;
 
-	if(fParameterSet.fRWType == EventWeightParameterSet::kMultiSim){
+	/*	std::cout << "  parent PDG = " << parent_pdg
+                  << ", neutrino PDG = " << nu_pdg << std::endl;
+	*/
+        int idx = GetFluxHistIndex(parent_pdg, nu_pdg);
 
-	  for (int i = 0; i < NUni; i++) {
+	//std::cout << "  FluxHist index = " << idx << std::endl;
 
-	    double randomN = (fParameterSet.fParameterMap.begin())->second[i];
+        if (idx < 0 || idx >= 14) {
+	  std::cout << "  Unsupported parent/flavor combination, returning unit weights"
+                    << std::endl;
+          return weights;
+        }
 
-	    //	    double cv = fCVHist[p7][ntype7][bin];
-	    //	    double rw = fRWHist[p7][ntype7][bin];
-	    
-	    double cv = fCVHist[p7][bin];
-	    double rw = fRWHist[p7][bin];
-	    
-	    double w = 1.0;
+        double pz = mclist[inu].GetNeutrino().Nu().Pz();
 
-	    if (cv > 0 && std::isfinite(rw/cv)) {
-	      w = 1 - (1 - rw/cv) * randomN;
-	    }
+	std::cout << "  neutrino pz = " << pz << std::endl;
 
-	    weights[i] = std::isfinite(w) ? w : 1.0;
-	  }
-	}
+        int bin = static_cast<int>(pz / 0.05);
+
+        if (bin < 0)   bin = 0;
+        if (bin > 199) bin = 199;
+
+	std::cout << "  histogram bin = " << bin << std::endl;
+
+        if (fParameterSet.fRWType == EventWeightParameterSet::kMultiSim) {
+
+          auto const& randomVec = (fParameterSet.fParameterMap.begin())->second;
+
+	  std::cout << "  NUni = " << NUni
+                    << ", randomVec.size() = " << randomVec.size() << std::endl;
+
+          for (int i = 0; i < NUni; ++i) {
+
+            if (i >= (int)randomVec.size()) {
+              throw cet::exception("FluxHist")
+                << "Random vector too short: i=" << i
+                << " size=" << randomVec.size() << "\n";
+            }
+
+	    //            double randomN = randomVec[i];
+
+            double cv = fCVHist[idx][bin];
+            double rw = fRWHist[idx][bin];
+
+	    /*	    std::cout << "    universe " << i
+                      << ": cv=" << cv
+                      << " rw=" << rw
+                      << " randomN=" << randomN << std::endl;
+	    */
+            double w = 1.0;
+
+            if (cv > 0.0) {
+              double ratio = rw / cv;
+              if (std::isfinite(ratio)) {
+                w = ratio;//1.0 - (1.0 - ratio) * randomN;
+              }
+            }
+
+            weights[i] = std::isfinite(w) ? w : 1.0;
+          }
+        }
+
+	std::cout << "Leaving FluxHist GetWeight" << std::endl;
       }
+
+
       else{//then this must be PrimaryHadron
 
 

@@ -35,3 +35,4 @@ outputs: {
 # Need to overwrite the parameter `weight_functions` to get recongnized
 physics.producers.genieweight.weight_functions: @local::physics.producers.genieweight.weight_functions_genie
 physics.producers.fluxweight.weight_functions: @local::physics.producers.fluxweight.weight_functions_flux
+

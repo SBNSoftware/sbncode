@@ -13,6 +13,7 @@ art_make_library(
     fhiclcpp::fhiclcpp
     cetlib::cetlib
     nusimdata::SimulationBase
+    larsim::EventWeight_Base
     ROOT::Hist
 )
 

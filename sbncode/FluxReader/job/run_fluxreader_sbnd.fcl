@@ -55,8 +55,18 @@ source:
         window1:    [  0, -1000, 0 ]
         window2:    [ -1000,  0, 0 ]
 
-	}	
+	}
 dk2nu_sbnd_v3: {
+         userbeam: [ 73.78, 0, 11000 ]
+         rotmatrix:  [ 1,  0,  0,
+                       0,  1,  0,
+                       0,  0,  1  ]
+         windowBase: [   500,  500, -1000 ]
+         window1:    [  -500,  500, -1000 ]
+         window2:    [   500, -500, -1000 ]
+         }
+	
+dk2nu_sbnd_leo: {
          userbeam: [ -73.78, 0, 11000 ]
          rotmatrix:  [ 1,  0,  0,
                        0,  1,  0,

@@ -15,7 +15,7 @@
 #include "sbncode/SBNEventWeight/Base/SmearingUtils.h"//MultiGaussianSmearing!
 
 //#include <sys/stat.h> //for exit(0); debugging purpose
-
+#include "TH1.h"
 #include "TH1F.h"
 #include "TFile.h"
 #include "TDecompChol.h"//for Choleskey Decomposition
@@ -69,6 +69,24 @@ namespace sbn {
         double fRWneg[4][4][200];
         bool PosOnly{false};
 
+	//for FluxHist
+	bool fUseFluxHist = false;
+	//	double fCVHist[7][4][200];
+	//	double fRWHist[7][4][200];
+
+	double fCVHist[14][200]{};
+        double fRWHist[14][200]{};
+
+        int GetFluxHistIndex(int parent_pdg, int nu_pdg) const {
+          if      (parent_pdg ==  211 && nu_pdg ==  14) return 0;
+          else if (parent_pdg == -211 && nu_pdg == -14) return 1;
+          else if (parent_pdg ==  321 && nu_pdg ==  14) return 2;
+          else if (parent_pdg == -321 && nu_pdg == -14) return 3;
+          else if (parent_pdg ==  130 && nu_pdg ==  12) return 4;
+          else if (parent_pdg ==   13 && nu_pdg ==  14) return 5;
+          else if (parent_pdg ==  -13 && nu_pdg == -14) return 6;
+          else return -1;
+        }
         //for HadronsProduction
         std::vector<int> fprimaryHad = {0};
         //-- FeynmanScaling

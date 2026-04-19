@@ -74,6 +74,7 @@ cet_make_library(
 cet_build_plugin(FluxReaderAna art::module LIBRARIES
                         sbncode_FluxReader
                         sbncode_FluxReader_FluxInterface
+			sbnobj::Common_SBNEventWeight
                         nusimdata::SimulationBase
                         larcoreobj::SummaryData
                         larcore::Geometry_Geometry_service
