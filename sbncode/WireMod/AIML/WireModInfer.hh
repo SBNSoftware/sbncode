@@ -22,9 +22,89 @@
 #include "larcorealg/Geometry/WireReadoutGeom.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "larsim/MCCheater/BackTrackerService.h"
+#include "larsim/MCCheater/ParticleInventoryService.h"
+#include "larsim/Utils/TruthMatchUtils.h"
 
 namespace sys
 {
+  // ─────────────────────────────────────────────────────────────────────────────
+  // WMHit Class
+  // ─────────────────────────────────────────────────────────────────────────────
+  class WMHit : public recob::Hit
+  {
+    public:
+      WMHit(raw::ChannelID_t channel,
+            raw::TDCtick_t   start_tick,
+            raw::TDCtick_t   end_tick,
+            float            peak_time,
+            float            sigma_peak_time,
+            float            rms,
+            float            peak_amplitude,
+            float            sigma_peak_amplitude,
+            float            ROISummedADC,
+            float            HitSummedADC,
+            float            hit_integral,
+            float            hit_sigma_integral,
+            short int        multiplicity,
+            short int        local_index,
+            float            goodness_of_fit,
+            int              dof,
+            geo::View_t      view,
+            geo::SigType_t   signal_type,
+            geo::WireID      wireID,
+            float            integralRatio,
+            float            widthRatio) : recob::Hit(channel,
+                                                      start_tick,
+                                                      end_tick,
+                                                      peak_time,
+                                                      sigma_peak_time,
+                                                      rms,
+                                                      peak_amplitude,
+                                                      sigma_peak_amplitude,
+                                                      ROISummedADC,
+                                                      HitSummedADC,
+                                                      hit_integral,
+                                                      hit_sigma_integral,
+                                                      multiplicity,
+                                                      local_index,
+                                                      goodness_of_fit,
+                                                      dof,
+                                                      view,
+                                                      signal_type,
+                                                      wireID),
+                                           fIntegralRatio(integralRatio),
+                                           fWidthRatio(widthRatio)
+                                           {}
+      WMHit(recob::Hit hit, float integralRatio = 1.0, float widthRatio = 1.0)
+        : recob::Hit(hit.Channel(),
+                     hit.StartTick(),
+                     hit.EndTick(),
+                     hit.PeakTime(),
+                     hit.SigmaPeakTime(),
+                     hit.RMS() * widthRatio,
+                     hit.PeakAmplitude() * integralRatio / widthRatio,
+                     hit.SigmaPeakAmplitude() * integralRatio / widthRatio,
+                     hit.ROISummedADC() * integralRatio,
+                     hit.HitSummedADC() * integralRatio,
+                     hit.Integral() * integralRatio,
+                     hit.SigmaIntegral() * integralRatio,
+                     hit.Multiplicity(),
+                     hit.LocalIndex(),
+                     hit.GoodnessOfFit(),
+                     hit.DegreesOfFreedom(),
+                     hit.View(),
+                     hit.SignalType(),
+                     hit.WireID()),
+          fIntegralRatio(integralRatio),
+          fWidthRatio(widthRatio)
+          {}
+      float IntegralRatio() { return fIntegralRatio; }
+      float WidthRatio() { return fWidthRatio; }
+    private:
+      float fIntegralRatio;
+      float fWidthRatio;
+  };
+
   // ─────────────────────────────────────────────────────────────────────────────
   // Model constants  (must match Constants.jl used in training)
   // ─────────────────────────────────────────────────────────────────────────────
@@ -415,7 +495,8 @@ namespace sys
   class WaireMLod
   {
     public:
-      explicit WaireMLod(const std::string& weights_path) : store_(weights_path) { validate_shapes(); }
+      explicit WaireMLod(const std::string& weights_path)
+        : store_(weights_path) { validate_shapes(); cache_pointers(); }
 
       /**
        * Run inference on a single hit
@@ -431,16 +512,95 @@ namespace sys
       }
 
       /**
+       * Run inference on a vector of hits
+       *
+       * @param raw_vec Vector of arrays of 11 floats in the input feature order
+       * @return vector<{predicted_integral, predicted_width}>
+       */
+      std::vector<std::array<float, 2>>
+        infer_batch(const std::vector<std::array<float, N_FEATURES>>& raw_vec) const
+        {
+          std::vector<std::array<float, 2>> out;
+          out.reserve(raw_vec.size());
+          for (auto const& raw : raw_vec) out.push_back(infer(raw));
+          return out;
+        }
+
+      /**
        * Construct vector of data-like hits from simulated hits
        */
       std::vector<recob::Hit> produceNew(
-        const std::vector<recob::Hit> old_hits,
-        cheat::BackTrackerService* back_tracker,
-        detinfo::DetectorClocksData* det_clock,
-        geo::WireReadoutGeom const* wire_geom) const;
+        const std::vector<art::Ptr<recob::Hit>> old_hits,
+        const cheat::BackTrackerService* back_tracker,
+        const cheat::ParticleInventoryService* particles,
+        const detinfo::DetectorClocksData* det_clock,
+        const geo::WireReadoutGeom* wire_geom) const;
 
     private:
       TensorStore store_;
+
+      /**
+       * Cache pointers to the weight tensors in the store
+       */
+      struct WeightPointers 
+      {
+        const float *il_scales_fixed, *il_scales_train;
+        const float *d1_w, *d1_b;
+        const float *rb1_gamma, *rb1_beta, *rb1_w, *rb1_b;
+        const float *rb2_gamma, *rb2_beta, *rb2_w, *rb2_b;
+        const float *cls_w, *cls_b;
+        struct CWLPtrs
+        {
+          const float *weights, *biases;
+          const float *gamma, *beta;
+          const float *escale, *ebias;
+        };
+        CWLPtrs cwl1, cwl2a, cwl2w, cwl3a, cwl3w;
+        const float *ahead_w, *ahead_b;
+        const float *whead_w, *whead_b;
+      };
+      WeightPointers wp_;
+
+      void cache_pointers()
+      {
+        wp_.il_scales_fixed = store_.data("il.scales_fixed");
+        wp_.il_scales_train = store_.data("il.scales_train");
+        wp_.d1_w  = store_.data("d1.weight");
+        wp_.d1_b  = store_.data("d1.bias");
+        wp_.rb1_gamma = store_.data("rb1.gn.gamma");
+        wp_.rb1_beta  = store_.data("rb1.gn.beta");
+        wp_.rb1_w     = store_.data("rb1.d.weight");
+        wp_.rb1_b     = store_.data("rb1.d.bias");
+        wp_.rb2_gamma = store_.data("rb2.gn.gamma");
+        wp_.rb2_beta  = store_.data("rb2.gn.beta");
+        wp_.rb2_w     = store_.data("rb2.d.weight");
+        wp_.rb2_b     = store_.data("rb2.d.bias");
+        wp_.cls_w = store_.data("cls.weight");
+        wp_.cls_b = store_.data("cls.bias");
+
+        auto load_cwl = [&](const std::string& p)
+        {
+          return WeightPointers::CWLPtrs
+          {
+            store_.data(p + ".weights"),
+            store_.data(p + ".biases"),
+            store_.data(p + ".norm.gamma"),
+            store_.data(p + ".norm.beta"),
+            store_.data(p + ".expert_scale"),
+            store_.data(p + ".expert_bias"),
+          };
+        };
+        wp_.cwl1  = load_cwl("cwl1");
+        wp_.cwl2a = load_cwl("cwl2a");
+        wp_.cwl2w = load_cwl("cwl2w");
+        wp_.cwl3a = load_cwl("cwl3a");
+        wp_.cwl3w = load_cwl("cwl3w");
+
+        wp_.ahead_w = store_.data("ahead.weight");
+        wp_.ahead_b = store_.data("ahead.bias");
+        wp_.whead_w = store_.data("whead.weight");
+        wp_.whead_b = store_.data("whead.bias");
+      }
 
       /**
        * Validate that all loaded tensors have the expected number of elements
@@ -508,18 +668,18 @@ namespace sys
       {
         // Inputs
         Eigen::VectorXf x = input_layer(raw, 
-          store_.data("il.scales_fixed"),
-          store_.data("il.scales_train"));
+          wp_.il_scales_fixed,
+          wp_.il_scales_train);
 
         // Dense N_FEATURES -> NEURON_N, gelu
-        x = dense_gelu(x, store_.data("d1.weight"), store_.data("d1.bias"), NEURON_N, N_FEATURES);
+        x = dense_gelu(x, wp_.d1_w, wp_.d1_b, NEURON_N, N_FEATURES);
 
         // ResBlock 1: GroupNorm -> Dense, gelu -> residual
         {
           Eigen::VectorXf normed = group_norm(x, NEURON_N, NORM_GROUPS,
-            store_.data("rb1.gn.gamma"), store_.data("rb1.gn.beta"));
+            wp_.rb1_gamma, wp_.rb1_beta);
           Eigen::VectorXf inner  = dense_gelu(normed,
-            store_.data("rb1.d.weight"), store_.data("rb1.d.bias"),
+            wp_.rb1_w, wp_.rb1_b,
             NEURON_N, NEURON_N);
           x += inner;
         }
@@ -527,16 +687,16 @@ namespace sys
         // ResBlock 2: GroupNorm -> Dense, gelu -> residual
         {
           Eigen::VectorXf normed = group_norm(x, NEURON_N, NORM_GROUPS,
-            store_.data("rb2.gn.gamma"), store_.data("rb2.gn.beta"));
+            wp_.rb2_gamma, wp_.rb2_beta);
           Eigen::VectorXf inner  = dense_gelu(normed,
-            store_.data("rb2.d.weight"), store_.data("rb2.d.bias"),
+            wp_.rb2_w, wp_.rb2_b,
             NEURON_N, NEURON_N);
           x += inner;
         }
 
         // Classifier
         Eigen::VectorXf cls_scores = dense_linear(x,
-          store_.data("cls.weight"), store_.data("cls.bias"),
+          wp_.cls_w, wp_.cls_b,
           N_CLASSES, NEURON_N);
         cls_scores = softmax(cls_scores);
         Eigen::VectorXf out(N_CLASSES + NEURON_N);
@@ -554,33 +714,24 @@ namespace sys
         // Prep classifier output for A/w attention heads
         Eigen::VectorXf cwl1_out = cwl_forward(
           clf_out, N_CLASSES, NEURON_N, 2*NEURON_N, NORM_GROUPS,
-          store_.data("cwl1.weights"),
-          store_.data("cwl1.biases"),
-          store_.data("cwl1.norm.gamma"),
-          store_.data("cwl1.norm.beta"),
-          store_.data("cwl1.expert_scale"),
-          store_.data("cwl1.expert_bias"));
+          wp_.cwl1.weights, wp_.cwl1.biases,
+          wp_.cwl1.gamma,   wp_.cwl1.beta,
+          wp_.cwl1.escale,  wp_.cwl1.ebias);
         Eigen::VectorXf x = prepend_classes(cwl1_out, clf_out);
         
         // ResBlock 3: Parallel A and w chains
         {
           Eigen::VectorXf a_out = cwl_forward(
             astream_select(x), N_CLASSES, NEURON_N, NEURON_N, NORM_GROUPS,
-            store_.data("cwl2a.weights"),
-            store_.data("cwl2a.biases"),
-            store_.data("cwl2a.norm.gamma"),
-            store_.data("cwl2a.norm.beta"),
-            store_.data("cwl2a.expert_scale"),
-            store_.data("cwl2a.expert_bias"));
+            wp_.cwl2a.weights, wp_.cwl2a.biases,
+            wp_.cwl2a.gamma,   wp_.cwl2a.beta,
+            wp_.cwl2a.escale,  wp_.cwl2a.ebias);
 
           Eigen::VectorXf w_out = cwl_forward(
             wstream_select(x), N_CLASSES, NEURON_N, NEURON_N, NORM_GROUPS,
-            store_.data("cwl2w.weights"),
-            store_.data("cwl2w.biases"),
-            store_.data("cwl2w.norm.gamma"),
-            store_.data("cwl2w.norm.beta"),
-            store_.data("cwl2w.expert_scale"),
-            store_.data("cwl2w.expert_bias"));
+            wp_.cwl2w.weights, wp_.cwl2w.biases,
+            wp_.cwl2w.gamma,   wp_.cwl2w.beta,
+            wp_.cwl2w.escale,  wp_.cwl2w.ebias);
 
           Eigen::VectorXf parallel_out(2 * NEURON_N);
           parallel_out.head(NEURON_N) = a_out;
@@ -593,21 +744,15 @@ namespace sys
         {
           Eigen::VectorXf a_out = cwl_forward(
             astream_select(x), N_CLASSES, NEURON_N, NEURON_N, NORM_GROUPS,
-            store_.data("cwl3a.weights"),
-            store_.data("cwl3a.biases"),
-            store_.data("cwl3a.norm.gamma"),
-            store_.data("cwl3a.norm.beta"),
-            store_.data("cwl3a.expert_scale"),
-            store_.data("cwl3a.expert_bias"));
+            wp_.cwl3a.weights, wp_.cwl3a.biases,
+            wp_.cwl3a.gamma,   wp_.cwl3a.beta,
+            wp_.cwl3a.escale,  wp_.cwl3a.ebias);
 
           Eigen::VectorXf w_out = cwl_forward(
             wstream_select(x), N_CLASSES, NEURON_N, NEURON_N, NORM_GROUPS,
-            store_.data("cwl3w.weights"),
-            store_.data("cwl3w.biases"),
-            store_.data("cwl3w.norm.gamma"),
-            store_.data("cwl3w.norm.beta"),
-            store_.data("cwl3w.expert_scale"),
-            store_.data("cwl3w.expert_bias"));
+            wp_.cwl3w.weights, wp_.cwl3w.biases,
+            wp_.cwl3w.gamma,   wp_.cwl3w.beta,
+            wp_.cwl3w.escale,  wp_.cwl3w.ebias);
 
           Eigen::VectorXf parallel_out(2 * NEURON_N);
           parallel_out.head(NEURON_N) = a_out;
@@ -619,11 +764,11 @@ namespace sys
         // Output
         Eigen::VectorXf A_hat = dense_softplus(
           astream_select(x),
-          store_.data("ahead.weight"), store_.data("ahead.bias"),
+          wp_.ahead_w, wp_.ahead_b,
           1, N_CLASSES + NEURON_N);
         Eigen::VectorXf w_hat = dense_softplus(
           wstream_select(x),
-          store_.data("whead.weight"), store_.data("whead.bias"),
+          wp_.whead_w, wp_.whead_b,
           1, N_CLASSES + NEURON_N);
 
         return output_combine(A_hat, w_hat);
