@@ -215,10 +215,11 @@ namespace sys {
 
       double ThetaXW(double dxdr, double dydr, double dzdr, double planeAngle)
       {
-        double sinPlaneAngle = std::sin(planeAngle);
-        double cosPlaneAngle = std::cos(planeAngle);
+        // Want angle to vert, so subtract pi
+        double sin = std::sin(planeAngle - ::util::pi<>());
+        double cos = std::cos(planeAngle - ::util::pi<>());
 
-        double cosG = std::abs(dydr * sinPlaneAngle + dzdr * cosPlaneAngle);
+        double cosG = std::abs(dydr * sin + dzdr * cos);
         double theta = std::atan(dxdr / cosG);
         return std::abs(theta);
       }
