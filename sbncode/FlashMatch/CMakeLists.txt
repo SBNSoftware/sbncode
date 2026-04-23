@@ -36,7 +36,7 @@ set( MODULE_LIBRARIES
   ROOT::Gdml
   )
 
-cet_build_plugin(FlashPredict art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(FlashPredict art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
 
 
 install_headers()

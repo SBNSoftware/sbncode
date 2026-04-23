@@ -2,7 +2,7 @@ find_package(ifbeam)
 find_package(ifdh_art)
 
 cet_build_plugin(NuMIRetriever art::module
-    LIBRARIES
+    LIBRARIES PRIVATE
         art::Persistency_Common
         art::Utilities canvas::canvas
         cetlib::cetlib cetlib_except::cetlib_except

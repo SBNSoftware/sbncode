@@ -43,13 +43,13 @@ set(		MODULE_LIBRARIES
 
 	)
 cet_build_plugin(GaussHitFinderSBN art::module 
-				 LIBRARIES ${MODULE_LIBRARIES}
+				 LIBRARIES PRIVATE ${MODULE_LIBRARIES}
 				 larreco::HitFinder
 				 larreco::CandidateHitFinderTool
 				 larreco::PeakFitterTool
 				)
-cet_build_plugin(ChannelROIToWire art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(WireToChannelROI art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(ChannelROIToWire art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(WireToChannelROI art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
 				
 
 install_headers()

@@ -45,7 +45,7 @@ art_make_library( LIBRARY_NAME sbncode_EventGenerator_MeVPrtl_AnTwoBD
 
 
 cet_build_plugin( Kaon2HNLFlux art::tool
-                        LIBRARIES
+                        LIBRARIES PRIVATE
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service
@@ -65,7 +65,7 @@ cet_build_plugin( Kaon2HNLFlux art::tool
 )
 
 cet_build_plugin( Tau2HNLFlux art::tool
-                        LIBRARIES
+                        LIBRARIES PRIVATE
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service
@@ -86,7 +86,7 @@ cet_build_plugin( Tau2HNLFlux art::tool
 )
 
 cet_build_plugin( HNLMakeDecay art::tool
-                        LIBRARIES
+                        LIBRARIES PRIVATE
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service

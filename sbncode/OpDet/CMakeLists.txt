@@ -1,6 +1,6 @@
 cet_enable_asserts()
 
-cet_build_plugin(PDMapAlgSimple art::tool LIBRARIES
+cet_build_plugin(PDMapAlgSimple art::tool LIBRARIES PRIVATE
             art::Utilities
 )
 

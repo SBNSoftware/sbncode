@@ -18,7 +18,7 @@ cet_make_library(
         larevt::SpaceCharge
 )
 cet_build_plugin(VertexChargeVacuum art::module
-        LIBRARIES
+        LIBRARIES PRIVATE
         art::Framework_Core
         art::Framework_Principal
         art::Framework_Services_Registry
@@ -38,7 +38,7 @@ cet_build_plugin(VertexChargeVacuum art::module
 )
 
 cet_build_plugin(VertexStubTracker art::module
-        LIBRARIES
+        LIBRARIES PRIVATE
         art::Framework_Core
         art::Framework_Services_Registry
         art_root_io::TFileService_service
@@ -60,7 +60,7 @@ cet_build_plugin(VertexStubTracker art::module
 )
 
 cet_build_plugin(PlaneStubMerge art::tool
-        LIBRARIES
+        LIBRARIES PRIVATE
         art::Framework_Core
         art::Framework_Services_Registry
         art_root_io::TFileService_service
@@ -82,7 +82,7 @@ cet_build_plugin(PlaneStubMerge art::tool
 )
 
 cet_build_plugin(TwoPlaneStubMerge art::tool
-        LIBRARIES
+        LIBRARIES PRIVATE
         art::Framework_Core
         art::Framework_Services_Registry
         art_root_io::TFileService_service

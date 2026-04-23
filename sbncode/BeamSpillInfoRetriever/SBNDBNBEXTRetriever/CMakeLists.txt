@@ -2,7 +2,7 @@ find_package(ifbeam)
 find_package(ifdh_art)
 
 cet_build_plugin(SBNDBNBEXTRetriever art::module
-    LIBRARIES
+    LIBRARIES PRIVATE
         sbn_POTTools
 )
 

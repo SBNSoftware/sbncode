@@ -1,5 +1,5 @@
 cet_build_plugin( MonoEnergyHiggsFlux art::tool
-                      LIBRARIES
+                      LIBRARIES PRIVATE
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service
@@ -17,7 +17,7 @@ cet_build_plugin( MonoEnergyHiggsFlux art::tool
 
 
 cet_build_plugin( Kaon2HiggsFlux art::tool
-                      LIBRARIES
+                      LIBRARIES PRIVATE
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service
@@ -37,7 +37,7 @@ cet_build_plugin( Kaon2HiggsFlux art::tool
 )
 
 cet_build_plugin( HiggsMakeDecay art::tool
-                      LIBRARIES
+                      LIBRARIES PRIVATE
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service

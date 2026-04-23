@@ -8,7 +8,7 @@ endif()
 
 
 cet_build_plugin(NuVertexChargeTree art::module
-    LIBRARIES
+    LIBRARIES PRIVATE
         art::Framework_Core
         art::Framework_Services_Registry
         art_root_io::TFileService_service
@@ -38,7 +38,7 @@ cet_build_plugin(NuVertexChargeTree art::module
 
 
 cet_build_plugin( EventSelect art::module
-     LIBRARIES
+     LIBRARIES PRIVATE
                ifdh_art::IFDH_service
                art::Framework_Core
                art::Framework_Principal

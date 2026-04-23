@@ -5,7 +5,7 @@ art_make_library( LIBRARY_NAME sbncode_EventGenerator_MeVPrtl_ALP_ThreeBodyInteg
 )
 
 cet_build_plugin( Meson2ALP art::tool
-                        LIBRARIES
+                        LIBRARIES PRIVATE
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service
@@ -25,7 +25,7 @@ cet_build_plugin( Meson2ALP art::tool
 )
 
 cet_build_plugin( ALPMakeDecay art::tool
-                        LIBRARIES
+                        LIBRARIES PRIVATE
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service

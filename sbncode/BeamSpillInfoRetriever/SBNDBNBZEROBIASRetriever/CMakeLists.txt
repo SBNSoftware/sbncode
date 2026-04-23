@@ -2,7 +2,7 @@ find_package(ifbeam)
 find_package(ifdh_art)
 
 cet_build_plugin(SBNDBNBZEROBIASRetriever art::module
-    LIBRARIES
+    LIBRARIES PRIVATE
         sbn_POTTools
 	sbn_getFOM
 )
