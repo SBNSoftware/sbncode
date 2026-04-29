@@ -236,8 +236,8 @@ sbn_eventweight_flux: {
 
     calc_type: "FluxHist" 
 
-#    cv_hist_file: "/exp/sbnd/app/users/rohanr/larsoft_v10_14_02/srcs/sbncode/sbncode/SBNEventWeight/jobs/flux/nuMom_immParent_merged.root"
-#    rw_hist_file: "/exp/sbnd/app/users/rohanr/larsoft_v10_14_02/srcs/sbncode/sbncode/SBNEventWeight/jobs/flux/nuMom_immParent_oldFiles_correctedName.root"
+    cv_hist_file: "/pnfs/sbnd/scratch/users/rohanr/beamweight/final_hists/nuMom_immParent_merged_200.root"
+    rw_hist_file: "/pnfs/sbnd/scratch/users/rohanr/beamweight/final_hists/nuMom_immParent_oldFiles_200_merged.root"
     scale_factor_pos: 1
 
   }

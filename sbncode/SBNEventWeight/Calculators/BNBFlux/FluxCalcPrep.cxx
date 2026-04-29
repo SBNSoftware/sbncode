@@ -9,7 +9,7 @@ namespace sbn {
 
     //Configure everything here! 
     void FluxWeightCalc::Configure(fhicl::ParameterSet const& p,
-        CLHEP::HepRandomEngine& engine) {
+				   CLHEP::HepRandomEngine& engine) {
       std::cout<<"SBNEventWeight Flux: configure "<< GetName() << std::endl;
 
       fGeneratorModuleLabel = p.get<std::string>("generator_module_label");//use this label to get MC*Handle
@@ -22,12 +22,12 @@ namespace sbn {
       std::vector< float > parsigmas(pars.size(), 1.0);
       if (pars.size() != parsigmas.size()) {
         throw cet::exception(__PRETTY_FUNCTION__) << GetName() << ": "
-          << "parameter_list and parameter_sigma length mismatch."
-          << std::endl;
+						  << "parameter_list and parameter_sigma length mismatch."
+						  << std::endl;
       }
 
       if(!pset.get_if_present("parameter_sigma", parsigmas)){
-        std::cout<<"SBNEventWeight Flux: `parameter_sigma` was not set; now it is set as 1"<<std::endl;
+	std::cout<<"SBNEventWeight Flux: `parameter_sigma` was not set; now it is set as 1"<<std::endl;
       }
 
       std::string fMode = pset.get<std::string>("mode");//3 types: multisim/pmNsigma/fixed
@@ -49,8 +49,8 @@ namespace sbn {
 
       fScalePos   = pset.get<double>("scale_factor_pos");
       if(!pset.get_if_present("scale_factor_neg",fScaleNeg)){
-        std::cout<<"SBNEventWeight Flux: auto-assignment: scale_factor_neg = 1."<<std::endl;
-        }
+	std::cout<<"SBNEventWeight Flux: auto-assignment: scale_factor_neg = 1."<<std::endl;
+      }
 
       cet::search_path sp("FW_SEARCH_PATH");
       bool validC = true;
@@ -64,16 +64,16 @@ namespace sbn {
 
       if( CalcType == "Unisim"){//Unisim Calculator
 
-        std::string dataInput1  = pset.get< std::string >("CentralValue_hist_file");
-        std::string cvfile_path  = sp.find_file(dataInput1);
+	std::string dataInput1  = pset.get< std::string >("CentralValue_hist_file");
+	std::string cvfile_path  = sp.find_file(dataInput1);
         TFile fcv(Form("%s",cvfile_path.c_str()));
 
-        std::string dataInput2pos  = pset.get< std::string >("PositiveSystematicVariation_hist_file");
-        std::string rwfilepos    = sp.find_file(dataInput2pos);
+	std::string dataInput2pos  = pset.get< std::string >("PositiveSystematicVariation_hist_file");
+	std::string rwfilepos    = sp.find_file(dataInput2pos);
         TFile frwpos(Form("%s", rwfilepos.c_str()));
 
-        std::string dataInput2neg  = pset.get< std::string >("NegativeSystematicVariation_hist_file");
-        std::string rwfileneg    = sp.find_file(dataInput2neg);
+	std::string dataInput2neg  = pset.get< std::string >("NegativeSystematicVariation_hist_file");
+	std::string rwfileneg    = sp.find_file(dataInput2neg);
         TFile frwneg(Form("%s", rwfileneg.c_str()));
 
         if(dataInput2pos == dataInput2neg) PosOnly = true;//true - for skin depth
@@ -100,13 +100,23 @@ namespace sbn {
 
 
       else if (CalcType == "FluxHist") {
-
+	
         // For debugging you can keep hardcoded paths for now.
         // Later you can switch back to FHiCL-controlled file names.
-	std::string cv_file =
-          "/exp/sbnd/app/users/rohanr/larsoft_v10_14_02/srcs/sbncode/sbncode/SBNEventWeight/jobs/flux/nuMom_immParent_merged.root";
-	std::string rw_file =
-          "/exp/sbnd/app/users/rohanr/larsoft_v10_14_02/srcs/sbncode/sbncode/SBNEventWeight/jobs/flux/nuMom_immParent_oldFiles_correctedName.root";
+	//	std::string cv_file =
+          //"/exp/sbnd/app/users/rohanr/larsoft_v10_14_02/srcs/sbncode/sbncode/SBNEventWeight/jobs/flux/nuMom_immParent_merged.root";
+	//	  "/pnfs/sbnd/scratch/users/rohanr/beamweight/final_hists/nuMom_immParent_merged_200.root";
+	//	std::string rw_file =
+          //"/exp/sbnd/app/users/rohanr/larsoft_v10_14_02/srcs/sbncode/sbncode/SBNEventWeight/jobs/flux/nuMom_immParent_oldFiles_correctedName.root";
+	//	  "/pnfs/sbnd/scratch/users/rohanr/beamweight/final_hists/nuMom_immParent_oldFiles_200_merged.root";
+
+	std::string dataInputCV = pset.get<std::string>("cv_hist_file");
+	std::string dataInputRW = pset.get<std::string>("rw_hist_file");
+
+	cet::search_path sp("FW_SEARCH_PATH");
+
+	std::string cv_file = sp.find_file(dataInputCV);
+	std::string rw_file = sp.find_file(dataInputRW);
 
         TFile fcv(cv_file.c_str());
         TFile frw(rw_file.c_str());
@@ -127,6 +137,8 @@ namespace sbn {
 	  { 321,  "nue"     },
 	  {-321,  "numubar" },
 	  {-321,  "nuebar"  },
+	  { 130,  "numu"     },
+	  { 130,  "numubar"  },
 	  { 130,  "nue"     },
 	  { 130,  "nuebar"  },
 	  {  13,  "numu"    },
@@ -134,37 +146,88 @@ namespace sbn {
 	  { -13,  "numubar" },
 	  { -13,  "nue"     }
 	};
+
+	for (size_t i = 0; i < validCombinations.size(); ++i) {
+	  int pdg = std::get<0>(validCombinations[i]);
+	  std::string nut = std::get<1>(validCombinations[i]);
+
+	  std::string hname = Form("hSBND_%d_%s_3mom", pdg, nut.c_str());
+
+	  TH3D* hcv = dynamic_cast<TH3D*>(fcv.Get(hname.c_str()));
+	  TH3D* hrw = dynamic_cast<TH3D*>(frw.Get(hname.c_str()));
+
+	  if (!hcv || !hrw) {
+	    throw cet::exception("FluxHist")
+	      << "Missing TH3D histogram: " << hname << "\n";
+	  }
+
+	  fCVHist3D[i] = dynamic_cast<TH3D*>(hcv->Clone(Form("%s_cv_clone", hname.c_str())));
+	  fRWHist3D[i] = dynamic_cast<TH3D*>(hrw->Clone(Form("%s_rw_clone", hname.c_str())));
+
+	  if (!fCVHist3D[i] || !fRWHist3D[i]) {
+	    throw cet::exception("FluxHist")
+	      << "Failed to clone TH3D histogram: " << hname << "\n";
+	  }
+
+	  fCVHist3D[i]->SetDirectory(nullptr);
+	  fRWHist3D[i]->SetDirectory(nullptr);
+
+	  std::cout << "Loaded 3D histogram: " << hname
+		    << " CV entries=" << fCVHist3D[i]->GetEntries()
+		    << " RW entries=" << fRWHist3D[i]->GetEntries()
+		    << std::endl;
+	}
+
+	/*
+	std::string compNames[3] = {"px", "py", "pz"};
+
         for (size_t i = 0; i < validCombinations.size(); ++i) {
           int pdg = std::get<0>(validCombinations[i]);
 	  std::string nut = std::get<1>(validCombinations[i]);
 
-	  std::string hname = Form("hSBND_%d_%s_pz", pdg, nut.c_str());
+	  for (int icomp = 0; icomp < 3; ++icomp) {
+	    std::string hname = Form("hSBND_%d_%s_%s", pdg, nut.c_str(), compNames[icomp].c_str());
 
-          TH1* hcv = dynamic_cast<TH1*>(fcv.Get(hname.c_str()));
-          TH1* hrw = dynamic_cast<TH1*>(frw.Get(hname.c_str()));
+	    TH1* hcv = dynamic_cast<TH1*>(fcv.Get(hname.c_str()));
+	    TH1* hrw = dynamic_cast<TH1*>(frw.Get(hname.c_str()));
 
-          if (!hcv || !hrw) {
-            throw cet::exception("FluxHist")
-              << "Missing histogram: " << hname << "\n";
-          }
+	    if (!hcv || !hrw) {
+	      throw cet::exception("FluxHist")
+		<< "Missing histogram: " << hname << "\n";
+	    }
 
-	  /* std::cout << "Loaded histogram: " << hname
-                    << "  CV entries=" << hcv->GetEntries()
-                    << "  RW entries=" << hrw->GetEntries()
-                    << std::endl;
-	  */
-          if (hcv->GetNbinsX() < 200 || hrw->GetNbinsX() < 200) {
-            throw cet::exception("FluxHist")
-              << "Histogram " << hname
+	  // std::cout << "Loaded histogram: " << hname
+	     << "  CV entries=" << hcv->GetEntries()
+		       << "  RW entries=" << hrw->GetEntries()
+		       << std::endl;
+	    //
+	    if (hcv->GetNbinsX() < 200 || hrw->GetNbinsX() < 200) {
+	      throw cet::exception("FluxHist")
+		<< "Histogram " << hname
               << " has fewer than 200 bins.\n";
-          }
+	    }
 
-          for (int ib = 0; ib < 200; ++ib) {
-            fCVHist[i][ib] = hcv->GetBinContent(ib + 1);
-            fRWHist[i][ib] = hrw->GetBinContent(ib + 1);
-          }
+	    fCVHist[i][icomp] =
+              dynamic_cast<TH1*>(hcv->Clone(Form("%s_cv_clone", hname.c_str())));
+            fRWHist[i][icomp] =
+              dynamic_cast<TH1*>(hrw->Clone(Form("%s_rw_clone", hname.c_str())));
+
+            if (!fCVHist[i][icomp] || !fRWHist[i][icomp]) {
+              throw cet::exception("FluxHist")
+                << "Failed to clone histogram: " << hname << "\n";
+            }
+
+            fCVHist[i][icomp]->SetDirectory(nullptr);
+            fRWHist[i][icomp]->SetDirectory(nullptr);
+
+	    std::cout << "Loaded histogram: " << hname
+                      << "  CV entries=" << fCVHist[i][icomp]->GetEntries()
+                      << "  RW entries=" << fRWHist[i][icomp]->GetEntries()
+                      << std::endl;
+
+	  }
         }
-
+*/
         fcv.Close();
         frw.Close();
       }
@@ -183,11 +246,11 @@ namespace sbn {
 
         } else{//Other Hadron Calculators
 
-          std::string dataInput       =   pset.get< std::string >("ExternalData");
-          std::string ExternalDataInput = sp.find_file(dataInput);
+	  std::string dataInput       =   pset.get< std::string >("ExternalData");
+	  std::string ExternalDataInput = sp.find_file(dataInput);
           TFile* file = new TFile(Form("%s",ExternalDataInput.c_str()));
 
-          std::vector< std::string > pname; // these are keys to histograms
+	  std::vector< std::string > pname; // these are keys to histograms
           if( CalcType == "PrimaryHadronFeynmanScaling" ){//k+
 
             pname.push_back("FS/KPlus/FSKPlusFitVal");
@@ -209,9 +272,9 @@ namespace sbn {
 
           }else if( CalcType == "PrimaryHadronSWCentralSplineVariation" ){//pi+-
 
-            std::string fitInput = pset.get< std::string >("ExternalFit");
-            std::string HadronName; 
-            std::string HadronAbriviation;
+	    std::string fitInput = pset.get< std::string >("ExternalFit");
+	    std::string HadronName; 
+	    std::string HadronAbriviation;
             if(fprimaryHad[0] == 211){
               HadronName = "PiPlus";
               HadronAbriviation = "PP";
@@ -254,10 +317,10 @@ namespace sbn {
             //
             ////////////////
 
-            std::string ExternalFitInput = sp.find_file(fitInput);
+	    std::string ExternalFitInput = sp.find_file(fitInput);
             TFile* Fitfile = new TFile(Form("%s",ExternalFitInput.c_str()));
 
-            std::string fitname; // these are what we will extract from the file
+	    std::string fitname; // these are what we will extract from the file
             fitname = Form("SW/%s/SW%sFitVal",HadronName.c_str(),HadronName.c_str()); // Sanford-Wang Fit Parameters
 
             TArrayD* SWParamArray = (TArrayD*) Fitfile->Get(fitname.c_str());
@@ -275,21 +338,21 @@ namespace sbn {
   
           }else {
             throw cet::exception(__PRETTY_FUNCTION__) << GetName() << ": "
-              <<" calculator "+CalcType + "is invalid"
-              <<std::endl;
+						      <<" calculator "+CalcType + "is invalid"
+						      <<std::endl;
           }
 
 
         }//end of special Hadron calculator configurations
 
       } else  validC = false; //the calculator name is way too off.
-//      std::cout<<"SBNEventWeight : finish configuration."<<std::endl;
+      //      std::cout<<"SBNEventWeight : finish configuration."<<std::endl;
     }//End of Configure() function
 
 
     std::vector<float> FluxWeightCalc::GetWeight(art::Event& e, size_t inu) {
       bool count_weights = false;
-//      std::cout<<"SBNEventWeight : getweight for the "<<inu<<" th particles of an event"<< std::endl;
+      //      std::cout<<"SBNEventWeight : getweight for the "<<inu<<" th particles of an event"<< std::endl;
       //MCFlux & MCTruth
       art::Handle< std::vector<simb::MCFlux> > mcFluxHandle;
       e.getByLabel(fGeneratorModuleLabel, mcFluxHandle);
@@ -309,12 +372,12 @@ namespace sbn {
       int NUni = fParameterSet.fNuniverses;
       std::vector<float> weights;//( mclist.size(), 0);
       if(fluxlist.size() == 0){ 
-        std::cout<<"SBNEventWeight Flux: EMPTY WEIGHTS"<<std::endl;
+	std::cout<<"SBNEventWeight Flux: EMPTY WEIGHTS"<<std::endl;
         return weights;
       }
 
       //Iterate through each neutrino in the event
-    std::cout<<"SBNEventWeight Flux: Get calculator "<<CalcType<<std::endl;
+      std::cout<<"SBNEventWeight Flux: Get calculator "<<CalcType<<std::endl;
       if( CalcType == "Unisim"){//Unisim Calculator
         weights.resize(NUni);
         //Unisim specific
@@ -343,7 +406,7 @@ namespace sbn {
         }
 
         // Collect neutrino energy; mclist is replaced with fluxlist.
-//        double enu= mclist[inu].GetNeutrino().Nu().E();
+	//        double enu= mclist[inu].GetNeutrino().Nu().E();
         double enu= fluxlist[inu].fnenergyn;
 
         //Let's make a weights based on the calculator you have requested 
@@ -354,23 +417,92 @@ namespace sbn {
             double randomN = (fParameterSet.fParameterMap.begin())->second[i];
             weights[i]=UnisimWeightCalc(enu, ptype, ntype, randomN , PosOnly);//AddParameter result does not work here;
 
-      if(count_weights){
-        if(weights[i]<0){
-          wcn++;
-        }else if((weights[i]-0)<1e-30){
-          wc0++;
-        }else if(fabs(weights[i]-30) < 1e-30){
-          wc30++;
-        } else if(fabs(weights[i]-1)<1e-30){
-          wc1++;
-        } else {
-          wc++;
-        }
-      }
+	    if(count_weights){
+	      if(weights[i]<0){
+		wcn++;
+	      }else if((weights[i]-0)<1e-30){
+		wc0++;
+	      }else if(fabs(weights[i]-30) < 1e-30){
+		wc30++;
+	      } else if(fabs(weights[i]-1)<1e-30){
+		wc1++;
+	      } else {
+		wc++;
+	      }
+	    }
           }//Iterate through the number of universes      
         }
       }
 
+      else if (CalcType == "FluxHist") {
+
+	weights.resize(NUni, 1.0);
+
+	if (inu >= fluxlist.size()) {
+	  throw cet::exception("FluxHist")
+	    << "inu out of range for fluxlist: inu=" << inu
+	    << " fluxlist.size()=" << fluxlist.size() << "\n";
+	}
+
+	if (inu >= mclist.size()) {
+	  throw cet::exception("FluxHist")
+	    << "inu out of range for mclist: inu=" << inu
+	    << " mclist.size()=" << mclist.size() << "\n";
+	}
+
+	int parent_pdg = fluxlist[inu].fptype;
+	int nu_pdg     = fluxlist[inu].fntype;
+
+	double px = mclist[inu].GetNeutrino().Nu().Px();
+	double py = mclist[inu].GetNeutrino().Nu().Py();
+	double pz = mclist[inu].GetNeutrino().Nu().Pz();
+
+	double w = FluxHistWeightCalc(parent_pdg, nu_pdg, px, py, pz);
+
+	for (int i = 0; i < NUni; ++i) {
+	  weights[i] = std::isfinite(w) ? w : 1.0;
+	}
+      }
+
+      /*
+      else if (CalcType == "FluxHist") {
+
+        weights.resize(NUni, 1.0);
+
+        if (inu >= fluxlist.size()) {
+          throw cet::exception("FluxHist")
+            << "inu out of range for fluxlist: inu=" << inu
+            << " fluxlist.size()=" << fluxlist.size() << "\n";
+        }
+
+        if (inu >= mclist.size()) {
+          throw cet::exception("FluxHist")
+            << "inu out of range for mclist: inu=" << inu
+            << " mclist.size()=" << mclist.size() << "\n";
+        }
+
+        int parent_pdg = fluxlist[inu].fptype;
+        int nu_pdg     = fluxlist[inu].fntype;
+
+        int idx = GetFluxHistIndex(parent_pdg, nu_pdg);
+        if (idx < 0 || idx >= 14) {
+          return weights;
+        }
+
+        double px = mclist[inu].GetNeutrino().Nu().Px();
+        double py = mclist[inu].GetNeutrino().Nu().Py();
+        double pz = mclist[inu].GetNeutrino().Nu().Pz();
+
+        double w = FluxHistWeightCalc(parent_pdg, nu_pdg, px, py, pz);
+
+        // Deterministic event-level correction: same value in every universe slot
+        for (int i = 0; i < NUni; ++i) {
+          weights[i] = std::isfinite(w) ? w : 1.0;
+        }
+      }
+
+      */
+      /*
       else if (CalcType == "FluxHist") {
 
 	std::cout << "Entering FluxHist GetWeight for inu = " << inu << std::endl;
@@ -392,9 +524,7 @@ namespace sbn {
         int parent_pdg = fluxlist[inu].fptype;
         int nu_pdg     = fluxlist[inu].fntype;
 
-	/*	std::cout << "  parent PDG = " << parent_pdg
-                  << ", neutrino PDG = " << nu_pdg << std::endl;
-	*/
+
         int idx = GetFluxHistIndex(parent_pdg, nu_pdg);
 
 	//std::cout << "  FluxHist index = " << idx << std::endl;
@@ -436,11 +566,7 @@ namespace sbn {
             double cv = fCVHist[idx][bin];
             double rw = fRWHist[idx][bin];
 
-	    /*	    std::cout << "    universe " << i
-                      << ": cv=" << cv
-                      << " rw=" << rw
-                      << " randomN=" << randomN << std::endl;
-	    */
+
             double w = 1.0;
 
             if (cv > 0.0) {
@@ -457,46 +583,46 @@ namespace sbn {
 	std::cout << "Leaving FluxHist GetWeight" << std::endl;
       }
 
-
+      */
       else{//then this must be PrimaryHadron
 
 
         // First let's check that the parent of the neutrino we are looking for is 
         //  the particle we intended it to be, if not set all weights to 1
 
-      simb::MCFlux flux;
-      flux.ftptype = fluxlist[inu].ftptype;
-      flux.ftpx = fluxlist[inu].ftpx;
-      flux.ftpy = fluxlist[inu].ftpy;
-      flux.ftpz = fluxlist[inu].ftpz;
+	simb::MCFlux flux;
+	flux.ftptype = fluxlist[inu].ftptype;
+	flux.ftpx = fluxlist[inu].ftpx;
+	flux.ftpy = fluxlist[inu].ftpy;
+	flux.ftpz = fluxlist[inu].ftpz;
 
-      // If Dk2Nu flux, use ancestors to evaluate tptype
-      if (fluxlist[inu].fFluxType == simb::kDk2Nu) {
+	// If Dk2Nu flux, use ancestors to evaluate tptype
+	if (fluxlist[inu].fFluxType == simb::kDk2Nu) {
 
-        for( const bsim::Ancestor & ancestor : dk2nu_v->at(inu).ancestor ) {
-          std::string aproc = ancestor.proc;
-          if( (aproc.find("BooNEHadronInelastic:BooNEpBeInteraction") != std::string::npos) && (aproc.find("QEBooNE") == std::string::npos) ) {
-            flux.ftptype = ancestor.pdg;
-            flux.ftpx = ancestor.startpx;
-            flux.ftpy = ancestor.startpy;
-            flux.ftpz = ancestor.startpz;
-          } // found it
-        } // find first inelastic
-      }
+	  for( const bsim::Ancestor & ancestor : dk2nu_v->at(inu).ancestor ) {
+	    std::string aproc = ancestor.proc;
+	    if( (aproc.find("BooNEHadronInelastic:BooNEpBeInteraction") != std::string::npos) && (aproc.find("QEBooNE") == std::string::npos) ) {
+	      flux.ftptype = ancestor.pdg;
+	      flux.ftpx = ancestor.startpx;
+	      flux.ftpy = ancestor.startpy;
+	      flux.ftpz = ancestor.startpz;
+	    } // found it
+	  } // find first inelastic
+	}
 
-      if (std::find(fprimaryHad.begin(), fprimaryHad.end(),(flux.ftptype)) == fprimaryHad.end() ){//if it does not contain any particles we need get 1
+	if (std::find(fprimaryHad.begin(), fprimaryHad.end(),(flux.ftptype)) == fprimaryHad.end() ){//if it does not contain any particles we need get 1
           weights.resize( NUni);
-          std::fill(weights.begin(), weights.end(), 1);
+	  std::fill(weights.begin(), weights.end(), 1);
           return weights;//done, all 1
         }// Hadronic parent check
 
         if(fParameterSet.fRWType == EventWeightParameterSet::kMultiSim){
 
           for (unsigned int i = 0; int(weights.size()) < NUni; i++) {//if all weights are 1, no need to calculate weights;
-            std::pair<bool, double> test_weight;
+	    std::pair<bool, double> test_weight;
 
-            std::vector< float > Vrandom = (fParameterSet.fParameterMap.begin())->second;//vector of random #
-            std::vector< float > subVrandom;//sub-vector of random numbers;
+	    std::vector< float > Vrandom = (fParameterSet.fParameterMap.begin())->second;//vector of random #
+	    std::vector< float > subVrandom;//sub-vector of random numbers;
             if( CalcType == "PrimaryHadronNormalization"){//Normalization
               test_weight = PHNWeightCalc(flux, Vrandom[i]);
 
@@ -516,20 +642,20 @@ namespace sbn {
             if(test_weight.first){  
               weights.push_back(test_weight.second);
               double tmp_weight = test_weight.second;
-//              std::cout<<i<<" ("<<tmp_weight<<") ";
-        if(count_weights){
-          if(tmp_weight<0){
-            wcn++;
-          }else if((tmp_weight-0)<1e-30){
-            wc0++;
-          }else if(fabs(tmp_weight-30) < 1e-30){
-            wc30++;
-          } else if(fabs(tmp_weight-1)<1e-30){
-            wc1++;
-          } else {
-            wc++;
-          }
-        }
+	      //              std::cout<<i<<" ("<<tmp_weight<<") ";
+	      if(count_weights){
+		if(tmp_weight<0){
+		  wcn++;
+		}else if((tmp_weight-0)<1e-30){
+		  wc0++;
+		}else if(fabs(tmp_weight-30) < 1e-30){
+		  wc30++;
+		} else if(fabs(tmp_weight-1)<1e-30){
+		  wc1++;
+		} else {
+		  wc++;
+		}
+	      }
 
             };
 
@@ -538,8 +664,8 @@ namespace sbn {
       }
 
       if(count_weights){
-        std::cout<<"SBNEventWeight Flux: Weights counter: (normal, <0, ==0, 1, 30)= ";
-        std::cout<<wc<<", "<<wcn<<", "<<wc0<<", "<<wc1<<", "<<wc30<<std::endl;
+	std::cout<<"SBNEventWeight Flux: Weights counter: (normal, <0, ==0, 1, 30)= ";
+	std::cout<<wc<<", "<<wcn<<", "<<wc0<<", "<<wc1<<", "<<wc30<<std::endl;
       }
 //      std::cout<<"Next partile/event\n"<<std::endl;
 
@@ -554,7 +680,133 @@ namespace sbn {
       return v;
     } // ConvertToVector()
 
+    double FluxWeightCalc::FluxHistWeightCalc(int parent_pdg, int nu_pdg,
+					      double px, double py, double pz)
+    {
+      static int debug_counter = 0;
+
+      int idx = GetFluxHistIndex(parent_pdg, nu_pdg);
+      if (idx < 0) return 1.0;
+
+      TH3D* hcv = fCVHist3D[idx];
+      TH3D* hrw = fRWHist3D[idx];
+
+      if (!hcv || !hrw) return 1.0;
+
+      int binx = hcv->GetXaxis()->FindBin(px);
+      int biny = hcv->GetYaxis()->FindBin(py);
+      int binz = hcv->GetZaxis()->FindBin(pz);
+
+      if (binx < 1) binx = 1;
+      if (binx > hcv->GetNbinsX()) binx = hcv->GetNbinsX();
+
+      if (biny < 1) biny = 1;
+      if (biny > hcv->GetNbinsY()) biny = hcv->GetNbinsY();
+
+      if (binz < 1) binz = 1;
+      if (binz > hcv->GetNbinsZ()) binz = hcv->GetNbinsZ();
+
+      double cv = hcv->GetBinContent(binx, biny, binz);
+      double rw = hrw->GetBinContent(binx, biny, binz);
+
+      double weight = 1.0;
+
+      if (cv > 0.0) {
+	weight = rw / cv;
+	if (!std::isfinite(weight) || weight <= 0.0) {
+	  weight = 1.0;
+	}
+      }
+
+      if (debug_counter < 20) {
+	std::cout << "\n[FluxHist 3D DEBUG]"
+		  << " parent=" << parent_pdg
+		  << " nu=" << nu_pdg
+		  << "\n  px=" << px << " binx=" << binx
+		  << "\n  py=" << py << " biny=" << biny
+		  << "\n  pz=" << pz << " binz=" << binz
+		  << "\n  CV=" << cv
+		  << "\n  RW=" << rw
+		  << "\n  weight=" << weight
+		  << std::endl;
+      }
+
+      debug_counter++;
+
+      return std::isfinite(weight) ? weight : 1.0;
+    }
+    /*
+    double FluxWeightCalc::FluxHistWeightCalc(int parent_pdg, int nu_pdg,
+                                              double px, double py, double pz)
+    {
+      static int debug_counter = 0;
+
+      int idx = GetFluxHistIndex(parent_pdg, nu_pdg);
+      if (idx < 0) return 1.0;
+
+      double comps[3] = {px, py, pz};
+      const char* compNames[3] = {"px", "py", "pz"};
+
+      double log_sum = 0.0;
+      int n_used = 0;
+
+      if (debug_counter < 20) {
+	std::cout << "\n[FluxHist DEBUG] Event " << debug_counter
+                  << " parent=" << parent_pdg
+                  << " nu=" << nu_pdg << std::endl;
+      }
+
+      for (int icomp = 0; icomp < 3; ++icomp) {
+        TH1* hcv = fCVHist[idx][icomp];
+        TH1* hrw = fRWHist[idx][icomp];
+
+        if (!hcv || !hrw) continue;
+
+        double val = comps[icomp];
+        int bin = hcv->GetXaxis()->FindBin(val);
+
+        if (bin < 1) bin = 1;
+        if (bin > hcv->GetNbinsX()) bin = hcv->GetNbinsX();
+
+        double cv = hcv->GetBinContent(bin);
+        double rw = hrw->GetBinContent(bin);
+
+        double ratio = 1.0;
+
+        if (cv > 0.0) {
+          ratio = rw / cv;
+          if (!std::isfinite(ratio) || ratio <= 0.0) ratio = 1.0;
+        }
+
+
+        log_sum += std::log(ratio);
+        n_used++;
+
+        if (debug_counter < 20) {
+	  std::cout << "  " << compNames[icomp]
+                    << " = " << val
+                    << "  bin=" << bin
+                    << "  CV=" << cv
+                    << "  RW=" << rw
+                    << "  ratio=" << ratio
+                    << std::endl;
+        }
+      }
+
+      if (n_used == 0) return 1.0;
+
+      double weight = std::exp(log_sum / n_used);
+
+      if (debug_counter < 20) {
+	std::cout << "  --> FINAL WEIGHT = " << weight << std::endl;
+      }
+
+      debug_counter++;
+
+      return std::isfinite(weight) ? weight : 1.0;
+    }
+    */
+
     REGISTER_WEIGHTCALC(FluxWeightCalc)
   }  // namespace evwgh
 }  // namespace sbn
-
