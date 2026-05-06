@@ -55,7 +55,7 @@ namespace caf
 
     double diff_ts = std::numeric_limits<double>::max();
 
-    if ((triggerInfo.global_trigger_time != std::numeric_limits<uint64_t>::max()) & (triggerInfo.beam_gate_time_abs != std::numeric_limits<uint64_t>::max())){
+    if ((triggerInfo.global_trigger_time != std::numeric_limits<uint64_t>::max()) && (triggerInfo.beam_gate_time_abs != std::numeric_limits<uint64_t>::max())){
 
       if (triggerInfo.global_trigger_time > triggerInfo.beam_gate_time_abs){
         diff_ts = triggerInfo.global_trigger_time - triggerInfo.beam_gate_time_abs;
