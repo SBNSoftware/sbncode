@@ -61,7 +61,7 @@ namespace caf
         diff_ts = triggerInfo.global_trigger_time - triggerInfo.beam_gate_time_abs;
       }
       else{
-        diff_ts = (triggerInfo.beam_gate_time_abs - triggerInfo.global_trigger_time)*(double)-1;
+        diff_ts = -1.0 * (triggerInfo.beam_gate_time_abs - triggerInfo.global_trigger_time);
       }
     }
     triggerInfo.trigger_within_gate = diff_ts;
