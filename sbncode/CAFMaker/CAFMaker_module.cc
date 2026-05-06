@@ -2655,12 +2655,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   {
     // Fill trigger info
     FillTriggerSBND(srsbndtiminginfo, srtrigger);
-
-    //// Legacy code: Timing correction is now done at decoding/reconstruction level
-    ////shift reference frame for CRT objects: crt trk, crt sp, crt sp match, crt trk match
-    //SBNDShiftCRTReference(rec, rec.sbnd_frames.frameApplyAtCaf);
-    ////shift reference frame for PMT objects: opflash, opt0
-    //SBNDShiftPMTReference(rec, rec.sbnd_frames.frameApplyAtCaf);
   }
 
   // Get metadata information for header
