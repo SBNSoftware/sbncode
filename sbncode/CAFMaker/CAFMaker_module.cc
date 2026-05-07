@@ -19,6 +19,7 @@
 #include "sbncode/CAFMaker/FillReco.h"
 #include "sbncode/CAFMaker/FillExposure.h"
 #include "sbncode/CAFMaker/FillTrigger.h"
+#include "sbncode/CAFMaker/SRDefaults.h"
 #include "sbncode/CAFMaker/Utils.h"
 
 // C/C++ includes
@@ -554,19 +555,25 @@ void CAFMaker::SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame) cons
 }
 
 void CAFMaker::FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_time) {
+  
   // Fix the flashes
   for (SROpFlash &f: rec.opflashes) {
     f.time += PMT_reference_time;
     f.timemean += PMT_reference_time;
     f.firsttime += PMT_reference_time;
   }
-
+  
   // Fix the flash matches
   for (SRSlice &s: rec.slc) {
-    s.fmatch.time += PMT_reference_time;
+    if (s.fmatch.time != SRDefaults::For(s.fmatch).time)
+      s.fmatch.time += PMT_reference_time;
 
-    s.barycenterFM.flashTime +=PMT_reference_time;
-    s.barycenterFM.flashFirstHit +=PMT_reference_time;
+    if (s.barycenterFM.flashTime != SRDefaults::For(s.barycenterFM).flashTime)
+      s.barycenterFM.flashTime += PMT_reference_time;
+    
+    if (s.barycenterFM.flashFirstHit != SRDefaults::For(s.barycenterFM).flashFirstHit)
+      s.barycenterFM.flashFirstHit += PMT_reference_time;
+    
   }
 
   // TODO: fix more?
