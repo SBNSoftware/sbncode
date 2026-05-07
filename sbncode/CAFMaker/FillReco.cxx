@@ -1002,6 +1002,7 @@ namespace caf
         FillPlaneLikePID(particle_id, srtrack.likepid[plane_id]);
       }
     }
+  }
   
     // Helper function: get the e field
   double GetEfield(const detinfo::DetectorPropertiesData& dprop, spacecharge::SpaceCharge const& sce, const geo::Point_t& loc) {
