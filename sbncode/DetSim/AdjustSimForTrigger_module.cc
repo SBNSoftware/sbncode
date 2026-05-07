@@ -75,10 +75,15 @@
  * for configuring services like `DetectorClocksServiceStandard` for the
  * following stages of the workflow.
  * 
- * If the reference time is not valid, no shift is performed at all.
+ * If the reference time is not valid, the applied shift is `0`.
  * A reference time is valid if it is neither the maximum nor the minimum value
  * of a double (`std::numeric_limits<double>::max()` and
  * `std::numeric_limits<double>::min()`).
+ * 
+ * @note This module does not provide indication on whether a shift was
+ *       performed or not. The only way to know is to check the reference time
+ *       input used and verify whether it's considered valid by this module
+ *       according to the logic described above.
  * 
  * 
  * ### Optional shift
@@ -93,6 +98,22 @@
  * parameter.
  * If the new reference time is invalid, no shift is applied and this offset is
  * also ignored.
+ * 
+ * 
+ * ### Multiple shifts on the same event
+ * 
+ * In general, using as input a sample that has already undergone a previous
+ * shift is surprisingly robust: as long as the input is all consistently
+ * shifted, offsets and delays that were already applied are not re-applied
+ * (this was explicitly verified on `sim::SimPhotons`).
+ * However, shifting is not "undone": if an input event was shifted and now the
+ * new proposed time reference is invalid, the event will be applied no
+ * additional shift, leaving it to the time reference after the first shift.
+ * 
+ * The chances of the old time reference being completely invalidated depend on
+ * how the changes intervened between the first and the second shift.
+ * The module _could_ be adapted to attempt a shifting reversal, if provided
+ * with the necessary additional information on the first shift.
  * 
  * 
  * Input
@@ -116,21 +137,35 @@
  * product is produced, with elements in the same order as in the original
  * collections. Normally, no associations are ported on.
  * 
- * * `std::vector<raw::Trigger>`: a collection of shifted triggers is produced;
- *   the first one is the shifted version of the reference trigger, which can
- *   then be used as new trigger data product e.g. for
- *   `DetectorClocksServiceStandard`. If the reference trigger time is not
- *   valid, the trigger time will be overwritten: the trigger time will be set
- *   to the value from `DetectorClocksService`, and the beam gate time will
- *   be the same as the input trigger object. This collection is produced by
- *   default, but it can be disabled via `DropTriggerProduct` configuration
- *   parameter.
- * * `std::vector<sim::BeamGateInfo>`: the beam gate used by the event
- *   generator, shifted. Generator times and particles from the detector
- *   simulation (GEANT4) are not shifted, but pretty much everything else is,
- *   including scintillation photons and energy depositions. Depending on which
- *   aspect of the simulation is being investigated, either the unshifted
- *   (input) or shifted (output of this module) gate needs to be used.
+ * * `std::vector<sim::AuxDetSimChannel>` (if `ShiftAuxDetIDEs` is set):
+ *   all `sim::AuxDetIDE` entry and exit times are shifted. Order of channels
+ *   and IDE is preserved.
+ * * `std::vector<sim::SimEnergyDeposit>` (if `ShiftSimEnergyDeposits` is set):
+ *   all `sim::SimEnergyDeposit` entry and exit times are shifted.
+ *   Order of deposits is preserved.
+ * * `std::vector<sim::SimEnergyDepositLite>` (if `ShiftSimEnergyDepositLites`
+ *   is set): all `sim::SimEnergyDepositLite` entry and exit times are shifted.
+ *   Order of deposits is preserved.
+ * * `std::vector<sim::SimPhotons>` (if `ShiftSimPhotons` is set):
+ *   all `sim::SimPhotons` times in all channels are shifted.
+ *   Order of channels and photons is preserved.
+ * * `std::vector<raw::Trigger>` (unless `DropTriggerProduct` is set):
+ *   a collection of shifted triggers is produced; the first one is the shifted
+ *   version of the reference trigger, which can then be used as new trigger
+ *   data product e.g. for `DetectorClocksServiceStandard`. If the reference
+ *   trigger time is not valid, the trigger time will be overwritten: the
+ *   trigger time will be set to the value from `DetectorClocksService`, and the
+ *   beam gate time will be the same as the input trigger object.
+ * * `std::vector<sim::BeamGateInfo>` (if `ShiftBeamGateInfo` is set):
+ *   the beam gate used by the event generator, shifted. Generator times and
+ *   particles from the detector simulation (GEANT4) are not shifted, but pretty
+ *   much everything else may be, including scintillation photons and energy
+ *   depositions. Depending on which aspect of the simulation is being
+ *   investigated, either the unshifted (input) or shifted (output of this
+ *   module) gate needs to be used.
+ * * `std::vector<raw::OpDetWaveform>` (if `ShiftWaveforms` is set): the input
+ *   PMT waveforms, from which presumably the new trigger was extracted, are
+ *   shifted by simply modifying their timestamps.
  * * `art::Assns<raw::OpDetWaveform, icarus::WaveformBaseline>`: enabled only
  *   if the optical waveforms are being shifted _and_ an association data
  *   product name is specified (`BindWaveformBaselines`), it rebinds the
