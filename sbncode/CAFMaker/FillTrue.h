@@ -128,12 +128,6 @@ namespace caf
                     CLHEP::HepRandomEngine &rand,
                     std::vector<caf::SRFakeReco> &srfakereco);
 
-<<<<<<< HEAD
-  std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels, const geo::WireReadoutGeom &wireReadout);
-  std::map<int, std::vector<art::Ptr<recob::Hit>>> PrepTrueHits(const std::vector<art::Ptr<recob::Hit>> &allHits,
-    const detinfo::DetectorClocksData &clockData, const cheat::BackTrackerService &backtracker);
-=======
->>>>>>> 46e144f5 (Refactor CAF helper functions utilized in CaloSkimmer into RecoUtils.)
   std::map<int, caf::HitsEnergy> SetupIDHitEnergyMap(const std::vector<art::Ptr<recob::Hit>> &allHits, const detinfo::DetectorClocksData &clockData,
     const cheat::BackTrackerService &backtracker);
 
