@@ -185,12 +185,12 @@ bool NCRadiativeResonant::filter(art::Event & e) {
       //CHEKC hardcode, TPC filter:
       if(abs(mcp.Vx())>210 ||  abs(mcp.Vy())>210||mcp.Vz()>510 || mcp.Vz()<-1){
       std::cout<<"OUTSIDE TPC x y z ="<<mcp.Vx()<<" "<<mcp.Vy()<<" "<<mcp.Vz()<<std::endl;
-      exit(0);
+      return false;
       }
 
       if(mcp.TrackId() != jth) {
         std::cout << "ERROR: " << __LINE__ << " " << __PRETTY_FUNCTION__ << "\nTrackId does not match index\n";
-        exit(1);
+        return false;
       }
       if(!(mcp.StatusCode() == 1 && mcp.PdgCode() == 22)) continue;//next, if this is not a photon with StatusCode 1
       exiting_photon_parents.push_back(mcp.Mother());//collect photon's parents
