@@ -21,7 +21,11 @@ std::vector<recob::Hit> sys::WaireMLod::produceNew(const std::vector<art::Ptr<re
   // direction in X,Y,Z;
   // direction in Y,Z relative to the plane;
   // Channel; ThetaXW; & dQ/dx
-  std::array<float, N_FEATURES> hit_features;
+  //
+  // Caller-facing array is N_RAW = 11 primitives. The 15-feature network
+  // input (sin/cos θXW, sin/cos 2θ_plane, block_is_odd) is built inside
+  // WaireMLod::infer via derive_features.
+  std::array<float, sys::N_RAW> hit_features;
   auto& [hitX, hitY, hitZ, hitDirX, hitDirY, hitDirZ, hitDirYRel, hitDirZRel, hitChan, hitTheta, hitdQdx]
     = hit_features; // alias for convenience
   for (const auto& old_hit : old_hits)
@@ -51,6 +55,9 @@ std::vector<recob::Hit> sys::WaireMLod::produceNew(const std::vector<art::Ptr<re
     }
     const simb::MCTrajectory trajectory = particles->TrackIdToParticle_P(particleID)->Trajectory();
     float hitTrajMinDistSq = std::numeric_limits<float>::max();
+    hitDirX = std::numeric_limits<float>::min();
+    hitDirY = std::numeric_limits<float>::min();
+    hitDirZ = std::numeric_limits<float>::min();
     for (auto const& tp : trajectory)
     {
       float hitTrajDistSq = std::pow(tp.first.X() - hitX, 2)
@@ -64,6 +71,13 @@ std::vector<recob::Hit> sys::WaireMLod::produceNew(const std::vector<art::Ptr<re
         hitDirZ = tp.second.Pz() / tp.second.Vect().Mag();
       }
     }
+    if (hitDirX == std::numeric_limits<float>::min() ||
+        hitDirY == std::numeric_limits<float>::min() ||
+        hitDirZ == std::numeric_limits<float>::min() )
+      {
+        new_hits.push_back(*old_hit);
+        continue;
+      }
 
     // Now that the hit is known to be back trackable, we can start getting things
     hitChan = old_hit->Channel();
@@ -72,13 +86,19 @@ std::vector<recob::Hit> sys::WaireMLod::produceNew(const std::vector<art::Ptr<re
     // and get the ThetaXW
     geo::View_t hitView = old_hit->View();
     geo::TPCID hitTPC = old_hit->WireID(); // WireID inherits from TPCID
-    float planeTh = wire_geom->WireAngleToVertical(hitView, hitTPC) - 0.5*M_PI;
+    float planeTh = wire_geom->WireAngleToVertical(hitView, hitTPC); // Gets plane.ThetaZ() in [0, pi]
+    planeTh = (planeTh < M_PI/2) ? planeTh : planeTh - M_PI;         // Want [-pi/2, pi/2]
+    if (std::min({std::abs(planeTh - PLANE_THETA_1),
+                  std::abs(planeTh - PLANE_THETA_2),
+                  std::abs(planeTh - PLANE_THETA_3)}) > 1e-5f)
+      throw std::runtime_error("Plane Angle Mismatch! Got "+std::to_string(planeTh)+" for view "+std::to_string(hitView));
     float sinTh = std::sin(planeTh);
     float cosTh = std::cos(planeTh);
     hitDirYRel = hitDirY * cosTh - hitDirZ * sinTh;
     hitDirZRel = hitDirY * sinTh + hitDirZ * cosTh;
-    hitTheta = std::atan(hitDirX / hitDirZ);
-    hitTheta *= 180.0/M_PI; // model expects degrees /not/ radians
+    float vertTh = wire_geom->WireAngleToVertical(hitView, hitTPC) - M_PI;
+    float cosG = std::abs(hitDirY * std::sin(vertTh) + hitDirZ * std::cos(vertTh));
+    hitTheta = std::atan(hitDirX / cosG) / DEG2RAD; // model expects degrees /not/ radians
     float pitch = wire_geom->Plane(hitTPC, hitView).WirePitch() / std::abs(hitDirZRel);
     hitdQdx = old_hit->Integral() / pitch;
 
@@ -91,30 +111,6 @@ std::vector<recob::Hit> sys::WaireMLod::produceNew(const std::vector<art::Ptr<re
       continue;
     }
     WMHit new_hit(*old_hit, integral / old_hit->Integral(), width / old_hit->RMS()); 
-    //float amplitude = integral / (width * SQRT2PI);
-    //float sigma_amplitude = old_hit->SigmaPeakAmplitude() * amplitude / old_hit->PeakAmplitude();
-    //float ROISumADC = old_hit->ROISummedADC() * old_hit->Integral() / integral;
-    //float HitSumADC = old_hit->HitSummedADC() * old_hit->Integral() / integral;
-    //float sigma_integral = old_hit->SigmaIntegral() * integral / old_hit->Integral();
-    //recob::Hit new_hit(hitChan,                     // Hit channel unchanged
-    //                   old_hit->StartTick(),        // Keep timing info the same
-    //                   old_hit->EndTick(),          // Keep timing info the same
-    //                   old_hit->PeakTime(),         // Keep timing info the same
-    //                   old_hit->SigmaPeakTime(),    // Keep timing info the same
-    //                   width,                       // *** The New Width ***
-    //                   amplitude,                   // *** The New Amplitude ***
-    //                   sigma_amplitude,             // *** Scaled Amplitude Sigma ***
-    //                   ROISumADC,                   // *** Scaled ROI ADC Sum ***
-    //                   HitSumADC,                   // *** Scaled Hit ADC Sum ***
-    //                   integral,                    // *** The New Integral ***
-    //                   sigma_integral,              // *** Scaled Integral Sigma ***
-    //                   old_hit->Multiplicity(),     // Keep multiplicity
-    //                   old_hit->LocalIndex(),       // Keep local index
-    //                   old_hit->GoodnessOfFit(),    // Keep goodness of fit
-    //                   old_hit->DegreesOfFreedom(), // Keep dof
-    //                   hitView,                     // Keep view
-    //                   old_hit->SignalType(),       // Keep signal type
-    //                   old_hit->WireID());          // Keep wire ID
     new_hits.push_back(static_cast<recob::Hit>(new_hit));
   }
 
