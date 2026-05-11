@@ -139,10 +139,6 @@ namespace hit {
     , fPulseRatioCuts(
         pset.get<std::vector<float>>("PulseRatioCuts", std::vector<float>() = {0.35, 0.40, 0.20}))
   {
-    // std::cout << "fChi2NDF=[" << std::flush;
-    // for (auto const& i: fChi2NDF)
-    //   std::cout << i << "," << std::flush;
-    // std::cout << "]" << std::endl;
     if (fFillHists && art::Globals::instance()->nthreads() > 1u) {
       throw art::Exception(art::errors::Configuration)
         << "Cannot fill histograms when multiple threads configured, please set fFillHists to "
@@ -327,12 +323,6 @@ namespace hit {
         // ### Set up to loop over ROI's for this wire   ###
         // #################################################
         const recob::ChannelROI::RegionsOfInterest_f signalROI = channelROI->SignalROIF();
-        // if (channel == 42377) 
-        // {
-        //   std::cout << "[DEBUG Mattia] This is CH:" << channel << ", and there are signalROI.n_ranges " 
-        //             << signalROI.n_ranges()
-        //             << std::endl;
-        // }
 
         tbb::parallel_for(
           static_cast<std::size_t>(0),
@@ -374,13 +364,6 @@ namespace hit {
               // === Setting The Number Of Gaussians to try ===
               int nGausForFit = mergedCands.size();
 
-              // if (channel == 42377) 
-              // {
-              //   std::cout << "[DEBUG Mattia] This is CH:"<< channel << ", the size of mergedCands is " 
-              //             << mergedCands.size() << " for this merged group of hit candidates" 
-              //             << std::endl;
-              // }
-
               // ##################################################
               // ### Calling the function for fitting Gaussians ###
               // ##################################################
@@ -400,6 +383,12 @@ namespace hit {
 
                 // If the chi2 is infinite then there is a real problem so we bail
                 if (!(chi2PerNDF < std::numeric_limits<double>::infinity())) {
+                  chi2PerNDF = 2. * fChi2NDF.at(plane);
+                  NDF = 2;
+                }
+
+                // If the chi2 is also low (low-er than -inf) we bail
+                if (!(chi2PerNDF > -std::numeric_limits<double>::infinity())) {
                   chi2PerNDF = 2. * fChi2NDF.at(plane);
                   NDF = 2;
                 }
@@ -475,20 +464,11 @@ namespace hit {
               float newright(0);
               float newleft(0);
 
-              // if (channel == 42377) 
-              // {
-              //   std::cout << "[DEBUG Mattia] This is CH:42377, the size of the fitted peaks is " 
-              //             << peakParamsVec.size() << " for this merged group of hit candidates" 
-              //             << std::endl;
-              // }
-
               for (const auto& peakParams : peakParamsVec) {
                 // Extract values for this hit
                 float peakAmp = peakParams.peakAmplitude;
                 float peakMean = peakParams.peakCenter;
                 float peakWidth = peakParams.peakSigma;
-
-                //std::cout<<" ans hits "<<numHits<<" gaus "<<nGausForFit<<std::endl;
 
                 //ANS get prev and next
                 if (numHits == 0) {
@@ -502,12 +482,10 @@ namespace hit {
                 if (numHits < nGausForFit - 1) {
                   nextpeak = (peakParamsVec.at(numHits + 1)).peakCenter;
                   nextpeakSig = (peakParamsVec.at(numHits + 1)).peakSigma;
-                  //std::cout<<" ans size "<<peakParamsVec.size()<<" hit "<<numHits<<" next peak "<<nextpeak<<" sig "<<nextpeakSig<<std::endl;
                 }
                 if (numHits > 0) {
                   prevpeak = (peakParamsVec.at(numHits - 1)).peakCenter;
                   prevpeakSig = (peakParamsVec.at(numHits - 1)).peakSigma;
-                  //std::cout<<" ans size "<<peakParamsVec.size()<<"hit "<<numHits<<" prev peak "<<prevpeak<<" sig "<<prevpeakSig<<std::endl;
                 }
 
                 // Place one bit of protection here
@@ -516,6 +494,10 @@ namespace hit {
                             << ", start tick: " << startT << std::endl;
                   continue;
                 }
+
+                // Another protection: if peak is outside of the range, 
+                // we skip this hit: this should however be avoided before... see LL407-411
+                if ((peakMean < startT) || (peakMean >= endT)) continue;
 
                 // Extract errors
                 float peakAmpErr = peakParams.peakAmplitudeError;
@@ -567,6 +549,9 @@ namespace hit {
                 if (HitsumStartItr < sumStartItr) HitsumStartItr = sumStartItr;
 
                 if (HitsumEndItr > sumEndItr) HitsumEndItr = sumEndItr;
+
+                // This prevents L577 and L579 to make any possible boundaty flip
+                if (HitsumStartItr > HitsumEndItr) continue;
 
                 // ### Sum of ADC counts
                 float ROIsumADC = std::accumulate(sumStartItr, sumEndItr, 0.);
@@ -669,47 +654,15 @@ namespace hit {
 //
                 if (fFillHists) fChi2->Fill(chi2PerNDF);
               }
+            } //< End loop over merged candidate hits
+          }   //< End looping over ROI's
+        );    //< End tbb::parallel_for(ROI)
+      }       //< End looping over all the wires
+    );        //< End tbb::parallel_for(channelROI)
 
-              // if (channel == 42377) 
-              // {
-              //   std::cout << "[DEBUG Mattia] This is CH:" << channel << ", after the hit creation the size of the allHitCol is "
-              //             << allHitCol.size() << " for this merged group of hit candidates"
-              //             << std::endl;
-              // }
-
-            } //<---End loop over merged candidate hits
-          }   //<---End looping over ROI's
-        );    //end tbb parallel for
-      }       //<---End looping over all the wires
-    );        //end tbb parallel for
-
-    // int nHitsInCh{0};
-    // bool thisChannel{false};
-    // std::string planeIndices = "";
     for (size_t i = 0; i < hitstruct_vec.size(); i++) {
-    //   if (hitstruct_vec[i].hit_tbb.Channel() == 42377) 
-    //   {
-    //     thisChannel = true;
-    //     nHitsInCh++;
-    //     planeIndices = Form("%s%d/%d/%d, ", 
-    //       planeIndices.c_str(), 
-    //       hitstruct_vec[i].hit_tbb.WireID().getIndex<2>(), 
-    //       hitstruct_vec[i].hit_tbb.WireID().getIndex<1>(), 
-    //       hitstruct_vec[i].hit_tbb.WireID().getIndex<0>());
-    //   }
       allHitCol.emplace_back(hitstruct_vec[i].hit_tbb, hitstruct_vec[i].channelROI_tbb);
     }
-
-    // if (thisChannel)
-    // {
-    //   std::cout << "[DEBUG Mattia] This is CH:" << 42377 << ", after the hit creation the size of the allHitCol is "
-    //                         << allHitCol.size() << " and hitstruct_vec is "
-    //                         << hitstruct_vec.size() << ", hits in the channel are " 
-    //                         << nHitsInCh << " with planes/tpc/cryo "
-    //                         << planeIndices << " (ind1=0, ind2=1, coll=2)"
-    //                         << std::endl;
-    //   thisChannel = false;
-    // }
 
     for (size_t j = 0; j < filthitstruct_vec.size(); j++) {
       filteredHitCol->emplace_back(filthitstruct_vec[j].hit_tbb, filthitstruct_vec[j].channelROI_tbb);
