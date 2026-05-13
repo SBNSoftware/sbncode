@@ -6,6 +6,7 @@ set(	MODULE_LIBRARIES
 		lardataobj::RawData
 		lardataobj::Simulation
 		sbnobj::ICARUS_PMT_Data
+		sbnobj::Common_Trigger
 		)
 
 cet_build_plugin(AdjustSimForTrigger art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
