@@ -24,6 +24,7 @@
 #include "lardataobj/Simulation/SimEnergyDepositLite.h"
 #include "lardataobj/Simulation/SimPhotons.h"
 #include "sbnobj/ICARUS/PMT/Data/WaveformBaseline.h"
+#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "sbncode/Utilities/AssnsUtils.h" // sbn::RebindAssociatedProducts()
@@ -156,6 +157,9 @@
  *   trigger time is not valid, the trigger time will be overwritten: the
  *   trigger time will be set to the value from `DetectorClocksService`, and the
  *   beam gate time will be the same as the input trigger object.
+ * * `sbn::ExtraTriggerInfo` (if `SkipExtraTriggerInfo` is not set): the
+ *   input data product is duplicated in output. The only time information in
+ *   the object, absolute timestamps, is currently not shifted.
  * * `std::vector<sim::BeamGateInfo>` (if `ShiftBeamGateInfo` is set):
  *   the beam gate used by the event generator, shifted. Generator times and
  *   particles from the detector simulation (GEANT4) are not shifted, but pretty
@@ -215,6 +219,9 @@
  *   microseconds to be added to the new reference trigger.
  * * `DropTriggerProduct` (flag, default: `false`): if set, no shifted trigger
  *   data product will be produced.
+ * * `SkipExtraTriggerInfo` (flag: default: `false`): if set, the data product
+ *   `sbn::ExtraTriggerInfo` (with the `InputTriggerLabel` tag) is not copied
+ *   and put into the event. Otherwise, it is required to be present.
  * 
  */
 class AdjustSimForTrigger : public art::EDProducer {
@@ -249,6 +256,7 @@ private:
   art::InputTag fBindWaveformBaselines; ///< Tag of OpDetWaveform-baseline associations to be rebound.
   double fAdditionalOffset;
   bool fDropTriggerProduct; ///< Do not put the shifted trigger data product into the event.
+  bool fSkipExtraTriggerInfo; ///< Copy input `sbn::ExtraTriggerInfo`.
   static constexpr auto& kModuleName = "AdjustSimForTrigger";
 };
 
@@ -270,6 +278,7 @@ AdjustSimForTrigger::AdjustSimForTrigger(fhicl::ParameterSet const& p)
   , fBindWaveformBaselines{p.get<art::InputTag>("BindWaveformBaselines", "")}
   , fAdditionalOffset{p.get<double>("AdditionalOffset", 0.)}
   , fDropTriggerProduct{p.get<bool>("DropTriggerProduct", false)}
+  , fSkipExtraTriggerInfo{p.get<bool>("SkipExtraTriggerInfo", false)}
 {
   if (!(fShiftSimEnergyDeposits || fShiftSimPhotons || fShiftWaveforms || fShiftAuxDetIDEs ||
         fShiftBeamGateInfo || fShiftSimEnergyDepositLites)) {
@@ -286,7 +295,10 @@ AdjustSimForTrigger::AdjustSimForTrigger(fhicl::ParameterSet const& p)
                            << "   ASSNS OPDETWAVEFORM-BASELINES? " << doWaveformBaselines
                            << (doWaveformBaselines? (" ('" + fBindWaveformBaselines.encode() + ")"): "");
 
-  if (!fDropTriggerProduct) produces<std::vector<raw::Trigger>>();
+  if (!fDropTriggerProduct) {
+    produces<std::vector<raw::Trigger>>();
+    produces<sbn::ExtraTriggerInfo>();
+  }
   if (fShiftAuxDetIDEs) { produces<std::vector<sim::AuxDetSimChannel>>(); }
   if (fShiftBeamGateInfo) { produces<std::vector<sim::BeamGateInfo>>(); }
   if (fShiftSimEnergyDeposits) { produces<std::vector<sim::SimEnergyDeposit>>(); }
@@ -346,6 +358,13 @@ void AdjustSimForTrigger::produce(art::Event& e)
         );
     } // for all triggers
     e.put(std::move(pShiftedTriggers));
+    
+    if (!fSkipExtraTriggerInfo) {
+      auto extraTrigger = e.getProduct<sbn::ExtraTriggerInfo>(fInputTriggerLabel);
+      // no shift performed at this time
+      e.put(std::make_unique<sbn::ExtraTriggerInfo>(std::move(extraTrigger)));
+    }
+    
   } // if produce shifted trigger
 
   // Loop over the sim::AuxDetIDE and shift time BACK by the TRIGGER
