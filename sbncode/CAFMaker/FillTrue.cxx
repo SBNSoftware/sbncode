@@ -599,7 +599,7 @@ namespace caf {
       }
 
       // Set the cryostat of the position
-      for (int icryo = 0; icryo < 2; icryo++) {
+      for (int icryo = 0; icryo < (int)active_volumes.size(); icryo++) {
         if (active_volumes[icryo].ContainsPosition(nu.Nu().Position().Vect())) {
           srneutrino.cryostat = icryo;
           break;

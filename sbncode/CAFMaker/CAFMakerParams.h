@@ -483,6 +483,12 @@ namespace caf
       "simdrift"
     };
 
+    Atom<art::InputTag> SimEnergyDepositLabel {
+      Name("SimEnergyDepositLabel"),
+      Comment("Label of input sim::SimEnergyDeposit objects."),
+      art::InputTag("ionandscint", "priorSCE","G4")
+    };
+
     Atom<bool> FillTrueParticles {
       Name("FillTrueParticles"),
       Comment("Whether to fill the rec.true_particles branch. The information on true particles"
@@ -634,7 +640,18 @@ namespace caf
       Comment("Label of CVN scores."),
       "cvn" 
     };
+
+    Atom<string> LightCaloLabel {
+      Name("LightCaloLabel"),
+      Comment("Label of light calorimetry producer"),
+      "lightcalo"
+    };
     
+    Atom<std::string> fBlipTag { 
+      Name("BlipTag"),
+      Comment("Provide a string to label the blip input"), 
+      "blipreco"
+    };
   };
 }
 

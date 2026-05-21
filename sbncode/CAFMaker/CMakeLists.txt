@@ -25,6 +25,7 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   caf_RecoUtils
                   lardataobj::AnalysisBase
                   lardataobj::RecoBase
+                  lardataobj::Simulation
                   larrecodnn::CVN_func
                   larcorealg::Geometry
                   larcore::Geometry_Geometry_service
@@ -39,6 +40,7 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   sbnobj::Common_Trigger
                   sbnobj::SBND_CRT
                   sbnobj::SBND_Timing
+                  sbnobj::SBND_Blip
                   lardataalg::DetectorInfo
                   art::Framework_Services_System_TriggerNamesService_service
                   sbncode_Metadata_MetadataSBN_service
@@ -50,6 +52,7 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   ${GENIE_LIB_LIST}
                   nugen::EventGeneratorBase_GENIE
                   sbndaq_artdaq_core::sbndaq-artdaq-core_Obj_SBND
+                  sbncode::sbn_POTTools
                   )
 
 cet_build_plugin ( CAFMaker art::module
