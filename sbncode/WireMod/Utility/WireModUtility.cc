@@ -630,6 +630,7 @@ void sys::WireModUtility::ModifyROI(std::vector<float> & roi_data,
   double q_orig = 0.0;
   double q_mod  = 0.0;
   double scale_ratio = 1.0;
+  double sigma_distance = 0.0;
 
   // loop over the ticks
   for(size_t i_t = 0; i_t < roi_data.size(); ++i_t)
@@ -638,6 +639,7 @@ void sys::WireModUtility::ModifyROI(std::vector<float> & roi_data,
     q_orig = 0.0;
     q_mod  = 0.0;
     scale_ratio = 1.0;
+    sigma_distance = 0.0;
 
     // loop over the subs
     for (auto const& subroi_prop : subROIPropVec)
@@ -647,11 +649,15 @@ void sys::WireModUtility::ModifyROI(std::vector<float> & roi_data,
 
       q_orig += gausFunc(i_t + roi_prop.begin, subroi_prop.center,                      subroi_prop.sigma,                  subroi_prop.total_q);
       q_mod  += gausFunc(i_t + roi_prop.begin, subroi_prop.center, scale_vals.r_sigma * subroi_prop.sigma, scale_vals.r_Q * subroi_prop.total_q);
+      sigma_distance += ((i_t + roi_prop.begin - subroi_prop.center)**2 / subroi_prop.sigma**2)*\
+                gausFunc(i_t + roi_prop.begin, subroi_prop.center,                      subroi_prop.sigma,                  subroi_prop.total_q); 
 
       if (verbose)
         std::cout << "    Incrementing q_orig by gausFunc(" << i_t + roi_prop.begin << ", " << subroi_prop.center << ", " <<                      subroi_prop.sigma << ", " <<                  subroi_prop.total_q << ")" << '\n'
                   << "    Incrementing q_mod  by gausFunc(" << i_t + roi_prop.begin << ", " << subroi_prop.center << ", " << scale_vals.r_sigma * subroi_prop.sigma << ", " << scale_vals.r_Q * subroi_prop.total_q << ")" << std::endl;
     }
+
+    sigma_distance = sigma_distance / q_orig;
 
     // do some sanity checks
     if        (isnan(q_orig))
@@ -664,7 +670,10 @@ void sys::WireModUtility::ModifyROI(std::vector<float> & roi_data,
         std::cout << "WARNING: obtained q_mod = NaN... setting scale to 0" << std::endl;
       scale_ratio = 0.0;
     } else if (q_orig < 0.01) { // check that this is a sane limit
-        std::cout << "WARNING: obtained q_orig < 0.01 ... setting scale to 1" << std::endl;
+        if (verbose) std::cout << "WARNING: obtained q_orig < 0.01 ... setting scale to 1" << std::endl;
+      scale_ratio = 1.0;
+    } else if (sigma_distance > 3.) {
+        if (verbose) std::cout << "WARNING: sigma_distance > 3.. setting scale to 1" << std::endl;
       scale_ratio = 1.0;
     } else {
       scale_ratio = q_mod / q_orig;
