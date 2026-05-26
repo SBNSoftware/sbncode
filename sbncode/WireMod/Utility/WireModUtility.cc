@@ -649,7 +649,7 @@ void sys::WireModUtility::ModifyROI(std::vector<float> & roi_data,
 
       q_orig += gausFunc(i_t + roi_prop.begin, subroi_prop.center,                      subroi_prop.sigma,                  subroi_prop.total_q);
       q_mod  += gausFunc(i_t + roi_prop.begin, subroi_prop.center, scale_vals.r_sigma * subroi_prop.sigma, scale_vals.r_Q * subroi_prop.total_q);
-      sigma_distance += ((i_t + roi_prop.begin - subroi_prop.center)**2 / subroi_prop.sigma**2)*\
+      sigma_distance += ((i_t + roi_prop.begin - subroi_prop.center)*(i_t + roi_prop.begin - subroi_prop.center) / subroi_prop.sigma*subroi_prop.sigma)*\
                 gausFunc(i_t + roi_prop.begin, subroi_prop.center,                      subroi_prop.sigma,                  subroi_prop.total_q); 
 
       if (verbose)
