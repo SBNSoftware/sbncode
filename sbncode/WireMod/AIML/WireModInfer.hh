@@ -68,6 +68,7 @@
 #include <vector>
 
 #include "lardataalg/DetectorInfo/DetectorClocks.h"
+#include "lardataalg/DetectorInfo/DetectorProperties.h"
 #include "larcorealg/Geometry/WireReadoutGeom.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "larsim/MCCheater/BackTrackerService.h"
@@ -188,6 +189,10 @@ namespace sys
   static constexpr float PLANE_THETA_1      = 0.0f;           // U plane
   static constexpr float PLANE_THETA_2      = -1.0471975511965976f;  // -π/3
   static constexpr float PLANE_THETA_3      =  1.0471975511965976f;  // +π/3
+
+  // ICARUS Gain per plane
+  // Seems not to be in the detector property service???
+  static constexpr std::array<float, 3> GAIN = {0.016751, 0.012755, 0.012513}; // ADC per e
 
   // ═════════════════════════════════════════════════════════════════════════════
   // Weight file reader
@@ -707,6 +712,7 @@ namespace sys
         const cheat::BackTrackerService* back_tracker,
         const cheat::ParticleInventoryService* particles,
         const detinfo::DetectorClocksData* det_clock,
+        const detinfo::DetectorPropertiesData* det_prop,
         const geo::WireReadoutGeom* wire_geom) const;
 
     private:

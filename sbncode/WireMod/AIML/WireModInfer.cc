@@ -13,6 +13,7 @@ std::vector<recob::Hit> sys::WaireMLod::produceNew(const std::vector<art::Ptr<re
                                                    const cheat::BackTrackerService* back_tracker,
                                                    const cheat::ParticleInventoryService* particles,
                                                    const detinfo::DetectorClocksData* det_clock,
+                                                   const detinfo::DetectorPropertiesData* det_prop,
                                                    const geo::WireReadoutGeom* wire_geom) const
 {
   std::vector<recob::Hit> new_hits;
@@ -32,12 +33,18 @@ std::vector<recob::Hit> sys::WaireMLod::produceNew(const std::vector<art::Ptr<re
   {
     // Try the backtracker to get the position
     // If this fails it's a data or overlay hit and so shouldn't be modified
+    float nElec = 0;
     try
     {
       std::vector<double> hitXYZ = back_tracker->HitToXYZ(*det_clock, old_hit);
       hitX = hitXYZ.at(0);
       hitY = hitXYZ.at(1);
       hitZ = hitXYZ.at(2);
+      // Get simIDEs for hit
+      // Loop over the simIDEs and add up the charge 
+      std::vector<const sim::IDE*> simIDEs = back_tracker->HitToSimIDEs_Ps(*det_clock, old_hit);
+      for (auto const& ide : simIDEs)
+        nElec += ide->numElectrons;
     }
     catch (...)
     {
@@ -96,11 +103,14 @@ std::vector<recob::Hit> sys::WaireMLod::produceNew(const std::vector<art::Ptr<re
     float cosTh = std::cos(planeTh);
     hitDirYRel = hitDirY * cosTh - hitDirZ * sinTh;
     hitDirZRel = hitDirY * sinTh + hitDirZ * cosTh;
-    float vertTh = wire_geom->WireAngleToVertical(hitView, hitTPC) - M_PI;
+    float vertTh = wire_geom->WireAngleToVertical(hitView, hitTPC) - 0.5*M_PI;
     float cosG = std::abs(hitDirY * std::sin(vertTh) + hitDirZ * std::cos(vertTh));
-    hitTheta = std::atan(hitDirX / cosG) / DEG2RAD; // model expects degrees /not/ radians
-    float pitch = wire_geom->Plane(hitTPC, hitView).WirePitch() / std::abs(hitDirZRel);
-    hitdQdx = old_hit->Integral() / pitch;
+    hitTheta = std::atan(hitDirX / std::max(cosG, 1e-5f)) / DEG2RAD; // model expects degrees /not/ radians
+    float pitch = wire_geom->Plane(hitTPC, hitView).WirePitch() / std::max(cosG, 1e-5f);
+    float gain = (old_hit->Channel() % CHANNELS_PER_BLOCK < 2304) ? GAIN[0]
+               : (old_hit->Channel() % CHANNELS_PER_BLOCK < 8064) ? GAIN[1]
+               :                                                    GAIN[2];
+    hitdQdx = (nElec * gain) / pitch;
 
     // Now that the features are set, infer and construct a new hit
     // Check that there aren't NaNs or other nonsense values
