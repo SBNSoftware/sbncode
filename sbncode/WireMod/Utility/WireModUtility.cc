@@ -663,6 +663,9 @@ void sys::WireModUtility::ModifyROI(std::vector<float> & roi_data,
       if (verbose)
         std::cout << "WARNING: obtained q_mod = NaN... setting scale to 0" << std::endl;
       scale_ratio = 0.0;
+    } else if (q_orig < 0.01) { // check that this is a sane limit
+        std::cout << "WARNING: obtained q_orig < 0.01 ... setting scale to 1" << std::endl;
+      scale_ratio = 1.0;
     } else {
       scale_ratio = q_mod / q_orig;
     }
