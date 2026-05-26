@@ -50,6 +50,7 @@ cet_build_plugin(GaussHitFinderSBN art::module
 				)
 cet_build_plugin(ChannelROIToWire art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(WireToChannelROI art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(BadChannelHitCheck art::module LIBRARIES ${MODULE_LIBRARIES})
 				
 
 install_headers()
