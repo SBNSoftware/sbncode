@@ -108,6 +108,11 @@ std::vector<std::pair<unsigned int, unsigned int>> sys::WireModUtility::GetHitTa
   return target_roi_vec;
 }
 
+//--- FillROIMatchedIDEMap ---
+void sys::WireModUtility::FillROIMatchedIDEMap(std::vector<sim::SimChannel> const& simchVec, std::vector<recob::Wire> const& wireVec, double offset)
+{
+}
+
 //--- FillROIMatchedEdepMap ---
 void sys::WireModUtility::FillROIMatchedEdepMap(std::vector<sim::SimEnergyDeposit> const& edepVec, std::vector<recob::Wire> const& wireVec, double offset)
 {
@@ -249,11 +254,6 @@ std::map<sys::WireModUtility::SubROI_Key_t, std::vector<const sim::SimEnergyDepo
     total_energy += edep_ptr->E();
   }
 
-  // calculate EDep properties by TrackID
-  std::map<int, sys::WireModUtility::TruthProperties_t> TrackIDMatchedPropertyMap;
-  for (auto const& track_edeps : TrackIDMatchedEDepMap)
-    TrackIDMatchedPropertyMap[track_edeps.first] = CalcPropertiesFromEdeps(track_edeps.second, offset);
-
   // map it all out
   std::map<unsigned int, std::vector<unsigned int>> EDepMatchedSubROIMap;        // keys are indexes of edepPtrVec, values are vectors of indexes of subROIPropVec
   std::map<int, std::unordered_set<unsigned int>>   TrackIDMatchedSubROIMap;     // keys are TrackIDs, values are sets of indexes of subROIPropVec
@@ -266,11 +266,18 @@ std::map<sys::WireModUtility::SubROI_Key_t, std::vector<const sim::SimEnergyDepo
     // get EDep properties
     auto edep_ptr  = edepPtrVec[i_e];
     const geo::TPCGeo& curTPCGeom = geometry->PositionToTPC(edep_ptr->MidPoint());
-    const auto plane0 = wireReadout->FirstPlane(curTPCGeom.ID());
-    double ticksPercm = detPropData.GetXTicksCoefficient(); // this should be by TPCID, but isn't building right now
-    double zeroTick = detPropData.ConvertXToTicks(0, plane0.ID());
-    auto edep_tick = ticksPercm * edep_ptr->X() + (zeroTick + offset) + tickOffset;
-    edep_tick = detPropData.ConvertXToTicks(edep_ptr->X(), plane0.ID()) + offset + tickOffset;
+    std::map<readout::ROPID, double> planeProjEdepTick;
+    for (const auto& planeGeom : wireReadout->Iterate<geo::PlaneGeo>(curTPCGeom.ID()))
+    {
+      double projTick = detPropData.ConvertXToTicks(edep_ptr->X(), planeGeom.ID()) + offset + tickOffset;
+      readout::ROPID ropID = wireReadout->WirePlaneToROP(planeGeom.ID());
+      if (planeProjEdepTick.count(ropID) == 1)
+      {
+        std::cout << "MatchEdepsToSubROIs - Warning, overwriting tick projection at" << ropID.toString()
+                  << "\n  Changing from " << planeProjEdepTick[ropID] << " to " << projTick << std::endl; 
+      }
+      planeProjEdepTick[ropID] = projTick;
+    }
 
     // loop over subROIs
     unsigned int closest_hit = std::numeric_limits<unsigned int>::max();
@@ -278,6 +285,8 @@ std::map<sys::WireModUtility::SubROI_Key_t, std::vector<const sim::SimEnergyDepo
     for (unsigned int i_h = 0; i_h < subROIPropVec.size(); ++i_h)
     {
       auto subroi_prop = subROIPropVec[i_h];
+      readout::ROPID subroiROP = wireReadout->ChannelToROP(subroi_prop.channel);
+      double edep_tick = planeProjEdepTick.at(subroiROP);
       if (edep_tick > subroi_prop.center-subroi_prop.sigma && edep_tick < subroi_prop.center+subroi_prop.sigma)
       {
         EDepMatchedSubROIMap[i_e].push_back(i_h);
@@ -353,6 +362,12 @@ sys::WireModUtility::TruthProperties_t sys::WireModUtility::CalcPropertiesFromEd
   {
     if (edep_ptr->StepLength() == 0)
       continue;
+    
+    geo::TPCID curTPCID;
+    try {
+      curTPCID = geometry->PositionToTPC(edep_ptr->MidPoint()).ID();
+    }
+    catch(...) {continue;} // ignore non-active depositions
 
     edep_props.x = edep_ptr->X();
     edep_props.y = edep_ptr->Y();
@@ -361,13 +376,11 @@ sys::WireModUtility::TruthProperties_t sys::WireModUtility::CalcPropertiesFromEd
     edep_props.dxdr = (edep_ptr->EndX() - edep_ptr->StartX()) / edep_ptr->StepLength();
     edep_props.dydr = (edep_ptr->EndY() - edep_ptr->StartY()) / edep_ptr->StepLength();
     edep_props.dzdr = (edep_ptr->EndZ() - edep_ptr->StartZ()) / edep_ptr->StepLength();
-
     edep_props.dedr = edep_ptr->E() / edep_ptr->StepLength();
 
     total_energy_all += edep_ptr->E();
 
-    const geo::TPCGeo& curTPCGeom = geometry->PositionToTPC(edep_ptr->MidPoint());
-    for (auto const& plane : wireReadout->Iterate<geo::PlaneGeo>(curTPCGeom.ID())) {
+    for (auto const& plane : wireReadout->Iterate<geo::PlaneGeo>(curTPCID)) {
       int i_p = plane.ID().Plane;
       auto scales = GetViewScaleValues(edep_props, plane.View());
       scales_e_weighted[i_p].r_Q     += edep_ptr->E()*scales.r_Q;
@@ -409,7 +422,6 @@ sys::WireModUtility::TruthProperties_t sys::WireModUtility::CalcPropertiesFromEd
   edep_col_properties.dxdr = 0.;
   edep_col_properties.dydr = 0.;
   edep_col_properties.dzdr = 0.;
-
   edep_col_properties.dedr = 0.;
 
   double total_energy = 0.0;
@@ -428,7 +440,6 @@ sys::WireModUtility::TruthProperties_t sys::WireModUtility::CalcPropertiesFromEd
     edep_col_properties.dxdr += edep_ptr->E()*(edep_ptr->EndX() - edep_ptr->StartX()) / edep_ptr->StepLength();
     edep_col_properties.dydr += edep_ptr->E()*(edep_ptr->EndY() - edep_ptr->StartY()) / edep_ptr->StepLength();
     edep_col_properties.dzdr += edep_ptr->E()*(edep_ptr->EndZ() - edep_ptr->StartZ()) / edep_ptr->StepLength();
-
     edep_col_properties.dedr += edep_ptr->E()*edep_ptr->E() / edep_ptr->StepLength();
   }
 
@@ -440,7 +451,6 @@ sys::WireModUtility::TruthProperties_t sys::WireModUtility::CalcPropertiesFromEd
     edep_col_properties.dxdr = edep_col_properties.dxdr / total_energy;
     edep_col_properties.dydr = edep_col_properties.dydr / total_energy;
     edep_col_properties.dzdr = edep_col_properties.dzdr / total_energy;
-
     edep_col_properties.dedr = edep_col_properties.dedr / total_energy;
   }
 
@@ -451,18 +461,28 @@ sys::WireModUtility::TruthProperties_t sys::WireModUtility::CalcPropertiesFromEd
   }
   edep_col_properties.x_rms_noWeight = std::sqrt(edep_col_properties.x_rms_noWeight);
 
-  if (total_energy > 0)
+  if (total_energy > 0) {
     edep_col_properties.x_rms = std::sqrt(edep_col_properties.x_rms/total_energy);
+  }
 
-  const geo::TPCGeo& tpcGeom = geometry->PositionToTPC({edep_col_properties.x, edep_col_properties.y, edep_col_properties.z});
-  const auto plane0 = wireReadout->FirstPlane(tpcGeom.ID());
-  double ticksPercm = detPropData.GetXTicksCoefficient(); // this should be by TPCID, but isn't building right now
-  edep_col_properties.tick              = detPropData.ConvertXToTicks(edep_col_properties.x    , plane0.ID()) + offset + tickOffset;
-  edep_col_properties.tick_rms          = ticksPercm*edep_col_properties.x_rms;
-  edep_col_properties.tick_rms_noWeight = ticksPercm*edep_col_properties.x_rms_noWeight;
-  edep_col_properties.tick_min          = detPropData.ConvertXToTicks(edep_col_properties.x_min, plane0.ID()) + offset + tickOffset;
-  edep_col_properties.tick_max          = detPropData.ConvertXToTicks(edep_col_properties.x_max, plane0.ID()) + offset + tickOffset;
-  edep_col_properties.total_energy      = total_energy;
+  // get ticks, etc. if the deposition is active
+  geo::TPCID tpcGeomID;
+  try {
+    tpcGeomID = geometry->PositionToTPC({edep_col_properties.x, edep_col_properties.y, edep_col_properties.z}).ID();
+  }
+  catch(...) {}
+
+  if (tpcGeomID.isValid) {
+    // projecting edep to plane0, so be mindful when accessing the tick value
+    const auto plane0 = wireReadout->FirstPlane(tpcGeomID);
+    double ticksPercm = detPropData.GetXTicksCoefficient(); // this should be by TPCID, but isn't building right now
+    edep_col_properties.tick              = detPropData.ConvertXToTicks(edep_col_properties.x    , plane0.ID()) + offset + tickOffset;
+    edep_col_properties.tick_rms          = ticksPercm*edep_col_properties.x_rms;
+    edep_col_properties.tick_rms_noWeight = ticksPercm*edep_col_properties.x_rms_noWeight;
+    edep_col_properties.tick_min          = detPropData.ConvertXToTicks(edep_col_properties.x_min, plane0.ID()) + offset + tickOffset;
+    edep_col_properties.tick_max          = detPropData.ConvertXToTicks(edep_col_properties.x_max, plane0.ID()) + offset + tickOffset;
+    edep_col_properties.total_energy      = total_energy;
+  }
   
 
   return edep_col_properties; 
@@ -551,6 +571,20 @@ sys::WireModUtility::ScaleValues_t sys::WireModUtility::GetViewScaleValues(sys::
     if(temp_scale>0.001) scales.r_sigma *= temp_scale;
   }
 
+  if (applyXXWScale)
+  {
+    if (graph2Ds_Charge_XXW[plane] == nullptr || 
+        graph2Ds_Sigma_XXW [plane] == nullptr  )
+      throw cet::exception("WireModUtility")
+        << "Tried to apply XXW scale factor, but could not find graphs. Check that you have set those in the utility.";
+    double thXW = ThetaXW(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ());
+    temp_scale = graph2Ds_Charge_XXW[plane]->Interpolate(truth_props.x, thXW);
+    if(temp_scale>0.001) scales.r_Q *= temp_scale;
+
+    temp_scale = graph2Ds_Sigma_XXW [plane]->Interpolate(truth_props.x, thXW);
+    if(temp_scale>0.001) scales.r_sigma *= temp_scale;
+  }
+
   if (applyXZAngleScale)
   {
     if (splines_Charge_XZAngle[plane] == nullptr || 
@@ -570,7 +604,7 @@ sys::WireModUtility::ScaleValues_t sys::WireModUtility::GetViewScaleValues(sys::
     scales.r_sigma *= splines_Sigma_YZAngle [plane]->Eval(ThetaYZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()));
   }
 
-  if (applydEdXScale)
+  if(applydEdXScale)
   {
     if (splines_Charge_dEdX[plane] == nullptr || 
         splines_Sigma_dEdX [plane] == nullptr  )
@@ -635,6 +669,7 @@ void sys::WireModUtility::ModifyROI(std::vector<float> & roi_data,
   double q_orig = 0.0;
   double q_mod  = 0.0;
   double scale_ratio = 1.0;
+  double sigma_distance = 0.0;
 
   // loop over the ticks
   for(size_t i_t = 0; i_t < roi_data.size(); ++i_t)
@@ -643,6 +678,7 @@ void sys::WireModUtility::ModifyROI(std::vector<float> & roi_data,
     q_orig = 0.0;
     q_mod  = 0.0;
     scale_ratio = 1.0;
+    sigma_distance = 0.0;
 
     // loop over the subs
     for (auto const& subroi_prop : subROIPropVec)
@@ -652,11 +688,15 @@ void sys::WireModUtility::ModifyROI(std::vector<float> & roi_data,
 
       q_orig += gausFunc(i_t + roi_prop.begin, subroi_prop.center,                      subroi_prop.sigma,                  subroi_prop.total_q);
       q_mod  += gausFunc(i_t + roi_prop.begin, subroi_prop.center, scale_vals.r_sigma * subroi_prop.sigma, scale_vals.r_Q * subroi_prop.total_q);
+      sigma_distance += ((i_t + roi_prop.begin - subroi_prop.center)*(i_t + roi_prop.begin - subroi_prop.center) / subroi_prop.sigma*subroi_prop.sigma)*\
+                gausFunc(i_t + roi_prop.begin, subroi_prop.center,                      subroi_prop.sigma,                  subroi_prop.total_q); 
 
       if (verbose)
         std::cout << "    Incrementing q_orig by gausFunc(" << i_t + roi_prop.begin << ", " << subroi_prop.center << ", " <<                      subroi_prop.sigma << ", " <<                  subroi_prop.total_q << ")" << '\n'
                   << "    Incrementing q_mod  by gausFunc(" << i_t + roi_prop.begin << ", " << subroi_prop.center << ", " << scale_vals.r_sigma * subroi_prop.sigma << ", " << scale_vals.r_Q * subroi_prop.total_q << ")" << std::endl;
     }
+
+    sigma_distance = sigma_distance / q_orig;
 
     // do some sanity checks
     if        (isnan(q_orig))
@@ -668,6 +708,12 @@ void sys::WireModUtility::ModifyROI(std::vector<float> & roi_data,
       if (verbose)
         std::cout << "WARNING: obtained q_mod = NaN... setting scale to 0" << std::endl;
       scale_ratio = 0.0;
+    } else if (q_orig < 0.01) { // check that this is a sane limit
+        if (verbose) std::cout << "WARNING: obtained q_orig < 0.01 ... setting scale to 1" << std::endl;
+      scale_ratio = 1.0;
+    } else if (sigma_distance > 3.) {
+        if (verbose) std::cout << "WARNING: sigma_distance > 3.. setting scale to 1" << std::endl;
+      scale_ratio = 1.0;
     } else {
       scale_ratio = q_mod / q_orig;
     }

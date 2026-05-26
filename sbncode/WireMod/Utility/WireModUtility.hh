@@ -19,6 +19,7 @@
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/Wire.h"
 #include "lardataobj/Simulation/SimEnergyDeposit.h"
+#include "lardataobj/Simulation/SimChannel.h"
 #include "larcoreobj/SimpleTypesAndConstants/PhysicalConstants.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
@@ -45,6 +46,7 @@ namespace sys {
       bool   applyXXZAngleScale;                          // do we scale with X vs XZ angle?
       bool   applyXdQdXScale;                             // do we scale with X vs dQ/dX?
       bool   applyXZAngledQdXScale;                       // do we scale with XZ angle vs dQ/dX?
+      bool   applyXXWScale;                               // do we scale with X vs ThXW?
       double readoutWindowTicks;                          // how many ticks are in the readout window?
       double tickOffset;                                  // do we want an offset in the ticks?
 
@@ -67,6 +69,8 @@ namespace sys {
       std::vector<TGraph2D*> graph2Ds_Sigma_XdQdX;        // the graphs for width correction in X vs dQ/dX
       std::vector<TGraph2D*> graph2Ds_Charge_XZAngledQdX; // the graphs for charge correction in XZ angle vs dQ/dX
       std::vector<TGraph2D*> graph2Ds_Sigma_XZAngledQdX;  // the graphs for width correction in XZ angle vs dQ/dX
+      std::vector<TGraph2D*> graph2Ds_Charge_XXW;         // the graphs for the charge correction in XXW
+      std::vector<TGraph2D*> graph2Ds_Sigma_XXW;          // the graphs for the width correction in XXW
 
       // lets try making a constructor here
       // assume we can get a geometry service, a detector clcok, and a detector properties
@@ -84,6 +88,7 @@ namespace sys {
                      const bool& arg_ApplyXXZAngleScale = false,
                      const bool& arg_ApplyXdQdXScale = false,
                      const bool& arg_ApplyXZAngledQdXScale = false,
+                     const bool& arg_ApplyXXWScale = true,
                      const double& arg_TickOffset = 0)
       : geometry(geom),
         wireReadout(wireRead),
@@ -97,13 +102,14 @@ namespace sys {
         applyXXZAngleScale(arg_ApplyXXZAngleScale),
         applyXdQdXScale(arg_ApplyXdQdXScale),
         applyXZAngledQdXScale(arg_ApplyXZAngledQdXScale),
+        applyXXWScale(arg_ApplyXXWScale),
         readoutWindowTicks(detProp.ReadOutWindowSize()),                                               // the default A2795 (ICARUS TPC readout board) readout window is 4096 samples
         tickOffset(arg_TickOffset)                                                                     // tick offset is for MC truth, default to zero and set only as necessary
       {
       }
 
       // typedefs
-      typedef std::pair<unsigned int,unsigned int>  ROI_Key_t;
+      typedef std::pair<unsigned int, unsigned int>  ROI_Key_t;
       typedef std::pair<ROI_Key_t, unsigned int> SubROI_Key_t;
 
       typedef struct ROIProperties
@@ -145,8 +151,8 @@ namespace sys {
         float total_energy;
         float x_min;
         float x_max;
-        float tick_min;
-        float tick_max;
+        float tick_min; // On Plane0!!
+        float tick_max; // On Plane0!!
         float y;
         float z;
         double dxdr;
@@ -158,8 +164,8 @@ namespace sys {
       } TruthProperties_t;
 
       // internal containers
-      std::map< ROI_Key_t,std::vector<size_t> > ROIMatchedEdepMap;
-      std::map< ROI_Key_t,std::vector<size_t> > ROIMatchedHitMap;
+      std::map< ROI_Key_t, std::vector<size_t> > ROIMatchedEdepMap;
+      std::map< ROI_Key_t, std::vector<size_t> > ROIMatchedHitMap;
 
       // some useful functions
       // geometries
@@ -190,9 +196,8 @@ namespace sys {
 
       double ThetaXZ_PlaneRel(double dxdr, double dydr, double dzdr, double planeAngle)
       {
-        double planeAngleRad = planeAngle * (util::pi() / 180.0);
-        double sinPlaneAngle = std::sin(planeAngleRad);
-        double cosPlaneAngle = std::cos(planeAngleRad);
+        double sinPlaneAngle = std::sin(planeAngle);
+        double cosPlaneAngle = std::cos(planeAngle);
 
         //double dydrPlaneRel = dydr * cosPlaneAngle - dzdr * sinPlaneAngle; // don't need to rotate Y for this angle
         double dzdrPlaneRel = dzdr * cosPlaneAngle + dydr * sinPlaneAngle;
@@ -203,9 +208,8 @@ namespace sys {
 
       double ThetaYZ_PlaneRel(double dxdr, double dydr, double dzdr, double planeAngle)
       {
-        double planeAngleRad = planeAngle * (util::pi() / 180.0);
-        double sinPlaneAngle = std::sin(planeAngleRad);
-        double cosPlaneAngle = std::cos(planeAngleRad);
+        double sinPlaneAngle = std::sin(planeAngle);
+        double cosPlaneAngle = std::cos(planeAngle);
 
         double dydrPlaneRel = dydr * cosPlaneAngle - dzdr * sinPlaneAngle;
         double dzdrPlaneRel = dzdr * cosPlaneAngle + dydr * sinPlaneAngle;
@@ -213,8 +217,32 @@ namespace sys {
         double theta = std::atan2(dydrPlaneRel, dzdrPlaneRel);
         return FoldAngle(theta);
       }
-      
       // theste are set in the .cc file
+
+      double ThetaXY_PlaneRel(double dxdr, double dydr, double dzdr, double planeAngle)
+      {
+        double sinPlaneAngle = std::sin(planeAngle);
+        double cosPlaneAngle = std::cos(planeAngle);
+
+        double dydrPlaneRel = dydr * cosPlaneAngle - dzdr * sinPlaneAngle;
+        //double dzdrPlaneRel = dzdr * cosPlaneAngle + dydr * sinPlaneAngle; // don't need to rotate Z for this angle
+
+        double theta = std::atan2(dxdr, dydrPlaneRel);
+        return FoldAngle(theta);
+      }
+
+      double ThetaXW(double dxdr, double dydr, double dzdr, double planeAngle)
+      {
+        // Want angle to vert, so subtract pi
+        double sin = std::sin(planeAngle - ::util::pi<>());
+        double cos = std::cos(planeAngle - ::util::pi<>());
+
+        double cosG = std::abs(dydr * sin + dzdr * cos);
+        double theta = std::atan(dxdr / cosG);
+        return std::abs(theta);
+      }
+      
+      // these are set in the .cc file
       ROIProperties_t CalcROIProperties(recob::Wire const&, size_t const&);
 
       std::vector<std::pair<unsigned int, unsigned int>> GetTargetROIs(sim::SimEnergyDeposit const&, double offset);
@@ -222,6 +250,7 @@ namespace sys {
 
       void FillROIMatchedEdepMap(std::vector<sim::SimEnergyDeposit> const&, std::vector<recob::Wire> const&, double offset);
       void FillROIMatchedHitMap(std::vector<recob::Hit> const&, std::vector<recob::Wire> const&);
+      void FillROIMatchedIDEMap(std::vector<sim::SimChannel> const& simchVec, std::vector<recob::Wire> const& wireVec, double offset);
 
       std::vector<SubROIProperties_t> CalcSubROIProperties(ROIProperties_t const&, std::vector<const recob::Hit*> const&);
 
