@@ -711,7 +711,7 @@ void sys::WireModUtility::ModifyROI(std::vector<float> & roi_data,
     } else if (q_orig < 0.01) { // check that this is a sane limit
         if (verbose) std::cout << "WARNING: obtained q_orig < 0.01 ... setting scale to 1" << std::endl;
       scale_ratio = 1.0;
-    } else if (sigma_distance > 3.) {
+    } else if (sigma_distance > 9.) {
         if (verbose) std::cout << "WARNING: sigma_distance > 3.. setting scale to 1" << std::endl;
       scale_ratio = 1.0;
     } else {
