@@ -24,6 +24,8 @@ namespace caf
     single_store.HPTG2 = info.HPTG2;
     single_store.VPTG2 = info.VPTG2;
     single_store.FOM = info.FOM;
+    single_store.PreFitFOM = info.PreFitFOM;
+    single_store.NoMultiWireFOM = info.NoMultiWireFOM;
     single_store.VP873 = info.VP873;
     single_store.VP873Offset = info.VP873Offset;
     single_store.VP875Offset = info.VP875Offset;
