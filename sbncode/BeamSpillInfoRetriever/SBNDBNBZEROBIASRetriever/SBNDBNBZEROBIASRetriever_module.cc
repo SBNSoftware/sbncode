@@ -228,8 +228,10 @@ void sbn::SBNDBNBZEROBIASRetriever::matchMultiWireData(
   }//end loop over MWR devices
     
   sbn::BNBSpillInfo spillInfo = makeBNBSpillInfo(eventID, times_temps[i], MWRdata, matched_MWR, bfp, offsets, vp873);
-  double spillFOM = sbn::getBNBqualityFOM(spillInfo);
-  spillInfo.FOM = spillFOM;
+  std::tuple<float, float, float> allFOM = sbn::getBNBqualityFOM(spillInfo);
+  spillInfo.FOM = std::get<0>(allFOM);
+  spillInfo.PreFitFOM = std::get<1>(allFOM);
+  spillInfo.NoMultiWireFOM = std::get<2>(allFOM);
   
   beamInfos.push_back(std::move(spillInfo));
 
