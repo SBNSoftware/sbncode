@@ -22,7 +22,7 @@ namespace caf
         finalFOM = PreFitFOM;
         std::cout << "makeSRBNBInfo: Chose pre-fit width" << std::endl;
     }
-    else if((NoMultiWireFOM > 0.0) & (NoMultiwireFOM < 1.0))
+    else if((NoMultiWireFOM > 0.0) & (NoMultiWireFOM < 1.0))
     {
         finalFOM = 100.+NoMultiWireFOM;
         std::cout << "makeSRBNBInfo: Chose assumed width of 1.0" << std::endl;
