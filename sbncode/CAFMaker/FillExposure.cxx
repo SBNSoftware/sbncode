@@ -6,6 +6,29 @@ namespace caf
 
   caf::SRBNBInfo makeSRBNBInfo(sbn::BNBSpillInfo const& info)
   {
+    float FOM = info.FOM;
+    float PreFitFOM = info.PreFitFOM;
+    float NoMultiWireFOM = info.NoMultiWireFOM;
+    float finalFOM = -999.;
+    std::cout << "makeSRBNBInfo: Choosing FOM from available" << std::endl;
+    std::cout << "makeSRBNBInfo: Manually calculated width:" << FOM << std::endl;
+    std::cout << "makeSRBNBInfo: Pre-Fit width from database:" << PreFitFOM << std::endl;
+    std::cout << "makeSRBNBInfo: Assuming width of 1.0:" << NoMultiWireFOM << std::endl;
+    if((FOM > 0.0) & (FOM <= 1.0)){
+        finalFOM = FOM;
+        std::cout << "makeSRBNBInfo: Chose manually calculated width" << std::endl;
+    }
+    else if((PreFitFOM > 0.0) & (PreFitFOM <= 1.0)){
+        finalFOM = PreFitFOM;
+        std::cout << "makeSRBNBInfo: Chose pre-fit width" << std::endl;
+    }
+    else if((NoMultiWireFOM > 0.0) & (NoMultiWireFOM <= 1.0))
+    {
+        finalFOM = 100.+NoMultiWireFOM;
+        std::cout << "makeSRBNBInfo: Chose assumed width of 1.0" << std::endl;
+        std::cout << "makeSRBNBInfo: Note, that this gets prefixed with 100 so it doesn't get automatically included in standard FOM cuts" << std::endl;
+    }
+
     caf::SRBNBInfo single_store;
     single_store.spill_time_sec = info.spill_time_s;
     single_store.spill_time_nsec = info.spill_time_ns;
@@ -23,7 +46,7 @@ namespace caf
     single_store.VPTG1 = info.VPTG1;
     single_store.HPTG2 = info.HPTG2;
     single_store.VPTG2 = info.VPTG2;
-    single_store.FOM = info.FOM;
+    single_store.FOM = finalFOM;
     single_store.VP873 = info.VP873;
     single_store.VP873Offset = info.VP873Offset;
     single_store.VP875Offset = info.VP875Offset;

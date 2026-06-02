@@ -17,9 +17,11 @@ namespace sbn {
   
   bool onePlot = true;
 
-  float getBNBqualityFOM(BNBSpillInfo & spill )
+  std::tuple<float, float, float> getBNBqualityFOM(BNBSpillInfo & spill )
   {
     double fom=0;
+    double prefitfom=0;
+    double noMWfom=0;
 
     double hp875_offset= spill.HP875Offset;
     double vp875_offset= spill.VP875Offset;
@@ -57,6 +59,16 @@ namespace sbn {
     std::vector<double> vptg1;
     std::vector<double> hptg2;
     std::vector<double> vptg2;
+
+    std::vector<double> m875hs; // Multiwire station after Mag 875, Fit to Horizontal Sigma
+    std::vector<double> m875hm; // Multiwire station after Mag 875, Fit to Horizontal Mean 
+    std::vector<double> m875vs; // Multiwire station after Mag 875, Fit to Vertical Sigma
+    std::vector<double> m875vm; // Multiwire station after Mag 875, Fit to Vertical Mean 
+
+    std::vector<double> m876hs; // Multiwire station after Mag 876, Fit to Horizontal Sigma
+    std::vector<double> m876hm; // Multiwire station after Mag 876, Fit to Horizontal Mean 
+    std::vector<double> m876vs; // Multiwire station after Mag 876, Fit to Vertical Sigma
+    std::vector<double> m876vm; // Multiwire station after Mag 876, Fit to Vertical Mean 
     
     std::vector<double> mw875(spill.M875BB.begin(), spill.M875BB.end());
     std::vector<double> mw876(spill.M876BB.begin(), spill.M876BB.end());
@@ -73,13 +85,23 @@ namespace sbn {
     hptg2.push_back(spill.HPTG2);
     vptg2.push_back(spill.VPTG2);
     
+    m875hs.push_back(spill.M875HS);
+    m875hm.push_back(spill.M875HM);
+    m875vs.push_back(spill.M875VS);
+    m875vm.push_back(spill.M875VM);
+
+    m876hs.push_back(spill.M876HS);
+    m876hm.push_back(spill.M876HM);
+    m876vs.push_back(spill.M876VS);
+    m876vm.push_back(spill.M876VM);
+
     double tor;
     if (!tor860.empty())
       tor=tor860[0];
     else if (!tor875.empty())
       tor=tor875[0];
     else
-      return -1;
+      return {-1,-1,-1};
         
     /**
     * @brief when creating ntuples for pot counting script the variables are filled with -999
@@ -104,8 +126,8 @@ namespace sbn {
       return std::pair(ang, pos);
       };
 	
-	// return 2 when missing essential beam horizontal position data:
-    if (hp875.empty() || (hptg1.empty() && hptg2.empty())) return 2;
+    // return 2 when missing essential beam horizontal position data:
+    if (hp875.empty() || (hptg1.empty() && hptg2.empty())) return {2,2,2};
     bool const doUseHTG1 = (useHTG == 1) || hptg2.empty();
     auto const [ Tanhorang, horpos ] = doUseHTG1?
        interpolate_hp875(hptg1[0] - hptg1_offset, hptg1_zpos):
@@ -121,8 +143,8 @@ namespace sbn {
       return std::pair(ang, pos);
       };
 	
-	// return 2 when missing essential beam horizontal position data:
-    if (vp875.empty() || (vptg1.empty() && vptg2.empty())) return 3;
+   // return 3 when missing essential beam horizontal position data:
+    if (vp875.empty() || (vptg1.empty() && vptg2.empty())) return {3,3,3};
     bool const doUseVTG1 = (useVTG == 1) || vptg2.empty();
     auto const [ Tanverang, verpos ] = doUseVTG1?
        interpolate_vp875(vp873[0] - vp873_offset, vp873_zpos):
@@ -138,6 +160,8 @@ namespace sbn {
 	constexpr size_t FirstXMWtgt =0;
 	constexpr size_t FirstYMWtgt =48;
 	const double smallSigmaX =0.5, largeSigmaX = 10, smallSigmaY = 0.3, largeSigmaY =10, maxChi2X = 20, maxChi2Y = 20;
+
+    // First calculate try the version of the FOM where we fit the width ourselves
     if (mwtgt.size()>0) {
       processBNBprofile(&mwtgt[FirstXMWtgt], xx, sx,chi2x);
       processBNBprofile(&mwtgt[FirstYMWtgt], yy, sy, chi2y);
@@ -170,12 +194,53 @@ namespace sbn {
       }
     }
     if (!good_tgt && !good_876 && !good_875) {
-      //failed getting  multiwire data
-      return 4;
+      //failed getting multiwire data
+      fom=-999;
     }
-    
-    fom=1-pow(10,sbn::calcFOM(horpos,horang,verpos,verang,tor,tgtsx,tgtsy));
-    return fom;
+    else{
+      fom=1-pow(10,sbn::calcFOM(horpos,horang,verpos,verang,tor,tgtsx,tgtsy));
+    }
+
+    bool good_prefit876=false;
+    bool good_prefit875=false;
+    sx = 0;
+    sy = 0;
+
+    // Now calculate the "pre-fit" FOM values
+    if (!m876hs.empty() && !m876vs.empty() && !m876hm.empty() && !m876vm.empty()) {
+      sx = m876hs[0];
+      sy = m876vs[0];
+      double tgtsx876=p876x[0]+p876x[1]*sx+p876x[2]*sx*sx;
+      double tgtsy876=p876y[0]+p876y[1]*sy+p876y[2]*sy*sy;
+      if (tgtsx876>smallSigmaX && tgtsx876<largeSigmaX && tgtsy876>smallSigmaY && tgtsy876<largeSigmaY && chi2x< maxChi2X && chi2y< maxChi2Y) {
+		tgtsx=tgtsx876;
+		tgtsy=tgtsy876;
+		good_prefit876=true;
+      }
+    }
+    if (!good_prefit876 && !m875hs.empty() && !m875vs.empty() && !m875hm.empty() && !m875vm.empty()) {
+      sx = m875hs[0];
+      sy = m875vs[0];
+      double tgtsx875=p875x[0]+p875x[1]*sx+p875x[2]*sx*sx;
+      double tgtsy875=p875y[0]+p875y[1]*sy+p875y[2]*sy*sy;
+      if (tgtsx875>smallSigmaX && tgtsx875<largeSigmaX && tgtsy875>smallSigmaY && tgtsy875<largeSigmaY && chi2x< maxChi2X && chi2y< maxChi2Y) {
+		tgtsx=tgtsx875;
+		tgtsy=tgtsy875;
+		good_prefit875=true;
+      }
+    }
+    if (!good_prefit876 && !good_prefit875) {
+      //failed getting multiwire data
+      prefitfom=-999;
+    }
+    else{
+      prefitfom=1-pow(10,sbn::calcFOM(horpos,horang,verpos,verang,tor,tgtsx,tgtsy));
+    }
+
+    // Lastly calculate the "no multiwire" fom values, defaults values for tgtsx,y will be caught
+    // internally in order to set scalex=scaley=1
+    noMWfom=1-pow(10,sbn::calcFOM(horpos,horang,verpos,verang,tor));
+    return {fom, prefitfom, noMWfom};
   }
   
 
@@ -318,8 +383,16 @@ namespace sbn {
     sbn::swimBNB(centroid1,sigma1,
 		 cnttoups, begtoups,
 		 cx, cy, sx, sy, rho);
-    double scalex=tgtsx/sx;
-    double scaley=tgtsy/sy;
+
+    double scalex, scaley;
+    if( tgtsx !=-999 && tgtsy!=-999){
+        scalex=tgtsx/sx;
+        scaley=tgtsy/sy;
+    }
+    else{
+        scalex=1;
+        scaley=1;
+    }
     double fom_a=sbn::func_intbivar(cx, cy, sx*scalex, sy*scaley, rho);
     //swim to center of target
     sbn::swimBNB(centroid1,sigma1,
