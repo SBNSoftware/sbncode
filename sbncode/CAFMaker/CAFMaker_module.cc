@@ -2095,6 +2095,21 @@ void CAFMaker::produce(art::Event& evt) noexcept {
                          vtx_wire, vtx_tick, fParams.NuGraphHIPTagWireDist(), fParams.NuGraphHIPTagTickDist(), 
                          fParams.NuGraphFilterCut(), recslc);
       }
+
+      // overwrite the `ng_filt_pass_frac` variable with post-NuGraph2-filtering 
+      if (fParams.UsePandoraAfterNuGraph()) {
+        art::Handle<std::vector<anab::FeatureVector<1>>> ngFilterVecHandle;
+        evt.getByLabel(art::InputTag("NGMultiSlice" + slice_tag_suff, "filter"), ngFilterVecHandle);
+        art::Handle<std::vector<recob::Hit>> ngFilteredHitsHandle;
+        GetByLabelStrict(evt, "ngfilteredhits" + slice_tag_suff, ngFilteredHitsHandle);
+        if (
+          ngFilterVecHandle.isValid() && 
+          ngFilteredHitsHandle.isValid() &&
+          ngFilterVecHandle->size() > 0) {
+          recslc.ng_filt_pass_frac = float(ngFilteredHitsHandle->size()) / float(ngFilterVecHandle->size());
+        }
+      }
+
     }
 
     FillSliceVars(*slice, primary, producer, recslc);
