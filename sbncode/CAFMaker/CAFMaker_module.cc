@@ -2102,10 +2102,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         evt.getByLabel(art::InputTag("NGMultiSlice" + slice_tag_suff, "filter"), ngFilterVecHandle);
         art::Handle<std::vector<recob::Hit>> ngFilteredHitsHandle;
         GetByLabelStrict(evt, "ngfilteredhits" + slice_tag_suff, ngFilteredHitsHandle);
-        if (
-          ngFilterVecHandle.isValid() && 
-          ngFilteredHitsHandle.isValid() &&
-          ngFilterVecHandle->size() > 0) {
+        if (ngFilterVecHandle.isValid() && 
+            ngFilteredHitsHandle.isValid() &&
+            ngFilterVecHandle->size() > 0) {
           recslc.ng_filt_pass_frac = float(ngFilteredHitsHandle->size()) / float(ngFilterVecHandle->size());
         }
       }
