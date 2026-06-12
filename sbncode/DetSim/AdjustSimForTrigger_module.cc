@@ -60,13 +60,13 @@
  * and all follows.
  * 
  * @note The new trigger time is going to be whatever value is in
- *       `DetectorClocksData::TriggerTime()`, rather than an hard-coded value
+ *       `DetectorClocksData::TriggerTime()`, rather than a hard-coded value
  *       like `1500.0`. Therefore some care needs to be taken in the workflow
  *       to make sure that at the time of the execution of this module
  *       `DetectorClocksService` is yielding the desired new-reference value.
  *       Also, after this module is called `DetectorClocksService` itself may
  *       report obsolete values. Specifically, `DetectorClocksServiceStandard`
- *       will report the old `BeamGateTime()`, which was from ether a
+ *       will report the old `BeamGateTime()`, which was from either a
  *       configuration parameter or from a trigger data product.
  * 
  * This module reads the new reference time from a `raw::Trigger` object
@@ -256,7 +256,7 @@ private:
   art::InputTag fBindWaveformBaselines; ///< Tag of OpDetWaveform-baseline associations to be rebound.
   double fAdditionalOffset;
   bool fDropTriggerProduct; ///< Do not put the shifted trigger data product into the event.
-  bool fSkipExtraTriggerInfo; ///< Copy input `sbn::ExtraTriggerInfo`.
+  bool fSkipExtraTriggerInfo; ///< Do not copy input `sbn::ExtraTriggerInfo`.
   static constexpr auto& kModuleName = "AdjustSimForTrigger";
 };
 
@@ -293,11 +293,11 @@ AdjustSimForTrigger::AdjustSimForTrigger(fhicl::ParameterSet const& p)
                            << "SHIFTING SIMPHOTONS? " << fShiftSimPhotons << '\n'
                            << "SHIFTING OPDETWAVEFORMS? " << fShiftWaveforms << '\n'
                            << "   ASSNS OPDETWAVEFORM-BASELINES? " << doWaveformBaselines
-                           << (doWaveformBaselines? (" ('" + fBindWaveformBaselines.encode() + ")"): "");
+                           << (doWaveformBaselines? (" ('" + fBindWaveformBaselines.encode() + "')"): "");
 
   if (!fDropTriggerProduct) {
     produces<std::vector<raw::Trigger>>();
-    produces<sbn::ExtraTriggerInfo>();
+    if (!fSkipExtraTriggerInfo) produces<sbn::ExtraTriggerInfo>();
   }
   if (fShiftAuxDetIDEs) { produces<std::vector<sim::AuxDetSimChannel>>(); }
   if (fShiftBeamGateInfo) { produces<std::vector<sim::BeamGateInfo>>(); }

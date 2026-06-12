@@ -52,7 +52,7 @@ namespace sbn {
    * auto newAssns
    *   = std::make_unique<Assns_t>(sbn::RebindAssociatedProducts(oldAssns, makeWaveformPtr));
    * 
-   * event.put(std::move(pWaveformBaselineAssns));
+   * event.put(std::move(newAssns));
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    * The alias `Assns_t` was used only to make the example more readable.
    * 
