@@ -2,6 +2,7 @@
 #include "lardataalg/DetectorInfo/DetectorPropertiesData.h"
 
 //--- CalcROIProperties ---
+/*
 sys::WireModUtility::ROIProperties_t sys::WireModUtility::CalcROIProperties(recob::Wire const& wire, size_t const& roi_idx)
 {
   // get the ROI
@@ -40,6 +41,68 @@ sys::WireModUtility::ROIProperties_t sys::WireModUtility::CalcROIProperties(reco
   }
   
   // return the calc'd properies
+  return roi_vals;
+}
+*/
+
+//--- CalcROIProperties ---
+sys::WireModUtility::ROIProperties_t sys::WireModUtility::CalcROIProperties(recob::Wire const& wire, size_t const& roi_idx)
+{
+  // get the ROI
+  recob::Wire::RegionsOfInterest_t::datarange_t const& roi = wire.SignalROI().get_ranges()[roi_idx];
+
+  // initialize the return value
+  ROIProperties_t roi_vals;
+  roi_vals.channel = wire.Channel();
+  roi_vals.view    = wire.View();
+  roi_vals.begin   = roi.begin_index();
+  roi_vals.end     = roi.end_index();
+  roi_vals.center  = 0;
+  roi_vals.total_q = 0;
+  roi_vals.sigma   = 0;
+
+  auto const& roi_data = roi.data();
+
+  // loop over the ROI and find the positive-charge-weighted center and total charge
+  for (size_t i_t = 0; i_t < roi_data.size(); ++i_t)
+    {
+      if (roi_data[i_t] <= 0)
+	continue;
+
+      roi_vals.center += roi_data[i_t] * (i_t + roi_vals.begin);
+      roi_vals.total_q += roi_data[i_t];
+    }
+
+  // protect against empty/negative-only ROIs
+  if (roi_vals.total_q > 0)
+    roi_vals.center = roi_vals.center / roi_vals.total_q;
+  else
+    {
+      roi_vals.center = std::numeric_limits<double>::quiet_NaN();
+      roi_vals.sigma  = std::numeric_limits<double>::quiet_NaN();
+      return roi_vals;
+    }
+
+  // get the width (positive-charge weighted RMS)
+  for (size_t i_t = 0; i_t < roi_data.size(); ++i_t)
+    {
+      if (roi_data[i_t] <= 0)
+	continue;
+
+    roi_vals.sigma += roi_data[i_t] *
+      (i_t + roi_vals.begin - roi_vals.center) *
+      (i_t + roi_vals.begin - roi_vals.center);
+    }
+
+  roi_vals.sigma = std::sqrt(roi_vals.sigma / roi_vals.total_q);
+
+  // if the ROI is only one tick set the center to the middle of the tick and width to 0.5
+  if (roi_vals.end - roi_vals.begin == 1)
+    {
+      roi_vals.center += 0.5;
+      roi_vals.sigma = 0.5;
+    }
+
   return roi_vals;
 }
 
