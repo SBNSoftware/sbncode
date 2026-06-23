@@ -23,6 +23,7 @@
 #include "larcoreobj/SimpleTypesAndConstants/PhysicalConstants.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
+#include "sbnobj/ICARUS/TPC/ChannelROI.h"
 
 #include <limits>
 #include <memory>
@@ -226,6 +227,7 @@ namespace sys {
       
       // these are set in the .cc file
       ROIProperties_t CalcROIProperties(recob::Wire const&, size_t const&);
+      ROIProperties_t CalcROIProperties(recob::ChannelROI const&, size_t const&);
 
       std::vector<std::pair<unsigned int, unsigned int>> GetTargetROIs(sim::SimEnergyDeposit const&, double offset);
       std::vector<std::pair<unsigned int, unsigned int>> GetHitTargetROIs(recob::Hit const&);
@@ -233,6 +235,10 @@ namespace sys {
       void FillROIMatchedEdepMap(std::vector<sim::SimEnergyDeposit> const&, std::vector<recob::Wire> const&, double offset);
       void FillROIMatchedHitMap(std::vector<recob::Hit> const&, std::vector<recob::Wire> const&);
       void FillROIMatchedIDEMap(std::vector<sim::SimChannel> const& simchVec, std::vector<recob::Wire> const& wireVec, double offset);
+
+      void FillROIMatchedEdepMap(std::vector<sim::SimEnergyDeposit> const&, std::vector<recob::ChannelROI> const&, double offset);
+      void FillROIMatchedHitMap(std::vector<recob::Hit> const&, std::vector<recob::ChannelROI> const&);
+      void FillROIMatchedIDEMap(std::vector<sim::SimChannel> const& simchVec, std::vector<recob::ChannelROI> const& chanROIVec, double offset);
 
       std::vector<SubROIProperties_t> CalcSubROIProperties(ROIProperties_t const&, std::vector<const recob::Hit*> const&);
 

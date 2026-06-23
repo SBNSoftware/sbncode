@@ -21,6 +21,7 @@ cet_make_library(
     lardata::RecoObjects
     lardata::Utilities
     larreco::RecoAlg
+    sbnobj::ICARUS_TPC
     ${LARRECO_LIB}
     ${LARDATA_LIB}
     ${ART_FRAMEWORK_CORE}

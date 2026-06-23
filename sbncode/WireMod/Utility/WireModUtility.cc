@@ -43,6 +43,47 @@ sys::WireModUtility::ROIProperties_t sys::WireModUtility::CalcROIProperties(reco
   return roi_vals;
 }
 
+sys::WireModUtility::ROIProperties_t sys::WireModUtility::CalcROIProperties(recob::ChannelROI const& chanROI, size_t const& roi_idx)
+{
+  // get the ROI
+  recob::ChannelROI::RegionsOfInterest_f::datarange_t const& roi = chanROI.SignalROIF().get_ranges()[roi_idx];
+
+  // initialize the return value
+  ROIProperties_t roi_vals;
+  roi_vals.channel = chanROI.Channel();
+  roi_vals.view    = wireReadout->View(chanROI.Channel());
+  roi_vals.begin   = roi.begin_index();
+  roi_vals.end     = roi.end_index();
+  roi_vals.center  = 0;
+  roi_vals.total_q = 0;
+  roi_vals.sigma   = 0;
+
+  // loop over the roi and find the charge-weighted center and total charge
+  auto const& roi_data = roi.data();
+  for (size_t i_t = 0; i_t < roi_data.size(); ++i_t)
+  {
+    roi_vals.center += roi_data[i_t]*(i_t+roi_vals.begin);
+    roi_vals.total_q += roi_data[i_t];
+  }
+  roi_vals.center = roi_vals.center/roi_vals.total_q;
+
+  // get the width (again charge-weighted)
+  // if the ROI is only one tick set the cent to the middle of the tick and width to 0.5
+  for (size_t i_t = 0; i_t<roi_data.size(); ++i_t)
+  {
+    roi_vals.sigma += roi_data[i_t]*(i_t+roi_vals.begin-roi_vals.center)*(i_t+roi_vals.begin-roi_vals.center);
+  }
+  roi_vals.sigma = std::sqrt(roi_vals.sigma/roi_vals.total_q);
+  if (roi_vals.end-roi_vals.begin == 1)
+  {
+    roi_vals.center += 0.5;
+    roi_vals.sigma   = 0.5;
+  }
+  
+  // return the calc'd properies
+  return roi_vals;
+}
+
 //--- GetTargetROIs ---
 std::vector<std::pair<unsigned int, unsigned int>> sys::WireModUtility::GetTargetROIs(sim::SimEnergyDeposit const& shifted_edep, double offset)
 {
@@ -113,6 +154,10 @@ void sys::WireModUtility::FillROIMatchedIDEMap(std::vector<sim::SimChannel> cons
 {
 }
 
+void sys::WireModUtility::FillROIMatchedIDEMap(std::vector<sim::SimChannel> const& simchVec, std::vector<recob::ChannelROI> const& chanROIVec, double offset)
+{
+}
+
 //--- FillROIMatchedEdepMap ---
 void sys::WireModUtility::FillROIMatchedEdepMap(std::vector<sim::SimEnergyDeposit> const& edepVec, std::vector<recob::Wire> const& wireVec, double offset)
 {
@@ -159,6 +204,51 @@ void sys::WireModUtility::FillROIMatchedEdepMap(std::vector<sim::SimEnergyDeposi
   }
 }
 
+void sys::WireModUtility::FillROIMatchedEdepMap(std::vector<sim::SimEnergyDeposit> const& edepVec, std::vector<recob::ChannelROI> const& chanROIVec, double offset)
+{
+  // clear the map in case it was already set
+  ROIMatchedEdepMap.clear();
+
+  // get the channel from each channelROI and set up a map between them
+  std::unordered_map<unsigned int,unsigned int> chanROIChannelMap;
+  for (size_t i_c = 0; i_c < chanROIVec.size(); ++i_c)
+    chanROIChannelMap[chanROIVec[i_c].Channel()] = i_c;
+
+  // loop over the energy deposits
+  for (size_t i_e = 0; i_e < edepVec.size(); ++i_e)
+  {
+    // get the ROIs
+    // <channel number, tick time>
+    std::vector<std::pair<unsigned int, unsigned int>> target_rois = GetTargetROIs(edepVec[i_e], offset);
+    
+    // loop over ROI and match the energy deposits with wires
+    for (auto const& target_roi : target_rois)
+    {
+      // if we can't find the channel ROI, skip it
+      if (chanROIChannelMap.find(target_roi.first) == chanROIChannelMap.end())
+        continue;
+
+      // get the channel ROI
+      auto const& target_chanROI = chanROIVec.at(chanROIChannelMap[target_roi.first]);
+
+      // if there are no ticks in in the wire skip it
+      // likewise if there's nothing in the region of interst
+      if (not target_chanROI.SignalROIF().is_valid()              ||
+          target_chanROI.SignalROIF().empty()                     ||
+          target_chanROI.SignalROIF().n_ranges() == 0             ||
+          target_chanROI.SignalROIF().size() <= target_roi.second ||
+          target_chanROI.SignalROIF().is_void(target_roi.second)   )
+        continue;
+
+      // how far into the range is the ROI?
+      auto range_number = target_chanROI.SignalROIF().find_range_iterator(target_roi.second) - target_chanROI.SignalROIF().begin_range();
+
+      // popluate the map
+      ROIMatchedEdepMap[std::make_pair(target_chanROI.Channel(),range_number)].push_back(i_e);
+    }
+  }
+}
+
 //--- FillROIMatchedHitMap ---
 void sys::WireModUtility::FillROIMatchedHitMap(std::vector<recob::Hit> const& hitVec, std::vector<recob::Wire> const& wireVec)
 {
@@ -200,6 +290,50 @@ void sys::WireModUtility::FillROIMatchedHitMap(std::vector<recob::Hit> const& hi
 
       // pupluate the map
       ROIMatchedHitMap[std::make_pair(target_wire.Channel(),range_number)].push_back(i_h);
+    }
+  }
+}
+
+void sys::WireModUtility::FillROIMatchedHitMap(std::vector<recob::Hit> const& hitVec, std::vector<recob::ChannelROI> const& chanROIVec)
+{
+  // clear the map in case it was already set
+  ROIMatchedHitMap.clear();
+
+  // get the channel from each channel ROI and set up a map between them
+  std::unordered_map<unsigned int,unsigned int> chanROIChannelMap;
+  for (size_t i_c = 0; i_c < chanROIVec.size(); ++i_c)
+    chanROIChannelMap[chanROIVec[i_c].Channel()] = i_c;
+
+  // loop over hits
+  for (size_t i_h = 0; i_h < hitVec.size(); ++i_h)
+  {
+    // get the ROIs
+    // <channel number, tick time>
+    std::vector<std::pair<unsigned int, unsigned int>> target_rois = GetHitTargetROIs(hitVec[i_h]);
+
+    // loop over ROI and match the energy deposits with wires
+    for (auto const& target_roi : target_rois)
+    {
+      // if we can't find the wire, skip it
+      if (chanROIChannelMap.find(target_roi.first) == chanROIChannelMap.end())
+        continue;
+
+      auto const& target_chanROI = chanROIVec.at(chanROIChannelMap[target_roi.first]);
+
+      // if there are no ticks in in the channel ROI skip it
+      // likewise if there's nothing in the region of interst
+      if (not target_chanROI.SignalROIF().is_valid()              ||
+          target_chanROI.SignalROIF().empty()                     ||
+          target_chanROI.SignalROIF().n_ranges() == 0             ||
+          target_chanROI.SignalROIF().size() <= target_roi.second ||
+          target_chanROI.SignalROIF().is_void(target_roi.second)   )
+        continue;
+
+      // which range is it?
+      auto range_number = target_chanROI.SignalROIF().find_range_iterator(target_roi.second) - target_chanROI.SignalROIF().begin_range();
+
+      // pupluate the map
+      ROIMatchedHitMap[std::make_pair(target_chanROI.Channel(),range_number)].push_back(i_h);
     }
   }
 }
