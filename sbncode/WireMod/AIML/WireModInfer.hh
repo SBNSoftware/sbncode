@@ -49,12 +49,44 @@
  *
  * ── Weight-file format version ──────────────────────────────────────────────
  *
- * Expects format version 2 (header carries `n_in`). Version-1 weight files
- * were produced before the 15-feature augmentation landed and are rejected
- * with a clear error; retrain with the current src/Training.jl to upgrade.
+ * Accepts format versions 2, 3, 4, 5, and 6 (all headers carry `n_in`).
+ *
+ *   v2 — single-routing model. One Dense(128→4)+softmax `cls` head produces the
+ *        class routing weights; the MoE runs once; output heads use softplus
+ *        and the (Â, ŵ) → (Î, ŵ) combine.
+ *   v3 — split-routing model. TWO independent Dense(128→4)+softmax routers
+ *        (`routing_a`, `routing_w`) replace the single `cls` head. The backbone
+ *        (InputLayer → Dense → ResBlock1 → ResBlock2) emits 128-d features; each
+ *        router prepends its softmax to those features and the MoE runs once per
+ *        router. The integral Î is taken from the routing_a run and the width ŵ
+ *        from the routing_w run. The output heads use identity activation, and
+ *        the combine is log-space:
+ *           Â = exp(clamp(ahead, -50, 30));  ŵ = exp(clamp(whead, -50, 30))
+ *           Î = √(2π)·ŵ·Â;  ŵ = ŵ
+ *   v4 — same as v3, but the output heads are 2-layer MLPs:
+ *           Dense(132 → HEAD_HIDDEN_DIM, gelu) → Dense(HEAD_HIDDEN_DIM → 1, id)
+ *        Tensors are exposed as `ahead.l1.*`, `ahead.l2.*`, `whead.l1.*`,
+ *        `whead.l2.*` instead of single `ahead.*` / `whead.*`. Combine
+ *        semantics (exp + clamp + √(2π)) are identical to v3.
+ *   v5 — asymmetric "lean" model. ONE router + a 3-CWL A-expert bank → logÂ
+ *        (2-layer log head `ahead.l1/l2`), and a 3-layer DENSE w-head
+ *        (`whead.l1/l2/l3`) → logŵ. Expert count K is read at runtime from
+ *        `routing_a` (not the compile-time N_CLASSES). Combine as v3/v4.
+ *   v6 — decoupled model. Shared backbone + TWO independent 3-CWL expert banks:
+ *        routing_a→bank_A→logÂ (`cwl_a1/2/3`, `ahead.l1/l2`) and
+ *        routing_w→bank_W→logŵ (`cwl_w1/2/3`, `whead.l1/l2`), same K for both.
+ *        Single pass (each bank run once); combine as v3/v4 (exp+clamp+√(2π)).
+ *
+ * Version-5/6 readers auto-detect K from `routing_a.bias`, so 4- or 9-expert
+ * files both load.
+ *
+ * Version-1 weight files were produced before the 15-feature augmentation
+ * landed and are rejected with a clear error; retrain with the current
+ * src/Training.jl to upgrade.
  */
 
 #include <Eigen/Dense>
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <cmath>
@@ -178,6 +210,7 @@ namespace sys
   static constexpr int NEURON_N     = 128;                    // neuron_n
   static constexpr int NORM_GROUPS  =   8;                    // normgroups
   static constexpr int N_FIXED      =  14;                    // fixed input scales
+  static constexpr int HEAD_HIDDEN  =  64;                    // v4 2-layer head hidden dim
   static constexpr float SQRT2PI    =   2.5066282746310002f;  // sqrt(2*pi)
   static constexpr float GN_EPS     = 1e-5f;                  // GroupNorm epsilon
   static constexpr float FLT_EPS    =   1.1754944e-38f;       // eps(Float32)
@@ -230,8 +263,12 @@ namespace sys
         return it->second.size();
       }
 
+      /** WAIRE1 format version of the loaded file (2 = single-route, 3 = split-route) */
+      uint32_t version() const { return version_; }
+
     private:
       std::map<std::string, std::vector<float>> tensors_;
+      uint32_t version_ = 0;
 
       template<typename T>
         static T read_le(std::ifstream& f)
@@ -253,11 +290,11 @@ namespace sys
           throw std::runtime_error("WaireMLod --- Not a WAIRE1 file: " + path);
 
         uint32_t version = read_le<uint32_t>(f);
-        if (version != 2)
+        if (version != 2 && version != 3 && version != 4 && version != 5 && version != 6)
         {
           std::string msg = "WaireMLod --- Unsupported WAIRE format version: " +
                             std::to_string(version) +
-                            " (this reader expects version 2). ";
+                            " (this reader expects version 2, 3, 4, 5, or 6). ";
           if (version == 1)
             msg += "Version-1 weight files were produced before the 15-feature "
                    "augmentation landed. Retrain with the current "
@@ -265,10 +302,11 @@ namespace sys
                    "WireModInfer to consume legacy weights.";
           throw std::runtime_error(msg);
         }
+        version_ = version;
 
-        // v2 header carries the network-facing input width n_in. Validate
-        // against this build's compile-time N_FEATURES so a stale binary
-        // never silently consumes a model with a different feature count.
+        // v2/v3 headers both carry the network-facing input width n_in.
+        // Validate against this build's compile-time N_FEATURES so a stale
+        // binary never silently consumes a model with a different feature count.
         uint32_t n_in = read_le<uint32_t>(f);
         if (n_in != static_cast<uint32_t>(N_FEATURES))
           throw std::runtime_error(
@@ -312,8 +350,13 @@ namespace sys
   // ═════════════════════════════════════════════════════════════════════════════
   inline float gelu(float x)
   {
-    // Exact GELU: x · 0.5 · (1 + erf(x / √2))
-    return x * 0.5f * (1.0f + std::erf(x * 0.7071067811865476f));
+    // tanh-approx GELU — MUST match the model's activation. Current Flux/NNlib
+    // `gelu` is `gelu_tanh` (Dense layers show `typeof(gelu_tanh)`), so we use
+    // the tanh form here, NOT the exact erf form (they differ ~0.1%, which
+    // compounds through the network):
+    //   x·0.5·(1 + tanh(√(2/π)·(x + 0.044715·x³)))
+    const float l = 0.7978845608028654f;   // √(2/π)
+    return 0.5f * x * (1.0f + std::tanh(l * (x + 0.044715f * x * x * x)));
   }
 
   inline Eigen::VectorXf gelu(const Eigen::VectorXf& v)
@@ -603,6 +646,24 @@ namespace sys
     return out;
   }
 
+  /**
+   * _output_combine_log: vcat(sqrt2pi * ŵ * Â, ŵ) where
+   *   Â = exp(clamp(logA, -50, 30)),  ŵ = exp(clamp(logW, -50, 30)).
+   * v3 log-output variant: the heads emit log-space scalars (identity
+   * activation), so the exp + clamp lives here. Matches the Julia
+   * `_output_combine_log` (clamp bounds and √(2π) constant inlined there).
+   * logA, logW are scalars (size-1 vectors). Result (2,): [Î, ŵ].
+   */
+  inline Eigen::VectorXf output_combine_log(const Eigen::VectorXf& logA, const Eigen::VectorXf& logW)
+  {
+    float A_hat = std::exp(std::max(-50.0f, std::min(30.0f, logA[0])));
+    float w_hat = std::exp(std::max(-50.0f, std::min(30.0f, logW[0])));
+    Eigen::VectorXf out(2);
+    out[0] = SQRT2PI * w_hat * A_hat;
+    out[1] = w_hat;
+    return out;
+  }
+
   // ═════════════════════════════════════════════════════════════════════════════
   // ClassWeightedLayer (single-sample forward pass, flat weight layout)
   // ═════════════════════════════════════════════════════════════════════════════
@@ -661,10 +722,14 @@ namespace sys
   /**
    * WaireMLod
    *
-   * Loads all weights from a v2 WAIRE1 binary and infers data-like hit
-   * integrals and widths. External callers pass the legacy 11-feature
-   * primitive layout (see file header); the augmentation to the 15-feature
-   * network input happens inside `infer`.
+   * Loads all weights from a v2, v3, or v4 WAIRE1 binary and infers data-like
+   * hit integrals and widths. `infer` dispatches on the loaded format version:
+   * v2 runs the single-routing classifier + one MoE pass; v3/v4 run the shared
+   * backbone, two routers, and one MoE pass per router with the log-output
+   * combine (v4 uses 2-layer output heads; see the file header for the version
+   * semantics). External callers pass the legacy 11-feature primitive layout
+   * (see file header); the augmentation to the 15-feature network input happens
+   * inside `infer`.
    */
   class WaireMLod
   {
@@ -684,6 +749,50 @@ namespace sys
       std::array<float, 2> infer(const std::array<float, N_RAW>& raw) const
       {
         std::array<float, N_FEATURES> features = derive_features(raw);
+
+        if (store_.version() == 6)
+        {
+          // ── v6 decoupled: shared backbone → TWO independent expert banks
+          //    (routing_a→bank_A→logÂ, routing_w→bank_W→logŵ); single-pass
+          //    combine I=√(2π)·Â·ŵ, w=ŵ.
+          return infer_v6(features);
+        }
+
+        if (store_.version() == 5)
+        {
+          // ── v5 asymmetric: one router → A-expert bank → logÂ; dense w-head
+          //    → logŵ; single-pass combine I=√(2π)·Â·ŵ, w=ŵ.
+          return infer_v5(features);
+        }
+
+        if (store_.version() >= 3)
+        {
+          // ── v3/v4 split-routing ───────────────────────────────────────────
+          // Shared backbone emits 128-d features; two routers each prepend
+          // their softmax to form a 132-d MoE input. The MoE runs once per
+          // router (log-output combine). Take Î from the A-routed run and ŵ
+          // from the W-routed run. v4 differs only in the output-head depth,
+          // handled inside run_mixture_of_experts.
+          Eigen::VectorXf feats = run_backbone(features);
+
+          Eigen::VectorXf rA = softmax(dense_linear(
+            feats, wp_.routing_a_w, wp_.routing_a_b, N_CLASSES, NEURON_N));
+          Eigen::VectorXf rW = softmax(dense_linear(
+            feats, wp_.routing_w_w, wp_.routing_w_b, N_CLASSES, NEURON_N));
+
+          Eigen::VectorXf inA(N_CLASSES + NEURON_N);
+          inA.head(N_CLASSES) = rA;
+          inA.tail(NEURON_N)  = feats;
+          Eigen::VectorXf inW(N_CLASSES + NEURON_N);
+          inW.head(N_CLASSES) = rW;
+          inW.tail(NEURON_N)  = feats;
+
+          Eigen::VectorXf outA = run_mixture_of_experts(inA, /*log_output=*/true);
+          Eigen::VectorXf outW = run_mixture_of_experts(inW, /*log_output=*/true);
+          return {outA[0], outW[1]};
+        }
+
+        // ── v2 single-routing ───────────────────────────────────────────────
         Eigen::VectorXf x = run_classifier(features);
         Eigen::VectorXf y = run_mixture_of_experts(x);
         return {y[0], y[1]};
@@ -727,7 +836,9 @@ namespace sys
         const float *d1_w, *d1_b;
         const float *rb1_gamma, *rb1_beta, *rb1_w, *rb1_b;
         const float *rb2_gamma, *rb2_beta, *rb2_w, *rb2_b;
-        const float *cls_w, *cls_b;
+        const float *cls_w = nullptr, *cls_b = nullptr;                 // v2 only
+        const float *routing_a_w = nullptr, *routing_a_b = nullptr;     // v3/v4 only
+        const float *routing_w_w = nullptr, *routing_w_b = nullptr;     // v3/v4 only
         struct CWLPtrs
         {
           const float *weights, *biases;
@@ -735,8 +846,18 @@ namespace sys
           const float *escale, *ebias;
         };
         CWLPtrs cwl1, cwl2a, cwl2w, cwl3a, cwl3w;
-        const float *ahead_w, *ahead_b;
-        const float *whead_w, *whead_b;
+        // Output heads. v2/v3: single Dense, use *_w / *_b only.
+        // v4: 2-layer MLP, use *_l1_* and *_l2_*.
+        const float *ahead_w = nullptr, *ahead_b = nullptr;             // v2/v3
+        const float *whead_w = nullptr, *whead_b = nullptr;             // v2/v3
+        const float *ahead_l1_w = nullptr, *ahead_l1_b = nullptr;       // v4
+        const float *ahead_l2_w = nullptr, *ahead_l2_b = nullptr;       // v4
+        const float *whead_l1_w = nullptr, *whead_l1_b = nullptr;       // v4/v5
+        const float *whead_l2_w = nullptr, *whead_l2_b = nullptr;       // v4/v5
+        const float *whead_l3_w = nullptr, *whead_l3_b = nullptr;       // v5 (3-layer dense w-head)
+        CWLPtrs cwl_a1, cwl_a2, cwl_a3;                                 // v5/v6 A-expert bank
+        CWLPtrs cwl_w1, cwl_w2, cwl_w3;                                 // v6 W-expert bank
+        int n_exp = N_CLASSES;                                          // v5/v6: runtime expert count
       };
       WeightPointers wp_;
 
@@ -754,8 +875,75 @@ namespace sys
         wp_.rb2_beta  = store_.data("rb2.gn.beta");
         wp_.rb2_w     = store_.data("rb2.d.weight");
         wp_.rb2_b     = store_.data("rb2.d.bias");
-        wp_.cls_w = store_.data("cls.weight");
-        wp_.cls_b = store_.data("cls.bias");
+
+        // ── v6 (decoupled): shared backbone + TWO independent expert banks. Same
+        //    A-bank as v5, plus a W-bank (routing_w + cwl_w1/2/3 + 2-layer log-ŵ
+        //    head). K read from routing_a (same K for both banks). Early-return —
+        //    the v2/3/4/5 tensors below do NOT all exist in a v6 file. ─────────
+        if (store_.version() == 6)
+        {
+          auto load_cwl6 = [&](const std::string& p) {
+            return WeightPointers::CWLPtrs{
+              store_.data(p + ".weights"),      store_.data(p + ".biases"),
+              store_.data(p + ".norm.gamma"),   store_.data(p + ".norm.beta"),
+              store_.data(p + ".expert_scale"), store_.data(p + ".expert_bias") };
+          };
+          wp_.n_exp       = static_cast<int>(store_.size("routing_a.bias"));
+          wp_.routing_a_w = store_.data("routing_a.weight");
+          wp_.routing_a_b = store_.data("routing_a.bias");
+          wp_.cwl_a1 = load_cwl6("cwl_a1"); wp_.cwl_a2 = load_cwl6("cwl_a2"); wp_.cwl_a3 = load_cwl6("cwl_a3");
+          wp_.ahead_l1_w = store_.data("ahead.l1.weight"); wp_.ahead_l1_b = store_.data("ahead.l1.bias");
+          wp_.ahead_l2_w = store_.data("ahead.l2.weight"); wp_.ahead_l2_b = store_.data("ahead.l2.bias");
+          wp_.routing_w_w = store_.data("routing_w.weight");
+          wp_.routing_w_b = store_.data("routing_w.bias");
+          wp_.cwl_w1 = load_cwl6("cwl_w1"); wp_.cwl_w2 = load_cwl6("cwl_w2"); wp_.cwl_w3 = load_cwl6("cwl_w3");
+          wp_.whead_l1_w = store_.data("whead.l1.weight"); wp_.whead_l1_b = store_.data("whead.l1.bias");
+          wp_.whead_l2_w = store_.data("whead.l2.weight"); wp_.whead_l2_b = store_.data("whead.l2.bias");
+          return;
+        }
+
+        // ── v5 (asymmetric): one router, one A-expert bank (3 CWLs), a 2-layer
+        //    log-Â head, and a 3-layer dense log-ŵ head. Expert count is read
+        //    from routing_a (no compile-time class assumption). Early-return —
+        //    the v2/3/4 tensors below (cls / routing_w / cwl1.. / single heads)
+        //    do NOT exist in a v5 file. ──────────────────────────────────────
+        if (store_.version() == 5)
+        {
+          auto load_cwl5 = [&](const std::string& p) {
+            return WeightPointers::CWLPtrs{
+              store_.data(p + ".weights"),      store_.data(p + ".biases"),
+              store_.data(p + ".norm.gamma"),   store_.data(p + ".norm.beta"),
+              store_.data(p + ".expert_scale"), store_.data(p + ".expert_bias") };
+          };
+          wp_.n_exp       = static_cast<int>(store_.size("routing_a.bias"));
+          wp_.routing_a_w = store_.data("routing_a.weight");
+          wp_.routing_a_b = store_.data("routing_a.bias");
+          wp_.cwl_a1 = load_cwl5("cwl_a1");
+          wp_.cwl_a2 = load_cwl5("cwl_a2");
+          wp_.cwl_a3 = load_cwl5("cwl_a3");
+          wp_.ahead_l1_w = store_.data("ahead.l1.weight"); wp_.ahead_l1_b = store_.data("ahead.l1.bias");
+          wp_.ahead_l2_w = store_.data("ahead.l2.weight"); wp_.ahead_l2_b = store_.data("ahead.l2.bias");
+          wp_.whead_l1_w = store_.data("whead.l1.weight"); wp_.whead_l1_b = store_.data("whead.l1.bias");
+          wp_.whead_l2_w = store_.data("whead.l2.weight"); wp_.whead_l2_b = store_.data("whead.l2.bias");
+          wp_.whead_l3_w = store_.data("whead.l3.weight"); wp_.whead_l3_b = store_.data("whead.l3.bias");
+          return;
+        }
+
+        // Routing head(s): v2 has a single `cls` head; v3/v4 split it into two
+        // independent routers (`routing_a` for the integral, `routing_w` for
+        // the width).
+        if (store_.version() >= 3)
+        {
+          wp_.routing_a_w = store_.data("routing_a.weight");
+          wp_.routing_a_b = store_.data("routing_a.bias");
+          wp_.routing_w_w = store_.data("routing_w.weight");
+          wp_.routing_w_b = store_.data("routing_w.bias");
+        }
+        else
+        {
+          wp_.cls_w = store_.data("cls.weight");
+          wp_.cls_b = store_.data("cls.bias");
+        }
 
         auto load_cwl = [&](const std::string& p)
         {
@@ -775,10 +963,25 @@ namespace sys
         wp_.cwl3a = load_cwl("cwl3a");
         wp_.cwl3w = load_cwl("cwl3w");
 
-        wp_.ahead_w = store_.data("ahead.weight");
-        wp_.ahead_b = store_.data("ahead.bias");
-        wp_.whead_w = store_.data("whead.weight");
-        wp_.whead_b = store_.data("whead.bias");
+        // Output heads. v2/v3: single Dense per head. v4: 2-layer MLP per head.
+        if (store_.version() == 4)
+        {
+          wp_.ahead_l1_w = store_.data("ahead.l1.weight");
+          wp_.ahead_l1_b = store_.data("ahead.l1.bias");
+          wp_.ahead_l2_w = store_.data("ahead.l2.weight");
+          wp_.ahead_l2_b = store_.data("ahead.l2.bias");
+          wp_.whead_l1_w = store_.data("whead.l1.weight");
+          wp_.whead_l1_b = store_.data("whead.l1.bias");
+          wp_.whead_l2_w = store_.data("whead.l2.weight");
+          wp_.whead_l2_b = store_.data("whead.l2.bias");
+        }
+        else
+        {
+          wp_.ahead_w = store_.data("ahead.weight");
+          wp_.ahead_b = store_.data("ahead.bias");
+          wp_.whead_w = store_.data("whead.weight");
+          wp_.whead_b = store_.data("whead.bias");
+        }
       }
 
       /**
@@ -810,8 +1013,79 @@ namespace sys
         check("rb2.gn.beta",      NEURON_N);
         check("rb2.d.weight",     NEURON_N * NEURON_N);
         check("rb2.d.bias",       NEURON_N);
-        check("cls.weight",       N_CLASSES * NEURON_N);
-        check("cls.bias",         N_CLASSES);
+
+        // ── v6 (decoupled): backbone + A-bank + W-bank. Each bank: a router, 3
+        //    CWLs (dense_out=NEURON_N), and a 2-layer log head. K = expert count
+        //    (same for both banks, read from routing_a). ──────────────────────
+        if (store_.version() == 6)
+        {
+          int K = static_cast<int>(store_.size("routing_a.bias"));
+          for (const auto& rt : {"routing_a", "routing_w"})
+          {
+            std::string p(rt);
+            check(p + ".weight", K * NEURON_N);
+            check(p + ".bias",   K);
+          }
+          for (const auto& prefix : {"cwl_a1", "cwl_a2", "cwl_a3", "cwl_w1", "cwl_w2", "cwl_w3"})
+          {
+            std::string p(prefix);
+            check(p + ".weights",      NEURON_N * K * NEURON_N);
+            check(p + ".biases",       NEURON_N * K);
+            check(p + ".norm.gamma",   NEURON_N);
+            check(p + ".norm.beta",    NEURON_N);
+            check(p + ".expert_scale", NEURON_N * K);
+            check(p + ".expert_bias",  NEURON_N * K);
+          }
+          int head_in = K + NEURON_N;
+          for (const auto& hd : {"ahead", "whead"})
+          {
+            std::string p(hd);
+            check(p + ".l1.weight", HEAD_HIDDEN * head_in); check(p + ".l1.bias", HEAD_HIDDEN);
+            check(p + ".l2.weight", HEAD_HIDDEN);           check(p + ".l2.bias", 1);
+          }
+          return;
+        }
+
+        // ── v5 (asymmetric): one router + A-expert bank (3 CWLs, dense_out=NEURON_N)
+        //    + 2-layer log-Â head + 3-layer dense log-ŵ head. K = expert count. ──
+        if (store_.version() == 5)
+        {
+          int K = static_cast<int>(store_.size("routing_a.bias"));
+          check("routing_a.weight", K * NEURON_N);
+          check("routing_a.bias",   K);
+          for (const auto& prefix : {"cwl_a1", "cwl_a2", "cwl_a3"})
+          {
+            std::string p(prefix);
+            check(p + ".weights",      NEURON_N * K * NEURON_N);
+            check(p + ".biases",       NEURON_N * K);
+            check(p + ".norm.gamma",   NEURON_N);
+            check(p + ".norm.beta",    NEURON_N);
+            check(p + ".expert_scale", NEURON_N * K);
+            check(p + ".expert_bias",  NEURON_N * K);
+          }
+          int head_in = K + NEURON_N;
+          check("ahead.l1.weight", HEAD_HIDDEN * head_in);  check("ahead.l1.bias", HEAD_HIDDEN);
+          check("ahead.l2.weight", HEAD_HIDDEN);            check("ahead.l2.bias", 1);
+          check("whead.l1.weight", HEAD_HIDDEN * NEURON_N); check("whead.l1.bias", HEAD_HIDDEN);
+          check("whead.l2.weight", HEAD_HIDDEN * HEAD_HIDDEN); check("whead.l2.bias", HEAD_HIDDEN);
+          check("whead.l3.weight", HEAD_HIDDEN);            check("whead.l3.bias", 1);
+          return;
+        }
+
+        // Routing head(s): single `cls` for v2, dual `routing_a`/`routing_w`
+        // for v3/v4. Each head is a Dense(NEURON_N → N_CLASSES).
+        if (store_.version() >= 3)
+        {
+          check("routing_a.weight", N_CLASSES * NEURON_N);
+          check("routing_a.bias",   N_CLASSES);
+          check("routing_w.weight", N_CLASSES * NEURON_N);
+          check("routing_w.bias",   N_CLASSES);
+        }
+        else
+        {
+          check("cls.weight",       N_CLASSES * NEURON_N);
+          check("cls.bias",         N_CLASSES);
+        }
 
         // MoE: CWL1 (dense_out = 2*NEURON_N)
         int cwl1_out = 2 * NEURON_N;
@@ -834,21 +1108,38 @@ namespace sys
           check(p + ".expert_bias",  NEURON_N * N_CLASSES);
         }
 
-        // Output heads
+        // Output heads. v2/v3: single Dense(head_in → 1). v4: 2-layer MLP
+        // Dense(head_in → HEAD_HIDDEN, gelu) → Dense(HEAD_HIDDEN → 1, id).
         int head_in = N_CLASSES + NEURON_N;
-        check("ahead.weight", head_in);
-        check("ahead.bias",   1);
-        check("whead.weight", head_in);
-        check("whead.bias",   1);
+        if (store_.version() == 4)
+        {
+          check("ahead.l1.weight", HEAD_HIDDEN * head_in);
+          check("ahead.l1.bias",   HEAD_HIDDEN);
+          check("ahead.l2.weight", HEAD_HIDDEN);
+          check("ahead.l2.bias",   1);
+          check("whead.l1.weight", HEAD_HIDDEN * head_in);
+          check("whead.l1.bias",   HEAD_HIDDEN);
+          check("whead.l2.weight", HEAD_HIDDEN);
+          check("whead.l2.bias",   1);
+        }
+        else
+        {
+          check("ahead.weight", head_in);
+          check("ahead.bias",   1);
+          check("whead.weight", head_in);
+          check("whead.bias",   1);
+        }
       }
 
       /**
-       * Classifier subnetwork.
-       *   InputLayer → Dense(N_FEATURES → 128, gelu)
-       *   → ResBlock1 → ResBlock2 → SkipConnection(Dense(128→4)→softmax, vcat)
-       *   Output: (132,)  rows 0..3 = softmax, rows 4..131 = activations.
+       * Shared classifier backbone (routing-head agnostic).
+       *   InputLayer → Dense(N_FEATURES → 128, gelu) → ResBlock1 → ResBlock2
+       *   Output: (128,) activations.
+       *
+       * v2 wraps this with the single `cls` softmax head (see run_classifier);
+       * v3 feeds it to the two independent routers in `infer`.
        */
-      Eigen::VectorXf run_classifier(const std::array<float, N_FEATURES>& features) const
+      Eigen::VectorXf run_backbone(const std::array<float, N_FEATURES>& features) const
       {
         // InputLayer
         Eigen::VectorXf x = input_layer(features,
@@ -878,6 +1169,99 @@ namespace sys
           x += inner;
         }
 
+        return x;
+      }
+
+      /**
+       * v5 asymmetric forward. Backbone (128-d) → A-router → A-expert bank
+       * (first CWL via _prepend_classes, then two residual CWLs) → 2-layer log-Â
+       * head; a 3-layer dense log-ŵ head reads the backbone features directly.
+       * Combine: Â=exp(clamp(logÂ,-50,30)), ŵ=exp(clamp(logŵ,-50,30));
+       * I=√(2π)·Â·ŵ, w=ŵ. Expert count K = wp_.n_exp (read from routing_a).
+       */
+      std::array<float, 2> infer_v5(const std::array<float, N_FEATURES>& features) const
+      {
+        const int K = wp_.n_exp;
+        Eigen::VectorXf feats = run_backbone(features);                 // (128,)
+
+        Eigen::VectorXf rA = softmax(dense_linear(
+          feats, wp_.routing_a_w, wp_.routing_a_b, K, NEURON_N));        // (K,)
+
+        // A-expert bank. Working tensor h = [rA ; neurons]; neurons start = feats.
+        Eigen::VectorXf h(K + NEURON_N);
+        h.head(K) = rA;
+        h.tail(NEURON_N) = feats;
+        auto run_cwl = [&](const WeightPointers::CWLPtrs& c) {
+          return cwl_forward(h, K, NEURON_N, NEURON_N, NORM_GROUPS,
+            c.weights, c.biases, c.gamma, c.beta, c.escale, c.ebias);
+        };
+        Eigen::VectorXf c1 = run_cwl(wp_.cwl_a1); h.tail(NEURON_N)  = c1;  // _prepend_classes
+        Eigen::VectorXf c2 = run_cwl(wp_.cwl_a2); h.tail(NEURON_N) += c2;  // _residual_combine
+        Eigen::VectorXf c3 = run_cwl(wp_.cwl_a3); h.tail(NEURON_N) += c3;  // _residual_combine
+
+        // log-Â head: Dense(K+128 → 64, gelu) → Dense(64 → 1, identity).
+        Eigen::VectorXf ah   = dense_gelu(h, wp_.ahead_l1_w, wp_.ahead_l1_b, HEAD_HIDDEN, K + NEURON_N);
+        Eigen::VectorXf logA = dense_linear(ah, wp_.ahead_l2_w, wp_.ahead_l2_b, 1, HEAD_HIDDEN);
+
+        // log-ŵ head (dense, off the backbone): Dense(128→64,gelu)→Dense(64→64,gelu)→Dense(64→1,id).
+        Eigen::VectorXf w1   = dense_gelu(feats, wp_.whead_l1_w, wp_.whead_l1_b, HEAD_HIDDEN, NEURON_N);
+        Eigen::VectorXf w2   = dense_gelu(w1,    wp_.whead_l2_w, wp_.whead_l2_b, HEAD_HIDDEN, HEAD_HIDDEN);
+        Eigen::VectorXf logW = dense_linear(w2,  wp_.whead_l3_w, wp_.whead_l3_b, 1, HEAD_HIDDEN);
+
+        Eigen::VectorXf out = output_combine_log(logA, logW);
+        return {out[0], out[1]};
+      }
+
+      // Routed expert bank: routing softmax → 3 residual CWLs (prepend, then two
+      // residual-combines) → 2-layer log head. Identical structure to v5's A-bank;
+      // v6 runs it twice (A→logÂ, W→logŵ). Returns the (1,) log output.
+      Eigen::VectorXf run_expert_bank(
+        const Eigen::VectorXf& feats, int K,
+        const float* route_w, const float* route_b,
+        const WeightPointers::CWLPtrs& c1,
+        const WeightPointers::CWLPtrs& c2,
+        const WeightPointers::CWLPtrs& c3,
+        const float* h1_w, const float* h1_b,
+        const float* h2_w, const float* h2_b) const
+      {
+        Eigen::VectorXf r = softmax(dense_linear(feats, route_w, route_b, K, NEURON_N));  // (K,)
+        Eigen::VectorXf h(K + NEURON_N);
+        h.head(K) = r;
+        h.tail(NEURON_N) = feats;
+        auto run_cwl = [&](const WeightPointers::CWLPtrs& c) {
+          return cwl_forward(h, K, NEURON_N, NEURON_N, NORM_GROUPS,
+            c.weights, c.biases, c.gamma, c.beta, c.escale, c.ebias);
+        };
+        Eigen::VectorXf x1 = run_cwl(c1); h.tail(NEURON_N)  = x1;   // _prepend_classes
+        Eigen::VectorXf x2 = run_cwl(c2); h.tail(NEURON_N) += x2;   // _residual_combine
+        Eigen::VectorXf x3 = run_cwl(c3); h.tail(NEURON_N) += x3;   // _residual_combine
+        Eigen::VectorXf hh = dense_gelu(h, h1_w, h1_b, HEAD_HIDDEN, K + NEURON_N);
+        return dense_linear(hh, h2_w, h2_b, 1, HEAD_HIDDEN);        // (1,) log output
+      }
+
+      std::array<float, 2> infer_v6(const std::array<float, N_FEATURES>& features) const
+      {
+        const int K = wp_.n_exp;
+        Eigen::VectorXf feats = run_backbone(features);             // (128,)
+        Eigen::VectorXf logA = run_expert_bank(feats, K,
+          wp_.routing_a_w, wp_.routing_a_b, wp_.cwl_a1, wp_.cwl_a2, wp_.cwl_a3,
+          wp_.ahead_l1_w, wp_.ahead_l1_b, wp_.ahead_l2_w, wp_.ahead_l2_b);  // logÂ
+        Eigen::VectorXf logW = run_expert_bank(feats, K,
+          wp_.routing_w_w, wp_.routing_w_b, wp_.cwl_w1, wp_.cwl_w2, wp_.cwl_w3,
+          wp_.whead_l1_w, wp_.whead_l1_b, wp_.whead_l2_w, wp_.whead_l2_b);  // logŵ
+        Eigen::VectorXf out = output_combine_log(logA, logW);
+        return {out[0], out[1]};
+      }
+
+      /**
+       * Classifier subnetwork (v2 single-routing).
+       *   run_backbone → SkipConnection(Dense(128→4)→softmax, vcat)
+       *   Output: (132,)  rows 0..3 = softmax, rows 4..131 = activations.
+       */
+      Eigen::VectorXf run_classifier(const std::array<float, N_FEATURES>& features) const
+      {
+        Eigen::VectorXf x = run_backbone(features);
+
         // Classifier head
         Eigen::VectorXf cls_scores = dense_linear(x,
           wp_.cls_w, wp_.cls_b,
@@ -895,9 +1279,16 @@ namespace sys
        *   Input (132,) → CWL1 → (260,)
        *   → ResBlock3 (Parallel Â/ŵ chains) → (260,)
        *   → ResBlock4 (Parallel Â/ŵ chains) → (260,)
-       *   → Parallel(_output_combine, Â-head, ŵ-head) → (2,)
+       *   → Parallel(combine, Â-head, ŵ-head) → (2,)
+       *
+       * @param log_output  false (v2): heads use softplus, combine is
+       *                     output_combine. true (v3/v4): heads use identity
+       *                     activation and combine is output_combine_log
+       *                     (exp + clamp lives in the combine). v4 heads are
+       *                     2-layer MLPs; v3 heads are a single Dense.
        */
-      Eigen::VectorXf run_mixture_of_experts(const Eigen::VectorXf& clf_out) const
+      Eigen::VectorXf run_mixture_of_experts(const Eigen::VectorXf& clf_out,
+                                             bool log_output = false) const
       {
         // CWL1: (132,) → (256,), then prepend the 4 class scores → (260,)
         Eigen::VectorXf cwl1_out = cwl_forward(
@@ -950,6 +1341,32 @@ namespace sys
         }
 
         // Output heads
+        if (log_output)
+        {
+          // v3/v4: identity-activation heads emit log-space scalars; exp + clamp
+          // and the (Î, ŵ) combine happen in output_combine_log.
+          int head_in = N_CLASSES + NEURON_N;
+          Eigen::VectorXf logA, logW;
+          if (store_.version() == 4)
+          {
+            // 2-layer MLP head: Dense(head_in → HEAD_HIDDEN, gelu) → Dense(HEAD_HIDDEN → 1, id)
+            logA = dense_linear(
+              dense_gelu(astream_select(x), wp_.ahead_l1_w, wp_.ahead_l1_b, HEAD_HIDDEN, head_in),
+              wp_.ahead_l2_w, wp_.ahead_l2_b, 1, HEAD_HIDDEN);
+            logW = dense_linear(
+              dense_gelu(wstream_select(x), wp_.whead_l1_w, wp_.whead_l1_b, HEAD_HIDDEN, head_in),
+              wp_.whead_l2_w, wp_.whead_l2_b, 1, HEAD_HIDDEN);
+          }
+          else
+          {
+            // v3: single Dense head.
+            logA = dense_linear(astream_select(x), wp_.ahead_w, wp_.ahead_b, 1, head_in);
+            logW = dense_linear(wstream_select(x), wp_.whead_w, wp_.whead_b, 1, head_in);
+          }
+
+          return output_combine_log(logA, logW);
+        }
+
         Eigen::VectorXf A_hat = dense_softplus(
           astream_select(x),
           wp_.ahead_w, wp_.ahead_b,
