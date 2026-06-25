@@ -81,7 +81,7 @@ cet_build_plugin(TrackCaloSkimmerSelectClearCosmicMuon art::tool
 )
 
 cet_build_plugin ( DataSelect art::module
-           LIBRARIES PRIVATE PRIVATE
+           LIBRARIES PRIVATE
                ifdh_art::IFDH_service
                art::Framework_Core
                art::Framework_Principal
