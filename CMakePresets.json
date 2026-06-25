@@ -1,0 +1,140 @@
+{
+   "configurePresets" : [
+      {
+         "cacheVariables" : {
+            "CMAKE_BUILD_TYPE" : {
+               "type" : "STRING",
+               "value" : "RelWithDebInfo"
+            },
+            "CMAKE_CXX_EXTENSIONS" : {
+               "type" : "BOOL",
+               "value" : "OFF"
+            },
+            "CMAKE_CXX_STANDARD_REQUIRED" : {
+               "type" : "BOOL",
+               "value" : "ON"
+            },
+            "sbncode_ADD_ARCH_DIRS_INIT" : {
+               "type" : "INTERNAL",
+               "value" : "LIBRARY_DIR;BIN_DIR"
+            },
+            "sbncode_ADD_NOARCH_DIRS_INIT" : {
+               "type" : "INTERNAL",
+               "value" : "GDML_DIR;INCLUDE_DIR;FHICL_DIR;FW_DIR"
+            },
+            "sbncode_BIN_DIR_INIT" : {
+               "type" : "STRING",
+               "value" : "bin"
+            },
+            "sbncode_FHICL_DIR_INIT" : {
+               "type" : "STRING",
+               "value" : "fcl"
+            },
+            "sbncode_FW_DIR_INIT" : {
+               "type" : "STRING",
+               "value" : "scripts"
+            },
+            "sbncode_INCLUDE_DIR_INIT" : {
+               "type" : "STRING",
+               "value" : "include"
+            },
+            "sbncode_LIBRARY_DIR_INIT" : {
+               "type" : "STRING",
+               "value" : "lib"
+            }
+         },
+         "description" : "Configuration settings translated from ups/product_deps",
+         "displayName" : "Configuration from product_deps",
+         "hidden" : true,
+         "name" : "from_product_deps"
+      },
+      {
+         "cacheVariables" : {
+            "CMAKE_CXX_COMPILER" : {
+               "type" : "STRING",
+               "value" : "$env{CETPKG_CXX_COMPILER}"
+            },
+            "CMAKE_CXX_STANDARD" : {
+               "type" : "STRING",
+               "value" : "$env{CETPKG_CXX_STANDARD}"
+            },
+            "CMAKE_C_COMPILER" : {
+               "type" : "STRING",
+               "value" : "$env{CETPKG_C_COMPILER}"
+            },
+            "CMAKE_Fortran_COMPILER" : {
+               "type" : "STRING",
+               "value" : "$env{CETPKG_Fortran_COMPILER}"
+            },
+            "UPS_CXX_COMPILER_ID" : {
+               "type" : "STRING",
+               "value" : "$env{CETPKG_CXX_COMPILER_ID}"
+            },
+            "UPS_CXX_COMPILER_VERSION" : {
+               "type" : "STRING",
+               "value" : "$env{CETPKG_CXX_COMPILER_VERSION}"
+            },
+            "UPS_C_COMPILER_ID" : {
+               "type" : "STRING",
+               "value" : "$env{CETPKG_C_COMPILER_ID}"
+            },
+            "UPS_C_COMPILER_VERSION" : {
+               "type" : "STRING",
+               "value" : "$env{CETPKG_C_COMPILER_VERSION}"
+            },
+            "UPS_Fortran_COMPILER_ID" : {
+               "type" : "STRING",
+               "value" : "$env{CETPKG_Fortran_COMPILER_ID}"
+            },
+            "UPS_Fortran_COMPILER_VERSION" : {
+               "type" : "STRING",
+               "value" : "$env{CETPKG_Fortran_COMPILER_VERSION}"
+            },
+            "WANT_UPS" : {
+               "type" : "BOOL",
+               "value" : true
+            },
+            "sbncode_EXEC_PREFIX_INIT" : {
+               "type" : "STRING",
+               "value" : "$env{CETPKG_FQ_DIR}"
+            },
+            "sbncode_UPS_BUILD_ONLY_DEPENDENCIES_INIT" : {
+               "type" : "STRING",
+               "value" : "cetmodules"
+            },
+            "sbncode_UPS_PRODUCT_FLAVOR_INIT" : {
+               "type" : "STRING",
+               "value" : "$env{CETPKG_FLAVOR}"
+            },
+            "sbncode_UPS_PRODUCT_NAME_INIT" : {
+               "type" : "STRING",
+               "value" : "sbncode"
+            },
+            "sbncode_UPS_QUALIFIER_STRING_INIT" : {
+               "type" : "STRING",
+               "value" : "$env{CETPKG_QUALSPEC}"
+            }
+         },
+         "description" : "Extra configuration for UPS package generation",
+         "displayName" : "UPS extra configuration",
+         "hidden" : true,
+         "name" : "extra_for_UPS"
+      },
+      {
+         "description" : "Default configuration including settings from ups/product_deps",
+         "displayName" : "Default configuration",
+         "inherits" : "from_product_deps",
+         "name" : "default"
+      },
+      {
+         "description" : "Default configuration for UPS package generation",
+         "displayName" : "Default configuration for UPS",
+         "inherits" : [
+            "default",
+            "extra_for_UPS"
+         ],
+         "name" : "for_UPS"
+      }
+   ],
+   "version" : 3
+}
