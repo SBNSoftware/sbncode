@@ -21,6 +21,7 @@
 #include "lardataobj/Simulation/SimEnergyDeposit.h"
 #include "lardataobj/Simulation/SimChannel.h"
 #include "larcoreobj/SimpleTypesAndConstants/PhysicalConstants.h"
+#include "sbnobj/ICARUS/TPC/ChannelROI.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 
@@ -44,6 +45,7 @@ namespace sys {
       bool   applyYZAngleScale;                           // do we scale with YZ angle?
       bool   applydEdXScale;                              // do we scale with dEdx?
       bool   applyXXWScale;                               // do we scale with X vs ThXW?
+      bool   additiveModification;                        // additive (true) vs multiplicative (false) ROI modification
       double readoutWindowTicks;                          // how many ticks are in the readout window?
       double tickOffset;                                  // do we want an offset in the ticks?
 
@@ -87,6 +89,7 @@ namespace sys {
         applyYZAngleScale(arg_ApplyYZAngleScale),
         applydEdXScale(arg_ApplydEdXScale),
         applyXXWScale(arg_ApplyXXWScale),
+        additiveModification(false),
         readoutWindowTicks(detProp.ReadOutWindowSize()),                                               // the default A2795 (ICARUS TPC readout board) readout window is 4096 samples
         tickOffset(arg_TickOffset)                                                                     // tick offset is for MC truth, default to zero and set only as necessary
       {
@@ -226,6 +229,7 @@ namespace sys {
       
       // these are set in the .cc file
       ROIProperties_t CalcROIProperties(recob::Wire const&, size_t const&);
+      ROIProperties_t CalcROIProperties(recob::ChannelROI const&, size_t const&);
 
       std::vector<std::pair<unsigned int, unsigned int>> GetTargetROIs(sim::SimEnergyDeposit const&, double offset);
       std::vector<std::pair<unsigned int, unsigned int>> GetHitTargetROIs(recob::Hit const&);
@@ -233,6 +237,9 @@ namespace sys {
       void FillROIMatchedEdepMap(std::vector<sim::SimEnergyDeposit> const&, std::vector<recob::Wire> const&, double offset);
       void FillROIMatchedHitMap(std::vector<recob::Hit> const&, std::vector<recob::Wire> const&);
       void FillROIMatchedIDEMap(std::vector<sim::SimChannel> const& simchVec, std::vector<recob::Wire> const& wireVec, double offset);
+
+      void FillROIMatchedEdepMap(std::vector<sim::SimEnergyDeposit> const&, std::vector<recob::ChannelROI> const&, double offset);
+      void FillROIMatchedHitMap(std::vector<recob::Hit> const&, std::vector<recob::ChannelROI> const&);
 
       std::vector<SubROIProperties_t> CalcSubROIProperties(ROIProperties_t const&, std::vector<const recob::Hit*> const&);
 
@@ -247,7 +254,8 @@ namespace sys {
       void ModifyROI(std::vector<float> &,
                      ROIProperties_t const &,
                      std::vector<SubROIProperties_t> const&,
-                     std::map<SubROI_Key_t, ScaleValues_t> const&);
+                     std::map<SubROI_Key_t, ScaleValues_t> const&,
+                     double sigmaWindow = std::numeric_limits<double>::infinity());
   }; // end class
 } // end namespace
 

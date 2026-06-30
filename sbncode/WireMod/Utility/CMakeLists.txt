@@ -17,6 +17,7 @@ cet_make_library(
     lardataobj::AnalysisBase
     lardataobj::RawData
     lardataobj::RecoBase
+    sbnobj::ICARUS_TPC
     lardataalg::DetectorInfo 
     lardata::RecoObjects
     lardata::Utilities
