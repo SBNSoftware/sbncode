@@ -23,7 +23,7 @@ services:{
 
 
 source: {
-  inputCommands: [ "keep *_*_*_*", "drop *_*_*_SBNDBNBInfoGen" ]
+
 }
 
 physics: {
