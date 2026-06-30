@@ -726,6 +726,45 @@ sys::WireModUtility::ScaleValues_t sys::WireModUtility::GetViewScaleValues(sys::
     scales.r_sigma *= splines_Sigma_dEdX [plane]->Eval(truth_props.dedr);
   }
 
+  if (applyXXZAngleScale)
+  {
+    if (graph2Ds_Charge_XXZAngle[plane] == nullptr || 
+        graph2Ds_Sigma_XXZAngle [plane] == nullptr  )
+      throw cet::exception("WireModUtility")
+        << "Tried to apply XXZAngle scale factor, but could not find graphs. Check that you have set those in the utility.";
+    temp_scale = graph2Ds_Charge_XXZAngle[plane]->Interpolate(truth_props.x, ThetaXZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()));
+    if(temp_scale>0.001) scales.r_Q *= temp_scale;
+
+    temp_scale = graph2Ds_Sigma_XXZAngle [plane]->Interpolate(truth_props.x, ThetaXZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()));
+    if(temp_scale>0.001) scales.r_sigma *= temp_scale;
+  }
+
+  if (applyXdQdXScale)
+  {
+    if (graph2Ds_Charge_XdQdX[plane] == nullptr || 
+        graph2Ds_Sigma_XdQdX [plane] == nullptr  )
+      throw cet::exception("WireModUtility")
+        << "Tried to apply XdQdX scale factor, but could not find graphs. Check that you have set those in the utility.";
+    temp_scale = graph2Ds_Charge_XdQdX[plane]->Interpolate(truth_props.x, truth_props.dqdr); 
+    if(temp_scale>0.001) scales.r_Q *= temp_scale;
+
+    temp_scale = graph2Ds_Sigma_XdQdX [plane]->Interpolate(truth_props.x, truth_props.dqdr); 
+    if(temp_scale>0.001) scales.r_sigma *= temp_scale;
+  }
+
+  if (applyXZAngledQdXScale)
+  {
+    if (graph2Ds_Charge_XZAngledQdX[plane] == nullptr || 
+        graph2Ds_Sigma_XZAngledQdX [plane] == nullptr  )
+      throw cet::exception("WireModUtility")
+        << "Tried to apply XZAngledQdX scale factor, but could not find graphs. Check that you have set those in the utility.";
+    temp_scale = graph2Ds_Charge_XZAngledQdX[plane]->Interpolate(ThetaXZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()), truth_props.dqdr);
+    if(temp_scale>0.001) scales.r_Q *= temp_scale;
+
+    temp_scale = graph2Ds_Sigma_XZAngledQdX [plane]->Interpolate(ThetaXZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()), truth_props.dqdr);
+    if(temp_scale>0.001) scales.r_sigma *= temp_scale;
+  }
+
   return scales;
 }
 
@@ -743,6 +782,7 @@ void sys::WireModUtility::ModifyROI(std::vector<float> & roi_data,
   double q_orig = 0.0;
   double q_mod  = 0.0;
   double scale_ratio = 1.0;
+  double sigma_distance = 0.0;
 
   // loop over the ticks
   for(size_t i_t = 0; i_t < roi_data.size(); ++i_t)
@@ -751,6 +791,7 @@ void sys::WireModUtility::ModifyROI(std::vector<float> & roi_data,
     q_orig = 0.0;
     q_mod  = 0.0;
     scale_ratio = 1.0;
+    sigma_distance = 0.0;
 
     double t = i_t + roi_prop.begin;
 
@@ -760,73 +801,45 @@ void sys::WireModUtility::ModifyROI(std::vector<float> & roi_data,
       // get your scale vals
       auto scale_vals = subROIScaleMap.find(subroi_prop.key)->second;
 
-      double q_this_orig = gausFunc(t, subroi_prop.center, subroi_prop.sigma, subroi_prop.total_q);
-      q_orig += q_this_orig;
-
-      // sigmaWindow gating (limit scaling to within sigmaWindow of the subROI center)
-      // is disabled below; scale is currently applied everywhere regardless of distance.
-      double dist_sigma = (subroi_prop.sigma > 0)
-          ? std::abs(t - subroi_prop.center) / subroi_prop.sigma
-          : std::numeric_limits<double>::max();
-
-      //if (dist_sigma <= sigmaWindow)
-        q_mod += gausFunc(t, subroi_prop.center, scale_vals.r_sigma * subroi_prop.sigma, scale_vals.r_Q * subroi_prop.total_q);
-      //else
-      //  q_mod += q_this_orig;
+      q_orig += gausFunc(i_t + roi_prop.begin, subroi_prop.center,                      subroi_prop.sigma,                  subroi_prop.total_q);
+      q_mod  += gausFunc(i_t + roi_prop.begin, subroi_prop.center, scale_vals.r_sigma * subroi_prop.sigma, scale_vals.r_Q * subroi_prop.total_q);
+      sigma_distance += ((i_t + roi_prop.begin - subroi_prop.center)*(i_t + roi_prop.begin - subroi_prop.center) / (subroi_prop.sigma*subroi_prop.sigma))*\
+                gausFunc(i_t + roi_prop.begin, subroi_prop.center,                      subroi_prop.sigma,                  subroi_prop.total_q); 
 
       if (verbose)
         std::cout << "    tick " << t << "  subROI center=" << subroi_prop.center
-                  << "  dist=" << dist_sigma << "sigma"
-                  << (dist_sigma <= sigmaWindow ? "  [scaled]" : "  [pass-through]") << '\n'
+                  << "  dist=" << sigma_distance << "sigma"
+                  << (sigma_distance <= sigmaWindow ? "  [scaled]" : "  [pass-through]") << '\n'
                   << "    q_orig+=" << q_this_orig << '\n';
     }
+      
+    double delta = q_mod - q_orig;
 
-    if (additiveModification)
-    {
-      // additive approach: after(t) = before(t) + [q_mod(t) - q_orig(t)]
-      // residuals/noise in the waveform are preserved without amplification
-      double delta = q_mod - q_orig;
-      if (isnan(delta) || isinf(delta)) delta = 0.0;
+    // do some sanity checks
+    if (isnan(q_mod)) {
+      if (verbose)
+        std::cout << "WARNING: obtained q_mod = NaN... setting scale to 0" << std::endl;
+    } else if (q_orig < 0.01) { // check that this is a sane limit
+        if (verbose) std::cout << "WARNING: obtained q_orig < 0.01 ... setting scale to 1" << std::endl;
+    } else if (sigma_distance > 9.) {
+        if (verbose) std::cout << "WARNING: sigma_distance > 3.. setting scale to 1" << std::endl;
+    // additive approach: after(t) = before(t) + [q_mod(t) - q_orig(t)]
+    // residuals/noise in the waveform are preserved without amplification
+    } else if (additiveModification) {
       roi_data[i_t] += static_cast<float>(delta);
-      if (verbose)
-        std::cout << "\t tick " << i_t << ":"
-                  <<  " data="   << roi_data[i_t]
-                  << ", q_orig=" << q_orig
-                  << ", q_mod="  << q_mod
-                  << ", delta="  << delta << " [additive]" << std::endl;
     }
-    else
-    {
-      // multiplicative approach (original behavior): after(t) = before(t) * [q_mod(t)/q_orig(t)]
-      if        (isnan(q_orig))
-      {
-        if (verbose)
-          std::cout << "WARNING: obtained q_orig = NaN... setting scale to 1" << std::endl;
-        scale_ratio = 1.0;
-      } else if (isnan(q_mod)) {
-        if (verbose)
-          std::cout << "WARNING: obtained q_mod = NaN... setting scale to 0" << std::endl;
-        scale_ratio = 0.0;
-      } else if (q_orig < 0.01) {
-          std::cout << "WARNING: obtained q_orig < 0.01 ... setting scale to 1" << std::endl;
-        scale_ratio = 1.0;
-      } else {
-        scale_ratio = q_mod / q_orig;
-      }
-      if(isnan(scale_ratio) || isinf(scale_ratio))
-      {
-        if (verbose)
-          std::cout << "WARNING: obtained scale_ratio = " << q_mod << " / " << q_orig << " = NAN/Inf... setting to 1" << std::endl;
-        scale_ratio = 1.0;
-      }
+    else {
+      scale_ratio = q_mod / q_orig;
       roi_data[i_t] = scale_ratio * roi_data[i_t];
-      if (verbose)
-        std::cout << "\t tick " << i_t << ":"
-                  <<  " data="   << roi_data[i_t]
-                  << ", q_orig=" << q_orig
-                  << ", q_mod="  << q_mod
-                  << ", ratio="  << scale_ratio << " [multiplicative]" << std::endl;
     }
+
+    if (verbose)
+      std::cout << "\t tick " << i_t << ":"
+                <<  " data="   << roi_data[i_t]
+                << ", q_orig=" << q_orig
+                << ", q_mod="  << q_mod
+                << ", scale_ratio="  << scale_ratio << " [multiplicative]"
+                << ", delta="  << delta << " [additive]" << std::endl;
   }
 
   // we're done now

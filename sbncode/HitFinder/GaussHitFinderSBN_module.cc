@@ -45,6 +45,8 @@
 #include "larcoreobj/SimpleTypesAndConstants/RawTypes.h" // raw::ChannelID_t
 #include "larreco/HitFinder/HitFilterAlg.h"
 #include "lardataobj/RecoBase/Hit.h"
+#include "larevt/CalibrationDBI/Interface/ChannelStatusService.h"
+#include "larevt/CalibrationDBI/Interface/ChannelStatusProvider.h"
 
 #include "sbnobj/ICARUS/TPC/ChannelROI.h"
 #include "sbncode/HitFinder/HitFinderUtilities/HitCreator.h"
@@ -72,6 +74,7 @@ namespace hit {
 
     const bool fFilterHits;
     const bool fFillHists;
+    const bool fExcludeBadChannels; ///< skip input ChannelROIs on database-flagged bad channels
 
     const std::string fCalDataModuleLabel;
     const std::string fAllHitsInstanceName;
@@ -99,6 +102,9 @@ namespace hit {
     //HitFilterAlg implementation is threadsafe.
     std::unique_ptr<HitFilterAlg> fHitFilterAlg; ///< algorithm used to filter out noise hits
 
+    /// Bad-channel database provider; non-null only when fExcludeBadChannels is true.
+    const lariov::ChannelStatusProvider* fChannelStatus = nullptr;
+
     //only used when fFillHists is true and in single threaded mode.
     TH1F* fFirstChi2;
     TH1F* fChi2;
@@ -111,6 +117,7 @@ namespace hit {
     : SharedProducer{pset}
     , fFilterHits(pset.get<bool>("FilterHits", false))
     , fFillHists(pset.get<bool>("FillHists", false))
+    , fExcludeBadChannels(pset.get<bool>("ExcludeBadChannels", false))
     , fCalDataModuleLabel(pset.get<std::string>("CalDataModuleLabel"))
     , fAllHitsInstanceName(pset.get<std::string>("AllHitsInstanceName", ""))
     , fLongMaxHitsVec(pset.get<std::vector<int>>("LongMaxHits", std::vector<int>() = {25, 25, 25}))
@@ -127,6 +134,10 @@ namespace hit {
     , fPulseRatioCuts(
         pset.get<std::vector<float>>("PulseRatioCuts", std::vector<float>() = {0.35, 0.40, 0.20}))
   {
+    // Cache the bad-channel database provider when channel exclusion is enabled.
+    if (fExcludeBadChannels)
+      fChannelStatus = &art::ServiceHandle<lariov::ChannelStatusService const>()->GetProvider();
+
     if (fFillHists && art::Globals::instance()->nthreads() > 1u) {
       throw art::Exception(art::errors::Configuration)
         << "Cannot fill histograms when multiple threads configured, please set fFillHists to "
@@ -223,6 +234,13 @@ namespace hit {
 
     auto const& wireReadoutGeom = art::ServiceHandle<geo::WireReadout const>()->Get();
 
+    // When bad-channel exclusion is enabled, snapshot the set of channels the
+    // status database flags as bad once here (single-threaded). The parallel
+    // loop below then cheaply skips any input ChannelROI on those channels.
+    const lariov::ChannelStatusProvider::ChannelSet_t badChannels =
+      fExcludeBadChannels ? fChannelStatus->BadChannels()
+                          : lariov::ChannelStatusProvider::ChannelSet_t{};
+
     // ###############################################
     // ### Making a ptr vector to put on the event ###
     // ###############################################
@@ -294,6 +312,9 @@ namespace hit {
         // --- Setting Channel Number and Signal type ---
 
         raw::ChannelID_t channel = channelROI->Channel();
+
+        // Skip channels flagged as bad in the channel-status database.
+        if (fExcludeBadChannels && badChannels.count(channel)) return;
 
         // get the WireID for this hit
         std::vector<geo::WireID> wids = wireReadoutGeom.ChannelToWire(channel);

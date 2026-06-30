@@ -145,11 +145,13 @@ void ChannelROIToWire::produce(art::Event& evt)
                     const recob::ChannelROI::RegionsOfInterest_t& channelROIs = channelROI.SignalROI();
                     for(const auto& range : channelROIs.get_ranges())
                     {
-                        size_t startTick = range.begin_index();
-                        std::vector<float> dataVec(range.data().size());
-                        for(size_t binIdx = 0; binIdx < range.data().size(); binIdx++)
-                            dataVec[binIdx] = std::round(range.data()[binIdx] / ADCScaleFactor);
-                        ROIVec.add_range(startTick, std::move(dataVec));
+                      size_t startTick = range.begin_index();
+
+                      std::vector<float> dataVec(range.data().size());
+
+                      for(size_t binIdx = 0; binIdx < range.data().size(); binIdx++) dataVec[binIdx] = range.data()[binIdx] / ADCScaleFactor;
+
+                      ROIVec.add_range(startTick, std::move(dataVec));
                     }
                 }
 

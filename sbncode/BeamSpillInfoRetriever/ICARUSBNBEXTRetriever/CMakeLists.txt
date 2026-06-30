@@ -1,10 +1,9 @@
 find_package(ifbeam)
 find_package(ifdh_art)
 
-cet_build_plugin(SBNDBNBZEROBIASRetriever art::module
+cet_build_plugin(ICARUSBNBEXTRetriever art::module
     LIBRARIES
         sbn_POTTools
-	sbn_getFOM
 )
 
 install_headers()

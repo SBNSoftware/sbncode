@@ -44,6 +44,9 @@ namespace sys {
       bool   applyXZAngleScale;                           // do we scale with XZ angle?
       bool   applyYZAngleScale;                           // do we scale with YZ angle?
       bool   applydEdXScale;                              // do we scale with dEdx?
+      bool   applyXXZAngleScale;                          // do we scale with X vs XZ angle?
+      bool   applyXdQdXScale;                             // do we scale with X vs dQ/dX?
+      bool   applyXZAngledQdXScale;                       // do we scale with XZ angle vs dQ/dX?
       bool   applyXXWScale;                               // do we scale with X vs ThXW?
       bool   additiveModification;                        // additive (true) vs multiplicative (false) ROI modification
       double readoutWindowTicks;                          // how many ticks are in the readout window?
@@ -61,6 +64,13 @@ namespace sys {
       std::vector<TSpline3*> splines_Sigma_dEdX;          // the splines for the width correction in dEdX
       std::vector<TGraph2D*> graph2Ds_Charge_YZ;          // the graphs for the charge correction in YZ
       std::vector<TGraph2D*> graph2Ds_Sigma_YZ;           // the graphs for the width correction in YZ
+
+      std::vector<TGraph2D*> graph2Ds_Charge_XXZAngle;    // the graphs for the charge correction in X vs XZ angle
+      std::vector<TGraph2D*> graph2Ds_Sigma_XXZAngle;     // the graphs for the width correction in X vs XZ angle
+      std::vector<TGraph2D*> graph2Ds_Charge_XdQdX;       // the graphs for charge correction in X vs dQ/dX
+      std::vector<TGraph2D*> graph2Ds_Sigma_XdQdX;        // the graphs for width correction in X vs dQ/dX
+      std::vector<TGraph2D*> graph2Ds_Charge_XZAngledQdX; // the graphs for charge correction in XZ angle vs dQ/dX
+      std::vector<TGraph2D*> graph2Ds_Sigma_XZAngledQdX;  // the graphs for width correction in XZ angle vs dQ/dX
       std::vector<TGraph2D*> graph2Ds_Charge_XXW;         // the graphs for the charge correction in XXW
       std::vector<TGraph2D*> graph2Ds_Sigma_XXW;          // the graphs for the width correction in XXW
 
@@ -77,6 +87,9 @@ namespace sys {
                      const bool& arg_ApplyXZAngleScale = true,
                      const bool& arg_ApplyYZAngleScale = true,
                      const bool& arg_ApplydEdXScale = true,
+                     const bool& arg_ApplyXXZAngleScale = false,
+                     const bool& arg_ApplyXdQdXScale = false,
+                     const bool& arg_ApplyXZAngledQdXScale = false,
                      const bool& arg_ApplyXXWScale = true,
                      const double& arg_TickOffset = 0)
       : geometry(geom),
@@ -88,6 +101,9 @@ namespace sys {
         applyXZAngleScale(arg_ApplyXZAngleScale),
         applyYZAngleScale(arg_ApplyYZAngleScale),
         applydEdXScale(arg_ApplydEdXScale),
+        applyXXZAngleScale(arg_ApplyXXZAngleScale),
+        applyXdQdXScale(arg_ApplyXdQdXScale),
+        applyXZAngledQdXScale(arg_ApplyXZAngledQdXScale),
         applyXXWScale(arg_ApplyXXWScale),
         additiveModification(false),
         readoutWindowTicks(detProp.ReadOutWindowSize()),                                               // the default A2795 (ICARUS TPC readout board) readout window is 4096 samples
@@ -145,6 +161,7 @@ namespace sys {
         double dxdr;
         double dydr;
         double dzdr;
+        double dqdr;
         double dedr;
         ScaleValues_t scales_avg[3];
       } TruthProperties_t;
@@ -203,6 +220,7 @@ namespace sys {
         double theta = std::atan2(dydrPlaneRel, dzdrPlaneRel);
         return FoldAngle(theta);
       }
+      // theste are set in the .cc file
 
       double ThetaXY_PlaneRel(double dxdr, double dydr, double dzdr, double planeAngle)
       {
