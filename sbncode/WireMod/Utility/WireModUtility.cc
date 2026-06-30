@@ -43,6 +43,46 @@ sys::WireModUtility::ROIProperties_t sys::WireModUtility::CalcROIProperties(reco
   return roi_vals;
 }
 
+sys::WireModUtility::ROIProperties_t sys::WireModUtility::CalcROIProperties(recob::ChannelROI const& chanROI, size_t const& roi_idx)
+{
+  // SignalROIF() returns by value, so use SignalROI() and convert short->float manually.
+  auto const& roi_short = chanROI.SignalROI().get_ranges()[roi_idx];
+  const float scale = 1.0f / static_cast<float>(chanROI.ADCScaleFactor());
+
+  ROIProperties_t roi_vals;
+  roi_vals.channel = chanROI.Channel();
+  roi_vals.view    = wireReadout->View(chanROI.Channel());
+  roi_vals.begin   = roi_short.begin_index();
+  roi_vals.end     = roi_short.end_index();
+  roi_vals.center  = 0;
+  roi_vals.total_q = 0;
+  roi_vals.sigma   = 0;
+
+  auto const& short_data = roi_short.data();
+  for (size_t i_t = 0; i_t < short_data.size(); ++i_t)
+  {
+    float val = static_cast<float>(short_data[i_t]) * scale;
+    roi_vals.center  += val * (i_t + roi_vals.begin);
+    roi_vals.total_q += val;
+  }
+  roi_vals.center = roi_vals.center / roi_vals.total_q;
+
+  for (size_t i_t = 0; i_t < short_data.size(); ++i_t)
+  {
+    float val = static_cast<float>(short_data[i_t]) * scale;
+    roi_vals.sigma += val * (i_t + roi_vals.begin - roi_vals.center)
+                          * (i_t + roi_vals.begin - roi_vals.center);
+  }
+  roi_vals.sigma = std::sqrt(roi_vals.sigma / roi_vals.total_q);
+  if (roi_vals.end - roi_vals.begin == 1)
+  {
+    roi_vals.center += 0.5;
+    roi_vals.sigma   = 0.5;
+  }
+
+  return roi_vals;
+}
+
 //--- GetTargetROIs ---
 std::vector<std::pair<unsigned int, unsigned int>> sys::WireModUtility::GetTargetROIs(sim::SimEnergyDeposit const& shifted_edep, double offset)
 {
@@ -200,6 +240,78 @@ void sys::WireModUtility::FillROIMatchedHitMap(std::vector<recob::Hit> const& hi
 
       // pupluate the map
       ROIMatchedHitMap[std::make_pair(target_wire.Channel(),range_number)].push_back(i_h);
+    }
+  }
+}
+
+//--- FillROIMatchedEdepMap (ChannelROI overload) ---
+void sys::WireModUtility::FillROIMatchedEdepMap(std::vector<sim::SimEnergyDeposit> const& edepVec, std::vector<recob::ChannelROI> const& chanROIVec, double offset)
+{
+  ROIMatchedEdepMap.clear();
+
+  std::unordered_map<unsigned int, unsigned int> chanROIChannelMap;
+  for (size_t i_c = 0; i_c < chanROIVec.size(); ++i_c)
+    chanROIChannelMap[chanROIVec[i_c].Channel()] = i_c;
+
+  for (size_t i_e = 0; i_e < edepVec.size(); ++i_e)
+  {
+    std::vector<std::pair<unsigned int, unsigned int>> target_rois = GetTargetROIs(edepVec[i_e], offset);
+
+    for (auto const& target_roi : target_rois)
+    {
+      if (chanROIChannelMap.find(target_roi.first) == chanROIChannelMap.end())
+        continue;
+
+      auto const& target_chanROI = chanROIVec.at(chanROIChannelMap[target_roi.first]);
+
+      // SignalROIF() returns by value, so use SignalROI() instead.
+      auto const& roiShort = target_chanROI.SignalROI();
+      if (not roiShort.is_valid()              ||
+          roiShort.empty()                     ||
+          roiShort.n_ranges() == 0             ||
+          roiShort.size() <= target_roi.second ||
+          roiShort.is_void(target_roi.second)   )
+        continue;
+
+      auto range_number = roiShort.find_range_iterator(target_roi.second) - roiShort.begin_range();
+
+      ROIMatchedEdepMap[std::make_pair(target_chanROI.Channel(), range_number)].push_back(i_e);
+    }
+  }
+}
+
+//--- FillROIMatchedHitMap (ChannelROI overload) ---
+void sys::WireModUtility::FillROIMatchedHitMap(std::vector<recob::Hit> const& hitVec, std::vector<recob::ChannelROI> const& chanROIVec)
+{
+  ROIMatchedHitMap.clear();
+
+  std::unordered_map<unsigned int, unsigned int> chanROIChannelMap;
+  for (size_t i_c = 0; i_c < chanROIVec.size(); ++i_c)
+    chanROIChannelMap[chanROIVec[i_c].Channel()] = i_c;
+
+  for (size_t i_h = 0; i_h < hitVec.size(); ++i_h)
+  {
+    std::vector<std::pair<unsigned int, unsigned int>> target_rois = GetHitTargetROIs(hitVec[i_h]);
+
+    for (auto const& target_roi : target_rois)
+    {
+      if (chanROIChannelMap.find(target_roi.first) == chanROIChannelMap.end())
+        continue;
+
+      auto const& target_chanROI = chanROIVec.at(chanROIChannelMap[target_roi.first]);
+
+      // SignalROIF() returns by value, so use SignalROI() instead.
+      auto const& roiShort = target_chanROI.SignalROI();
+      if (not roiShort.is_valid()              ||
+          roiShort.empty()                     ||
+          roiShort.n_ranges() == 0             ||
+          roiShort.size() <= target_roi.second ||
+          roiShort.is_void(target_roi.second)   )
+        continue;
+
+      auto range_number = roiShort.find_range_iterator(target_roi.second) - roiShort.begin_range();
+
+      ROIMatchedHitMap[std::make_pair(target_chanROI.Channel(), range_number)].push_back(i_h);
     }
   }
 }
@@ -614,6 +726,45 @@ sys::WireModUtility::ScaleValues_t sys::WireModUtility::GetViewScaleValues(sys::
     scales.r_sigma *= splines_Sigma_dEdX [plane]->Eval(truth_props.dedr);
   }
 
+  if (applyXXZAngleScale)
+  {
+    if (graph2Ds_Charge_XXZAngle[plane] == nullptr || 
+        graph2Ds_Sigma_XXZAngle [plane] == nullptr  )
+      throw cet::exception("WireModUtility")
+        << "Tried to apply XXZAngle scale factor, but could not find graphs. Check that you have set those in the utility.";
+    temp_scale = graph2Ds_Charge_XXZAngle[plane]->Interpolate(truth_props.x, ThetaXZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()));
+    if(temp_scale>0.001) scales.r_Q *= temp_scale;
+
+    temp_scale = graph2Ds_Sigma_XXZAngle [plane]->Interpolate(truth_props.x, ThetaXZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()));
+    if(temp_scale>0.001) scales.r_sigma *= temp_scale;
+  }
+
+  if (applyXdQdXScale)
+  {
+    if (graph2Ds_Charge_XdQdX[plane] == nullptr || 
+        graph2Ds_Sigma_XdQdX [plane] == nullptr  )
+      throw cet::exception("WireModUtility")
+        << "Tried to apply XdQdX scale factor, but could not find graphs. Check that you have set those in the utility.";
+    temp_scale = graph2Ds_Charge_XdQdX[plane]->Interpolate(truth_props.x, truth_props.dqdr); 
+    if(temp_scale>0.001) scales.r_Q *= temp_scale;
+
+    temp_scale = graph2Ds_Sigma_XdQdX [plane]->Interpolate(truth_props.x, truth_props.dqdr); 
+    if(temp_scale>0.001) scales.r_sigma *= temp_scale;
+  }
+
+  if (applyXZAngledQdXScale)
+  {
+    if (graph2Ds_Charge_XZAngledQdX[plane] == nullptr || 
+        graph2Ds_Sigma_XZAngledQdX [plane] == nullptr  )
+      throw cet::exception("WireModUtility")
+        << "Tried to apply XZAngledQdX scale factor, but could not find graphs. Check that you have set those in the utility.";
+    temp_scale = graph2Ds_Charge_XZAngledQdX[plane]->Interpolate(ThetaXZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()), truth_props.dqdr);
+    if(temp_scale>0.001) scales.r_Q *= temp_scale;
+
+    temp_scale = graph2Ds_Sigma_XZAngledQdX [plane]->Interpolate(ThetaXZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()), truth_props.dqdr);
+    if(temp_scale>0.001) scales.r_sigma *= temp_scale;
+  }
+
   return scales;
 }
 
@@ -621,11 +772,12 @@ sys::WireModUtility::ScaleValues_t sys::WireModUtility::GetViewScaleValues(sys::
 void sys::WireModUtility::ModifyROI(std::vector<float> & roi_data,
                                     sys::WireModUtility::ROIProperties_t const& roi_prop,
                                     std::vector<sys::WireModUtility::SubROIProperties_t> const& subROIPropVec,
-                                    std::map<sys::WireModUtility::SubROI_Key_t, sys::WireModUtility::ScaleValues_t> const& subROIScaleMap)
+                                    std::map<sys::WireModUtility::SubROI_Key_t, sys::WireModUtility::ScaleValues_t> const& subROIScaleMap,
+                                    double sigmaWindow)
 {
   // do you want a bunch of messages?
   bool verbose = false;
-  
+
   // initialize some values
   double q_orig = 0.0;
   double q_mod  = 0.0;
@@ -641,6 +793,8 @@ void sys::WireModUtility::ModifyROI(std::vector<float> & roi_data,
     scale_ratio = 1.0;
     sigma_distance = 0.0;
 
+    double t = i_t + roi_prop.begin;
+
     // loop over the subs
     for (auto const& subroi_prop : subROIPropVec)
     {
@@ -653,45 +807,39 @@ void sys::WireModUtility::ModifyROI(std::vector<float> & roi_data,
                 gausFunc(i_t + roi_prop.begin, subroi_prop.center,                      subroi_prop.sigma,                  subroi_prop.total_q); 
 
       if (verbose)
-        std::cout << "    Incrementing q_orig by gausFunc(" << i_t + roi_prop.begin << ", " << subroi_prop.center << ", " <<                      subroi_prop.sigma << ", " <<                  subroi_prop.total_q << ")" << '\n'
-                  << "    Incrementing q_mod  by gausFunc(" << i_t + roi_prop.begin << ", " << subroi_prop.center << ", " << scale_vals.r_sigma * subroi_prop.sigma << ", " << scale_vals.r_Q * subroi_prop.total_q << ")" << std::endl;
+        std::cout << "    tick " << t << "  subROI center=" << subroi_prop.center
+                  << "  dist=" << sigma_distance << "sigma"
+                  << (sigma_distance <= sigmaWindow ? "  [scaled]" : "  [pass-through]") << '\n'
+                  << "    q_orig+=" << q_this_orig << '\n';
     }
-
-    sigma_distance = sigma_distance / q_orig;
+      
+    double delta = q_mod - q_orig;
 
     // do some sanity checks
-    if        (isnan(q_orig))
-    {
-      if (verbose)
-        std::cout << "WARNING: obtained q_orig = NaN... setting scale to 1" << std::endl;
-      scale_ratio = 1.0;
-    } else if (isnan(q_mod)) {
+    if (isnan(q_mod)) {
       if (verbose)
         std::cout << "WARNING: obtained q_mod = NaN... setting scale to 0" << std::endl;
-      scale_ratio = 0.0;
     } else if (q_orig < 0.01) { // check that this is a sane limit
         if (verbose) std::cout << "WARNING: obtained q_orig < 0.01 ... setting scale to 1" << std::endl;
-      scale_ratio = 1.0;
     } else if (sigma_distance > 9.) {
         if (verbose) std::cout << "WARNING: sigma_distance > 3.. setting scale to 1" << std::endl;
-      scale_ratio = 1.0;
-    } else {
-      scale_ratio = q_mod / q_orig;
+    // additive approach: after(t) = before(t) + [q_mod(t) - q_orig(t)]
+    // residuals/noise in the waveform are preserved without amplification
+    } else if (additiveModification) {
+      roi_data[i_t] += static_cast<float>(delta);
     }
-    if(isnan(scale_ratio) || isinf(scale_ratio))
-    {
-      if (verbose)
-        std::cout << "WARNING: obtained scale_ratio = " << q_mod << " / " << q_orig << " = NAN/Inf... setting to 1" << std::endl;
-      scale_ratio = 1.0;
+    else {
+      scale_ratio = q_mod / q_orig;
+      roi_data[i_t] = scale_ratio * roi_data[i_t];
     }
 
-    roi_data[i_t] = scale_ratio * roi_data[i_t];
     if (verbose)
       std::cout << "\t tick " << i_t << ":"
                 <<  " data="   << roi_data[i_t]
                 << ", q_orig=" << q_orig
                 << ", q_mod="  << q_mod
-                << ", ratio="  << scale_ratio << std::endl;
+                << ", scale_ratio="  << scale_ratio << " [multiplicative]"
+                << ", delta="  << delta << " [additive]" << std::endl;
   }
 
   // we're done now
