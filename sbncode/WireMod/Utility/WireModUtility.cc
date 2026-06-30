@@ -810,7 +810,7 @@ void sys::WireModUtility::ModifyROI(std::vector<float> & roi_data,
         std::cout << "    tick " << t << "  subROI center=" << subroi_prop.center
                   << "  dist=" << sigma_distance << "sigma"
                   << (sigma_distance <= sigmaWindow ? "  [scaled]" : "  [pass-through]") << '\n'
-                  << "    q_orig+=" << q_this_orig << '\n';
+                  << "    q_orig=" << q_orig << '\n';
     }
       
     double delta = q_mod - q_orig;
