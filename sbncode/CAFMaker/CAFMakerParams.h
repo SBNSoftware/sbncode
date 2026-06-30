@@ -16,6 +16,7 @@ namespace caf
     template<class T> using Atom = fhicl::Atom<T>;
     template<class T> using Sequence = fhicl::Sequence<T>;
     template<class T> using Table = fhicl::Table<T>;
+    template<class T> using OptionalTable = fhicl::OptionalTable<T>;
     using Comment  = fhicl::Comment;
     using Name     = fhicl::Name;
     using string   = std::string;
@@ -254,6 +255,12 @@ namespace caf
       "pandoraPid"
     };
 
+    Atom<string> TrackLikePidLabel {
+      Name("TrackLikePidLabel"),
+      Comment("Base label of track likelihood particle-id producer."),
+      "pandoraLikePid"
+    };
+
     Atom<string> TrackScatterClosestApproachLabel {
       Name("TrackScatterClosestApproachLabel"),
       Comment("Base label of track track scatter closestapproach producer."),
@@ -344,6 +351,12 @@ namespace caf
       "crttracks" // sbnd
     };
 
+    Atom<string> SBNDCRTVetoLabel {
+      Name("SBNDCRTVetoLabel"),
+      Comment("Label of sbnd CRT Veto."),
+      "crtveto" // sbnd
+    };
+
     Atom<string> SBNDFrameShiftInfoLabel {
       Name("SBNDFrameShiftInfoLabel"),
       Comment("Label of sbnd frame shift."),
@@ -353,6 +366,12 @@ namespace caf
     Atom<string> SBNDTimingInfoLabel {
       Name("SBNDTimingInfoLabel"),
       Comment("Label of sbnd timing shift."),
+      "" // sbnd
+    };
+
+    Atom<string> SBNDSoftwareTriggerLabel{
+      Name("SBNDSoftwareTriggerLabel"),
+      Comment("Label for software trigger producer"),
       "" // sbnd
     };
 
@@ -366,6 +385,12 @@ namespace caf
       Name("TPCPMTBarycenterMatchLabel"),
       Comment("Label of Slice-OpFlash matching via barycenters."),
       "" //Empty by default, configured in icaruscode cafmaker_defs
+    };
+
+    Atom<string> CorrectedOpFlashLabel {
+      Name("CorrectedOpFlashLabel"),
+      Comment("Label of CorrectedOpFlash containing tpc-corrected flash time."),
+      ""
     };
 
     Atom<art::InputTag> NuGraphSliceHitLabel {
@@ -392,6 +417,12 @@ namespace caf
       "OpFlash"
     };
 
+    Atom<string> PMTBeamSignalLabel {
+      Name("PMTBeamSignalLabel"),
+      Comment("Label for special PMT beam timing signals used to build the beam bunch structure"),
+      "beamTiming:RWM"
+    };
+
     Atom<long long> CRTSimT0Offset {
       Name("CRTSimT0Offset"),
       Comment("start of beam gate/simulation time in the simulated CRT clock"),
@@ -410,6 +441,30 @@ namespace caf
       "emuTriggerUnshifted"
     };
 
+    Atom<art::InputTag> MonPulsesTriggerLabel {
+      Name("MonPulsesTriggerLabel"),
+      Comment("Label of trigger emulation product MonPulses (number of PMT pairs above threshold for all channels) for all flashes."),
+      art::InputTag("opdaq", "MonPulses", "DetSim")
+    };
+
+    Atom<art::InputTag> MonPulseSizesTriggerLabel {
+      Name("MonPulseSizesTriggerLabel"),
+      Comment("Label of trigger emulation product MonPulses Sizes, which gives the length of each trigger response in MonPulses."),
+      art::InputTag("opdaq", "MonPulseSizes", "DetSim")
+    };
+
+    Atom<art::InputTag> PairsTriggerLabel {
+      Name("PairsTriggerLabel"),
+      Comment("Label of number of PMT pairs over threshold."),
+      art::InputTag("opdaq", "pairsOverThreshold", "DetSim")
+    };
+
+    Atom<art::InputTag> EmulatedTriggerLabel {
+      Name("EmulatedTriggerLabel"),
+      Comment("Label of bool of passing the trigger."),
+      art::InputTag("opdaq", "triggerEmulation", "DetSim")
+    };
+
     Atom<string> FlashTrigLabel {
       Name("FlashTrigLabel"),
       Comment("Label of bool of passing flash trigger."),
@@ -426,6 +481,12 @@ namespace caf
       Name("SimChannelLabel"),
       Comment("Label of input sim::SimChannel objects."),
       "simdrift"
+    };
+
+    Atom<art::InputTag> SimEnergyDepositLabel {
+      Name("SimEnergyDepositLabel"),
+      Comment("Label of input sim::SimEnergyDeposit objects."),
+      art::InputTag("ionandscint", "priorSCE","G4")
     };
 
     Atom<bool> FillTrueParticles {
@@ -470,6 +531,92 @@ namespace caf
       25.
     };
 
+    struct PFOCharLabels_t {
+      Atom<string> EndFractionName {
+        Name("EndFractionName"),
+        Comment("Provide the tool name for the EndFraction BDT variable."),
+        "LArThreeDChargeFeatureTool_EndFraction"
+      };
+
+      Atom<string> FractionalSpreadName {
+        Name("FractionalSpreadName"),
+        Comment("Provide the tool name for the FractionalSpread BDT variable."),
+        "LArThreeDChargeFeatureTool_FractionalSpread"
+      };
+
+      Atom<string> DiffStraightLineMeanName {
+        Name("DiffStraightLineMeanName"),
+        Comment("Provide the tool name for the DiffStraightLineMean BDT variable."),
+        "LArThreeDLinearFitFeatureTool_DiffStraightLineMean"
+      };
+
+      Atom<string> LengthName {
+        Name("LengthName"),
+        Comment("Provide the tool name for the Length BDT variable."),
+        "LArThreeDLinearFitFeatureTool_Length"
+      };
+
+      Atom<string> MaxFitGapLengthName {
+        Name("MaxFitGapLengthName"),
+        Comment("Provide the tool name for the MaxFitGapLength BDT variable."),
+        "LArThreeDLinearFitFeatureTool_MaxFitGapLength"
+      };
+
+      Atom<string> SlidingLinearFitRMSName {
+        Name("SlidingLinearFitRMSName"),
+        Comment("Provide the tool name for the SlidingLinearFitRMS BDT variable."),
+        "LArThreeDLinearFitFeatureTool_SlidingLinearFitRMS"
+      };
+
+      Atom<string> AngleDiffName {
+        Name("AngleDiffName"),
+        Comment("Provide the tool name for the AngleDiff BDT variable."),
+        "LArThreeDOpeningAngleFeatureTool_AngleDiff"
+      };
+
+      Atom<string> SecondaryPCARatioName {
+        Name("SecondaryPCARatioName"),
+        Comment("Provide the tool name for the SecondaryPCARatio BDT variable."),
+        "LArThreeDPCAFeatureTool_SecondaryPCARatio"
+      };
+
+      Atom<string> TertiaryPCARatioName {
+        Name("TertiaryPCARatioName"),
+        Comment("Provide the tool name for the TertiaryPCARatio BDT variable."),
+        "LArThreeDPCAFeatureTool_TertiaryPCARatio"
+      };
+
+      Atom<string> VertexDistanceName {
+        Name("VertexDistanceName"),
+        Comment("Provide the tool name for the VertexDistance BDT variable."),
+        "LArThreeDVertexDistanceFeatureTool_VertexDistance"
+      };
+
+      Atom<string> HaloTotalRatioName {
+        Name("HaloTotalRatioName"),
+        Comment("Provide the tool name for the HaloTotalRatio BDT variable."),
+        "LArConeChargeFeatureTool_HaloTotalRatio"
+      };
+
+      Atom<string> ConcentrationName {
+        Name("ConcentrationName"),
+        Comment("Provide the tool name for the Concentration BDT variable."),
+        "LArConeChargeFeatureTool_Concentration"
+
+      };
+
+      Atom<string> ConicalnessName {
+        Name("ConicalnessName"),
+        Comment("Provide the tool name for the Conicalness BDT variable."),
+        "LArConeChargeFeatureTool_Conicalness"
+      };
+    };
+
+    OptionalTable<PFOCharLabels_t> PFOCharLabels {
+      Name("PFOCharLabels"),
+      Comment("Provide tool names for the Pandora track/shower discrimination BDT variables.")
+    };
+
     Atom<bool> ReferencePMTFromTriggerToBeam {
       Name("ReferencePMTFromTriggerToBeam"),
       Comment("Whether to switch the reference time of PMT reco from 'trigger' to 'beam spill' time."),
@@ -493,7 +640,18 @@ namespace caf
       Comment("Label of CVN scores."),
       "cvn" 
     };
+
+    Atom<string> LightCaloLabel {
+      Name("LightCaloLabel"),
+      Comment("Label of light calorimetry producer"),
+      "lightcalo"
+    };
     
+    Atom<std::string> fBlipTag { 
+      Name("BlipTag"),
+      Comment("Provide a string to label the blip input"), 
+      "blipreco"
+    };
   };
 }
 

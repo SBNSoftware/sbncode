@@ -63,8 +63,8 @@ physics.producers.generator.ZRange       : [30,30]
 physics.producers.generator.TPCRange     : [[0,0],[0,1],[0,2],[0,3]] #[1,0],[1,1],[1,2],[1,3]]
 physics.producers.generator.MultiMax     : 7 #6
 physics.producers.generator.GammaBetaRange : [0.0, 3.0] # [0.0,20.0] # Boost, GammaBeta = Gamma * Beta
-physics.producers.generator.Revert: 0 #1
-physics.producers.generator.UseBoost : 0# 1
+physics.producers.generator.Revert: false #1
+physics.producers.generator.UseBoost : false# 1
 physics.producers.generator.MultiMin     : 2
 physics.producers.generator.ParticleParameter.PDGCode      : [[-11,11,-13,13],     [111],  [211,-211],      [2212],     [22]]
 physics.producers.generator.ParticleParameter.MinMulti     : [              0,          0,          0,           0,        0]

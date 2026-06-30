@@ -13,3 +13,4 @@ art_make_library( LIBRARY_NAME caf_RecoUtils
                     larsim::MCCheater_ParticleInventoryService_service
                     larcorealg::Geometry
                 )
+install_headers()

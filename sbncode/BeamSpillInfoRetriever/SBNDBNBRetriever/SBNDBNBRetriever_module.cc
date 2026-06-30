@@ -8,9 +8,8 @@
 #include "art/Framework/Core/EDProducer.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
-#include "sbncode/BeamSpillInfoRetriever/SBNDPOTTools.h"
+#include "sbncode/BeamSpillInfoRetriever/POTTools.h"
 #include "sbncode/BeamSpillInfoRetriever/getFOM.h"
-
 
 namespace sbn {
   class SBNDBNBRetriever;
@@ -45,11 +44,11 @@ private:
   art::ServiceHandle<ifbeam_ns::IFBeam> ifbeam_handle;
   static constexpr double MWRtoroidDelay = -0.035; ///< the same time point is measured _t_ by MWR and _t + MWRtoroidDelay`_ by the toroid [ms]
 
-  TriggerInfo_t extractTriggerInfo(art::Event const& e) const;
+  sbn::pot::TriggerInfo_t extractTriggerInfo(art::Event const& e) const;
   int matchMultiWireData(
     art::EventID const& eventID, 
-    TriggerInfo_t const& triggerInfo,
-    MWRdata_t const& MWRdata,
+    sbn::pot::TriggerInfo_t const& triggerInfo,
+    sbn::pot::MWRdata_t const& MWRdata,
     std::vector< sbn::BNBSpillInfo >& beamInfos
     ) const;
   unsigned int TotalBeamSpills;
@@ -72,7 +71,7 @@ sbn::SBNDBNBRetriever::SBNDBNBRetriever(fhicl::ParameterSet const & params)
   vp873->set_epsilon(0.02);
  
   offsets = ifbeam_handle->getBeamFolder(params.get<std::string>("OffsetBundle"), params.get<std::string>("URL"), timeWindow);
-  offsets->set_epsilon(600);
+  offsets->set_epsilon(1000);
 
 }
 
@@ -89,14 +88,14 @@ void sbn::SBNDBNBRetriever::produce(art::Event & e)
   }
 
   mf::LogDebug("SBNDBNBRetriever")<< "ptb_event: " << e.event() << std::endl;
-  TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
+  sbn::pot::TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
 
   if (triggerInfo.t_previous_event == 0) {
     return;
   }
 
   TotalBeamSpills += triggerInfo.number_of_gates_since_previous_event;
-  MWRdata_t const MWRdata = extractSpillTimes(triggerInfo, bfp, bfp_mwr, fTimePad, MWRtoroidDelay, mwrdata);
+  sbn::pot::MWRdata_t const MWRdata = extractSpillTimes(triggerInfo, bfp, bfp_mwr, fTimePad, MWRtoroidDelay, mwrdata);
 
   int const spill_count = matchMultiWireData(e.id(), triggerInfo, MWRdata, fOutbeamInfos);
 
@@ -106,7 +105,7 @@ void sbn::SBNDBNBRetriever::produce(art::Event & e)
     mf::LogDebug("SBNDBNBRetriever")<< "Event Spills : " << spill_count << ", DAQ Spills : " << triggerInfo.number_of_gates_since_previous_event << std::endl;
 }
 
-sbn::TriggerInfo_t sbn::SBNDBNBRetriever::extractTriggerInfo(art::Event const& e) const {
+sbn::pot::TriggerInfo_t sbn::SBNDBNBRetriever::extractTriggerInfo(art::Event const& e) const {
   // Using TDC for current event, but PTB for previous event. Exception for case where no TDC.
   art::InputTag PTB_itag("daq", "ContainerPTB");
   auto PTB_cont_frags = e.getHandle<artdaq::Fragments>(PTB_itag);
@@ -114,23 +113,23 @@ sbn::TriggerInfo_t sbn::SBNDBNBRetriever::extractTriggerInfo(art::Event const& e
   art::InputTag TDC_itag("daq", "ContainerTDCTIMESTAMP");
   auto TDC_cont_frags = e.getHandle<artdaq::Fragments>(TDC_itag);
 
-  TriggerInfo_t triggerInfo;
-  PTBInfo_t PTBInfo = extractPTBInfo(PTB_cont_frags, 2);
+  sbn::pot::TriggerInfo_t triggerInfo;
+  sbn::pot::PTBInfo_t PTBInfo = sbn::pot::extractPTBInfo(PTB_cont_frags, 2);
 
   if (TDC_cont_frags) {
-    double TDCTimeStamp = extractTDCTimeStamp(TDC_cont_frags);
+    double TDCTimeStamp = sbn::pot::extractTDCTimeStamp(TDC_cont_frags);
     triggerInfo.t_current_event = TDCTimeStamp - fBESOffset;
   }
   else{
     // If missing TDC, use PTB instead
     mf::LogDebug("SBNDBNBRetriever") << " Missing TDC Container Fragments!!! " << std::endl;
-    triggerInfo.t_current_event = PTBInfo.currPTBTimeStamp - fBESOffset;
+    triggerInfo.t_current_event = PTBInfo.currPTBTimeStamp / 1e9 - fBESOffset;
   }
 
-  triggerInfo.t_previous_event = PTBInfo.prevPTBTimeStamp - fBESOffset;
+  triggerInfo.t_previous_event = PTBInfo.prevPTBTimeStamp / 1e9 - fBESOffset;
   triggerInfo.number_of_gates_since_previous_event = PTBInfo.GateCounter;
 
-  double PTBandCurrOffset = PTBInfo.currPTBTimeStamp - triggerInfo.t_current_event - fBESOffset;
+  double PTBandCurrOffset = PTBInfo.currPTBTimeStamp / 1e9 - triggerInfo.t_current_event - fBESOffset;
 
   // Catch for an issue seen a few times where PTB off by a second.
   // Only need to correct prevTS because either currTS is from TDC
@@ -146,8 +145,8 @@ sbn::TriggerInfo_t sbn::SBNDBNBRetriever::extractTriggerInfo(art::Event const& e
 
 int sbn::SBNDBNBRetriever::matchMultiWireData(
   art::EventID const& eventID,
-  TriggerInfo_t const& triggerInfo,
-  MWRdata_t const& MWRdata,
+  sbn::pot::TriggerInfo_t const& triggerInfo,
+  sbn::pot::MWRdata_t const& MWRdata,
   std::vector< sbn::BNBSpillInfo >& beamInfos
 ) const {
   
@@ -176,7 +175,7 @@ int sbn::SBNDBNBRetriever::matchMultiWireData(
       spills_removed++; 
       continue;}
 
-    if(BrokenClock(times_temps[i], bfp)){
+    if(sbn::pot::BrokenClock(times_temps[i], bfp)){
       continue;
     }
     
