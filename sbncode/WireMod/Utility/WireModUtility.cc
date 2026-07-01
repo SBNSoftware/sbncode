@@ -1,6 +1,10 @@
 #include "sbncode/WireMod/Utility/WireModUtility.hh"
 #include "lardataalg/DetectorInfo/DetectorPropertiesData.h"
 
+#include <cstdlib>
+#include <cmath>
+#include "TVector3.h"
+
 //--- CalcROIProperties ---
 sys::WireModUtility::ROIProperties_t sys::WireModUtility::CalcROIProperties(recob::Wire const& wire, size_t const& roi_idx)
 {
@@ -149,8 +153,105 @@ std::vector<std::pair<unsigned int, unsigned int>> sys::WireModUtility::GetHitTa
 }
 
 //--- FillROIMatchedIDEMap ---
-void sys::WireModUtility::FillROIMatchedIDEMap(std::vector<sim::SimChannel> const& simchVec, std::vector<recob::Wire> const& wireVec, double offset)
+// SimChannel/IDE analogue of FillROIMatchedEdepMap. Unlike an edep, a sim::IDE already
+// carries its readout channel (SimChannel::Channel()) and time (the TDCIDEMap TDC), so no
+// geometric X->tick projection is needed -- the TDC is converted to a readout tick and the
+// covering ROI is found directly. Builds the flat fIDEVec and the ROI->index map.
+void sys::WireModUtility::FillROIMatchedIDEMap(std::vector<sim::SimChannel> const& simchVec, std::vector<recob::Wire> const& wireVec, detinfo::DetectorClocksData const& clockData, double offset)
 {
+  ROIMatchedIDEMap.clear();
+  fIDEVec.clear();
+
+  // map channel -> index into wireVec
+  std::unordered_map<unsigned int, unsigned int> wireChannelMap;
+  for (size_t i_w = 0; i_w < wireVec.size(); ++i_w)
+    wireChannelMap[wireVec[i_w].Channel()] = i_w;
+
+  for (auto const& simch : simchVec)
+  {
+    raw::ChannelID_t channel = simch.Channel();
+    auto wcIt = wireChannelMap.find(channel);
+    if (wcIt == wireChannelMap.end())
+      continue;
+    auto const& target_wire = wireVec.at(wcIt->second);
+
+    // wire closest to the charge (used later for the SCE-undo)
+    geo::WireID wireID;
+    auto const wires = wireReadout->ChannelToWire(channel);
+    if (!wires.empty()) wireID = wires[0];
+
+    for (auto const& tdcide : simch.TDCIDEMap())
+    {
+      // convert the SimChannel TDC to a readout tick (same frame as the ROI samples)
+      double tick = clockData.TPCTDC2Tick(tdcide.first) + offset + tickOffset;
+      if (tick < 0) continue;
+      unsigned int sample = (unsigned int) std::round(tick);
+
+      if (not target_wire.SignalROI().is_valid()  ||
+          target_wire.SignalROI().empty()         ||
+          target_wire.SignalROI().n_ranges() == 0 ||
+          target_wire.SignalROI().size() <= sample ||
+          target_wire.SignalROI().is_void(sample)  )
+        continue;
+
+      auto range_number = target_wire.SignalROI().find_range_iterator(sample) - target_wire.SignalROI().begin_range();
+      ROI_Key_t roi_key = std::make_pair(target_wire.Channel(), range_number);
+
+      for (sim::IDE const& ide : tdcide.second)
+      {
+        fIDEVec.push_back( MatchedIDE_t{channel, wireID, tick, &ide} );
+        ROIMatchedIDEMap[roi_key].push_back(fIDEVec.size() - 1);
+      }
+    }
+  }
+}
+
+//--- FillROIMatchedIDEMap (ChannelROI overload) ---
+void sys::WireModUtility::FillROIMatchedIDEMap(std::vector<sim::SimChannel> const& simchVec, std::vector<recob::ChannelROI> const& chanROIVec, detinfo::DetectorClocksData const& clockData, double offset)
+{
+  ROIMatchedIDEMap.clear();
+  fIDEVec.clear();
+
+  std::unordered_map<unsigned int, unsigned int> chanROIChannelMap;
+  for (size_t i_c = 0; i_c < chanROIVec.size(); ++i_c)
+    chanROIChannelMap[chanROIVec[i_c].Channel()] = i_c;
+
+  for (auto const& simch : simchVec)
+  {
+    raw::ChannelID_t channel = simch.Channel();
+    auto ccIt = chanROIChannelMap.find(channel);
+    if (ccIt == chanROIChannelMap.end())
+      continue;
+    auto const& target_chanROI = chanROIVec.at(ccIt->second);
+    auto const& roiShort = target_chanROI.SignalROI();
+
+    geo::WireID wireID;
+    auto const wires = wireReadout->ChannelToWire(channel);
+    if (!wires.empty()) wireID = wires[0];
+
+    for (auto const& tdcide : simch.TDCIDEMap())
+    {
+      double tick = clockData.TPCTDC2Tick(tdcide.first) + offset + tickOffset;
+      if (tick < 0) continue;
+      unsigned int sample = (unsigned int) std::round(tick);
+
+      if (not roiShort.is_valid()  ||
+          roiShort.empty()         ||
+          roiShort.n_ranges() == 0 ||
+          roiShort.size() <= sample ||
+          roiShort.is_void(sample)  )
+        continue;
+
+      auto range_number = roiShort.find_range_iterator(sample) - roiShort.begin_range();
+      ROI_Key_t roi_key = std::make_pair(target_chanROI.Channel(), range_number);
+
+      for (sim::IDE const& ide : tdcide.second)
+      {
+        fIDEVec.push_back( MatchedIDE_t{channel, wireID, tick, &ide} );
+        ROIMatchedIDEMap[roi_key].push_back(fIDEVec.size() - 1);
+      }
+    }
+  }
 }
 
 //--- FillROIMatchedEdepMap ---
@@ -598,6 +699,184 @@ sys::WireModUtility::TruthProperties_t sys::WireModUtility::CalcPropertiesFromEd
   
 
   return edep_col_properties; 
+}
+
+//--- WireToTrajectoryPosition (SCE: at-the-wire -> true trajectory frame) ---
+geo::Point_t sys::WireModUtility::WireToTrajectoryPosition(const geo::Point_t& loc, const geo::TPCID& tpc) const
+{
+  geo::Point_t ret = loc;
+  if (fSCE && fSCE->EnableSimSpatialSCE())
+  {
+    geo::Vector_t offset = fSCE->GetCalPosOffsets(ret, tpc.TPC);
+    ret.SetX(ret.X() + offset.X());
+    ret.SetY(ret.Y() + offset.Y());
+    ret.SetZ(ret.Z() + offset.Z());
+  }
+  return ret;
+}
+
+//--- TrajectoryToWirePosition (SCE: true -> at-the-wire frame) ---
+geo::Point_t sys::WireModUtility::TrajectoryToWirePosition(const geo::Point_t& loc, const geo::Vector_t& driftdir) const
+{
+  geo::Point_t ret = loc;
+  int corr = driftdir.X(); // returned X offset is the drift; sign it by the drift direction
+  if (fSCE && fSCE->EnableSimSpatialSCE())
+  {
+    geo::Vector_t offset = fSCE->GetPosOffsets(ret);
+    ret.SetX(ret.X() + corr * offset.X());
+    ret.SetY(ret.Y() + offset.Y());
+    ret.SetZ(ret.Z() + offset.Z());
+  }
+  return ret;
+}
+
+//--- MatchIDEsToSubROIs ---
+// SimChannel/IDE analogue of MatchEdepsToSubROIs. Each IDE already carries its readout tick
+// (no per-plane X->tick projection needed), so it is assigned to the closest sub-ROI whose
+// distance |tick - center|/sigma is below the same threshold used for edeps (5 sigma).
+std::map<sys::WireModUtility::SubROI_Key_t, std::vector<const sys::WireModUtility::MatchedIDE_t*>>
+sys::WireModUtility::MatchIDEsToSubROIs(std::vector<sys::WireModUtility::SubROIProperties_t> const& subROIPropVec,
+                                        std::vector<const sys::WireModUtility::MatchedIDE_t*> const& idePtrVec)
+{
+  std::map<unsigned int, std::vector<unsigned int>> SubROIMatchedIDEMap; // subROI idx -> ide idxs
+
+  for (unsigned int i_e = 0; i_e < idePtrVec.size(); ++i_e)
+  {
+    double ide_tick = idePtrVec[i_e]->tick;
+    unsigned int closest = std::numeric_limits<unsigned int>::max();
+    float min_dist = std::numeric_limits<float>::max();
+    for (unsigned int i_h = 0; i_h < subROIPropVec.size(); ++i_h)
+    {
+      auto const& s = subROIPropVec[i_h];
+      if (s.sigma <= 0) continue;
+      float dist = std::abs((float)(ide_tick - s.center)) / s.sigma;
+      if (dist < min_dist) { min_dist = dist; closest = i_h; }
+    }
+    if (closest != std::numeric_limits<unsigned int>::max() && min_dist < 5)
+      SubROIMatchedIDEMap[closest].push_back(i_e);
+  }
+
+  std::map<SubROI_Key_t, std::vector<const MatchedIDE_t*>> ReturnMap;
+  for (auto const& kv : SubROIMatchedIDEMap)
+  {
+    auto key = subROIPropVec[kv.first].key;
+    for (auto const& i_e : kv.second)
+      ReturnMap[key].push_back(idePtrVec[i_e]);
+  }
+  return ReturnMap;
+}
+
+//--- CalcPropertiesFromIDEs ---
+// SimChannel/IDE analogue of CalcPropertiesFromEdeps. Picks the dominant track (max summed
+// energy, abs(trackID) as in TrackCaloSkimmer), builds the numElectrons-weighted centroid in
+// the SCE-undone (trajectory) frame, and reads the direction (dxdr/dydr/dzdr) from the matched
+// MCParticle's nearest trajectory point. dedr/dqdr use the trajectory-derived pitch. The
+// scales_avg pre-pass of the edep version is dropped (those fields are never read downstream).
+sys::WireModUtility::TruthProperties_t
+sys::WireModUtility::CalcPropertiesFromIDEs(std::vector<const sys::WireModUtility::MatchedIDE_t*> const& idePtrVec,
+                                            std::map<int, const simb::MCParticle*> const& particleMap)
+{
+  TruthProperties_t props;
+  props.x = props.y = props.z = 0.f;
+  props.x_rms = props.x_rms_noWeight = 0.f;
+  props.x_min = std::numeric_limits<float>::max();
+  props.x_max = std::numeric_limits<float>::lowest();
+  props.tick = props.tick_rms = props.tick_rms_noWeight = 0.f;
+  props.tick_min = std::numeric_limits<float>::max();
+  props.tick_max = std::numeric_limits<float>::lowest();
+  props.dxdr = props.dydr = props.dzdr = 0.;
+  props.dedr = props.dqdr = 0.;
+  props.total_energy = 0.f;
+  for (size_t i_p = 0; i_p < 3; ++i_p) { props.scales_avg[i_p].r_Q = 1.; props.scales_avg[i_p].r_sigma = 1.; }
+  if (idePtrVec.empty()) return props;
+
+  // dominant track = max summed energy (abs(trackID), matching TrackCaloSkimmer)
+  std::map<int, double> energy_per_trkid;
+  for (auto const& m : idePtrVec)
+    energy_per_trkid[std::abs(m->ide->trackID)] += m->ide->energy;
+  int trkid_max = 0; double energy_max = -1.;
+  for (auto const& e : energy_per_trkid)
+    if (e.second > energy_max) { energy_max = e.second; trkid_max = e.first; }
+
+  // numElectrons-weighted centroid in the SCE-undone frame + energy/electron/tick sums
+  struct Acc { double xtraj, tick, ne; };
+  std::vector<Acc> accs;
+  double sumNe = 0., sumE = 0., cx = 0., cy = 0., cz = 0., tsum = 0.;
+  geo::WireID domWire;
+  for (auto const& m : idePtrVec)
+  {
+    if (std::abs(m->ide->trackID) != trkid_max) continue;
+    double ne = m->ide->numElectrons;
+    double e  = m->ide->energy;
+    geo::Point_t p_raw(m->ide->x, m->ide->y, m->ide->z);
+    geo::Point_t p_traj = WireToTrajectoryPosition(p_raw, m->wire);
+    cx += ne * p_traj.X(); cy += ne * p_traj.Y(); cz += ne * p_traj.Z();
+    tsum += ne * m->tick;
+    sumNe += ne; sumE += e;
+    accs.push_back({p_traj.X(), m->tick, ne});
+    if (p_traj.X() < props.x_min)   props.x_min   = p_traj.X();
+    if (p_traj.X() > props.x_max)   props.x_max   = p_traj.X();
+    if (m->tick    < props.tick_min) props.tick_min = m->tick;
+    if (m->tick    > props.tick_max) props.tick_max = m->tick;
+    domWire = m->wire;
+  }
+  if (sumNe <= 0) return props;
+  cx /= sumNe; cy /= sumNe; cz /= sumNe;
+  props.x = cx; props.y = cy; props.z = cz;
+  props.total_energy = sumE;
+  props.tick = tsum / sumNe;
+
+  double xr = 0., xrnw = 0., tr = 0.;
+  for (auto const& a : accs)
+  {
+    xr   += a.ne * (a.xtraj - cx) * (a.xtraj - cx);
+    xrnw +=        (a.xtraj - cx) * (a.xtraj - cx);
+    tr   += a.ne * (a.tick - props.tick) * (a.tick - props.tick);
+  }
+  props.x_rms             = std::sqrt(xr / sumNe);
+  props.x_rms_noWeight    = std::sqrt(xrnw);
+  props.tick_rms          = std::sqrt(tr / sumNe);
+  props.tick_rms_noWeight = props.x_rms_noWeight;
+
+  // direction / pitch from the matched MCParticle trajectory (nearest point to centroid)
+  auto pit = particleMap.find(trkid_max);
+  if (pit != particleMap.end() && pit->second != nullptr)
+  {
+    const simb::MCParticle* part = pit->second;
+    TVector3 hp(cx, cy, cz);
+    double closest = -1.; TVector3 dir;
+    for (unsigned int i = 0; i < part->NumberTrajectoryPoints(); ++i)
+    {
+      double d = (part->Position(i).Vect() - hp).Mag();
+      if (closest < 0. || d < closest)
+      {
+        closest = d;
+        dir = part->Momentum(i).Vect().Unit();
+      }
+    }
+    if (closest >= 0. && dir.Mag() > 1e-4)
+    {
+      props.dxdr = dir.X();
+      props.dydr = dir.Y();
+      props.dzdr = dir.Z();
+
+      if (domWire.isValid)
+      {
+        geo::PlaneID plane(domWire.Cryostat, domWire.TPC, domWire.Plane);
+        geo::PlaneGeo const& pg = wireReadout->Plane(plane);
+        double angletovert = wireReadout->WireAngleToVertical(pg.View(), plane) - 0.5 * ::util::pi<>();
+        double cosgamma = std::abs(std::cos(angletovert) * dir.Z() + std::sin(angletovert) * dir.Y());
+        double pitch = (cosgamma > 1e-6) ? pg.WirePitch() / cosgamma : pg.WirePitch();
+        if (pitch > 0)
+        {
+          props.dedr = sumE  / pitch; // dE/dx [MeV/cm]
+          props.dqdr = sumNe / pitch; // dQ/dx [electrons/cm]
+        }
+      }
+    }
+  }
+
+  return props;
 }
 
 //--- GetScaleValues ---

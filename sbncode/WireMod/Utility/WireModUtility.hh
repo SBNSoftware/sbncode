@@ -14,6 +14,8 @@
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/WireReadoutGeom.h"
 #include "lardataalg/DetectorInfo/DetectorPropertiesData.h"
+#include "lardataalg/DetectorInfo/DetectorClocksData.h"
+#include "larevt/SpaceCharge/SpaceCharge.h"
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/TrackHitMeta.h"
 #include "lardataobj/RecoBase/Hit.h"
@@ -166,9 +168,31 @@ namespace sys {
         ScaleValues_t scales_avg[3];
       } TruthProperties_t;
 
+      // A single SimChannel ionization deposit (sim::IDE) tagged with its readout
+      // coordinates. This is the SimChannel analogue of a sim::SimEnergyDeposit used by
+      // the truth-matching path; unlike an edep, a sim::IDE carries only a point position
+      // (x,y,z) -- direction/step come from the matched simb::MCParticle trajectory.
+      typedef struct MatchedIDE
+      {
+        raw::ChannelID_t channel; // readout channel the charge landed on
+        geo::WireID      wire;     // wire closest to the deposit
+        double           tick;     // readout tick (TDC converted to tick)
+        const sim::IDE*  ide;      // trackID, numElectrons, energy, x, y, z
+      } MatchedIDE_t;
+
       // internal containers
       std::map< ROI_Key_t, std::vector<size_t> > ROIMatchedEdepMap;
       std::map< ROI_Key_t, std::vector<size_t> > ROIMatchedHitMap;
+
+      // SimChannel/IDE truth-matching containers (parallel to the Edep versions).
+      // fIDEVec is the flat owner; ROIMatchedIDEMap stores indices into it, keyed by ROI.
+      std::vector<MatchedIDE_t>                  fIDEVec;
+      std::map< ROI_Key_t, std::vector<size_t> > ROIMatchedIDEMap;
+
+      // Space-charge provider, set by the module (lar::providerFrom<SpaceChargeService>()).
+      // Used to map IDE (at-the-wire) positions to/from the true MCParticle trajectory
+      // frame. When null or SCE disabled, the mappings are the identity.
+      const spacecharge::SpaceCharge* fSCE = nullptr;
 
       // some useful functions
       // geometries
@@ -254,7 +278,12 @@ namespace sys {
 
       void FillROIMatchedEdepMap(std::vector<sim::SimEnergyDeposit> const&, std::vector<recob::Wire> const&, double offset);
       void FillROIMatchedHitMap(std::vector<recob::Hit> const&, std::vector<recob::Wire> const&);
-      void FillROIMatchedIDEMap(std::vector<sim::SimChannel> const& simchVec, std::vector<recob::Wire> const& wireVec, double offset);
+
+      // SimChannel/IDE versions of FillROIMatchedEdepMap. The DetectorClocksData is used to
+      // convert each IDE's TDC to a readout tick (no X->tick projection / tickOffset needed,
+      // since the SimChannel already carries the readout coordinate).
+      void FillROIMatchedIDEMap(std::vector<sim::SimChannel> const& simchVec, std::vector<recob::Wire> const& wireVec, detinfo::DetectorClocksData const& clockData, double offset = 0);
+      void FillROIMatchedIDEMap(std::vector<sim::SimChannel> const& simchVec, std::vector<recob::ChannelROI> const& chanROIVec, detinfo::DetectorClocksData const& clockData, double offset = 0);
 
       void FillROIMatchedEdepMap(std::vector<sim::SimEnergyDeposit> const&, std::vector<recob::ChannelROI> const&, double offset);
       void FillROIMatchedHitMap(std::vector<recob::Hit> const&, std::vector<recob::ChannelROI> const&);
@@ -263,7 +292,23 @@ namespace sys {
 
       std::map<SubROI_Key_t, std::vector<const sim::SimEnergyDeposit*>> MatchEdepsToSubROIs(std::vector<SubROIProperties_t> const&, std::vector<const sim::SimEnergyDeposit*> const&, double offset);
 
+      // SimChannel/IDE analogue of MatchEdepsToSubROIs. Keyed on the IDE's native readout
+      // tick (no per-plane X->tick projection), otherwise the same center+/-sigma / closest
+      // sub-ROI assignment as the edep version.
+      std::map<SubROI_Key_t, std::vector<const MatchedIDE_t*>> MatchIDEsToSubROIs(std::vector<SubROIProperties_t> const&, std::vector<const MatchedIDE_t*> const&);
+
       TruthProperties_t CalcPropertiesFromEdeps(std::vector<const sim::SimEnergyDeposit*> const&, double offset);
+
+      // SimChannel/IDE analogue of CalcPropertiesFromEdeps. Fills TruthProperties_t from the
+      // dominant track's sim::IDEs (charge-weighted position/energy) plus the matched
+      // simb::MCParticle trajectory (direction / pitch / dedr / dqdr). particleMap maps
+      // abs(trackID) -> MCParticle so the dominant track's trajectory can be looked up.
+      TruthProperties_t CalcPropertiesFromIDEs(std::vector<const MatchedIDE_t*> const&, std::map<int, const simb::MCParticle*> const& particleMap);
+
+      // Space-charge coordinate maps (mirroring TrackCaloSkimmer). Identity if fSCE is null
+      // or SCE disabled.
+      geo::Point_t WireToTrajectoryPosition(const geo::Point_t& loc, const geo::TPCID& tpc) const;          // at-the-wire -> true trajectory frame
+      geo::Point_t TrajectoryToWirePosition(const geo::Point_t& loc, const geo::Vector_t& driftdir) const;  // true -> at-the-wire frame
 
       ScaleValues_t GetScaleValues(TruthProperties_t const&, ROIProperties_t const&);
       ScaleValues_t GetChannelScaleValues(TruthProperties_t const&, raw::ChannelID_t const&);
