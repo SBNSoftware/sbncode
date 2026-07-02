@@ -12,7 +12,7 @@
 #ifndef SBN_OpDet_PDMapAlg_H
 #define SBN_OpDet_PDMapAlg_H
 
-#include "fhiclcpp/ParameterSet.h"
+//#include "fhiclcpp/ParameterSet.h"
 //#include "art/Utilities/ToolMacros.h"
 
 #include <string>
