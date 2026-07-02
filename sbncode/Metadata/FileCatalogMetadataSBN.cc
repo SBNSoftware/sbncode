@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////
-// Name:  FileCatalogMetadataSBN_service.cc.  
+// Name:  FileCatalogMetadataSBN.cc.  
 //
 // Purpose:  Implementation for FileCatalogMetadataSBN.
 //

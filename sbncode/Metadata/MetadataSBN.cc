@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////
-// Name:  MetadataSBN_service.cc.
+// Name:  MetadataSBN.cc.
 //
 // Purpose:  generate SBN-specific sam metadata for root Tfiles (histogram or ntuple files).
 //
