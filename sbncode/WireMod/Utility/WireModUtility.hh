@@ -260,9 +260,14 @@ namespace sys {
 
       double ThetaXW(double dxdr, double dydr, double dzdr, double planeAngle)
       {
-        // Want angle to vert, so subtract pi
-        double sin = std::sin(planeAngle - ::util::pi<>());
-        double cos = std::cos(planeAngle - ::util::pi<>());
+        // planeAngle is the wire angle from +z (PlaneGeo::ThetaZ, numerically equal to
+        // WireReadoutGeom::WireAngleToVertical). The pitch "gamma" angle is measured from the
+        // wire-normal, i.e. planeAngle - pi/2 -- the same convention as the canonical LArSoft
+        // pitch (Calorimetry / TrackCaloSkimmer use WireAngleToVertical - pi/2). Subtracting a
+        // full pi projected the direction onto the wire itself (a cos<->sin swap), yielding the
+        // wrong angle; subtract pi/2 so cosG is the projection onto the wire-normal (pitch).
+        double sin = std::sin(planeAngle - 0.5 * ::util::pi<>());
+        double cos = std::cos(planeAngle - 0.5 * ::util::pi<>());
 
         double cosG = std::abs(dydr * sin + dzdr * cos);
         double theta = std::atan(dxdr / cosG);
