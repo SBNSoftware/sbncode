@@ -71,14 +71,20 @@ namespace hit {
     std::vector<double> FillOutHitParameterVector(const std::vector<double>& input);
     
     template<class T>
-    inline std::vector<T> getValueOrListOf(fhicl::ParameterSet const& pset, std::string const& key) {
+    std::vector<T> getValueOrListOf(fhicl::ParameterSet const& pset, std::string const& key) const {
 
       auto const& wireReadoutGeom = art::ServiceHandle<geo::WireReadout const>()->Get();
       const unsigned int N_PLANES = wireReadoutGeom.Nplanes();
 
-      if (pset.is_key_to_sequence(key))
+      if (pset.is_key_to_sequence(key)) {
+	auto vec = pset.get<std::vector<T>>(key);
+        if (vec.size() != N_PLANES) {
+            throw cet::exception("Configuration")
+                << "Parameter '" << key << "' has size " << vec.size()
+                << " but expected " << N_PLANES << " (number of planes)";
+        }
         return pset.get<std::vector<T>>(key);
-      else
+      } else
         return std::vector<T>(N_PLANES, pset.get<T>(key));
     } // getValueOrListOf()
 
@@ -139,6 +145,7 @@ namespace hit {
     , fPulseRatioCuts(
         pset.get<std::vector<float>>("PulseRatioCuts", std::vector<float>() = {0.35, 0.40, 0.20}))
   {
+
     if (fFillHists && art::Globals::instance()->nthreads() > 1u) {
       throw art::Exception(art::errors::Configuration)
         << "Cannot fill histograms when multiple threads configured, please set fFillHists to "
