@@ -388,14 +388,8 @@ namespace hit {
                 fPeakFitterTool->findPeakParameters(
                   range.data(), mergedCands, peakParamsVec, chi2PerNDF, NDF);
 
-                // If the chi2 is infinite then there is a real problem so we bail
-                if (!(chi2PerNDF < std::numeric_limits<double>::infinity())) {
-                  chi2PerNDF = 2. * fChi2NDF.at(plane);
-                  NDF = 2;
-                }
-
-                // If the chi2 is also low (low-er than -inf) we bail
-                if (!(chi2PerNDF > -std::numeric_limits<double>::infinity())) {
+                // If the chi2 is not finite then there is a real problem so we bail
+                if (!std::isfinite(chi2PerNDF)) {
                   chi2PerNDF = 2. * fChi2NDF.at(plane);
                   NDF = 2;
                 }
