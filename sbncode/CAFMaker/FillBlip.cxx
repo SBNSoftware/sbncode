@@ -19,6 +19,9 @@ namespace caf
             NewBlip.energy = CurrentBlip.Energy/1000.; //convert to GeV
             NewBlip.energyESTAR = CurrentBlip.EnergyESTAR/1000.; //convert to GeV
             NewBlip.energyPSTAR = CurrentBlip.EnergyPSTAR/1000.; //convert to GeV
+            NewBlip.energyNoDriftCorr = CurrentBlip.EnergyNoDriftCorr/1000.; //convert to GeV
+            NewBlip.energyESTARnoDriftCorr = CurrentBlip.EnergyESTARNoDriftCorr/1000.; //convert to GeV
+            NewBlip.energyPSTARnoDriftCorr = CurrentBlip.EnergyPSTARNoDriftCorr/1000.; //convert to GeV
             NewBlip.proxTrkDist = CurrentBlip.ProxTrkDist; 
             NewBlip.proxTrkID = CurrentBlip.ProxTrkID;
             NewBlip.inCylinder = CurrentBlip.inCylinder;
