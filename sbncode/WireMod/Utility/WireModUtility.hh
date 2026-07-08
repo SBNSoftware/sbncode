@@ -51,6 +51,7 @@ namespace sys {
       bool   applyXZAngledQdXScale;                       // do we scale with XZ angle vs dQ/dX?
       bool   applyXXWScale;                               // do we scale with X vs ThXW?
       bool   additiveModification;                        // additive (true) vs multiplicative (false) ROI modification
+      bool   useGraph2DInterpolation;                     // true = Delaunay interp (default), false = nearest bin center
       double readoutWindowTicks;                          // how many ticks are in the readout window?
       double tickOffset;                                  // do we want an offset in the ticks?
 
@@ -108,6 +109,7 @@ namespace sys {
         applyXZAngledQdXScale(arg_ApplyXZAngledQdXScale),
         applyXXWScale(arg_ApplyXXWScale),
         additiveModification(false),
+        useGraph2DInterpolation(true),
         readoutWindowTicks(detProp.ReadOutWindowSize()),                                               // the default A2795 (ICARUS TPC readout board) readout window is 4096 samples
         tickOffset(arg_TickOffset)                                                                     // tick offset is for MC truth, default to zero and set only as necessary
       {
