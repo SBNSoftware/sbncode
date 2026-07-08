@@ -1,6 +1,7 @@
 #include "sbncode/WireMod/Utility/WireModUtility.hh"
 #include "lardataalg/DetectorInfo/DetectorPropertiesData.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <cmath>
 #include "TVector3.h"
@@ -879,6 +880,49 @@ sys::WireModUtility::CalcPropertiesFromIDEs(std::vector<const sys::WireModUtilit
   return props;
 }
 
+// TGraph2D lookup: interpolate=true uses Delaunay (clamped), false uses nearest bin center.
+static double g2dLookup(TGraph2D* g, double x, double y, bool interpolate)
+{
+  if (interpolate)
+    return g->Interpolate(std::clamp(x, g->GetXmin(), g->GetXmax()),
+                          std::clamp(y, g->GetYmin(), g->GetYmax()));
+
+  int     n  = g->GetN();
+  double* xs = g->GetX();
+  double* ys = g->GetY();
+  double* zs = g->GetZ();
+
+  std::vector<double> ux(xs, xs + n), uy(ys, ys + n);
+  std::sort(ux.begin(), ux.end());
+  ux.erase(std::unique(ux.begin(), ux.end()), ux.end());
+  std::sort(uy.begin(), uy.end());
+  uy.erase(std::unique(uy.begin(), uy.end()), uy.end());
+
+  double qx = std::clamp(x, ux.front(), ux.back());
+  double qy = std::clamp(y, uy.front(), uy.back());
+
+  auto findBin = [](std::vector<double> const& c, double q) -> int {
+    int m = static_cast<int>(c.size());
+    if (m == 1) return 0;
+    double left = c[0] - (c[1] - c[0]) * 0.5;
+    for (int i = 0; i < m; ++i) {
+      double right = 2.0 * c[i] - left;
+      if (q < right || i == m - 1) return i;
+      left = right;
+    }
+    return m - 1;
+  };
+
+  double cx = ux[findBin(ux, qx)];
+  double cy = uy[findBin(uy, qy)];
+
+  for (int i = 0; i < n; ++i)
+    if (std::abs(xs[i] - cx) < 1e-9 && std::abs(ys[i] - cy) < 1e-9)
+      return zs[i];
+
+  return 1.0; // bin not populated in the map (sparse grid) — neutral scale
+}
+
 //--- GetScaleValues ---
 sys::WireModUtility::ScaleValues_t sys::WireModUtility::GetScaleValues(sys::WireModUtility::TruthProperties_t const& truth_props, sys::WireModUtility::ROIProperties_t const& roi_vals)
 {
@@ -955,10 +999,10 @@ sys::WireModUtility::ScaleValues_t sys::WireModUtility::GetViewScaleValues(sys::
         graph2Ds_Sigma_YZ [plane] == nullptr  )
       throw cet::exception("WireModUtility")
         << "Tried to apply YZ scale factor, but could not find graphs. Check that you have set those in the utility.";
-    temp_scale = graph2Ds_Charge_YZ[plane]->Interpolate(truth_props.z, truth_props.y);
+    temp_scale = g2dLookup(graph2Ds_Charge_YZ[plane], truth_props.z, truth_props.y, useGraph2DInterpolation);
     if(temp_scale>0.001) scales.r_Q *= temp_scale;
 
-    temp_scale  = graph2Ds_Sigma_YZ [plane]->Interpolate(truth_props.z, truth_props.y);
+    temp_scale  = g2dLookup(graph2Ds_Sigma_YZ [plane], truth_props.z, truth_props.y, useGraph2DInterpolation);
     if(temp_scale>0.001) scales.r_sigma *= temp_scale;
   }
 
@@ -969,10 +1013,10 @@ sys::WireModUtility::ScaleValues_t sys::WireModUtility::GetViewScaleValues(sys::
       throw cet::exception("WireModUtility")
         << "Tried to apply XXW scale factor, but could not find graphs. Check that you have set those in the utility.";
     double thXW = ThetaXW(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ());
-    temp_scale = graph2Ds_Charge_XXW[plane]->Interpolate(truth_props.x, thXW);
+    temp_scale = g2dLookup(graph2Ds_Charge_XXW[plane], truth_props.x, thXW, useGraph2DInterpolation);
     if(temp_scale>0.001) scales.r_Q *= temp_scale;
 
-    temp_scale = graph2Ds_Sigma_XXW [plane]->Interpolate(truth_props.x, thXW);
+    temp_scale = g2dLookup(graph2Ds_Sigma_XXW [plane], truth_props.x, thXW, useGraph2DInterpolation);
     if(temp_scale>0.001) scales.r_sigma *= temp_scale;
   }
 
@@ -1011,10 +1055,10 @@ sys::WireModUtility::ScaleValues_t sys::WireModUtility::GetViewScaleValues(sys::
         graph2Ds_Sigma_XXZAngle [plane] == nullptr  )
       throw cet::exception("WireModUtility")
         << "Tried to apply XXZAngle scale factor, but could not find graphs. Check that you have set those in the utility.";
-    temp_scale = graph2Ds_Charge_XXZAngle[plane]->Interpolate(truth_props.x, ThetaXZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()));
+    temp_scale = g2dLookup(graph2Ds_Charge_XXZAngle[plane], truth_props.x, ThetaXZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()), useGraph2DInterpolation);
     if(temp_scale>0.001) scales.r_Q *= temp_scale;
 
-    temp_scale = graph2Ds_Sigma_XXZAngle [plane]->Interpolate(truth_props.x, ThetaXZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()));
+    temp_scale = g2dLookup(graph2Ds_Sigma_XXZAngle [plane], truth_props.x, ThetaXZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()), useGraph2DInterpolation);
     if(temp_scale>0.001) scales.r_sigma *= temp_scale;
   }
 
@@ -1024,10 +1068,10 @@ sys::WireModUtility::ScaleValues_t sys::WireModUtility::GetViewScaleValues(sys::
         graph2Ds_Sigma_XdQdX [plane] == nullptr  )
       throw cet::exception("WireModUtility")
         << "Tried to apply XdQdX scale factor, but could not find graphs. Check that you have set those in the utility.";
-    temp_scale = graph2Ds_Charge_XdQdX[plane]->Interpolate(truth_props.x, truth_props.dqdr); 
+    temp_scale = g2dLookup(graph2Ds_Charge_XdQdX[plane], truth_props.x, truth_props.dqdr, useGraph2DInterpolation);
     if(temp_scale>0.001) scales.r_Q *= temp_scale;
 
-    temp_scale = graph2Ds_Sigma_XdQdX [plane]->Interpolate(truth_props.x, truth_props.dqdr); 
+    temp_scale = g2dLookup(graph2Ds_Sigma_XdQdX [plane], truth_props.x, truth_props.dqdr, useGraph2DInterpolation);
     if(temp_scale>0.001) scales.r_sigma *= temp_scale;
   }
 
@@ -1037,10 +1081,10 @@ sys::WireModUtility::ScaleValues_t sys::WireModUtility::GetViewScaleValues(sys::
         graph2Ds_Sigma_XZAngledQdX [plane] == nullptr  )
       throw cet::exception("WireModUtility")
         << "Tried to apply XZAngledQdX scale factor, but could not find graphs. Check that you have set those in the utility.";
-    temp_scale = graph2Ds_Charge_XZAngledQdX[plane]->Interpolate(ThetaXZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()), truth_props.dqdr);
+    temp_scale = g2dLookup(graph2Ds_Charge_XZAngledQdX[plane], ThetaXZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()), truth_props.dqdr, useGraph2DInterpolation);
     if(temp_scale>0.001) scales.r_Q *= temp_scale;
 
-    temp_scale = graph2Ds_Sigma_XZAngledQdX [plane]->Interpolate(ThetaXZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()), truth_props.dqdr);
+    temp_scale = g2dLookup(graph2Ds_Sigma_XZAngledQdX [plane], ThetaXZ_PlaneRel(truth_props.dxdr, truth_props.dydr, truth_props.dzdr, plane_obj.ThetaZ()), truth_props.dqdr, useGraph2DInterpolation);
     if(temp_scale>0.001) scales.r_sigma *= temp_scale;
   }
 
@@ -1098,16 +1142,14 @@ void sys::WireModUtility::ModifyROI(std::vector<float> & roi_data,
     if (isnan(q_mod)) {
       if (verbose)
         std::cout << "WARNING: obtained q_mod = NaN... setting scale to 0" << std::endl;
+    // for additive correction, no cutoffs are applied
+    } else if (additiveModification) {
+      roi_data[i_t] += static_cast<float>(delta);
     } else if (q_orig < 0.01) { // check that this is a sane limit
         if (verbose) std::cout << "WARNING: obtained q_orig < 0.01 ... setting scale to 1" << std::endl;
     } else if (sigma_distance > 9.) {
-        if (verbose) std::cout << "WARNING: sigma_distance > 3.. setting scale to 1" << std::endl;
-    // additive approach: after(t) = before(t) + [q_mod(t) - q_orig(t)]
-    // residuals/noise in the waveform are preserved without amplification
-    } else if (additiveModification) {
-      roi_data[i_t] += static_cast<float>(delta);
-    }
-    else {
+        if (verbose) std::cout << "WARNING: sigma_distance > 9 ... setting scale to 1" << std::endl;
+    } else {
       scale_ratio = q_mod / q_orig;
       roi_data[i_t] = scale_ratio * roi_data[i_t];
     }
