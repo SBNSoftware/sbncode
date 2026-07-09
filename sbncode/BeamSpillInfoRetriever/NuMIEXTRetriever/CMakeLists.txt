@@ -1,6 +1,6 @@
 
 cet_build_plugin(NuMIEXTRetriever art::module
-    LIBRARIES
+    LIBRARIES PRIVATE
         art::Persistency_Common
         art::Utilities canvas::canvas
         cetlib::cetlib cetlib_except::cetlib_except

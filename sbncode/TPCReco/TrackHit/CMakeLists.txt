@@ -1,5 +1,5 @@
 cet_build_plugin(TrackAreaHit art::module
-     LIBRARIES
+     LIBRARIES PRIVATE
         art::Framework_Core
         art::Framework_Services_Registry
         art_root_io::TFileService_service
@@ -20,7 +20,7 @@ cet_build_plugin(TrackAreaHit art::module
 )
 
 cet_build_plugin(TrackHitFilter art::module
-     LIBRARIES
+     LIBRARIES PRIVATE
         art::Framework_Core
         art::Framework_Core
         art::Framework_Services_Registry
@@ -40,7 +40,7 @@ cet_build_plugin(TrackHitFilter art::module
 )
 
 cet_build_plugin(TrackHitDumper art::module
-     LIBRARIES
+     LIBRARIES PRIVATE
         art::Framework_Core
         art::Framework_Core
         art::Framework_Services_Registry

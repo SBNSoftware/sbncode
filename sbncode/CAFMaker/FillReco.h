@@ -41,6 +41,7 @@
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "sbnobj/Common/CRT/CRTTrack.hh"
 #include "sbnobj/SBND/CRT/CRTSpacePoint.hh"
+#include "sbnobj/SBND/CRT/CRTCluster.hh"
 #include "sbnobj/SBND/CRT/CRTTrack.hh"
 #include "sbnobj/SBND/CRT/CRTVeto.hh"
 #include "sbnobj/Common/CRT/CRTPMTMatching.hh"
@@ -48,7 +49,7 @@
 #include "sbnobj/Common/PMT/Data/PMTBeamSignal.hh"
 #include "sbnobj/SBND/Timing/TimingInfo.hh"
 #include "sbnobj/SBND/Timing/FrameShiftInfo.hh"
-
+#include "sbnobj/Common/Reco/LightCalo.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 
@@ -109,6 +110,9 @@ namespace caf
 
   void FillSliceOpT0Finder(const std::vector<art::Ptr<sbn::OpT0Finder>> &opt0_v,
                            caf::SRSlice &slice);
+
+  void FillSliceLightCalo(const sbn::LightCalo *lightcalo,
+                          caf::SRSlice& slice);
 
   void FillSliceBarycenter(const std::vector<art::Ptr<recob::Hit>> &inputHits,
                            const std::vector<art::Ptr<recob::SpacePoint>> &inputPoints,
@@ -205,7 +209,8 @@ namespace caf
                        bool allowEmpty = false);
 
   void FillTrackCRTSpacePoint(const anab::T0 &t0match,
-                              const art::Ptr<sbnd::crt::CRTSpacePoint> &spacepointmatch,
+                              const sbnd::crt::CRTSpacePoint &spacepointmatch,
+                              const sbnd::crt::CRTCluster &cluster,
                               caf::SRTrack &srtrack,
                               bool allowEmpty = false);
 
@@ -277,6 +282,7 @@ namespace caf
                   bool allowEmpty = false);
 
   void FillCRTSpacePoint(const sbnd::crt::CRTSpacePoint &spacepoint,
+                         const sbnd::crt::CRTCluster &cluster,
                          caf::SRCRTSpacePoint &srspacepoint,
                          bool allowEmpty = false);
 

@@ -1,6 +1,6 @@
 
 cet_build_plugin( TrackCaloSkimmer art::module
-                       LIBRARIES
+                       LIBRARIES PRIVATE
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service
@@ -28,7 +28,7 @@ cet_build_plugin( TrackCaloSkimmer art::module
 )
 
 cet_build_plugin(TrackCaloSkimmerSelectStoppingTrack art::tool
-                      LIBRARIES
+                      LIBRARIES PRIVATE
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service
@@ -47,7 +47,7 @@ cet_build_plugin(TrackCaloSkimmerSelectStoppingTrack art::tool
 )
 
 cet_build_plugin(TrackCaloSkimmerSelectAnode2CathodeTrack art::tool
-                      LIBRARIES
+                      LIBRARIES PRIVATE
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service
@@ -61,7 +61,7 @@ cet_build_plugin(TrackCaloSkimmerSelectAnode2CathodeTrack art::tool
 )
 
 cet_build_plugin(TrackCaloSkimmerSelectAllTrack art::tool
-                      LIBRARIES
+                      LIBRARIES PRIVATE
 			    sbnobj::Common_Calibration_dict
                             art::Persistency_Common
                             art::Utilities canvas::canvas
@@ -71,7 +71,7 @@ cet_build_plugin(TrackCaloSkimmerSelectAllTrack art::tool
 )
 
 cet_build_plugin(TrackCaloSkimmerSelectClearCosmicMuon art::tool
-                      LIBRARIES
+                      LIBRARIES PRIVATE
 			    sbnobj::Common_Calibration_dict
                             art::Persistency_Common
                             art::Utilities canvas::canvas
@@ -81,7 +81,7 @@ cet_build_plugin(TrackCaloSkimmerSelectClearCosmicMuon art::tool
 )
 
 cet_build_plugin ( DataSelect art::module
-           LIBRARIES
+           LIBRARIES PRIVATE
                ifdh_art::IFDH_service
                art::Framework_Core
                art::Framework_Principal

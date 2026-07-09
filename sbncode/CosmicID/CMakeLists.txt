@@ -1,5 +1,5 @@
 cet_build_plugin( CRUMBS art::module
-      LIBRARIES
+      LIBRARIES PRIVATE
           art_root_io::TFileService_service
           fhiclcpp::fhiclcpp
           art::Persistency_Provenance canvas::canvas

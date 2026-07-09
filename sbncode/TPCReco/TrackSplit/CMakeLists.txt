@@ -1,5 +1,5 @@
 cet_build_plugin(TrackSplitter art::module
-  LIBRARIES
+  LIBRARIES PRIVATE
   art::Framework_Core
   art::Framework_Services_Registry
   art_root_io::TFileService_service
@@ -18,7 +18,7 @@ cet_build_plugin(TrackSplitter art::module
 )
 
 cet_build_plugin(MergedTrackIdentifier art::module
-  LIBRARIES
+  LIBRARIES PRIVATE
   art::Framework_Core
   art::Framework_Services_Registry
   art_root_io::TFileService_service

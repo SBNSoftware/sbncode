@@ -56,8 +56,8 @@ set(    MODULE_LIBRARIES
           art_root_io::TFileService_service
           messagefacility::MF_MessageLogger
        )
-cet_build_plugin(Cluster3DSBN art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(SnippetHit3DBuilderSBN art::tool LIBRARIES ${TOOL_LIBRARIES} SOURCE SnippetHit3DBuilderSBN_tool.cc)
+cet_build_plugin(Cluster3DSBN art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(SnippetHit3DBuilderSBN art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
 set_property(SOURCE SnippetHit3DBuilderSBN_tool.cc APPEND PROPERTY COMPILE_DEFINITIONS EIGEN_FFTW_DEFAULT)
 
 install_headers()

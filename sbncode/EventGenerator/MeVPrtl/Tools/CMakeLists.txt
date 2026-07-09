@@ -11,7 +11,7 @@ art_make_library( LIBRARY_NAME sbncode_EventGenerator_MeVPrtl_Constants
 
 
 cet_build_plugin( EmptyKaonGen art::tool
-                       LIBRARIES
+                       LIBRARIES PRIVATE
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service
@@ -34,7 +34,7 @@ cet_build_plugin( EmptyKaonGen art::tool
 
 
 cet_build_plugin( NuMiKaonGen art::tool
-                       LIBRARIES
+                       LIBRARIES PRIVATE
                             ifdh_art::IFDH_service
                             art::Framework_Core
                             art::Framework_Services_Registry
@@ -57,7 +57,7 @@ cet_build_plugin( NuMiKaonGen art::tool
 )
 
 cet_build_plugin( TxtFileGen art::tool
-                      LIBRARIES
+                      LIBRARIES PRIVATE
                             ifdh_art::IFDH_service
                             art::Framework_Core
                             art::Framework_Services_Registry
@@ -80,8 +80,7 @@ cet_build_plugin( TxtFileGen art::tool
 )
                             
 cet_build_plugin( BNBKaonGen art::tool
-
-                       LIBRARIES
+                       LIBRARIES PRIVATE
                             ifdh_art::IFDH_service
                             art::Framework_Core
                             art::Framework_Services_Registry
@@ -104,7 +103,7 @@ cet_build_plugin( BNBKaonGen art::tool
 )
 
 cet_build_plugin( WeightedRayTraceBox art::tool
-                       LIBRARIES
+                       LIBRARIES PRIVATE
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service
@@ -127,7 +126,7 @@ cet_build_plugin( WeightedRayTraceBox art::tool
 )
 
 cet_build_plugin( MixedWeightRayTraceBox art::tool
-                       LIBRARIES
+                       LIBRARIES PRIVATE
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service
@@ -153,7 +152,7 @@ cet_build_plugin( MixedWeightRayTraceBox art::tool
 
 
 cet_build_plugin( ReThrowRayTraceBox art::tool
-                       LIBRARIES
+                       LIBRARIES PRIVATE
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service
@@ -175,7 +174,7 @@ cet_build_plugin( ReThrowRayTraceBox art::tool
 )
 
 cet_build_plugin( RayTraceBox art::tool
-                       LIBRARIES
+                       LIBRARIES PRIVATE
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service

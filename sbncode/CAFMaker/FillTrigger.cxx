@@ -1,4 +1,5 @@
 #include<iostream>
+#include <bitset>
 #include "sbncode/CAFMaker/FillTrigger.h"
 
 namespace caf
@@ -49,10 +50,21 @@ namespace caf
   }
 
   void FillTriggerSBND(caf::SRSBNDTimingInfo& timingInfo, caf::SRTrigger& triggerInfo){
-      
-    triggerInfo.global_trigger_time = timingInfo.hltEtrig;
-    triggerInfo.beam_gate_time_abs = timingInfo.hltBeamGate;
-    double diff_ts = triggerInfo.global_trigger_det_time - triggerInfo.beam_gate_det_time;
+
+    if (timingInfo.hltEtrig != std::numeric_limits<uint64_t>::max()) triggerInfo.global_trigger_time = timingInfo.hltEtrig;
+    if (timingInfo.hltBeamGate != std::numeric_limits<uint64_t>::max()) triggerInfo.beam_gate_time_abs = timingInfo.hltBeamGate;
+
+    double diff_ts = std::numeric_limits<double>::max();
+
+    if ((triggerInfo.global_trigger_time != std::numeric_limits<uint64_t>::max()) && (triggerInfo.beam_gate_time_abs != std::numeric_limits<uint64_t>::max())){
+
+      if (triggerInfo.global_trigger_time > triggerInfo.beam_gate_time_abs){
+        diff_ts = triggerInfo.global_trigger_time - triggerInfo.beam_gate_time_abs;
+      }
+      else{
+        diff_ts = -1.0 * (triggerInfo.beam_gate_time_abs - triggerInfo.global_trigger_time);
+      }
+    }
     triggerInfo.trigger_within_gate = diff_ts;
   }
 
@@ -72,5 +84,28 @@ namespace caf
     caf_softInfo.npmts = softInfo.nAboveThreshold;
     caf_softInfo.flash_peakpe = softInfo.peakPE;
     caf_softInfo.flash_peaktime = softInfo.peaktime + softInfo.trig_ts*1e-3; 
+  }
+
+  void FillPTBTriggersSBND(const std::vector<sbn::pot::PTBInfo_t>& ptb_triggers, caf::SRTrigger& triggerInfo) {
+    triggerInfo.ptb_hlt_timestamp.clear();
+    triggerInfo.ptb_hlt_bit.clear();
+    triggerInfo.ptb_llt_timestamp.clear();
+    triggerInfo.ptb_llt_bit.clear();
+    
+    // Decode trigger words: each set bit becomes a separate entry with the same timestamp
+    for(const auto& trig : ptb_triggers) {
+      // Choose destination vectors based on trigger type
+      auto& ptb_timestamp = trig.isHLT ? triggerInfo.ptb_hlt_timestamp : triggerInfo.ptb_llt_timestamp;
+      auto& ptb_bit = trig.isHLT ? triggerInfo.ptb_hlt_bit : triggerInfo.ptb_llt_bit;
+      
+      std::bitset<64> const triggerWord { trig.triggerWord };
+      // currPTBTimeStamp is already in nanoseconds (uint64_t), use directly
+      // Loop variable is uint8_t since we know bit values are 0-63 (fits in uint8_t)
+      for(std::uint8_t bit = 0; bit < triggerWord.size(); ++bit) {
+        if(!triggerWord[bit]) continue;
+        ptb_timestamp.push_back(trig.currPTBTimeStamp);
+        ptb_bit.push_back(bit);
+      }
+    }
   }
 }

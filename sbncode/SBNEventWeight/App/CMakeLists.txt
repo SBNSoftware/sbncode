@@ -1,5 +1,5 @@
 cet_build_plugin(SBNEventWeight art::module
-  LIBRARIES
+  LIBRARIES PRIVATE
   sbnobj::Common_SBNEventWeight
   sbncode_SBNEventWeight_Base
   sbncode_SBNEventWeight_Calculators_CrossSection
@@ -9,7 +9,7 @@ cet_build_plugin(SBNEventWeight art::module
   ROOT::Geom)
 
 cet_build_plugin(SystToolsEventWeight art::module
-  LIBRARIES
+  LIBRARIES PRIVATE
   sbnobj::Common_SBNEventWeight sbncode_SBNEventWeight_Base
   systematicstools::interface
   systematicstools::interpreters

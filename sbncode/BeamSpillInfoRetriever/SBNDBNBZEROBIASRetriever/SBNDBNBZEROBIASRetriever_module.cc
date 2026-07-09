@@ -126,13 +126,13 @@ sbn::pot::TriggerInfo_t sbn::SBNDBNBZEROBIASRetriever::extractTriggerInfo(art::E
   else{
     // If missing TDC, use PTB instead
     mf::LogDebug("SBNDBNBZEROBIASRetriever") << " Missing TDC Container Fragments!!!" << std::endl;
-    triggerInfo.t_current_event = PTBInfo.currPTBTimeStamp - fBESOffset;
+    triggerInfo.t_current_event = PTBInfo.currPTBTimeStamp / 1e9 - fBESOffset;
   }
 
-  triggerInfo.t_previous_event = PTBInfo.prevPTBTimeStamp - fBESOffset;
+  triggerInfo.t_previous_event = PTBInfo.prevPTBTimeStamp / 1e9 - fBESOffset;
   triggerInfo.number_of_gates_since_previous_event = PTBInfo.GateCounter;
 
-  double PTBandCurrOffset = PTBInfo.currPTBTimeStamp - triggerInfo.t_current_event - fBESOffset;
+  double PTBandCurrOffset = PTBInfo.currPTBTimeStamp / 1e9 - triggerInfo.t_current_event - fBESOffset;
 
   // Catch for an issue seen a few times where PTB off by a second.
   // Only need to correct prevTS because either currTS is from TDC

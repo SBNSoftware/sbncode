@@ -25,7 +25,7 @@ set(
     sbncode_LArG4_PhysicsLists
 )
 
-cet_build_plugin(PhysListLoader art::module SOURCE PhysListLoader_module.cc LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(PhysListLoader art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
 
 cet_make_library(SOURCE MergeSimSourcesLiteUtility.cxx
   LIBRARIES
@@ -35,7 +35,7 @@ cet_make_library(SOURCE MergeSimSourcesLiteUtility.cxx
 )
 
 cet_build_plugin(MergeSimSourcesSBN art::EDProducer
-  LIBRARIES
+  LIBRARIES PRIVATE
   sbncode::LArG4
   larsim::MergeSimSources
   lardataobj::MCBase

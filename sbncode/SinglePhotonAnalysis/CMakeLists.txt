@@ -23,28 +23,28 @@ art_make_library( BASENAME_ONLY
           ROOT::Core
 )
 
-cet_build_plugin(CCDeltaRadiative art::module BASENAME_ONLY LIBRARIES
+cet_build_plugin(CCDeltaRadiative art::module BASENAME_ONLY LIBRARIES PRIVATE
           sbncode_SinglePhotonAnalysis_Libraries
           sbncode_SinglePhotonAnalysis_SEAview
           art_root_io::TFileService_service
           ROOT::Tree
           )
 
-cet_build_plugin(NCDeltaRadiative art::module BASENAME_ONLY LIBRARIES
+cet_build_plugin(NCDeltaRadiative art::module BASENAME_ONLY LIBRARIES PRIVATE
           sbncode_SinglePhotonAnalysis_Libraries
           sbncode_SinglePhotonAnalysis_SEAview
           art_root_io::TFileService_service
           ROOT::Tree
           )
 
-cet_build_plugin(NCRadiativeResonant art::module BASENAME_ONLY LIBRARIES
+cet_build_plugin(NCRadiativeResonant art::module BASENAME_ONLY LIBRARIES PRIVATE
           sbncode_SinglePhotonAnalysis_Libraries
           sbncode_SinglePhotonAnalysis_SEAview
           art_root_io::TFileService_service
           ROOT::Tree
           )
 
-cet_build_plugin(SinglePhoton art::module BASENAME_ONLY LIBRARIES
+cet_build_plugin(SinglePhoton art::module BASENAME_ONLY LIBRARIES PRIVATE
           sbncode_SinglePhotonAnalysis_Libraries
           sbncode_SinglePhotonAnalysis_SEAview
           art_root_io::TFileService_service

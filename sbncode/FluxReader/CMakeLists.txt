@@ -4,7 +4,7 @@ cet_enable_asserts()
 file(GLOB INTERFACEFILES *Interface* )
 
 cet_build_plugin( FluxReader art::source
-          LIBRARIES
+          LIBRARIES PRIVATE
                sbncode_FluxReader
                larcore::Geometry_Geometry_service
                nutools::EventGeneratorBase_CRY
@@ -12,7 +12,7 @@ cet_build_plugin( FluxReader art::source
 )
 
 cet_build_plugin ( FluxGeoFilter art::module
-            LIBRARIES
+            LIBRARIES PRIVATE
                 art::Framework_Core
                 art::Framework_Principal
                 art::Framework_Services_Registry
@@ -71,7 +71,7 @@ cet_make_library(
                         lardata::Utilities
 )
 
-cet_build_plugin(FluxReaderAna art::module LIBRARIES
+cet_build_plugin(FluxReaderAna art::module LIBRARIES PRIVATE
                         sbncode_FluxReader
                         sbncode_FluxReader_FluxInterface
                         nusimdata::SimulationBase

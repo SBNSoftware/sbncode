@@ -98,6 +98,7 @@
 #include "lardataobj/RecoBase/MCSFitResult.h"
 #include "lardataobj/RecoBase/Cluster.h"
 #include "lardataobj/AnalysisBase/MVAOutput.h"
+#include "lardataobj/Simulation/SimEnergyDeposit.h"
 
 #include "nusimdata/SimulationBase/MCFlux.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
@@ -116,11 +117,14 @@
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
 #include "sbnobj/Common/POTAccounting/EXTCountInfo.h"
 #include "sbnobj/Common/POTAccounting/NuMISpillInfo.h"
+#include "sbncode/BeamSpillInfoRetriever/POTTools.h"
+#include "artdaq-core/Data/ContainerFragment.hh"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
 #include "sbnobj/Common/Reco/OpT0FinderResult.h"
 #include "sbnobj/SBND/CRT/CRTVeto.hh"
 #include "sbnobj/Common/Reco/CorrectedOpFlashTiming.h"
+#include "sbnobj/Common/Reco/LightCalo.h"
 #include "sbnobj/SBND/Timing/TimingInfo.hh"
 #include "sbnobj/SBND/Timing/FrameShiftInfo.hh"
 
@@ -352,6 +356,10 @@ class CAFMaker : public art::EDProducer {
   template <class T, class U>
   art::FindOneP<T> FindOnePStrict(const U& from, const art::Event& evt,
 				  const art::InputTag& label) const;
+
+  template <class T, class U>
+  art::FindOneP<T> FindOnePStrictSingle(const U& from, const art::Event& evt,
+                                        const art::InputTag& label) const;
 
   template <class T, class D, class U>
   art::FindOneP<T, D> FindOnePDStrict(const U& from,
@@ -1301,6 +1309,14 @@ art::FindOneP<T> CAFMaker::FindOnePStrict(const U& from,
 }
 
 //......................................................................
+template <class T, class U>
+art::FindOneP<T> CAFMaker::FindOnePStrictSingle(const U& from,
+                                                const art::Event& evt,
+                                                const art::InputTag& tag) const {
+  return FindOnePStrict<T>(std::vector{ from }, evt, tag);
+}
+
+//......................................................................
 template <class T, class D, class U>
 art::FindOneP<T, D> CAFMaker::FindOnePDStrict(const U& from,
                                               const art::Event& evt,
@@ -1379,6 +1395,7 @@ bool CAFMaker::GetPsetParameter(const fhicl::ParameterSet& pset,
 
 //......................................................................
 void CAFMaker::produce(art::Event& evt) noexcept {
+  mf::LogInfo("CAFMaker") << "CAFMaker::produce called for event: " << evt.id();
 
   bool const firstInFile = (fIndexInFile++ == 0);
 
@@ -1638,6 +1655,36 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     } // end for fm
   } // end for i (mctruths)
 
+  // get sim energy deposits if they're there
+  ::art::Handle<std::vector<sim::SimEnergyDeposit>> sed_handle;
+  GetByLabelStrict(evt, fParams.SimEnergyDepositLabel().encode(), sed_handle);
+
+  if (!isRealData && sed_handle.isValid()){
+    art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
+
+    srtruthbranch.dep.reserve(mctruths.size());
+    for (size_t n=0; n<mctruths.size();n++){
+      SRTrueDeposit init;
+      init.electrons = 0;
+      init.photons = 0;
+      init.energy = 0; 
+      srtruthbranch.dep.push_back(init);
+    }
+
+    for (sim::SimEnergyDeposit const& sed: *sed_handle){
+      const auto trackID = sed.TrackID();
+
+      art::Ptr<simb::MCTruth> mctruth = pi_serv->TrackIdToMCTruth_P(trackID);
+      auto it = std::find(mctruths.begin(), mctruths.end(), mctruth);
+      if (it == mctruths.end()) continue; 
+
+      auto idx = std::distance(mctruths.begin(), it);
+      srtruthbranch.dep.at(idx).energy    += sed.Energy()*1e-3; // GeV
+      srtruthbranch.dep.at(idx).photons   += sed.NumPhotons();
+      srtruthbranch.dep.at(idx).electrons += sed.NumElectrons();
+    }
+  }
+
   // get the number of events generated in the gen stage
   unsigned n_gen_evt = 0;
   for (const art::ProcessConfiguration &process: evt.processHistory()) {
@@ -1710,6 +1757,24 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // Fill trigger emulation information
   if (isValidEmulationTrigger) { 
       FillTriggerEmulation(monpulses_handle, monpulse_sizes_handle, pairs_handle, trigemu_handle, srtrigger);
+  }
+
+  
+  // Fill PTB (Penn Trigger Board) information for SBND real data
+  if (isRealData && fDet == kSBND) {
+    art::InputTag PTB_itag("daq", "ContainerPTB");
+    art::Handle<artdaq::Fragments> ptb_frags_handle;
+    evt.getByLabel(PTB_itag, ptb_frags_handle);
+    if (ptb_frags_handle.isValid()) {
+      mf::LogDebug("CAFMaker") << "Found ContainerPTB, extracting PTB triggers...";
+      std::vector<sbn::pot::PTBInfo_t> ptb_triggers = sbn::pot::extractAllPTBInfo(*ptb_frags_handle);
+      mf::LogDebug("CAFMaker") << "Extracted " << ptb_triggers.size() << " PTB triggers";
+      FillPTBTriggersSBND(ptb_triggers, srtrigger);
+      mf::LogDebug("CAFMaker") << "PTB HLT triggers: " << srtrigger.ptb_hlt_timestamp.size() 
+                                << ", LLT triggers: " << srtrigger.ptb_llt_timestamp.size();
+    } else {
+      mf::LogDebug("CAFMaker") << "ContainerPTB not found for event " << evt.id();
+    }
   }
 
   // If not real data, fill in enough of the SRTrigger to make (e.g.) the CRT
@@ -1792,12 +1857,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     {
       art::Handle<std::vector<sbnd::crt::CRTSpacePoint>> crtspacepoints_handle;
       GetByLabelStrict(evt, fParams.CRTSpacePointLabel(), crtspacepoints_handle);
+      art::FindOneP<sbnd::crt::CRTCluster> foCRTCluster =
+        FindOnePStrict<sbnd::crt::CRTCluster>(crtspacepoints_handle, evt, fParams.CRTSpacePointLabel());
 
       if (crtspacepoints_handle.isValid()) {
         const std::vector<sbnd::crt::CRTSpacePoint> &crtspacepoints = *crtspacepoints_handle;
         for (unsigned i = 0; i < crtspacepoints.size(); i++) {
           srcrtspacepoints.emplace_back();
-          FillCRTSpacePoint(crtspacepoints[i], srcrtspacepoints.back());
+          const art::Ptr<sbnd::crt::CRTCluster> crtcluster = foCRTCluster.at(i);
+          FillCRTSpacePoint(crtspacepoints[i], *crtcluster, srcrtspacepoints.back());
         }
       }
 
@@ -2057,6 +2125,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
      if (fmCorrectedOpFlash.isValid())
       slcCorrectedOpFlash = fmCorrectedOpFlash.at(0);
 
+    art::FindOneP<sbn::LightCalo> foLightCalo =
+      FindOnePStrict<sbn::LightCalo>(sliceList,evt,
+        fParams.LightCaloLabel() + slice_tag_suff);
+    const sbn::LightCalo *slcLightCalo = foLightCalo.isValid()? foLightCalo.at(0).get() : nullptr;
 
     art::FindOneP<lcvn::Result> foCVNResult =
       FindOnePStrict<lcvn::Result>(sliceList, evt,
@@ -2247,6 +2319,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindOnePDStrict<sbnd::crt::CRTSpacePoint, anab::T0>(slcTracks, evt,
                fParams.CRTSpacePointMatchLabel() + slice_tag_suff);
 
+    art::Handle<std::vector<sbnd::crt::CRTSpacePoint>> crtspacepoints_handle;
+    GetByLabelStrict(evt, fParams.CRTSpacePointLabel(), crtspacepoints_handle);
+
     art::FindOneP<sbnd::crt::CRTTrack, anab::T0> foSBNDCRTTrackMatch =
       FindOnePDStrict<sbnd::crt::CRTTrack, anab::T0>(slcTracks, evt,
                fParams.SBNDCRTTrackMatchLabel() + slice_tag_suff);
@@ -2316,6 +2391,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceCRUMBS(slcCRUMBS, recslc);
     FillSliceOpT0Finder(slcOpT0, recslc);
     FillSliceBarycenter(slcHits, slcSpacePoints, recslc);
+    FillSliceLightCalo(slcLightCalo, recslc);
     FillTPCPMTBarycenterMatch(barycenterMatch, recslc);
     FillCorrectedOpFlashTiming(slcCorrectedOpFlash, recslc);
     FillCVNScores(cvnResult, recslc);
@@ -2523,8 +2599,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           {
             const art::Ptr<sbnd::crt::CRTSpacePoint> crtspacepoint = foCRTSpacePointMatch.at(iPart);
 
+            art::FindOneP<sbnd::crt::CRTCluster> foCRTCluster =
+              FindOnePStrictSingle<sbnd::crt::CRTCluster>(crtspacepoint, evt, fParams.CRTSpacePointLabel());
+            const art::Ptr<sbnd::crt::CRTCluster>& crtcluster = foCRTCluster.at(0);
+
             if(crtspacepoint.isNonnull())
-              FillTrackCRTSpacePoint(foCRTSpacePointMatch.data(iPart).ref(), crtspacepoint, trk);
+              FillTrackCRTSpacePoint(foCRTSpacePointMatch.data(iPart).ref(), *crtspacepoint, *crtcluster, trk);
           }
         if(foSBNDCRTTrackMatch.isValid() && fDet == kSBND)
           {
@@ -2658,27 +2738,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   FixPMTReferenceTimes(rec, PMT_reference_time);
 
   // TODO: TPC?
-  
-  // SBND: Fix the Reference time in data depending on the stream
-  // For more information, see: 
-  // https://sbn-docdb.fnal.gov/cgi-bin/sso/RetrieveFile?docid=43090
+ 
 
-  if (isRealData && (fDet == kSBND) && fSubRunPOT > 0)
+  if (isRealData && (fDet == kSBND))
   {
     // Fill trigger info
     FillTriggerSBND(srsbndtiminginfo, srtrigger);
-
-    // Shift timing reference frame
-    if (!std::isnan(rec.sbnd_frames.frameApplyAtCaf) && (rec.sbnd_frames.frameApplyAtCaf != 0.0)){
-      mf::LogInfo("CAFMaker") << "Setting Reference Timing for timing object in SBND \n"
-                              << "    Shift Apply At Caf Level = " << rec.sbnd_frames.frameApplyAtCaf << " ns\n";
-      
-      //shift reference frame for CRT objects: crt trk, crt sp, crt sp match, crt trk match
-      SBNDShiftCRTReference(rec, rec.sbnd_frames.frameApplyAtCaf);
-
-      //shift reference frame for PMT objects: opflash, opt0
-      SBNDShiftPMTReference(rec, rec.sbnd_frames.frameApplyAtCaf);
-    }
   }
 
   // Get metadata information for header

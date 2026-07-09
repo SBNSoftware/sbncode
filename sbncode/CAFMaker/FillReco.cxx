@@ -164,6 +164,7 @@ namespace caf
   }
 
   void FillCRTSpacePoint(const sbnd::crt::CRTSpacePoint &spacepoint,
+                         const sbnd::crt::CRTCluster &cluster,
                          caf::SRCRTSpacePoint &srspacepoint,
                          bool allowEmpty)
   {
@@ -173,6 +174,8 @@ namespace caf
     srspacepoint.time         = spacepoint.Ts0();
     srspacepoint.time_err     = spacepoint.Ts0Err();
     srspacepoint.complete     = spacepoint.Complete();
+    srspacepoint.nhits        = cluster.NHits();
+    srspacepoint.tagger       = cluster.Tagger();
   }
 
   void FillSBNDCRTTrack(const sbnd::crt::CRTTrack &track,
@@ -186,6 +189,9 @@ namespace caf
     srsbndcrttrack.time_err = track.Ts0Err();
     srsbndcrttrack.pe       = track.PE();
     srsbndcrttrack.tof      = track.ToF();
+
+    for(auto const& tagger : track.Taggers())
+      srsbndcrttrack.taggers.push_back(tagger);
   }
 
   void FillSBNDCRTVeto(const sbnd::crt::CRTVeto &veto,
@@ -211,13 +217,22 @@ namespace caf
                         caf::SRSBNDFrameShiftInfo &srsbndframe,
                         bool allowEmpty)
   {
-    srsbndframe.timingType = frame.TimingType();
-    srsbndframe.frameTdcCrtt1 = frame.FrameTdcCrtt1();
-    srsbndframe.frameTdcBes = frame.FrameTdcBes();
-    srsbndframe.frameTdcRwm = frame.FrameTdcRwm();
-    srsbndframe.frameHltCrtt1 = frame.FrameHltCrtt1();
-    srsbndframe.frameHltBeamGate = frame.FrameHltBeamGate();
-    srsbndframe.frameApplyAtCaf = frame.FrameApplyAtCaf();
+    srsbndframe.frameCrtt1         = frame.FrameCrtt1();
+    srsbndframe.timingTypeCrtt1    = frame.TimingTypeCrtt1();
+    srsbndframe.timingChannelCrtt1 = frame.TimingChannelCrtt1();
+
+    srsbndframe.frameBeamGate         = frame.FrameBeamGate();
+    srsbndframe.timingTypeBeamGate    = frame.TimingTypeBeamGate();
+    srsbndframe.timingChannelBeamGate = frame.TimingChannelBeamGate();
+
+    srsbndframe.frameEtrig         = frame.FrameEtrig();
+    srsbndframe.timingTypeEtrig    = frame.TimingTypeEtrig();
+    srsbndframe.timingChannelEtrig = frame.TimingChannelEtrig();
+
+    srsbndframe.frameDefault         = frame.FrameDefault();
+    srsbndframe.timingTypeDefault    = frame.TimingTypeDefault();
+    srsbndframe.timingChannelDefault = frame.TimingChannelDefault();
+
   }
 
   void FillSBNDTimingInfo(const sbnd::timing::TimingInfo &timing,
@@ -693,6 +708,17 @@ namespace caf
     }
   }
 
+  void FillSliceLightCalo(const sbn::LightCalo *lightcalo,
+                          caf::SRSlice &slice)
+  {
+    if (lightcalo != nullptr) {
+      slice.lightcalo.charge    = lightcalo->charge;
+      slice.lightcalo.light     = lightcalo->light;
+      slice.lightcalo.energy    = lightcalo->energy;
+      slice.lightcalo.bestplane = lightcalo->bestplane; 
+    }
+  }
+
   void FillSliceBarycenter(const std::vector<art::Ptr<recob::Hit>> &inputHits,
                            const std::vector<art::Ptr<recob::SpacePoint>> &inputPoints,
                            caf::SRSlice &slice)
@@ -810,12 +836,15 @@ namespace caf
   }
 
   void FillTrackCRTSpacePoint(const anab::T0 &t0match,
-                              const art::Ptr<sbnd::crt::CRTSpacePoint> &spacepointmatch,
+                              const sbnd::crt::CRTSpacePoint &spacepointmatch,
+                              const sbnd::crt::CRTCluster &cluster,
                               caf::SRTrack &srtrack,
                               bool allowEmpty)
   {
-    srtrack.crtspacepoint.score = t0match.fTriggerConfidence;
-    FillCRTSpacePoint(*spacepointmatch, srtrack.crtspacepoint.spacepoint);
+    srtrack.crtspacepoint.matched = true;
+    srtrack.crtspacepoint.score   = t0match.fTriggerConfidence;
+
+    FillCRTSpacePoint(spacepointmatch, cluster, srtrack.crtspacepoint.spacepoint);
   }
 
   void FillTrackSBNDCRTTrack(const anab::T0 &t0match,
@@ -823,7 +852,9 @@ namespace caf
                              caf::SRTrack &srtrack,
                              bool allowEmpty)
   {
-    srtrack.crtsbndtrack.score = t0match.fTriggerConfidence;
+    srtrack.crtsbndtrack.matched = true;
+    srtrack.crtsbndtrack.score   = t0match.fTriggerConfidence;
+
     FillSBNDCRTTrack(*trackmatch, srtrack.crtsbndtrack.track);
   }
 
