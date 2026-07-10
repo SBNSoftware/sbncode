@@ -592,11 +592,6 @@ namespace hit {
                 numHits++;
               } // <---End loop over gaussians
 
-              // THIS IS NOT USED
-              // THIS IS NOT USED
-              // THIS IS NOT USED
-              // THIS IS NOT USED
-
               // Should we filter hits?
               if (filteredHitCol && !filteredHitVec.empty()) {
                 // #######################################################################
@@ -647,12 +642,12 @@ namespace hit {
                 }
 
                 // Copy the hits we want to keep to the filtered hit collection
-//                for (const auto& filteredHit : filteredHitVec)
-//                  if (!fHitFilterAlg || fHitFilterAlg->IsGoodHit(filteredHit)) {
-//                    hitstruct tmp{std::move(filteredHit), channelROI};
-//                    filthitstruct_vec.push_back(std::move(tmp));
-//                  }
-//
+              //  for (const auto& filteredHit : filteredHitVec)
+              //    if (!fHitFilterAlg || fHitFilterAlg->IsGoodHit(filteredHit)) {
+              //      hitstruct tmp{std::move(filteredHit), channelROI};
+              //      filthitstruct_vec.push_back(std::move(tmp));
+              //    }
+
                 if (fFillHists) fChi2->Fill(chi2PerNDF);
               }
             } //< End loop over merged candidate hits
