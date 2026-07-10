@@ -51,6 +51,7 @@ private:
     std::vector<art::InputTag>                                 fWireModuleLabelVec;         ///< vector of modules that made digits
     std::vector<std::string>                                   fOutInstanceLabelVec;        ///< The output instance labels to apply
     bool                                                       fDiagnosticOutput;           ///< secret diagnostics flag
+    bool                                                       fUseFloatPrecision;          ///< use SignalROIF() to preserve sub-ADC precision (no rounding)
     size_t                                                     fEventCount;                 ///< count of event processed
 
   const geo::WireReadoutGeom* fChannelMapAlg = &art::ServiceHandle<geo::WireReadout const>()->Get();
@@ -77,6 +78,7 @@ void ChannelROIToWire::reconfigure(fhicl::ParameterSet const& pset)
     fWireModuleLabelVec    = pset.get<std::vector<art::InputTag>>("WireModuleLabelVec",   std::vector<art::InputTag>()={"decon1droi"});
     fOutInstanceLabelVec   = pset.get<std::vector<std::string>>  ("OutInstanceLabelVec",                            {"PHYSCRATEDATA"});
     fDiagnosticOutput      = pset.get< bool                     >("DiagnosticOutput",                                           false);
+    fUseFloatPrecision     = pset.get< bool                     >("UseFloatPrecision",                                          false);
 
     if (fWireModuleLabelVec.size() != fOutInstanceLabelVec.size()) 
     {
@@ -131,19 +133,26 @@ void ChannelROIToWire::produce(art::Event& evt)
 
                 // Create an ROI vector for output
                 recob::Wire::RegionsOfInterest_t ROIVec;
-    
-                // Loop through the ROIs for this channel
-                const recob::ChannelROI::RegionsOfInterest_t& channelROIs = channelROI.SignalROI();
 
-                for(const auto& range : channelROIs.get_ranges())
+                if (fUseFloatPrecision)
                 {
-                    size_t startTick = range.begin_index();
+                    const recob::ChannelROI::RegionsOfInterest_f& channelROIsF = channelROI.SignalROIF();
+                    for(const auto& range : channelROIsF.get_ranges())
+                        ROIVec.add_range(range.begin_index(), range.data());
+                }
+                else
+                {
+                    const recob::ChannelROI::RegionsOfInterest_t& channelROIs = channelROI.SignalROI();
+                    for(const auto& range : channelROIs.get_ranges())
+                    {
+                      size_t startTick = range.begin_index();
 
-                    std::vector<float> dataVec(range.data().size());
+                      std::vector<float> dataVec(range.data().size());
 
-                    for(size_t binIdx = 0; binIdx < range.data().size(); binIdx++) dataVec[binIdx] = range.data()[binIdx] / ADCScaleFactor;
+                      for(size_t binIdx = 0; binIdx < range.data().size(); binIdx++) dataVec[binIdx] = range.data()[binIdx] / ADCScaleFactor;
 
-                    ROIVec.add_range(startTick, std::move(dataVec));
+                      ROIVec.add_range(startTick, std::move(dataVec));
+                    }
                 }
 
                 wireCol->push_back(recob::WireCreator(std::move(ROIVec),channel,view).move());

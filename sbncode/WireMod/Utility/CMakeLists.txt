@@ -17,7 +17,11 @@ cet_make_library(
     lardataobj::AnalysisBase
     lardataobj::RawData
     lardataobj::RecoBase
-    lardataalg::DetectorInfo 
+    lardataobj::Simulation
+    nusimdata::SimulationBase
+    larevt::SpaceCharge
+    sbnobj::ICARUS_TPC
+    lardataalg::DetectorInfo
     lardata::RecoObjects
     lardata::Utilities
     larreco::RecoAlg
