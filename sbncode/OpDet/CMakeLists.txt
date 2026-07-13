@@ -8,6 +8,7 @@ cet_make_library(
 
 cet_build_plugin(PDMapAlgSimple art::tool LIBRARIES PRIVATE
             art::Utilities
+            sbncode::OpDet_PDMapAlg
 )
 
 install_headers()

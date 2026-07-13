@@ -13,7 +13,6 @@
 #define SBN_OpDet_PDMapAlg_H
 
 //#include "fhiclcpp/ParameterSet.h"
-//#include "art/Utilities/ToolMacros.h"
 
 #include <string>
 
@@ -55,7 +54,6 @@ namespace opdet {
   };
 
 
-  DEFINE_ART_CLASS_TOOL(PDMapAlgSimple)
   */
 } // namespace
 
