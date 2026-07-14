@@ -497,7 +497,8 @@ namespace hit {
                 }
 
                 // Another protection: if peak is outside of the range, 
-                // we skip this hit: this should however be avoided before... see LL407-411
+                // skip the hit creation
+                // For details on this issue refer to SBN DocDB 47092
                 if ((peakMean < startT) || (peakMean >= endT)) continue;
 
                 // Extract errors
@@ -547,11 +548,13 @@ namespace hit {
                 if (HitsumStartItr > HitsumEndItr) continue;
 
                 //avoid ranges out of ROI if it happens
-                if (HitsumStartItr < sumStartItr) HitsumStartItr = sumStartItr;
+                if (HitsumStartItr < sumStartItr) HitsumStartItr = sumStartItr; // COMMENT [1] below
+                if (HitsumEndItr > sumEndItr) HitsumEndItr = sumEndItr;         // COMMENT [1] below
 
-                if (HitsumEndItr > sumEndItr) HitsumEndItr = sumEndItr;
-
-                // This prevents L577 and L579 to make any possible boundaty flip
+                // COMMENT [1] 
+                // This line prevents the two checks [1] before to
+                // make any possible boundary flip
+                // For details on this issue refer to SBN DocDB 47092
                 if (HitsumStartItr > HitsumEndItr) continue;
 
                 // ### Sum of ADC counts
