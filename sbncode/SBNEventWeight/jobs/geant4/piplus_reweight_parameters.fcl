@@ -1,6 +1,6 @@
 BEGIN_PROLOG
 
-## PiPlus available process keys: "abs", "cex", "prod", "dcex", "inel"
+## PiPlus available process keys: "abs", "cex", "prod", "dcex", "inel", "elastic"
 
 PiPlusParameters: [
   {
@@ -45,6 +45,14 @@ PiPlusParameters: [
   {
     Name:       "fPiPlusPiProd"
     Cut:        "prod"
+    Range:      [10.0, 2005.00]
+    Nominal:    1.0
+    Sigma:      0.2
+  },
+
+    {
+    Name:       "fPiPlusElast"
+    Cut:        "elast"
     Range:      [10.0, 2005.00]
     Nominal:    1.0
     Sigma:      0.2
