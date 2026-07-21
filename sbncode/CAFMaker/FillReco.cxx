@@ -387,6 +387,8 @@ namespace caf
       slice.correctedOpFlash.NuToFLight  = _correctedOpFlash.NuToFLight;
       slice.correctedOpFlash.NuToFCharge  = _correctedOpFlash.NuToFCharge;
       slice.correctedOpFlash.OpFlashT0Corrected  = _correctedOpFlash.OpFlashT0Corrected;
+      slice.correctedOpFlash.ParticlePropagationTime = _correctedOpFlash.ParticlePropagationTime;
+      slice.correctedOpFlash.PhotonPropagationTime = _correctedOpFlash.PhotonPropagationTime;
     }
   }
 
