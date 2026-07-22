@@ -26,13 +26,6 @@ namespace caf
 
   }
 
-  void FillTriggerMC(double absolute_time, caf::SRTrigger& triggerInfo) 
-  {
-    triggerInfo.global_trigger_time = absolute_time;
-    triggerInfo.beam_gate_time_abs = absolute_time;
-    triggerInfo.trigger_within_gate = 0.; // Set this to 0 since the "MC" trigger is (for now) always at the spill time
-  }
-
   void FillTriggerICARUS(const sbn::ExtraTriggerInfo& addltrig_info,
                          caf::SRTrigger& triggerInfo) 
   {
