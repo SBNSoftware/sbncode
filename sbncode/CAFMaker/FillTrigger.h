@@ -2,12 +2,9 @@
 #define CAF_FILLTRIGGER_H
 
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
-#include "sbnobj/Common/Trigger/BeamBits.h"
 #include "sbnanaobj/StandardRecord/SRTrigger.h"
 #include "sbnanaobj/StandardRecord/SRSBNDTimingInfo.h"
 #include "lardataobj/RawData/TriggerData.h"
-
-#include <vector>
 
 namespace caf
 {
@@ -16,8 +13,6 @@ namespace caf
                    const raw::Trigger& trig_info,
                    caf::SRTrigger& triggerInfo,
                    const double time_offset);
-
-  void FillTriggerMC(double absolute_time, caf::SRTrigger& triggerInfo);
 
   void FillTriggerSBND(caf::SRSBNDTimingInfo& timingInfo, caf::SRTrigger& triggerInfo);
 }

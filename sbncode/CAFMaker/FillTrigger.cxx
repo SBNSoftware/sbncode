@@ -25,23 +25,10 @@ namespace caf
     triggerInfo.gate_delta = addltrig_info.gateCountFromPreviousTrigger;
   }
 
-  void FillTriggerMC(double absolute_time, caf::SRTrigger& triggerInfo) {
-    triggerInfo.global_trigger_time = absolute_time;
-    triggerInfo.beam_gate_time_abs = absolute_time;
-
-    // Set this to 0 since the "MC" trigger is (for now) always at the spill time
-    triggerInfo.trigger_within_gate = 0.;
-
-    // TODO: fill others?
-  }
-
   void FillTriggerSBND(caf::SRSBNDTimingInfo& timingInfo, caf::SRTrigger& triggerInfo){
       
     triggerInfo.global_trigger_time = timingInfo.hltEtrig;
     triggerInfo.beam_gate_time_abs = timingInfo.hltBeamGate;
-    
-    double diff_ts = triggerInfo.global_trigger_det_time - triggerInfo.beam_gate_det_time;
-    triggerInfo.trigger_within_gate = diff_ts;
   }
 
 }
