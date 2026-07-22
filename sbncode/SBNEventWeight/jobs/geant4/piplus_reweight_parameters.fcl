@@ -4,16 +4,9 @@ BEGIN_PROLOG
 
 PiPlusParameters: [
   {
-    Name:       "fPiPlusInelLow"
+    Name:       "fPiPlusIne"
     Cut:        "inel"
-    Range:      [10., 200.]
-    Nominal:    1.0
-    Sigma:      0.2
-  } ,
-  {
-    Name:       "fPiPlusInelHigh"
-    Cut:        "inel"
-    Range:      [700., 2005.]
+    Range:      [10., 2005.]
     Nominal:    1.0
     Sigma:      0.2
   } ,
