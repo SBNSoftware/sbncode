@@ -423,22 +423,16 @@ namespace caf
       "beamTiming:RWM"
     };
 
-    Atom<long long> CRTSimT0Offset {
-      Name("CRTSimT0Offset"),
-      Comment("start of beam gate/simulation time in the simulated CRT clock"),
-      0,
-    };
-
     Atom<art::InputTag> TriggerLabel {
       Name("TriggerLabel"),
       Comment("Label of trigger."),
       "daqTrigger"
     };
 
-    Atom<art::InputTag> UnshiftedTriggerLabel {
-      Name("UnshiftedTriggerLabel"),
-      Comment("Label of trigger emulation before applying trigger time shifts."),
-      "emuTriggerUnshifted"
+    Atom<bool> ShiftTimeFromTriggerToBeamGate {
+      Name("ShiftTimeFromTriggerToBeamGate"),
+      Comment("Shifts time in branches from trigger time to beam gate time."),
+      false
     };
 
     Atom<art::InputTag> MonPulsesTriggerLabel {
@@ -465,6 +459,18 @@ namespace caf
       art::InputTag("opdaq", "triggerEmulation", "DetSim")
     };
 
+    Atom<double> GlobalTimeReferenceOffset {
+      Name("GlobalTimeReferenceOffset"),
+      Comment("Additional offset added to all times [us]"),
+      0.0
+    };
+
+    Atom<double> CRTreferenceTimeOffset {
+      Name("CRTreferenceTimeOffset"),
+      Comment("Additional reference shift for relative CRT times (not timestamps) [us]"),
+      0.0
+    };
+    
     Atom<string> FlashTrigLabel {
       Name("FlashTrigLabel"),
       Comment("Label of bool of passing flash trigger."),

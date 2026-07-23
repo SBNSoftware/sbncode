@@ -1,15 +1,14 @@
 //////////////////////////////////////////////////////////////////
-// \file     CAFMaker_module.cc
-/// \brief   This module creates Common Analysis Files.
-//           Inspired by the NOvA CAFMaker package
-// \author  $Author: psihas@fnal.gov
+/// \file     CAFMaker_module.cc
+/// \brief    This module creates Common Analysis Files.
+///           Inspired by the NOvA CAFMaker package
+/// \author   psihas@fnal.gov
 //////////////////////////////////////////////////////////////////
 
 // ---------------- TO DO ----------------
 //
 // - Add in cycle and batch to params
 // - Move this list some place useful
-// - Add reco.CRT branch
 // ---------------------------------------
 
 
@@ -19,6 +18,7 @@
 #include "sbncode/CAFMaker/FillReco.h"
 #include "sbncode/CAFMaker/FillExposure.h"
 #include "sbncode/CAFMaker/FillTrigger.h"
+#include "sbncode/CAFMaker/TimeRefShifters.h"
 #include "sbncode/CAFMaker/SRDefaults.h"
 #include "sbncode/CAFMaker/Utils.h"
 #include "sbncode/CAFMaker/FillBlip.h"
@@ -336,9 +336,25 @@ class CAFMaker : public art::EDProducer {
   void InitVolumes(); ///< Initialize volumes from Gemotry service
   void InitCRTMapping(); ///< Initialize CRT mapping
 
-  void FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_time);
-  void FixCRTReferenceTimes(StandardRecord &rec, double CRTT0_reference_time, double CRTT1_reference_time);
-
+  /**
+   * @brief Returns the absolute timestamps of beam and trigger times
+   * @param clock_data LArSoft timing information
+   * @param trigger a trigger object
+   * @param extra extra information for the same `trigger`
+   * @return absolute timestamps of beam and trigger times [ns]
+   * 
+   * The relation between absolute timestamps and relative times is extracted
+   * from the beam gate time in `trigger` and `extra`. That relation is then
+   * used to convert the beam and trigger times from the reference time system
+   * (`detinfo::DetectorClocksData::BeamGateTime()` and
+   * `detinfo::DetectorClocksData::TriggerTime()`).
+   */
+  std::pair<std::int64_t, std::int64_t> getReferenceTimestamps(
+    detinfo::DetectorClocksData const& clock_data,
+    raw::Trigger const& trigger, sbn::ExtraTriggerInfo const& extra
+    ) const;
+  
+  /// Applies a reference time shift (subtracting `refTimeOffset`)
   void SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame) const;
   void SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame) const;
 
@@ -539,6 +555,34 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
   }
 }
 
+std::pair<std::int64_t, std::int64_t> CAFMaker::getReferenceTimestamps(
+  detinfo::DetectorClocksData const& clock_data,
+  raw::Trigger const& trigger, sbn::ExtraTriggerInfo const& extra
+) const {
+  
+  double refTime;
+  std::int64_t refTimestamp = 0;
+  if (extra.isValidTimestamp(extra.beamGateTimestamp)) {
+    refTime = trigger.BeamGateTime();
+    refTimestamp = extra.beamGateTimestamp;
+  }
+  else if (extra.isValidTimestamp(extra.triggerTimestamp)) { // backup
+    refTime = trigger.TriggerTime();
+    refTimestamp = extra.triggerTimestamp;
+  }
+  else { // we assign the reference timestamp `0` to the trigger
+    refTime = trigger.TriggerTime();
+    refTimestamp = 0;
+  }
+  
+  auto timeToTS = [refTime, refTimestamp](double time)
+    { return std::llround((time - refTime) * 1000.0) + refTimestamp; };
+  
+  return
+    { timeToTS(clock_data.BeamGateTime()), timeToTS(clock_data.TriggerTime()) };
+  
+}
+
 void CAFMaker::SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame) const {
 
   //CRT Space Point
@@ -575,65 +619,6 @@ void CAFMaker::SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame) cons
   for (SRSlice &s: rec.slc) {
     s.opt0.time += SBNDFrame_us;
   }
-}
-
-void CAFMaker::FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_time) {
-  
-  // Fix the flashes
-  for (SROpFlash &f: rec.opflashes) {
-    f.time += PMT_reference_time;
-    f.timemean += PMT_reference_time;
-    f.firsttime += PMT_reference_time;
-  }
-  
-  // Fix the flash matches
-  for (SRSlice &s: rec.slc) {
-    if (s.fmatch.time != SRDefaults::For(s.fmatch).time)
-      s.fmatch.time += PMT_reference_time;
-
-    if (s.barycenterFM.flashTime != SRDefaults::For(s.barycenterFM).flashTime)
-      s.barycenterFM.flashTime += PMT_reference_time;
-    
-    if (s.barycenterFM.flashFirstHit != SRDefaults::For(s.barycenterFM).flashFirstHit)
-      s.barycenterFM.flashFirstHit += PMT_reference_time;
-    
-  }
-
-  // TODO: fix more?
-
-}
-
-void CAFMaker::FixCRTReferenceTimes(StandardRecord &rec, double CRTT0_reference_time, double CRTT1_reference_time) {
-  // Fix the hits
-
-  double crttime_to_shift = fParams.CRTUseTS0() ? CRTT0_reference_time : CRTT1_reference_time;
-
-  // As discussed/described in https://github.com/SBNSoftware/sbncode/pull/251,
-  // we added CRTHit::t0 and CRTHit::t1 in addition to CRTHit::time,
-  // not to break any existing studies that still use "CRTHit::time"
-  for (SRCRTHit &h: rec.crt_hits) {
-    h.t0 += CRTT0_reference_time;
-    h.t1 += CRTT1_reference_time;
-    h.time += crttime_to_shift;
-  }
-
-  // Fix the hit matches
-  for (SRSlice &s: rec.slc) {
-    for (SRPFP &pfp: s.reco.pfp) {
-      pfp.trk.crthit.hit.t0 += CRTT0_reference_time;
-      pfp.trk.crthit.hit.t1 += CRTT1_reference_time;
-      pfp.trk.crthit.hit.time += crttime_to_shift;
-    }
-  }
-  for (SRPFP &pfp: rec.reco.pfp) {
-    pfp.trk.crthit.hit.t0 += CRTT0_reference_time;
-    pfp.trk.crthit.hit.t1 += CRTT1_reference_time;
-    pfp.trk.crthit.hit.time += crttime_to_shift;
-  }
-
-  // TODO: fix more?
-  // Tracks?
-
 }
 
 void CAFMaker::InitCRTMapping() {
@@ -1735,51 +1720,106 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // Fill detector & reco
   //#######################################################
   
+  // this text will land into Doxygen `produce()` documentation
+  /**
+   * ## Time shifts
+   * 
+   * Depending on the configuration, time shifts may be applied to some of the data.
+   * 
+   * The following shifts are supported:
+   *  * shift times from trigger to beam gate (`ShiftTimeFromTriggerToBeamGate` flag),
+   *    which assumes the input is on trigger time (no safe way to verify it).
+   *    Beam gate and trigger time are learnt from `DetectorClocksService`,
+   *    which is the service that gives LArSoft modules the time scale.
+   *    Absolute timestamps are not shifted.
+   *  * additional time shift (`GlobalTimeReferenceOffset`); this is removed
+   *    from all time values, since it's a forward shift of the reference time.
+   *    This shift is always applied; when also enabling the shift from trigger
+   *    to beam gate, it can be thought as an addition to the beam gate time.
+   *    Absolute timestamps are not affected by this offset.
+   *  * CRT-specific time reference offset (`CRTreferenceTimeOffset`); this is
+   *    equivalent to `GlobalTimeReferenceOffset` and applied on top of it but
+   *    only on CRT hits (and related). It also moves the (CRT) reference time,
+   *    so it is effectively subtracted from the existing hit time.
+   *    This offset applies with the same scale on all CRT hit times, including
+   *    absolute timestamps.
+   * 
+   * Currently there is no offset distinguishing between data and simulation:
+   * to apply specific shifts, two different configurations need to be used.
+   * 
+   * @note Some time shifting is _always_ applied to CRT timestamps, even when
+   *       `ShiftTimeFromTriggerToBeamGate` is disabled: in that case, the
+   *       reference time is the trigger timestamp.
+   * 
+   * SBND-specific shifts are applied on top of this reference change.
+   */
+  
+  auto const trig_handle
+    = GetHandleStrict<std::vector<raw::Trigger>>(evt, fParams.TriggerLabel());
+  auto const extratrig_handle
+    = GetHandleStrict<sbn::ExtraTriggerInfo>(evt, fParams.TriggerLabel());
+  bool const isValidTrigger
+    = trig_handle.isValid() && extratrig_handle.isValid() && !trig_handle->empty();
+
+  // subtract these offsets from existing times to move to the new reference time
+  double const triggerToBeamShift = fParams.ShiftTimeFromTriggerToBeamGate()
+    ? (clock_data.BeamGateTime() - clock_data.TriggerTime()): 0.0; // <= 0.0
+  double const refTimeShift
+    = fParams.GlobalTimeReferenceOffset() + triggerToBeamShift;
+  
+  caf::TimeRefShifter const timeShifter{ refTimeShift };
+  
+  // CRTrefTimeShift includes refTimeShift and is used in the same way (subtract)
+  double const CRTrefTimeShift = refTimeShift + fParams.CRTreferenceTimeOffset(); // [us]
+  // shift for the time stamps [ns] never includes the shift to beam gate reference
+  auto const [ beamGateTimestamp, triggerTimestamp ] = isValidTrigger
+    ? getReferenceTimestamps(clock_data, trig_handle->front(), *extratrig_handle)
+    : std::pair<std::int64_t, std::int64_t>{};
+  std::int64_t const refTimestamp = fParams.ShiftTimeFromTriggerToBeamGate()
+    ? beamGateTimestamp: triggerTimestamp;
+  std::int64_t const CRTrefTimeShiftTS = refTimestamp + static_cast<int64_t>(
+    std::llround(1000.0
+      * (fParams.GlobalTimeReferenceOffset() + fParams.CRTreferenceTimeOffset())
+    ));
+  caf::CRTtimeRefShifter const CRTtimeShifter
+    { fParams.CRTUseTS0(), CRTrefTimeShiftTS, CRTrefTimeShift };
+  
+  if (refTimeShift || CRTrefTimeShift) {
+    mf::LogInfo("CAFMaker") << "Shifting time reference by " << refTimeShift << " us"
+      << "\n  beam gate time: " << clock_data.BeamGateTime() << " us"
+      << "\n  trigger time:   " << clock_data.TriggerTime() << " us"
+      << "\n  reference shift: trigger -> beam: " << triggerToBeamShift
+      << "\n  reference shift: global change:   " << fParams.GlobalTimeReferenceOffset()
+      << "\n  CRT reference shift: times:       " << CRTrefTimeShift << " us"
+      << "\n  CRT reference shift: timestamps:  " << CRTrefTimeShiftTS << " ns"
+      ;
+  }
+  
   //Beam gate and Trigger info
-  art::Handle<sbn::ExtraTriggerInfo> extratrig_handle;
-  GetByLabelStrict(evt, fParams.TriggerLabel().encode(), extratrig_handle);
-
-  art::Handle<std::vector<raw::Trigger>> trig_handle;
-  GetByLabelStrict(evt, fParams.TriggerLabel().encode(), trig_handle);
-
-  art::Handle<std::vector<raw::Trigger>> unshifted_trig_handle;
-  if (!isRealData)
-    GetByLabelStrict(evt, fParams.UnshiftedTriggerLabel().encode(), unshifted_trig_handle);
-
-  //Trigger emulation handles
-  art::Handle<std::vector<int>> monpulses_handle;
-  GetByLabelStrict(evt, fParams.MonPulsesTriggerLabel().encode(), monpulses_handle);
-
-  art::Handle<std::vector<int>> monpulse_sizes_handle;
-  GetByLabelStrict(evt, fParams.MonPulseSizesTriggerLabel().encode(), monpulse_sizes_handle);
-
-  art::Handle<int> pairs_handle;
-  GetByLabelStrict(evt, fParams.PairsTriggerLabel().encode(), pairs_handle);
-
-  art::Handle<bool> trigemu_handle;
-  GetByLabelStrict(evt, fParams.EmulatedTriggerLabel().encode(), trigemu_handle);
-
-  // Check trigger handles
-  const bool isValidTrigger = extratrig_handle.isValid() && trig_handle.isValid() && trig_handle->size() == 1;
-  const bool isValidUnshiftedTrigger = unshifted_trig_handle.isValid() && unshifted_trig_handle->size() == 1;
-  const bool isValidEmulationTrigger = monpulses_handle.isValid() && monpulse_sizes_handle.isValid() && pairs_handle.isValid() && trigemu_handle.isValid();
-
-  const double triggerShift = (isValidUnshiftedTrigger && isValidTrigger)?
-    unshifted_trig_handle->at(0).TriggerTime() - trig_handle->at(0).TriggerTime() : 0.;
-
-  // Fill local ExtraTriggerInfo struct
-  sbn::ExtraTriggerInfo extratrig;
-  if (extratrig_handle.isValid()) extratrig = *extratrig_handle;
-
   caf::SRTrigger srtrigger;
   if (isValidTrigger) {
-      FillTrigger(*extratrig_handle, trig_handle->at(0), srtrigger, triggerShift);
-      if (fDet == kICARUS) 
-        FillTriggerICARUS(*extratrig_handle, srtrigger);
+    FillTrigger(*extratrig_handle, trig_handle->at(0), srtrigger, timeShifter);
+    if (fDet == kICARUS) 
+      FillTriggerICARUS(*extratrig_handle, srtrigger);
   }
+
   // Fill trigger emulation information
+  auto const monpulses_handle
+    = GetHandleStrict<std::vector<int>>(evt, fParams.MonPulsesTriggerLabel());
+
+  auto const monpulse_sizes_handle
+    = GetHandleStrict<std::vector<int>>(evt, fParams.MonPulseSizesTriggerLabel());
+
+  auto const pairs_handle
+    = GetHandleStrict<int>(evt, fParams.PairsTriggerLabel());
+
+  auto const trigemu_handle
+    = GetHandleStrict<bool>(evt, fParams.EmulatedTriggerLabel());
+
+  const bool isValidEmulationTrigger = monpulses_handle.isValid() && monpulse_sizes_handle.isValid() && pairs_handle.isValid() && trigemu_handle.isValid();
+
   if (isValidEmulationTrigger) { 
-      FillTriggerEmulation(monpulses_handle, monpulse_sizes_handle, pairs_handle, trigemu_handle, srtrigger);
+    FillTriggerEmulation(monpulses_handle, monpulse_sizes_handle, pairs_handle, trigemu_handle, srtrigger);
   }
 
   
@@ -1800,13 +1840,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
   }
 
-  // If not real data, fill in enough of the SRTrigger to make (e.g.) the CRT
-  // time referencing work. TODO: add more stuff to a "MC"-Trigger?
-  // No longer needed with incorporation of trigger emulation in the MC.
-  // else if(!isRealData) {
-  //   FillTriggerMC(fParams.CRTSimT0Offset(), srtrigger);
-  // }
-
   // try to find the result of the Flash trigger if it was run
   mf::LogInfo("CAFMaker") << "   New Trigger Time   = " << srtrigger.global_trigger_det_time << " us\n"
 			  << "   New Beam Gate Time =  " << srtrigger.beam_gate_det_time << " us";
@@ -1817,9 +1850,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   if (flashtrig_handle.isValid()) {
     pass_flash_trig = *flashtrig_handle;
   }
-
-  int64_t CRT_T0_reference_time = isRealData ?  -srtrigger.beam_gate_time_abs : -fParams.CRTSimT0Offset();
-  double CRT_T1_reference_time = isRealData ? srtrigger.trigger_within_gate : -fParams.CRTSimT0Offset();
 
   // Fill various detector information associated with the event
 
@@ -1861,7 +1891,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
         for (unsigned i = 0; i < crthits.size(); i++) {
           srcrthits.emplace_back();
-          FillCRTHit(crthits[i], fParams.CRTUseTS0(), CRT_T0_reference_time, CRT_T1_reference_time, crtsimchanmap, srcrthits.back());
+          FillCRTHit(crthits[i], CRTtimeShifter, crtsimchanmap, srcrthits.back());
         }
       }
 
@@ -1872,7 +1902,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         const std::vector<sbn::crt::CRTTrack> &crttracks = *crttracks_handle;
         for (unsigned i = 0; i < crttracks.size(); i++) {
           srcrttracks.emplace_back();
-          FillCRTTrack(crttracks[i], fParams.CRTUseTS0(), srcrttracks.back());
+          FillCRTTrack(crttracks[i], CRTtimeShifter, srcrttracks.back());
         }
       }
     }
@@ -1955,7 +1985,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     const std::vector<sbn::crt::CRTPMTMatching> &crtpmtmatches = *crtpmtmatch_handle;
     for (unsigned i = 0; i < crtpmtmatches.size(); i++) {
       srcrtpmtmatches.emplace_back();
-      FillCRTPMTMatch(crtpmtmatches[i], srcrtpmtmatches.back());
+      FillCRTPMTMatch(crtpmtmatches[i], srcrtpmtmatches.back(), timeShifter, CRTtimeShifter);
     }
   }
 
@@ -1984,14 +2014,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           std::vector<recob::OpHit const*> const& ophits = findManyHits.at(iflash);
 
           srflashes.emplace_back();
-          if(PMTBeamSignal_handle.isValid() && isRealData){
-            const std::vector<sbn::timing::PMTBeamSignal> &pmtbeamsignals = *PMTBeamSignal_handle;
-            FillICARUSOpFlash(flash, ophits, cryostat, pmtbeamsignals, srflashes.back());
-          }
-          else{
-            const std::vector<sbn::timing::PMTBeamSignal> pmtbeamsignals;
-            FillICARUSOpFlash(flash, ophits, cryostat, pmtbeamsignals, srflashes.back());
-          }
+          
+          static const std::vector<sbn::timing::PMTBeamSignal> nopmtbeamsignals;
+          FillICARUSOpFlash(
+            flash, ophits, cryostat,
+            (PMTBeamSignal_handle.isValid() && isRealData)? *PMTBeamSignal_handle: nopmtbeamsignals,
+            srflashes.back(), timeShifter
+          );
           iflash++;
         }
       }
@@ -2013,7 +2042,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         for (const recob::OpFlash& flash : opflashes) {
           std::vector<recob::OpHit const*> const& ophits = findManyHits.at(iflash);
           srflashes.emplace_back();
-          FillSBNDOpFlash(flash, ophits, tpc, srflashes.back());
+          FillSBNDOpFlash(flash, ophits, tpc, srflashes.back(), timeShifter);
           iflash++;
         }
       }
@@ -2400,23 +2429,23 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     //#######################################################
     FillSliceVars(*slice, primary, producer, recslc);
     FillSliceMetadata(primary_meta, recslc);
-    FillSliceFlashMatch(fmatch_map["fmatch"], recslc.fmatch);
-    FillSliceFlashMatch(fmatch_map["fmatchop"], recslc.fmatchop);
+    FillSliceFlashMatch(fmatch_map["fmatch"], recslc.fmatch, timeShifter);
+    FillSliceFlashMatch(fmatch_map["fmatchop"], recslc.fmatchop, timeShifter);
     auto sr_flash = fmatch_map.find("fmatchara");
     if(sr_flash!=fmatch_map.end()) {
-      FillSliceFlashMatch(fmatch_map["fmatchara"], recslc.fmatchara);
+      FillSliceFlashMatch(fmatch_map["fmatchara"], recslc.fmatchara, timeShifter);
     }
     sr_flash = fmatch_map.find("fmatchopara");
     if(sr_flash != fmatch_map.end()) {
-      FillSliceFlashMatch(fmatch_map["fmatchopara"], recslc.fmatchopara);
+      FillSliceFlashMatch(fmatch_map["fmatchopara"], recslc.fmatchopara, timeShifter);
     }
     FillSliceVertex(vertex, recslc);
     FillSliceCRUMBS(slcCRUMBS, recslc);
-    FillSliceOpT0Finder(slcOpT0, recslc);
+    FillSliceOpT0Finder(slcOpT0, recslc, timeShifter);
     FillSliceBarycenter(slcHits, slcSpacePoints, recslc);
     FillSliceLightCalo(slcLightCalo, recslc);
-    FillTPCPMTBarycenterMatch(barycenterMatch, recslc);
     FillCorrectedOpFlashTiming(slcCorrectedOpFlash, recslc);
+    FillTPCPMTBarycenterMatch(barycenterMatch, recslc, timeShifter);
     FillCVNScores(cvnResult, recslc);
     
     // select slice
@@ -2611,11 +2640,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
             crthittagginginfo = fmCRTHitMatchInfo.at(iPart);
           }          
           
-          FillTrackCRTHit(fmCRTHitMatch.at(iPart), crthitmatch, crthittagginginfo, fParams.CRTUseTS0(), CRT_T0_reference_time, CRT_T1_reference_time, crtsimchanmap, trk);
+          FillTrackCRTHit(fmCRTHitMatch.at(iPart), crthitmatch, crthittagginginfo, CRTtimeShifter, crtsimchanmap, trk);
         }
         // NOTE: SEE TODO AT fmCRTTrackMatch
         if (fmCRTTrackMatch.isValid() && fDet == kICARUS) {
-          FillTrackCRTTrack(fmCRTTrackMatch.at(iPart), trk);
+          FillTrackCRTTrack(fmCRTTrackMatch.at(iPart), trk, CRTtimeShifter);
         }
 
         if(foCRTSpacePointMatch.isValid() && fDet == kSBND)
@@ -2728,44 +2757,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.crtpmt_matches = srcrtpmtmatches;
   rec.ncrtpmt_matches = srcrtpmtmatches.size();
 
-  // Move the reference time of reconstructed objects from trigger time to beam spill/beam gate opening time.
-  //
-  // We want MC and Data to have the same reference time.
-  // In MC/LArSoft the "reference time" is canonically defined
-  // as the time when the start of the beam spill reaches the detector.
-  //
-  // In data it may be defined differently for different subsystems. In
-  // particular, some sub-systems define the reference time as the time
-  // of the trigger. We want to correct those to the universal reference
-  // time from MC.
-  //
-  // PMT's:
-  //
-  // TW (2024-03-29): In MC, when an event doesn't fire the trigger, the raw::Trigger will be
-  // filled with the default values, which are set to the numerical limits of double.
-  // In this case, we should set the PMT_reference_time to 0.
-
-  // ICARUS: Fix the Reference time
-  const bool hasValidTriggerTime =
-    srtrigger.global_trigger_det_time >
-      (std::numeric_limits<double>::min() + std::numeric_limits<double>::epsilon()) &&
-    srtrigger.global_trigger_det_time <
-      (std::numeric_limits<double>::max() - std::numeric_limits<double>::epsilon());
-
-  double PMT_reference_time = fParams.ReferencePMTFromTriggerToBeam() && hasValidTriggerTime ? triggerShift : 0.;
-
-  mf::LogInfo("CAFMaker") << "Setting PMT reference time to " << PMT_reference_time << " us\n"
-			  << "    Trigger Time   = " << srtrigger.global_trigger_det_time << " us\n"
-			  << "    Beam Gate Time =  " << srtrigger.beam_gate_det_time << " us";
-
-  FixPMTReferenceTimes(rec, PMT_reference_time);
-
-  // TODO: TPC?
- 
-
   if (isRealData && (fDet == kSBND))
   {
-    // Fill trigger info
+    // Update trigger info (on top of the other shifts from the configuration)
     FillTriggerSBND(srsbndtiminginfo, srtrigger);
   }
 

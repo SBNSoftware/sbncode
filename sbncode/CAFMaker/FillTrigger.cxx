@@ -1,20 +1,23 @@
 #include<iostream>
 #include <bitset>
 #include "sbncode/CAFMaker/FillTrigger.h"
+#include "sbnobj/Common/Trigger/BeamBits.h"
 
 namespace caf
 {
   void FillTrigger(const sbn::ExtraTriggerInfo& addltrig_info,
                    const raw::Trigger& trig,
                    caf::SRTrigger& triggerInfo,
-                   const double time_offset = 0.0)
+                   caf::TimeRefShifter<> const& shifter /* = {} */
+                   )
   {
     triggerInfo.global_trigger_time = addltrig_info.triggerTimestamp;
     triggerInfo.beam_gate_time_abs = addltrig_info.beamGateTimestamp;
-    triggerInfo.beam_gate_det_time = trig.BeamGateTime() + time_offset;
-    triggerInfo.global_trigger_det_time = trig.TriggerTime() + time_offset;
+    triggerInfo.beam_gate_det_time = shifter.shiftedTime(trig.BeamGateTime());
+    triggerInfo.global_trigger_det_time = shifter.shiftedTime(trig.TriggerTime());
     double diff_ts = triggerInfo.global_trigger_det_time - triggerInfo.beam_gate_det_time;
     triggerInfo.trigger_within_gate = diff_ts;
+    
     triggerInfo.prev_global_trigger_time = addltrig_info.previousTriggerTimestamp;
     triggerInfo.source_type = sbn::bits::value(addltrig_info.sourceType);
     triggerInfo.trigger_type = sbn::bits::value(addltrig_info.triggerType);
@@ -44,6 +47,7 @@ namespace caf
 
   void FillTriggerSBND(caf::SRSBNDTimingInfo& timingInfo, caf::SRTrigger& triggerInfo){
 
+    // updates the existing triggerInfo record
     if (timingInfo.hltEtrig != std::numeric_limits<uint64_t>::max()) triggerInfo.global_trigger_time = timingInfo.hltEtrig;
     if (timingInfo.hltBeamGate != std::numeric_limits<uint64_t>::max()) triggerInfo.beam_gate_time_abs = timingInfo.hltBeamGate;
 
