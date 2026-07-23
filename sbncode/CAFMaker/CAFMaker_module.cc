@@ -69,6 +69,7 @@
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
+#include "larcorealg/CoreUtils/DebugUtils.h" // lar::debug
 #include "larevt/SpaceCharge/SpaceCharge.h"
 #include "larevt/SpaceChargeServices/SpaceChargeService.h"
 
@@ -367,8 +368,10 @@ class CAFMaker : public art::EDProducer {
                                       const art::Event& evt,
                                       const art::InputTag& tag) const;
 
-  /// \brief Retrieve an object from an association, with error handling
+  /// \brief Makes a copy of an object from an association, with error handling
   ///
+  /// This function attempts to make a copy into `ret` of the first of the
+  /// objects in the association to `from`.
   /// This can go wrong in two ways: either the FindManyP itself is
   /// invalid, or the result for the requested index is empty. In most
   /// cases these have the same response, so conflating them here
@@ -376,23 +379,28 @@ class CAFMaker : public art::EDProducer {
   ///
   /// \param      fm  The FindManyP object describing the association
   /// \param      idx Which element of the FindManyP to look it
-  /// \param[out] ret The product retrieved
+  /// \param[out] ret Where to copy the product retrieved
   /// \return          Whether \a ret was filled
   template <class T>
   bool GetAssociatedProduct(const art::FindManyP<T>& fm, int idx, T& ret) const;
 
-  /// Equivalent of evt.getByLabel(label, handle) except failedToGet
+  /// Equivalent of evt.getByLabel(tag, handle) except failedToGet
   /// prints a message and aborts if StrictMode is true.
   template <class EvtT, class T>
-  void GetByLabelStrict(const EvtT& evt, const std::string& label,
+  void GetByLabelStrict(const EvtT& evt, const art::InputTag& tag,
                         art::Handle<T>& handle) const;
 
-  /// Equivalent of evt.getByLabel(label, handle) except failedToGet
+  /// Equivalent of evt.getByLabel(tag, handle) except failedToGet
   /// prints a message.
-  template <class T>
-  void GetByLabelIfExists(const art::Event& evt, const std::string& label,
+  template <class EvtT, class T>
+  void GetByLabelIfExists(const EvtT& evt, const art::InputTag& tag,
                           art::Handle<T>& handle) const;
 
+  /// Equivalent of evt.getHandle(tag) except that if `StrictMode` is set
+  /// when `failedToGet()` is `true` prints a message and aborts.
+  template <class T, class EvtT>
+  art::Handle<T> GetHandleStrict(const EvtT& evt, const art::InputTag& tag) const;
+  
   /// \param      pset The parameter set
   /// \param      name Pass "foo.bar.baz" as {"foo", "bar", "baz"}
   /// \param[out] ret  Value of the key, not set if we return false
@@ -1267,9 +1275,9 @@ art::FindManyP<T> CAFMaker::FindManyPStrict(const U& from,
 
   if (!tag.label().empty() && !ret.isValid() && fParams.StrictMode()) {
     std::cout << "CAFMaker: No Assn from '"
-              << cet::demangle_symbol(typeid(from).name()) << "' to '"
-              << cet::demangle_symbol(typeid(T).name())
-              << "' found under label '" << tag << "'. "
+              << lar::debug::demangle<U>() << "' to '"
+              << lar::debug::demangle<T>()
+              << "' found under label '" << tag.encode() << "'. "
               << "Set 'StrictMode: false' to continue anyway." << std::endl;
     abort();
   }
@@ -1286,9 +1294,9 @@ art::FindManyP<T, D> CAFMaker::FindManyPDStrict(const U& from,
 
   if (!tag.label().empty() && !ret.isValid() && fParams.StrictMode()) {
     std::cout << "CAFMaker: No Assn from '"
-              << cet::demangle_symbol(typeid(from).name()) << "' to '"
-              << cet::demangle_symbol(typeid(T).name())
-              << "' found under label '" << tag << "'. "
+              << lar::debug::demangle<U>() << "' to '"
+              << lar::debug::demangle<T>()
+              << "' found under label '" << tag.encode() << "'. "
               << "Set 'StrictMode: false' to continue anyway." << std::endl;
     abort();
   }
@@ -1305,9 +1313,9 @@ art::FindOneP<T> CAFMaker::FindOnePStrict(const U& from,
 
   if (!tag.label().empty() && !ret.isValid() && fParams.StrictMode()) {
     std::cout << "CAFMaker: No Assn from '"
-              << cet::demangle_symbol(typeid(from).name()) << "' to '"
-              << cet::demangle_symbol(typeid(T).name())
-              << "' found under label '" << tag << "'. "
+              << lar::debug::demangle<U>() << "' to '"
+              << lar::debug::demangle<T>()
+              << "' found under label '" << tag.encode() << "'. "
               << "Set 'StrictMode: false' to continue anyway." << std::endl;
     abort();
   }
@@ -1332,9 +1340,9 @@ art::FindOneP<T, D> CAFMaker::FindOnePDStrict(const U& from,
 
   if (!tag.label().empty() && !ret.isValid() && fParams.StrictMode()) {
     std::cout << "CAFMaker: No Assn from '"
-              << cet::demangle_symbol(typeid(from).name()) << "' to '"
-              << cet::demangle_symbol(typeid(T).name())
-              << "' found under label '" << tag << "'. "
+              << lar::debug::demangle<U>() << "' to '"
+              << lar::debug::demangle<T>()
+              << "' found under label '" << tag.encode() << "'. "
               << "Set 'StrictMode: false' to continue anyway." << std::endl;
     abort();
   }
@@ -1348,7 +1356,7 @@ bool CAFMaker::GetAssociatedProduct(const art::FindManyP<T>& fm, int idx,
                                     T& ret) const {
   if (!fm.isValid()) return false;
 
-  const std::vector<art::Ptr<T>> prods = fm.at(idx);
+  const std::vector<art::Ptr<T>>& prods = fm.at(idx);
 
   if (prods.empty()) return false;
 
@@ -1359,31 +1367,39 @@ bool CAFMaker::GetAssociatedProduct(const art::FindManyP<T>& fm, int idx,
 
 //......................................................................
 template <class EvtT, class T>
-void CAFMaker::GetByLabelStrict(const EvtT& evt, const std::string& label,
+void CAFMaker::GetByLabelStrict(const EvtT& evt, const art::InputTag& tag,
                                 art::Handle<T>& handle) const {
-  evt.getByLabel(label, handle);
-  if (!label.empty() && handle.failedToGet() && fParams.StrictMode()) {
-    std::cout << "CAFMaker: No product of type '"
-              << cet::demangle_symbol(typeid(*handle).name())
-              << "' found under label '" << label << "'. "
-              << "Set 'StrictMode: false' to continue anyway." << std::endl;
-    abort();
+  
+  handle = GetHandleStrict<T>(evt, tag);
+}
+
+//......................................................................
+template <class EvtT, class T>
+void CAFMaker::GetByLabelIfExists(const EvtT& evt,
+                                  const art::InputTag& tag,
+                                  art::Handle<T>& handle) const {
+  handle = evt.template getHandle<T>(tag);
+  if (!tag.empty() && handle.failedToGet() && fParams.StrictMode()) {
+    std::cout << "CAFMaker: No product of type '" << lar::debug::demangle<T>()
+              << "' found under label '" << tag.encode() << "'. "
+              << "Continuing without it." << std::endl;
   }
 }
 
 //......................................................................
-template <class T>
-void CAFMaker::GetByLabelIfExists(const art::Event& evt,
-                                  const std::string& label,
-                                  art::Handle<T>& handle) const {
-  evt.getByLabel(label, handle);
-  if (!label.empty() && handle.failedToGet() && fParams.StrictMode()) {
-    std::cout << "CAFMaker: No product of type '"
-              << cet::demangle_symbol(typeid(*handle).name())
-              << "' found under label '" << label << "'. "
-              << "Continuing without it." << std::endl;
-  }
+template <class T, class EvtT>
+art::Handle<T> CAFMaker::GetHandleStrict
+  (const EvtT& evt, const art::InputTag& tag) const
+{
+  art::Handle<T> handle = evt.template getHandle<T>(tag);
+  if (!handle.failedToGet() || !fParams.StrictMode() || tag.empty())
+    return handle;
+  std::cout << "CAFMaker: No product of type '" << lar::debug::demangle<T>()
+            << "' found under label '" << tag.encode() << "'. "
+            << "Set 'StrictMode: false' to continue anyway." << std::endl;
+  abort();
 }
+
 
 //......................................................................
 template <class T>
