@@ -55,6 +55,8 @@
 #include "sbnanaobj/StandardRecord/SRSlice.h"
 #include "sbnanaobj/StandardRecord/StandardRecord.h"
 
+#include "sbncode/CAFMaker/TimeRefShifters.h"
+
 
 namespace caf
 {
@@ -107,7 +109,7 @@ namespace caf
                        bool allowEmpty = false);
 
   void FillSliceOpT0Finder(const std::vector<art::Ptr<sbn::OpT0Finder>> &opt0_v,
-                           caf::SRSlice &slice);
+                           caf::SRSlice &slice, caf::TimeRefShifter<> const& shifter);
 
   void FillSliceBarycenter(const std::vector<art::Ptr<recob::Hit>> &inputHits,
                            const std::vector<art::Ptr<recob::SpacePoint>> &inputPoints,
@@ -175,15 +177,14 @@ namespace caf
   void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
                        const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,
                        const std::vector<art::Ptr<sbn::crt::CRTHitT0TaggingInfo>> &hitmatchinfo,
-                       bool use_ts0,
-                       int64_t CRT_T0_reference_time, // ns, signed
-                       double CRT_T1_reference_time, // us
+                       caf::CRTtimeRefShifter const& shifter,
                        const std::map<std::pair<int, int>, sim::AuxDetSimChannel> &crtsimchanmap,
                        caf::SRTrack &srtrack,
                        bool allowEmpty = false);
 
   void FillTrackCRTTrack(const std::vector<art::Ptr<anab::T0>> &t0match,
                        caf::SRTrack &srtrack,
+                       caf::CRTtimeRefShifter const& timeShifter,
                        bool allowEmpty = false);
 
   void FillTrackCRTSpacePoint(const anab::T0 &t0match,
@@ -249,14 +250,12 @@ namespace caf
                            unsigned truth_ind);
 
   void FillCRTHit(const sbn::crt::CRTHit &hit,
-                  bool use_ts0,
-                  int64_t CRT_T0_reference_time, // ns, signed
-                  double CRT_T1_reference_time, // us
+                  caf::CRTtimeRefShifter const& shifter,
                   const std::map<std::pair<int, int>, sim::AuxDetSimChannel> &crtsimchanmap,
                   caf::SRCRTHit &srhit,
                   bool allowEmpty = false);
   void FillCRTTrack(const sbn::crt::CRTTrack &track,
-                  bool use_ts0,
+                  caf::CRTtimeRefShifter const& shifter,
                   caf::SRCRTTrack &srtrack,
                   bool allowEmpty = false);
 
@@ -272,20 +271,25 @@ namespace caf
                   std::vector<recob::OpHit const*> const& hits,
                   int cryo,
                   caf::SROpFlash &srflash,
+                  caf::TimeRefShifter<> const& shifter = {},
                   bool allowEmpty = false);
 
   void FillSBNDOpFlash(const recob::OpFlash &flash,
                   std::vector<recob::OpHit const*> const& hits,
                   int tpc,
                   caf::SROpFlash &srflash,
+                  caf::TimeRefShifter<> const& shifter = {},
                   bool allowEmpty = false);
                   
   void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,
 		       caf::SRCRTPMTMatch &srmatch,
+		       caf::TimeRefShifter<> const& PMTshifter,
+		       caf::CRTtimeRefShifter const& CRTshifter,
 		       bool allowEmpty = false);
 
   void FillTPCPMTBarycenterMatch(const sbn::TPCPMTBarycenterMatch *matchInfo,
-                           caf::SRSlice& slice);
+                           caf::SRSlice& slice,
+                           caf::TimeRefShifter<> const& shifter);
 
   void FillCVNScores(const lcvn::Result *cvnResult,
                      caf::SRSlice& slice);
