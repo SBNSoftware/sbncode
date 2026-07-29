@@ -56,7 +56,7 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   )
 
 cet_build_plugin ( CAFMaker art::module
-               LIBRARIES
+               LIBRARIES PRIVATE
                sbncode_CAFMaker
                sbnanaobj::StandardRecord
                larcorealg::Geometry

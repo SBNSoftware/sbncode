@@ -1,6 +1,6 @@
 
 cet_build_plugin( Dazzle art::module
-  LIBRARIES
+  LIBRARIES PRIVATE
   art::Framework_Core
   art::Framework_Services_Registry
   art_root_io::TFileService_service
@@ -27,7 +27,7 @@ cet_build_plugin( Dazzle art::module
 )
 
 cet_build_plugin( Razzle art::module
-  LIBRARIES
+  LIBRARIES PRIVATE
   art::Framework_Core
   art::Framework_Services_Registry
   art_root_io::TFileService_service
@@ -54,7 +54,7 @@ cet_build_plugin( Razzle art::module
 )
 
 cet_build_plugin( Razzled art::module
-  LIBRARIES
+  LIBRARIES PRIVATE
   ROOT::TMVA
   canvas::canvas
   art_root_io::TFileService_service

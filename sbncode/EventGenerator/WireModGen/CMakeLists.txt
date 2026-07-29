@@ -1,5 +1,5 @@
 cet_build_plugin(WireModMuon art::EDProducer
-  SOURCE CORSIKAGenSBN.cc WireModMuon_module.cc
+  REG_SOURCE CORSIKAGenSBN.cc WireModMuon_module.cc
   LIBRARIES PRIVATE
   larcore::Geometry_Geometry_service
   larcorealg::Geometry

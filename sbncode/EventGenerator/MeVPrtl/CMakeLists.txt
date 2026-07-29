@@ -2,7 +2,7 @@ add_subdirectory(Tools)
 add_subdirectory(config)
 
 cet_build_plugin( MeVPrtlGen art::module
-          LIBRARIES
+          LIBRARIES PRIVATE
               art::Framework_Core
               art::Framework_Services_Registry
               art_root_io::TFileService_service
@@ -24,7 +24,7 @@ cet_build_plugin( MeVPrtlGen art::module
 )
 
 cet_build_plugin( MeVPrtlTestRayTrace art::module
-                    LIBRARIES
+                    LIBRARIES PRIVATE
                         art::Framework_Core
                         art::Framework_Services_Registry
                         art_root_io::TFileService_service

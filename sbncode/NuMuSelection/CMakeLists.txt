@@ -1,5 +1,5 @@
 cet_build_plugin( MuPVertexStudy art::module
-                        LIBRARIES
+                        LIBRARIES PRIVATE
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service
@@ -25,7 +25,7 @@ cet_build_plugin( MuPVertexStudy art::module
                             larreco::RecoAlg
 )
 cet_build_plugin( MuonS2NStudy art::module
-                        LIBRARIES
+                        LIBRARIES PRIVATE
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service
@@ -51,7 +51,7 @@ cet_build_plugin( MuonS2NStudy art::module
                             larreco::RecoAlg
 )
 cet_build_plugin( NuMuEfficiencyStudy art::module
-                        LIBRARIES
+                        LIBRARIES PRIVATE
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service
