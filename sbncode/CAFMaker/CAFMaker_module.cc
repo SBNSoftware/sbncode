@@ -35,6 +35,7 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <cstdlib>
 
 #ifdef DARWINBUILD
 #include <libgen.h>
@@ -79,6 +80,7 @@
 #include "canvas/Persistency/Common/FindOneP.h"
 #include "canvas/Persistency/Common/Ptr.h"
 #include "canvas/Persistency/Common/PtrVector.h"
+#include "canvas/Utilities/Exception.h"
 
 #include "cetlib_except/exception.h"
 #include "cetlib_except/demangle.h"
@@ -1404,6 +1406,43 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::fill_ptr_vector(mctruths, mctruth_handle);
   }
 
+
+  // Eta Debug Loop
+  for (size_t itruth = 0; itruth < mctruths.size(); ++itruth) {
+
+    const simb::MCTruth& truth = *mctruths[itruth];
+
+    std::cout << "\nTruth " << itruth
+            << " has " << truth.NParticles()
+            << " particles\n";
+
+
+    for (int i = 0; i < truth.NParticles(); ++i) {
+
+      const simb::MCParticle& p = truth.GetParticle(i);
+
+      if (std::abs(p.PdgCode()) == 221 || std::abs(p.PdgCode()) == 111 || std::abs(p.PdgCode()) == 22) {
+
+        std::cout << "\n====================\n";
+        std::cout << "Found GENIE eta or pi0 or gamma\n";
+        std::cout << "pdg        = " << p.PdgCode() << '\n';
+        std::cout << "track      = " << p.TrackId() << '\n';
+        std::cout << "mother     = " << p.Mother() << '\n';
+        std::cout << "status     = " << p.StatusCode() << '\n';
+        std::cout << "process    = " << p.Process() << '\n';
+        std::cout << "E          = " << p.E() << '\n';
+
+        std::cout << "vertex = "
+                << p.Vx() << " "
+                << p.Vy() << " "
+                << p.Vz() << '\n';
+      }
+    }
+  }
+
+  // End of Eta Debug
+
+
   // And associated GTruth objects
   art::FindManyP<simb::GTruth> fmp_gtruth = FindManyPStrict<simb::GTruth>(mctruths, evt, fParams.GenLabel());
 
@@ -1510,6 +1549,21 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   //#######################################################
   // Fill truths & fake reco
   //#######################################################
+  
+  std::cout << std::endl;
+  std::cout << std::endl;
+  std::cout << std::endl;
+  std::cout << std::endl;
+  std::cout << std::endl;
+  std::cout << "Start of True G4 Loop: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+  std::cout << "Start of True G4 Loop: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+  std::cout << "Start of True G4 Loop: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+  std::cout << "Start of True G4 Loop: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+  std::cout << std::endl;
+  std::cout << std::endl;
+  std::cout << std::endl;
+  std::cout << std::endl;
+  std::cout << std::endl;
 
   caf::SRTruthBranch                  srtruthbranch;
 
@@ -1518,6 +1572,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::ServiceHandle<cheat::BackTrackerService> bt_serv;
 
     for (const simb::MCParticle &part: *mc_particles) {
+
       true_particles.emplace_back();
 
       FillTrueG4Particle(part,
@@ -1529,6 +1584,62 @@ void CAFMaker::produce(art::Event& evt) noexcept {
                          *pi_serv,
                          mctruths,
                          true_particles.back());
+    }
+
+    // Add loop for unstable Genie particles that don't get propogated to G4
+    for (std::size_t itruth = 0; itruth < mctruths.size(); ++itruth) {
+      const simb::MCTruth& truth = *mctruths.at(itruth);
+
+      if (truth.Origin() != simb::kBeamNeutrino)
+        continue;
+
+      if (!truth.NeutrinoSet())
+        continue;
+
+      for (int ipart = 0; ipart < truth.NParticles(); ++ipart) {
+        const simb::MCParticle& genpart = truth.GetParticle(ipart);
+        try {
+          const art::Ptr<simb::MCTruth> inventoryTruth = pi_serv->TrackIdToMCTruth_P(genpart.TrackId());
+          if (inventoryTruth) {
+            // Should be contained in the FillTrueG4 loop
+            continue;
+          }
+        }
+        catch (const std::exception& e) {
+        //if (!inventoryTruth) {
+          // This may be a missed particle of interest!
+          std::cout << "Exception: " << e.what() << std::endl;
+          if (genpart.Process() == "primary") {
+            if (genpart.StatusCode() == 1) continue;
+            std::cout << std::endl;
+            std::cout << std::endl;
+            std::cout << std::endl;
+            std::cout << "Check if it's an initial state particle ..." << std::endl;
+            bool isInitialStateParticle = IsInitialStateParticle(genpart, truth);
+            if (isInitialStateParticle) std::cout << "Is an initial state particle --> reject!" << std::endl;
+            if (isInitialStateParticle) continue;
+            std::cout << "Found a primary particle that failed track match !!!" << std::endl;
+            std::cout << "PDG Code: " << genpart.PdgCode() << std::endl;
+            std::cout << "genpart.Mother(): " << genpart.Mother() << std::endl;
+            std::cout << "genpart.TrackId(): " << genpart.TrackId() << std::endl;
+            std::cout << "genpart.StatusCode(): " << genpart.StatusCode() << std::endl;
+            std::cout << "genpart.Process(): " << genpart.Process() << std::endl;
+
+            std::cout << "About to use my custom fill function ..." << std::endl;
+            true_particles.emplace_back();
+            FillTrueGENIEParticle(genpart,
+                      fActiveVolumes,
+                      fTPCVolumes,
+                      id_to_ide_map,
+                      id_to_truehit_map,
+                      *bt_serv,
+                      *pi_serv,
+                      mctruths,
+                      true_particles.back(), static_cast<int>(itruth));
+            std::cout << "Made it through my fill function" << std::endl;
+          } // primary particles
+        } // invalid track match
+      }// loop over particles
     }
   }
 

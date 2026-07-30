@@ -803,6 +803,8 @@ namespace caf {
     srparticle.endE = (exit_point >= 0) ? particle.Momentum(exit_point).E() : -9999.;
 
     srparticle.start_process = GetG4ProcessID(particle.Process());
+    if (particle.PdgCode() == 221) std::cout << "Eta srparticle start process: " << srparticle.start_process << std::endl;
+    
     srparticle.end_process = GetG4ProcessID(particle.EndProcess());
 
     srparticle.G4ID = particle.TrackId();
@@ -824,6 +826,23 @@ namespace caf {
       srparticle.daughters.push_back(particle.Daughter(i_d));
     }
 
+    // Eta Debug
+    if (particle.PdgCode() == 221) {
+      std::cout << std::endl;
+      std::cout << std::endl;
+      std::cout << std::endl;
+      std::cout << std::endl;
+      std::cout << std::endl;
+      std::cout << "Found eta in FillTrueG4 Function !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+      std::cout << std::endl;
+      std::cout << std::endl;
+      std::cout << std::endl;
+      std::cout << std::endl;
+      std::cout << std::endl;
+ 
+    }
+
+
     // See if this MCParticle matches a genie truth
     srparticle.interaction_id = -1;
 
@@ -835,6 +854,255 @@ namespace caf {
       }
     }
   } //FillTrueG4Particle
+
+
+
+  void FillTrueGENIEParticle(const simb::MCParticle &particle,
+        const std::vector<geo::BoxBoundedGeo> &active_volumes,
+        const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
+        const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE *>>> &id_to_ide_map,
+        const std::map<int, std::vector<art::Ptr<recob::Hit>>> &id_to_truehit_map,
+        const cheat::BackTrackerService &backtracker,
+        const cheat::ParticleInventoryService &inventory_service,
+        const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
+                          caf::SRTrueParticle &srparticle, int interaction_id) {
+
+    std::vector<std::pair<geo::WireID, const sim::IDE *>> empty;
+    const std::vector<std::pair<geo::WireID, const sim::IDE *>> &particle_ides = id_to_ide_map.count(particle.TrackId()) ? id_to_ide_map.at(particle.TrackId()) : empty;
+
+    std::vector<art::Ptr<recob::Hit>> emptyHits;
+    const std::vector<art::Ptr<recob::Hit>> &particle_hits = id_to_truehit_map.count(particle.TrackId()) ? id_to_truehit_map.at(particle.TrackId()) : emptyHits;
+
+    srparticle.length = 0.;
+    srparticle.crosses_tpc = false;
+    srparticle.wallin = caf::kWallNone;
+    srparticle.wallout = caf::kWallNone;
+
+    for (unsigned c = 0; c < 2; c++) {
+      SRTrueParticlePlaneInfo init;
+      init.visE = 0.;
+      init.nhit = 0;
+
+      for (int p = 0; p < 3; p++) {
+        srparticle.plane[c][p] = init;
+      }
+    }
+
+    for (auto const &ide_pair: particle_ides) {
+      const geo::WireID &w = ide_pair.first;
+      const sim::IDE *ide = ide_pair.second;
+
+      if(w.Plane >= 0 && w.Plane < 3 && w.Cryostat < 2){
+        srparticle.plane[w.Cryostat][w.Plane].visE += ide->energy / 1000. /* MeV -> GeV*/;
+      }
+    }
+
+    for (const art::Ptr<recob::Hit> h: particle_hits) {
+      const geo::WireID &w = h->WireID();
+
+      if(w.Plane >= 0 && w.Plane < 3 && w.Cryostat < 2) {
+        srparticle.plane[w.Cryostat][w.Plane].nhit ++;
+      }
+    } 
+
+    // if no trajectory points, then assume outside AV
+    srparticle.cont_tpc = particle.NumberTrajectoryPoints() > 0;
+    srparticle.contained = particle.NumberTrajectoryPoints() > 0;
+
+    // Get the entry and exit points
+    int entry_point = -1;
+
+    int cryostat_index = -1;
+    int tpc_index = -1;
+
+    for (unsigned j = 0; j < particle.NumberTrajectoryPoints(); j++) {
+      for (unsigned i = 0; i < active_volumes.size(); i++) {
+        if (active_volumes.at(i).ContainsPosition(particle.Position(j).Vect())) {
+          entry_point = j;
+          cryostat_index = i;
+          break;
+        }
+      }
+      if (entry_point != -1) break;
+    }
+    // get the wall
+    if (entry_point > 0) {
+      srparticle.wallin = GetWallCross(active_volumes.at(cryostat_index), particle.Position(entry_point).Vect(), particle.Position(entry_point-1).Vect());
+    }
+
+    int exit_point = -1;
+
+    // now setup the cryostat the particle is in
+    std::vector<geo::BoxBoundedGeo> volumes;
+    if (entry_point >= 0) {
+      volumes = tpc_volumes.at(cryostat_index);
+      for (unsigned i = 0; i < volumes.size(); i++) {
+        if (volumes[i].ContainsPosition(particle.Position(entry_point).Vect())) {
+          tpc_index = i;
+          srparticle.cont_tpc = entry_point == 0;
+          break;
+        }
+      }
+      srparticle.contained = entry_point == 0;
+    }
+    // if we couldn't find the initial point, set not contained
+    else {
+      srparticle.contained = false;
+    }
+    if (tpc_index < 0) {
+      srparticle.cont_tpc = false;
+    }
+
+    // setup aa volumes too for length calc
+    // Define the volume used for length calculation to be the cryostat volume in question
+    std::vector<geoalgo::AABox> aa_volumes;
+    if (entry_point >= 0) {
+      const geo::BoxBoundedGeo &v = active_volumes.at(cryostat_index);
+      aa_volumes.emplace_back(v.MinX(), v.MinY(), v.MinZ(), v.MaxX(), v.MaxY(), v.MaxZ());
+    }
+
+    // Get the length and determine if any point leaves the active volume
+    //
+    // Use every trajectory point if possible
+    if (entry_point >= 0) {
+      // particle trajectory
+      const simb::MCTrajectory &trajectory = particle.Trajectory();
+      TVector3 pos = trajectory.Position(entry_point).Vect();
+      for (unsigned i = entry_point+1; i < particle.NumberTrajectoryPoints(); i++) {
+        TVector3 this_point = trajectory.Position(i).Vect();
+        // get the exit point
+        // update if particle is contained
+        // check if particle has crossed TPC
+        if (!srparticle.crosses_tpc) {
+          for (unsigned j = 0; j < volumes.size(); j++) {
+            if (volumes[j].ContainsPosition(this_point) && tpc_index >= 0 && j != ((unsigned)tpc_index)) {
+              srparticle.crosses_tpc = true;
+              break;
+            }
+          }
+        }
+        // check if particle has left tpc
+        if (srparticle.cont_tpc) {
+          srparticle.cont_tpc = volumes[tpc_index].ContainsPosition(this_point);
+        }
+
+        if (srparticle.contained) {
+          srparticle.contained = active_volumes.at(cryostat_index).ContainsPosition(this_point);
+        }
+
+        // update length
+        srparticle.length += ContainedLength(this_point, pos, aa_volumes);
+
+        if (!active_volumes.at(cryostat_index).ContainsPosition(this_point) && active_volumes.at(cryostat_index).ContainsPosition(pos)) {
+          exit_point = i-1;
+        }
+
+        pos = trajectory.Position(i).Vect();
+      }
+    }
+    if (exit_point < 0 && entry_point >= 0) {
+      exit_point = particle.NumberTrajectoryPoints() - 1;
+    }
+    if(exit_point >= 0 && entry_point >=0 && exit_point == entry_point && exit_point < static_cast<int>(particle.NumberTrajectoryPoints()) - 1){
+      exit_point++; // to avoid exactly the same start and end positions when single index is inside the active volumne
+    }
+    if (exit_point >= 0 && ((unsigned)exit_point) < particle.NumberTrajectoryPoints() - 1) {
+      srparticle.wallout = GetWallCross(active_volumes.at(cryostat_index), particle.Position(exit_point).Vect(), particle.Position(exit_point+1).Vect());
+    }
+
+    // other truth information
+    srparticle.pdg = particle.PdgCode();
+
+    srparticle.gen = particle.NumberTrajectoryPoints() ? particle.Position().Vect() : TVector3(-9999, -9999, -9999);
+    srparticle.genT = particle.NumberTrajectoryPoints() ? particle.Position().T() / 1000. /* ns -> us*/: -9999;
+    srparticle.genp = particle.NumberTrajectoryPoints() ? particle.Momentum().Vect(): TVector3(-9999, -9999, -9999);
+    srparticle.genE = particle.NumberTrajectoryPoints() ? particle.Momentum().E(): -9999;
+
+    srparticle.start = (entry_point >= 0) ? particle.Position(entry_point).Vect(): TVector3(-9999, -9999, -9999);
+    srparticle.startT = (entry_point >= 0) ? particle.Position(entry_point).T() / 1000. /* ns-> us*/: -9999;
+    srparticle.end = (exit_point >= 0) ? particle.Position(exit_point).Vect(): TVector3(-9999, -9999, -9999);
+    srparticle.endT = (exit_point >= 0) ? particle.Position(exit_point).T() / 1000. /* ns -> us */ : -9999;
+
+    srparticle.startp = (entry_point >= 0) ? particle.Momentum(entry_point).Vect() : TVector3(-9999, -9999, -9999);
+    srparticle.startE = (entry_point >= 0) ? particle.Momentum(entry_point).E() : -9999.;
+    srparticle.endp = (exit_point >= 0) ? particle.Momentum(exit_point).Vect() : TVector3(-9999, -9999, -9999);
+    srparticle.endE = (exit_point >= 0) ? particle.Momentum(exit_point).E() : -9999.;
+
+    srparticle.start_process = GetG4ProcessID(particle.Process());
+    if (particle.PdgCode() == 221) std::cout << "Eta srparticle start process: " << srparticle.start_process << std::endl;
+    
+    srparticle.end_process = GetG4ProcessID(particle.EndProcess());
+
+    srparticle.G4ID = particle.TrackId();
+    srparticle.parent = particle.Mother();
+
+    // Set the initial cryostat
+    srparticle.cryostat = -1;
+    if (entry_point >= 0) {
+      for (unsigned c = 0; c < active_volumes.size(); c++) {
+        if (active_volumes[c].ContainsPosition(particle.Position(entry_point).Vect())) {
+          srparticle.cryostat = c;
+          break;
+        }
+      }
+    }
+
+    // Save the daughter particles
+    for (int i_d = 0; i_d < particle.NumberDaughters(); i_d++) {
+      srparticle.daughters.push_back(particle.Daughter(i_d));
+    }
+
+    // Eta Debug
+    if (particle.PdgCode() == 221) {
+      std::cout << std::endl;
+      std::cout << std::endl;
+      std::cout << std::endl;
+      std::cout << std::endl;
+      std::cout << std::endl;
+      std::cout << "Found eta in FillTrueGENIEParticle Function !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+      std::cout << std::endl;
+      std::cout << std::endl;
+      std::cout << std::endl;
+      std::cout << std::endl;
+      std::cout << std::endl;
+ 
+    }
+
+    // See if this MCParticle matches a genie truth
+    //srparticle.interaction_id = -1;
+    srparticle.interaction_id = interaction_id;
+    /*
+    art::Ptr<simb::MCTruth> truth = inventory_service.TrackIdToMCTruth_P(particle.TrackId());
+    for (unsigned i = 0; i < neutrinos.size(); i++) {
+      if (truth.get() == neutrinos[i].get()) {
+        srparticle.interaction_id = i;
+        break;
+      }
+    }
+    */
+  } //FillTrueGENIEParticle
+
+
+  bool IsInitialStateParticle(const simb::MCParticle& particle,
+                            const simb::MCTruth& truth)
+  {
+    const int pdg = particle.PdgCode();
+ 
+    // Incoming neutrino.
+
+    if (particle.TrackId() ==
+        truth.GetNeutrino().Nu().TrackId())
+      return true;
+
+    // Nuclear PDG codes have the form ±10LZZZAAAI.
+
+    if (std::abs(pdg) >= 1000000000)
+      return true;
+
+    return false;
+  }
+
+
 
   void FillFakeReco(const std::vector<art::Ptr<simb::MCTruth>> &mctruths,
                     const std::vector<caf::SRTrueParticle> &srparticles,
@@ -1660,3 +1928,8 @@ caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
   }
   return ret;
 }//Slc2Truth
+
+
+
+
+

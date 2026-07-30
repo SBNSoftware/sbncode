@@ -80,6 +80,22 @@ namespace caf
         const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
         caf::SRTrueParticle &srparticle);
 
+
+  // Added for unstable particles that don't propogate to G4
+  void FillTrueGENIEParticle(const simb::MCParticle &particle,
+        const std::vector<geo::BoxBoundedGeo> &active_volumes,
+        const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
+        const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE *>>> &id_to_ide_map,
+        const std::map<int, std::vector<art::Ptr<recob::Hit>>> &id_to_truehit_map,
+        const cheat::BackTrackerService &backtracker,
+        const cheat::ParticleInventoryService &inventory_service,
+        const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
+        caf::SRTrueParticle &srparticle,
+        int interaction_id);
+
+  bool IsInitialStateParticle(const simb::MCParticle& particle,
+                              const simb::MCTruth& truth);
+
   void FillMeVPrtlTruth(const evgen::ldm::MeVPrtlTruth &truth,
                         const std::vector<geo::BoxBoundedGeo> &active_volumes,
                         caf::SRMeVPrtl &srtruth);
