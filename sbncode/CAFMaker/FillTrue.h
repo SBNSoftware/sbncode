@@ -1,6 +1,7 @@
 #ifndef CAF_FILLTRUE_H
 #define CAF_FILLTRUE_H
 
+#include <optional>
 #include "TRandom.h"
 #include "TDatabasePDG.h"
 #include "CLHEP/Random/RandEngine.h" // CLHEP::HepRandomEngine
@@ -73,7 +74,7 @@ namespace caf
         const cheat::BackTrackerService &backtracker,
         const cheat::ParticleInventoryService &inventory_service,
         const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
-        caf::SRTrueParticle &srparticle);
+        caf::SRTrueParticle &srparticle, std::optional<int> new_mother);
 
 
   // Added for unstable particles that don't propogate to G4
@@ -86,7 +87,8 @@ namespace caf
         const cheat::ParticleInventoryService &inventory_service,
         const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
         caf::SRTrueParticle &srparticle,
-        int interaction_id);
+        int interaction_id,
+        int id_offset);
 
   bool IsInitialStateParticle(const simb::MCParticle& particle,
                               const simb::MCTruth& truth);

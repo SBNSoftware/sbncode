@@ -8,6 +8,7 @@
 
 #include "CLHEP/Random/RandGauss.h"
 
+#include <optional>
 #include <functional>
 #include <algorithm>
 
@@ -476,10 +477,12 @@ namespace caf {
     }
 
     for(const caf::SRTrueParticle& part: srparticles){
+      if (part.pdg == 212212) std::cout << "Weird parent in FillTrueNeutrino" << std::endl; 
+
       // save the G4 particles that came from this interaction
       if(part.interaction_id == (int)i) {
         if(part.start_process == caf::kG4primary) srneutrino.prim.push_back(part);
-
+        //std::cout << "succeeded FillNeutrino check" << std::endl; 
         // total up the deposited energy
         for(int p = 0; p < 3; ++p) { 
           for (int i_cryo = 0; i_cryo < 2; i_cryo++) {
@@ -638,7 +641,7 @@ namespace caf {
         const cheat::BackTrackerService &backtracker,
         const cheat::ParticleInventoryService &inventory_service,
         const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
-                          caf::SRTrueParticle &srparticle) {
+                          caf::SRTrueParticle &srparticle, std::optional<int> new_mother) {
 
     std::vector<sbn::ReadoutIDE> empty;
     const std::vector<sbn::ReadoutIDE> &particle_ides = id_to_ide_map.count(particle.TrackId()) ? id_to_ide_map.at(particle.TrackId()) : empty;
@@ -807,7 +810,13 @@ namespace caf {
     srparticle.end_process = GetG4ProcessID(particle.EndProcess());
 
     srparticle.G4ID = particle.TrackId();
-    srparticle.parent = particle.Mother();
+    srparticle.parent = particle.Mother() > 0 ? static_cast<unsigned>(particle.Mother()) : 0u;
+    if (new_mother.has_value()) {
+      const int requested_parent = new_mother.value();
+      std::cout << "Changing parent of particle " << srparticle.G4ID << " from " << srparticle.parent << " to " << requested_parent << std::endl;
+      srparticle.parent = static_cast<unsigned>(requested_parent);
+      std::cout << "srparticle.parent is now " << srparticle.parent << std::endl;
+    }
 
     // Set the initial cryostat
     srparticle.cryostat = -1;
@@ -824,23 +833,6 @@ namespace caf {
     for (int i_d = 0; i_d < particle.NumberDaughters(); i_d++) {
       srparticle.daughters.push_back(particle.Daughter(i_d));
     }
-
-    // Eta Debug
-    if (particle.PdgCode() == 221) {
-      std::cout << std::endl;
-      std::cout << std::endl;
-      std::cout << std::endl;
-      std::cout << std::endl;
-      std::cout << std::endl;
-      std::cout << "Found eta in FillTrueG4 Function !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
-      std::cout << std::endl;
-      std::cout << std::endl;
-      std::cout << std::endl;
-      std::cout << std::endl;
-      std::cout << std::endl;
- 
-    }
-
 
     // See if this MCParticle matches a genie truth
     srparticle.interaction_id = -1;
@@ -864,7 +856,7 @@ namespace caf {
         const cheat::BackTrackerService &backtracker,
         const cheat::ParticleInventoryService &inventory_service,
         const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
-                          caf::SRTrueParticle &srparticle, int interaction_id) {
+                          caf::SRTrueParticle &srparticle, int interaction_id, int id_offset) {
 
     std::vector<std::pair<geo::WireID, const sim::IDE *>> empty;
     const std::vector<std::pair<geo::WireID, const sim::IDE *>> &particle_ides = id_to_ide_map.count(particle.TrackId()) ? id_to_ide_map.at(particle.TrackId()) : empty;
@@ -1032,8 +1024,9 @@ namespace caf {
     
     srparticle.end_process = GetG4ProcessID(particle.EndProcess());
 
-    srparticle.G4ID = particle.TrackId();
-    srparticle.parent = particle.Mother();
+    // Special GENIE particles get a shifted positive ID so they do not overlap with G4 track IDs.
+    srparticle.G4ID = particle.TrackId() + id_offset;
+    srparticle.parent = particle.Mother() > 0 ? static_cast<unsigned>(particle.Mother() + id_offset) : 0u;
 
     // Set the initial cryostat
     srparticle.cryostat = -1;
@@ -1049,22 +1042,6 @@ namespace caf {
     // Save the daughter particles
     for (int i_d = 0; i_d < particle.NumberDaughters(); i_d++) {
       srparticle.daughters.push_back(particle.Daughter(i_d));
-    }
-
-    // Eta Debug
-    if (particle.PdgCode() == 221) {
-      std::cout << std::endl;
-      std::cout << std::endl;
-      std::cout << std::endl;
-      std::cout << std::endl;
-      std::cout << std::endl;
-      std::cout << "Found eta in FillTrueGENIEParticle Function !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
-      std::cout << std::endl;
-      std::cout << std::endl;
-      std::cout << std::endl;
-      std::cout << std::endl;
-      std::cout << std::endl;
- 
     }
 
     // See if this MCParticle matches a genie truth
