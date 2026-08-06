@@ -46,6 +46,7 @@
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "lardataobj/RecoBase/MCSFitResult.h"
 #include "lardataobj/RawData/RawDigit.h"
+#include "icaruscode/TPC/Tracking/MCS/MCSFitResultGS.h"
 
 #include "larcorealg/GeoAlgo/GeoAlgo.h"
 
@@ -61,12 +62,14 @@
 #include "larsim/MCCheater/ParticleInventoryService.h"
 
 #include "sbnobj/Common/Calibration/TrackCaloSkimmerObj.h"
+#include "sbnobj/Common/Reco/RangeP.h"
 #include "sbnobj/Common/CRT/CRTHitT0TaggingInfo.hh"
 #include "sbnobj/Common/CRT/CRTHitT0TaggingTruthInfo.hh"
 #include "sbnobj/SBND/CRT/CRTTrack.hh"
 #include "sbnobj/SBND/CRT/CRTSpacePoint.hh"
 
 #include "ITCSSelectionTool.h"
+#include "sbncode/CAFMaker/RecoUtils/RecoUtils.h" // sbn::ReadoutIDE, sbn::PrepTrueHits()...
 
 namespace sbn {
   class TrackCaloSkimmer;
@@ -140,6 +143,10 @@ private:
     const std::vector<const recob::TrackHitMeta*> &thms,
     const std::vector<art::Ptr<recob::SpacePoint>> &sps,
     const std::vector<art::Ptr<anab::Calorimetry>> &calo,
+    const art::Ptr<recob::MCSFitResultGS> &mcs2DI1,
+    const art::Ptr<recob::MCSFitResultGS> &mcs2DI2,
+    const art::Ptr<recob::MCSFitResultGS> &mcs2DC,
+    const art::Ptr<sbn::RangeP> &range,
     const std::map<geo::WireID, art::Ptr<raw::RawDigit>> &rawdigits,
     const std::vector<GlobalTrackInfo> &tracks,
     const geo::GeometryCore *geo,
@@ -164,6 +171,19 @@ private:
   void FillTrackTruth(const detinfo::DetectorClocksData &clock_data,
     const std::vector<art::Ptr<recob::Hit>> &trkHits,
     const std::vector<art::Ptr<simb::MCParticle>> &mcparticles,
+    const std::vector<art::Ptr<simb::MCParticle>> &droppedmcparticles,
+    const std::vector<geo::BoxBoundedGeo> &active_volumes,
+    const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
+    const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map,
+    const std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map,
+    const detinfo::DetectorPropertiesData &dprop,
+    const geo::GeometryCore *geo,
+    const geo::WireReadoutGeom *wireReadout);
+       
+   void FillDroppedTrackTruth(const detinfo::DetectorClocksData &clock_data,
+    const std::vector<art::Ptr<recob::Hit>> &trkHits,
+    const std::vector<art::Ptr<simb::MCParticle>> &mcparticles,
+    const std::vector<art::Ptr<simb::MCParticle>> &droppedmcparticles,
     const std::vector<geo::BoxBoundedGeo> &active_volumes,
     const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
     const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map,
@@ -195,6 +215,12 @@ private:
 
   // tags
   art::InputTag fPFPproducer;
+
+  art::InputTag fMCSproducer2DI1;
+  art::InputTag fMCSproducer2DI2;
+  art::InputTag fMCSproducer2DC;
+  art::InputTag fRangeInputtag;
+
   art::InputTag fPFPT0producer;
   art::InputTag fCRTTrackT0producer;
   art::InputTag fCRTHitT0producer;
@@ -205,6 +231,7 @@ private:
   art::InputTag fHITproducer;
   std::vector<art::InputTag> fRawDigitproducers;
   std::string fG4producer;
+  std::string fG4Droppedproducer;
   std::string fSimChannelproducer;
   bool fRequireT0;
   bool fDoTailFit;

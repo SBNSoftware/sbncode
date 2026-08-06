@@ -11,6 +11,8 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "TrackCaloSkimmer.h"
+#include "sbnobj/SBND/CRT/CRTTrack.hh"
+#include "sbnanaobj/StandardRecord/SREnums.h"
 
 #include "art/Utilities/make_tool.h"
 
@@ -29,7 +31,12 @@ static int N_FIT_DATA = -1;
 static double FIT_RR[MAX_N_FIT_DATA];
 static double FIT_DQDX[MAX_N_FIT_DATA];
 
-void ConstResiduals(int &npar, double *g, double &result, double *par, int flag) {
+void ConstResiduals(
+  int &npar, 
+  double *g, 
+  double &result, 
+  double *par, 
+  int flag) {
   double ret = 0;
 
   double C = *par;
@@ -42,7 +49,12 @@ void ConstResiduals(int &npar, double *g, double &result, double *par, int flag)
   result = sqrt(ret);
 }
 
-void ExpResiduals(int &npar, double *g, double &result, double *par, int flag) {
+void ExpResiduals(
+  int &npar, 
+  double *g, 
+  double &result, 
+  double *par, 
+  int flag) {
   double ret = 0;
 
   double A = par[0];
@@ -60,27 +72,33 @@ sbn::TrackCaloSkimmer::~TrackCaloSkimmer() {
   delete fTrack;
 }
 
-sbn::TrackCaloSkimmer::TrackCaloSkimmer(fhicl::ParameterSet const& p)
+sbn::TrackCaloSkimmer::TrackCaloSkimmer(
+  fhicl::ParameterSet const& p)
   : EDAnalyzer{p},
     fFitExp(2),
     fFitConst(1)
 {
   // Grab config
-  fPFPproducer  = p.get< art::InputTag > ("PFPproducer","pandoraGausCryo0");
+  fPFPproducer  = p.get< art::InputTag > ("PFPproducer", "pandoraGausCryo0");
   fPFPT0producer = p.get< art::InputTag > ("PFPT0producer", "pandoraGausCryo0");
   fCRTTrackT0producer = p.get< art::InputTag >("CRTTrackT0producer", "crttrackmatching");
   fCRTSpacePointT0producer = p.get< art::InputTag >("CRTSpacePointT0producer", "crtspacepointmatching");
   fCRTHitT0producer = p.get< art::InputTag >("CRTHitT0producer", "CRTT0Tagging");
 
   fCALOproducer = p.get< art::InputTag > ("CALOproducer");
-  fTRKproducer  = p.get< art::InputTag > ("TRKproducer" );
-  fTRKHMproducer= p.get< art::InputTag   > ("TRKHMproducer", "");
-  fHITproducer  = p.get< art::InputTag > ("HITproducer" );
-  fG4producer  = p.get< std::string > ("G4producer" );
-  fSimChannelproducer  = p.get< std::string > ("SimChannelproducer" );
+  fTRKproducer = p.get< art::InputTag > ("TRKproducer" );
+  fTRKHMproducer = p.get< art::InputTag > ("TRKHMproducer", "");
+
+  fMCSproducer2DI1 = p.get< art::InputTag > ("MCSproducer2DI1"); 
+  fMCSproducer2DI2 = p.get< art::InputTag > ("MCSproducer2DI2"); 
+  fMCSproducer2DC  = p.get< art::InputTag > ("MCSproducer2DC"); 
+  fRangeInputtag = p.get< art::InputTag > ("RangeInputtag"); 
+  fHITproducer = p.get< art::InputTag > ("HITproducer" );
+  fG4producer = p.get< std::string > ("G4producer" );
+  fSimChannelproducer = p.get< std::string > ("SimChannelproducer" );
   fRequireT0 = p.get<bool>("RequireT0", false);
   fDoTailFit = p.get<bool>("DoTailFit", true);
-  fVerbose = p.get<bool>("Verbose", false);
+  fVerbose = p.get<bool>("Verbose", true);
   fSilenceMissingDataProducts = p.get<bool>("SilenceMissingDataProducts", false);
   fHitRawDigitsTickCollectWidth = p.get<double>("HitRawDigitsTickCollectWidth", 50.);
   fHitRawDigitsWireCollectWidth = p.get<int>("HitRawDigitsWireCollectWidth", 5);
@@ -127,8 +145,8 @@ sbn::TrackCaloSkimmer::TrackCaloSkimmer(fhicl::ParameterSet const& p)
   fTree->Branch("trk", &fTrack);
 }
 
-void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
-{
+void sbn::TrackCaloSkimmer::analyze(
+  art::Event const& e) {
   unsigned evt = e.event();
   unsigned sub = e.subRun();
   unsigned run = e.run();
@@ -144,8 +162,7 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
   const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
   const geo::WireReadoutGeom *wireReadout = &art::ServiceHandle<geo::WireReadout>()->Get();
   auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
-  auto const dprop =
-    art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(e, clock_data);
+  auto const dprop = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(e, clock_data);
 
   // Identify which detector: can only detect either sbnd or icarus
 
@@ -200,6 +217,12 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
   if (fG4producer.size()) {
     art::ValidHandle<std::vector<simb::MCParticle>> mcparticle_handle = e.getValidHandle<std::vector<simb::MCParticle>>(fG4producer);
     art::fill_ptr_vector(mcparticles, mcparticle_handle);
+  }
+
+  std::vector<art::Ptr<simb::MCParticle>> droppedmcparticles;
+  if (fG4Droppedproducer.size()) {
+    art::ValidHandle<std::vector<simb::MCParticle>> droppedmcparticle_handle = e.getValidHandle<std::vector<simb::MCParticle>>(fG4Droppedproducer);
+    art::fill_ptr_vector(droppedmcparticles, droppedmcparticle_handle);
   }
 
   std::vector<art::Ptr<sim::SimChannel>> simchannels;
@@ -259,6 +282,22 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
     }
   }
 
+  //mcs
+  art::ValidHandle<std::vector<recob::MCSFitResultGS>> MCShandle_2DI1 = e.getValidHandle<std::vector<recob::MCSFitResultGS>>(fMCSproducer2DI1);
+  std::vector<art::Ptr<recob::MCSFitResultGS>> MCSresults_2DI1;
+  art::fill_ptr_vector(MCSresults_2DI1, MCShandle_2DI1);
+  art::ValidHandle<std::vector<recob::MCSFitResultGS>> MCShandle_2DI2 = e.getValidHandle<std::vector<recob::MCSFitResultGS>>(fMCSproducer2DI2);
+  std::vector<art::Ptr<recob::MCSFitResultGS>> MCSresults_2DI2;
+  art::fill_ptr_vector(MCSresults_2DI2, MCShandle_2DI2);
+  art::ValidHandle<std::vector<recob::MCSFitResultGS>> MCShandle_2DC = e.getValidHandle<std::vector<recob::MCSFitResultGS>>(fMCSproducer2DC);
+  std::vector<art::Ptr<recob::MCSFitResultGS>> MCSresults_2DC;
+  art::fill_ptr_vector(MCSresults_2DC, MCShandle_2DC);
+
+  //range momentum
+  auto const& range_handle = e.getValidHandle<std::vector<sbn::RangeP>>(fRangeInputtag);
+  std::vector<art::Ptr<sbn::RangeP>> rangePs;
+  art::fill_ptr_vector(rangePs, range_handle);
+
   // The raw digit list is not sorted, so make it into a map on the WireID
   std::map<geo::WireID, art::Ptr<raw::RawDigit>> rawdigits;
   for (const art::Ptr<raw::RawDigit> &d: rawdigitlist) {
@@ -316,20 +355,35 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
   for (art::Ptr<recob::PFParticle> p_pfp: PFParticleList) {
     const recob::PFParticle &pfp = *p_pfp;
 
-    if(p_pfp->PdgCode() == 11 && !fAllowShowerLikePFPs)
-      continue;
+    if(p_pfp->PdgCode() == 11 && !fAllowShowerLikePFPs) continue;
 
     const std::vector<art::Ptr<recob::Track>> thisTrack = fmTracks.at(p_pfp.key());
-    if (thisTrack.size() != 1)
-      continue;
+    if (thisTrack.size() != 1) continue;
 
     art::Ptr<recob::Track> trkPtr = thisTrack.at(0);
+
+    geo::Point_t const& pos = trkPtr->LocationAtPoint(0);
+    geo::Point_t point{pos.X(), pos.Y(), pos.Z()};
+    std::size_t cryo = geometry->PositionToCryostatID(point).Cryostat;
+    const char* cryoName = (cryo == 0) ? "EAST" : "WEST";
+    std::cout << " skimmer: event ID = " << e.event() 
+              << " track ID = " << trkPtr->ID() 
+              << " cryostat = " << cryoName
+              << std::endl;
 
     std::vector<art::Ptr<anab::Calorimetry>> emptyCaloVector;
     const std::vector<art::Ptr<anab::Calorimetry>> &calo = fmCalo.isValid() ? fmCalo.at(trkPtr.key()) : emptyCaloVector;
 
     std::vector<art::Ptr<recob::Hit>> emptyHitVector;
-    const std::vector<art::Ptr<recob::Hit>> &trkHits  = fmtrkHits.isValid() ? fmtrkHits.at(trkPtr.key()) : emptyHitVector;
+    const std::vector<art::Ptr<recob::Hit>> &trkHits = fmtrkHits.isValid() ? fmtrkHits.at(trkPtr.key()) : emptyHitVector;
+
+    art::Ptr<recob::MCSFitResultGS> mcsResult2DI1 = MCSresults_2DI1.at(trkPtr.key());
+    art::Ptr<recob::MCSFitResultGS> mcsResult2DI2 = MCSresults_2DI2.at(trkPtr.key());
+    art::Ptr<recob::MCSFitResultGS> mcsResult2DC  = MCSresults_2DC.at(trkPtr.key());
+    art::Ptr<sbn::RangeP> rangeP = rangePs.at(trkPtr.key());
+    std::cout << " range momentum [GeV/c] = " << rangeP->range_p 
+              << " track length [cm] = " << trkPtr->Length() 
+              << std::endl;
 
     art::FindManyP<recob::SpacePoint> fmtrkHitSPs(trkHits, e, fPFPproducer);
 
@@ -404,30 +458,30 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
         t0CRTHit = time;
         t0CRTHitScore = tag.Distance;
         hasCRTHitT0 = true;
+        std::cout << " track " << trkPtr->ID() << " has CRTT0 = " << t0CRTHit << std::endl;
       }
     }
 
     hasT0 = hasPFPT0 || hasCRTTrackT0 || hasCRTHitT0 || hasCRTSpacePointT0;
 
     // "whicht0" should reflect the T0 used for the reconstruction of the drift coordinate.
-    if(!hasT0) whicht0 = -1;
+    if (!hasT0) whicht0 = -1;
     // In this way, if a track is T0 tagged from PFP and CRT tagged, which T0 reflects the PFP Tag.
     else if (hasPFPT0) whicht0 = 0;
-    else if (hasCRTTrackT0)
-      {
+    else if (hasCRTTrackT0) {
         whicht0 = 1;
         crtMatchingScore = t0CRTTrackScore;
       }
-    else if (hasCRTHitT0)
-      {
+    else if (hasCRTHitT0) {
         whicht0 = 2;
         crtMatchingScore = t0CRTHitScore;
       }
-    else if (hasCRTSpacePointT0)
-      {
+    else if (hasCRTSpacePointT0) {
         whicht0 = 3;
         crtMatchingScore = t0CRTSpacePointScore;
       }
+    std::cout << " hasT0 = " << hasT0 
+              << " whichT0 = " << whicht0 << std::endl;
 
     T0TimingInfo thisTrackTimingInfo = {t0PFP, t0CRTTrack, t0CRTHit, t0CRTSpacePoint, hasPFPT0, hasCRTTrackT0, hasCRTHitT0, hasCRTSpacePointT0, crtMatchingScore};
 
@@ -445,8 +499,37 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
     // Reset other persistent info
     fSnippetCount.clear();
     fWiresToSave.clear();
+
+    std::vector<art::Ptr<recob::MCSFitResultGS>> mcsResults = {
+      mcsResult2DI1, mcsResult2DI2, mcsResult2DC };
+    bool val = false;
+    for (const auto& mcs : mcsResults) {
+      if (mcs && mcs->ValidityCheck()) {
+        val = true;
+        break; } }
+    if (!val) continue;
+
     // Fill the track!
-    FillTrack(*trkPtr, pfp, thisTrackTimingInfo, trkHits, trkHitMetas, trkHitSPs, calo, rawdigits, track_infos, geometry, wireReadout, clock_data, bt, det, dprop);
+    FillTrack(
+      *trkPtr, 
+      pfp, 
+      thisTrackTimingInfo, 
+      trkHits, 
+      trkHitMetas, 
+      trkHitSPs, 
+      calo, 
+      mcsResult2DI1,
+      mcsResult2DI2, 
+      mcsResult2DC,
+      rangeP, 
+      rawdigits, 
+      track_infos, 
+      geometry, 
+      wireReadout, 
+      clock_data, 
+      bt, 
+      det, 
+      dprop);
     fTrack->whicht0 = whicht0;
     FillTrackDaughterRays(*trkPtr, pfp, PFParticleList, PFParticleSPs);
 
@@ -456,7 +539,8 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
     if (fmCRTHitT0TaggingInfo.isValid()) FillTrackCRTHitInfo(fmCRTHitT0TaggingInfo.at(trkPtr.key()));
 
     // Fill the truth information if configured
-    if (simchannels.size()) FillTrackTruth(clock_data, trkHits, mcparticles, AVs, TPCVols, id_to_ide_map, id_to_truehit_map, dprop, geometry, wireReadout);
+    if (simchannels.size()) FillTrackTruth(clock_data, trkHits, mcparticles, droppedmcparticles, AVs, TPCVols, id_to_ide_map, id_to_truehit_map, dprop, geometry, wireReadout);
+    if (simchannels.size()) FillDroppedTrackTruth(clock_data, trkHits, mcparticles, droppedmcparticles, AVs, TPCVols, id_to_ide_map, id_to_truehit_map, dprop, geometry, wireReadout); 
 
     // Save?
     bool select = false;
@@ -478,16 +562,18 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
       if (fVerbose) std::cout << "Track Selected! By tool: " << i_select << std::endl;
       fTree->Fill();
     }
+    std::cout << " select = " << select
+              << " selected = " << i_select << std::endl;
   }
 }
 
 // helpers
 
-// Returns the minimum hit time for hits in either TPC E (TPCE==true)
-// or TPC W (TPCE==false)
-float HitMinTime(const std::vector<sbn::TrackHitInfo> &hits, 
-		bool TPCE, 
-		sbn::EDet det) {
+// Returns the minimum hit time for hits in either TPC E (TPCE == true) or TPC W (TPCE == false)
+float HitMinTime(
+  const std::vector<sbn::TrackHitInfo> &hits, 
+	bool TPCE, 
+	sbn::EDet det) {
   double min = -1;
   bool hit_is_TPCE = -1;
 
@@ -507,11 +593,11 @@ float HitMinTime(const std::vector<sbn::TrackHitInfo> &hits,
   return min;
 }
 
-// Returns the maximum hit time for hits in either TPC E (TPCE==true)
-// or TPC W (TPCE==false)
-float HitMaxTime(const std::vector<sbn::TrackHitInfo> &hits, 
-		bool TPCE,
-		sbn::EDet det) {
+// Returns the maximum hit time for hits in either TPC E (TPCE == true) or TPC W (TPCE == false)
+float HitMaxTime(
+  const std::vector<sbn::TrackHitInfo> &hits, 
+  bool TPCE,
+	sbn::EDet det) {
   double max = -1;
   bool hit_is_TPCE = -1;
 
@@ -531,7 +617,8 @@ float HitMaxTime(const std::vector<sbn::TrackHitInfo> &hits,
   return max;
 }
 
-sbn::Vector3D ConvertTVector(const TVector3 &tv) {
+sbn::Vector3D ConvertTVector(
+  const TVector3 &tv) {
   sbn::Vector3D v;
   v.x = tv.X();
   v.y = tv.Y();
@@ -541,7 +628,9 @@ sbn::Vector3D ConvertTVector(const TVector3 &tv) {
 }
 
 // Turn a particle position to a space-charge induced position
-geo::Point_t TrajectoryToWirePosition(const geo::Point_t &loc, const geo::Vector_t& driftdir) {
+geo::Point_t TrajectoryToWirePosition(
+  const geo::Point_t &loc, 
+  const geo::Vector_t& driftdir) {
   auto const* sce = lar::providerFrom<spacecharge::SpaceChargeService>();
 
   geo::Point_t ret = loc;
@@ -561,7 +650,9 @@ geo::Point_t TrajectoryToWirePosition(const geo::Point_t &loc, const geo::Vector
 }
 
 // Turn a space-charge induced position to a trajectory Position
-geo::Point_t WireToTrajectoryPosition(const geo::Point_t &loc, const geo::TPCID &tpc) {
+geo::Point_t WireToTrajectoryPosition(
+  const geo::Point_t &loc, 
+  const geo::TPCID &tpc) {
   auto const* sce = lar::providerFrom<spacecharge::SpaceChargeService>();
 
   geo::Point_t ret = loc;
@@ -579,7 +670,8 @@ geo::Point_t WireToTrajectoryPosition(const geo::Point_t &loc, const geo::TPCID 
 }
 
 // Collect MCParticle information
-sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
+sbn::TrueParticle TrueParticleInfo(
+  const simb::MCParticle &particle,
     const std::vector<geo::BoxBoundedGeo> &active_volumes,
     const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
     const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE *>>> &id_to_ide_map,
@@ -968,12 +1060,13 @@ sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
   return trueparticle;
 }
 
-void sbn::TrackCaloSkimmer::FillTrackEndHits(const geo::GeometryCore *geometry,
-                                             const geo::WireReadoutGeom *wireReadout,
-    const detinfo::DetectorPropertiesData &dprop,
-    const recob::Track &track,
-    const std::vector<art::Ptr<recob::Hit>> &allHits,
-    const art::FindManyP<recob::SpacePoint> &allHitSPs) {
+void sbn::TrackCaloSkimmer::FillTrackEndHits(
+  const geo::GeometryCore *geometry,
+  const geo::WireReadoutGeom *wireReadout,
+  const detinfo::DetectorPropertiesData &dprop,
+  const recob::Track &track,
+  const std::vector<art::Ptr<recob::Hit>> &allHits,
+  const art::FindManyP<recob::SpacePoint> &allHitSPs) {
 
   (void) dprop; // TODO: use??
 
@@ -1042,9 +1135,11 @@ void sbn::TrackCaloSkimmer::FillTrackEndHits(const geo::GeometryCore *geometry,
 
 }
 
-void sbn::TrackCaloSkimmer::FillTrackTruth(const detinfo::DetectorClocksData &clock_data,
-    const std::vector<art::Ptr<recob::Hit>> &trkHits,
-    const std::vector<art::Ptr<simb::MCParticle>> &mcparticles,
+void sbn::TrackCaloSkimmer::FillTrackTruth(
+  const detinfo::DetectorClocksData &clock_data,
+  const std::vector<art::Ptr<recob::Hit>> &trkHits,
+  const std::vector<art::Ptr<simb::MCParticle>> &mcparticles,
+  const std::vector<art::Ptr<simb::MCParticle>> &droppedmcparticles,
     const std::vector<geo::BoxBoundedGeo> &active_volumes,
     const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
     const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map,
@@ -1074,7 +1169,7 @@ void sbn::TrackCaloSkimmer::FillTrackTruth(const detinfo::DetectorClocksData &cl
 
     for (const art::Ptr<simb::MCParticle> &p_mcp: mcparticles) {
       if (p_mcp->TrackId() == bestmatch.first) {
-        if (fVerbose) std::cout << "Matched! Track ID: " << p_mcp->TrackId() << " pdg: " << p_mcp->PdgCode() << " process: " << p_mcp->EndProcess() << std::endl;
+        // if (fVerbose) std::cout << "Matched! Track ID: " << p_mcp->TrackId() << " pdg: " << p_mcp->PdgCode() << " process: " << p_mcp->EndProcess() << std::endl;
         fTrack->truth.p = TrueParticleInfo(*p_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo, wireReadout);
         fTrack->truth.eff = fTrack->truth.depE / (fTrack->truth.p.plane0VisE + fTrack->truth.p.plane1VisE + fTrack->truth.p.plane2VisE);
 
@@ -1088,6 +1183,84 @@ void sbn::TrackCaloSkimmer::FillTrackTruth(const detinfo::DetectorClocksData &cl
             break;
           }
         }
+        std::vector<std::pair<const simb::MCParticle*, float>> ionization_electrons;
+
+        // Now look for ionization electrons from this particle in the dropped list
+        for (const art::Ptr<simb::MCParticle> &c_mcp: droppedmcparticles) {
+          
+          if (!(c_mcp->PdgCode() == 11 && c_mcp->Process() == "muIoni")) continue;
+          if (c_mcp->Mother() == p_mcp->TrackId()) {
+            
+            //std::cout << "Dropped Matched! Track ID: " << c_mcp->TrackId() << " pdg: " << c_mcp->PdgCode() << " process: " << c_mcp->Process() << "  Energy: " << c_mcp->E() * 1000.0 << " keV" << std::endl; //da vedere se MeV o kev
+            
+            float energy = c_mcp->E(); // in GeV
+            ionization_electrons.emplace_back(c_mcp.get(), energy);
+
+            //sbn::TrueParticle deltaray = TrueParticleInfo(*c_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo);
+            
+            //fTrack->truth.deltarays.push_back(deltaray);
+          
+          }
+        }
+
+        // Sort ionization electrons by energy
+        std::sort(ionization_electrons.begin(), ionization_electrons.end(),
+          [](const auto &a, const auto &b) {
+            return a.second > b.second; // descending order
+          });
+
+        // Fill the deltaray information
+        //fTrack->truth.Ndeltarays = ionization_electrons.size();
+          
+        if (ionization_electrons.size() > 0) {
+          const simb::MCParticle* c_mcp = ionization_electrons[0].first;
+          fTrack->truth.deltaray_1 = TrueParticleInfo(*c_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo, wireReadout);
+        }
+        
+        if (ionization_electrons.size() > 1) {
+          const simb::MCParticle* c_mcp = ionization_electrons[1].first;
+          fTrack->truth.deltaray_2 = TrueParticleInfo(*c_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo, wireReadout);
+        }
+        
+        if (ionization_electrons.size() > 2) {
+          const simb::MCParticle* c_mcp = ionization_electrons[2].first;
+          fTrack->truth.deltaray_3 = TrueParticleInfo(*c_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo, wireReadout);
+        }
+
+        if (ionization_electrons.size() > 3) {
+          const simb::MCParticle* c_mcp = ionization_electrons[3].first;
+          fTrack->truth.deltaray_4 = TrueParticleInfo(*c_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo, wireReadout);
+        }
+
+        if (ionization_electrons.size() > 4) {
+          const simb::MCParticle* c_mcp = ionization_electrons[4].first;
+          fTrack->truth.deltaray_5 = TrueParticleInfo(*c_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo, wireReadout);
+        }
+        
+        if (ionization_electrons.size() > 5) {
+          const simb::MCParticle* c_mcp = ionization_electrons[5].first;
+          fTrack->truth.deltaray_6 = TrueParticleInfo(*c_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo, wireReadout);
+        }
+        
+        if (ionization_electrons.size() > 6) {
+          const simb::MCParticle* c_mcp = ionization_electrons[6].first;
+          fTrack->truth.deltaray_7 = TrueParticleInfo(*c_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo, wireReadout);
+        }
+        
+        if (ionization_electrons.size() > 7) {
+          const simb::MCParticle* c_mcp = ionization_electrons[7].first;
+          fTrack->truth.deltaray_8 = TrueParticleInfo(*c_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo, wireReadout);
+        }
+
+        if (ionization_electrons.size() > 8) {
+          const simb::MCParticle* c_mcp = ionization_electrons[8].first;
+          fTrack->truth.deltaray_9 = TrueParticleInfo(*c_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo, wireReadout);
+        }
+
+        if (ionization_electrons.size() > 9) {
+          const simb::MCParticle* c_mcp = ionization_electrons[9].first;
+          fTrack->truth.deltaray_10 = TrueParticleInfo(*c_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo, wireReadout);
+        }
 
         break;
       } 
@@ -1096,7 +1269,8 @@ void sbn::TrackCaloSkimmer::FillTrackTruth(const detinfo::DetectorClocksData &cl
 }
 
     
-void sbn::TrackCaloSkimmer::FillTrackDaughterRays(const recob::Track &trk,
+void sbn::TrackCaloSkimmer::FillTrackDaughterRays(
+  const recob::Track &trk,
     const recob::PFParticle &pfp, 
     const std::vector<art::Ptr<recob::PFParticle>> &PFParticleList, 
     const art::FindManyP<recob::SpacePoint> &PFParticleSPs) {
@@ -1128,7 +1302,8 @@ bool sbn::TrackCaloSkimmer::PointIsContained(const std::vector<geo::BoxBoundedGe
   return false;
 }
 
-void sbn::TrackCaloSkimmer::FillTrackCRTHitInfo(const std::vector<art::Ptr<sbn::crt::CRTHitT0TaggingInfo>> &tag) {
+void sbn::TrackCaloSkimmer::FillTrackCRTHitInfo(
+  const std::vector<art::Ptr<sbn::crt::CRTHitT0TaggingInfo>> &tag) {
   fTrack->PCAdir.x = std::numeric_limits<float>::signaling_NaN();
   fTrack->PCAdir.y = std::numeric_limits<float>::signaling_NaN();
   fTrack->PCAdir.z = std::numeric_limits<float>::signaling_NaN();
@@ -1141,20 +1316,26 @@ void sbn::TrackCaloSkimmer::FillTrackCRTHitInfo(const std::vector<art::Ptr<sbn::
   fTrack->PCAdir.z =  t.PCAEigenVector.Z();
 }
 
-void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track, 
-    const recob::PFParticle &pfp, const T0TimingInfo &t0Info,
-    const std::vector<art::Ptr<recob::Hit>> &hits,
-    const std::vector<const recob::TrackHitMeta*> &thms,
-    const std::vector<art::Ptr<recob::SpacePoint>> &sps,
-    const std::vector<art::Ptr<anab::Calorimetry>> &calo,
-    const std::map<geo::WireID, art::Ptr<raw::RawDigit>> &rawdigits,
-    const std::vector<GlobalTrackInfo> &tracks,
-    const geo::GeometryCore *geo,
-    const geo::WireReadoutGeom *wireReadout,
-    const detinfo::DetectorClocksData &clock_data,
-    const cheat::BackTrackerService *bt_serv,
-    const sbn::EDet det,
-    const detinfo::DetectorPropertiesData &dprop) {
+void sbn::TrackCaloSkimmer::FillTrack(
+  const recob::Track &track, 
+  const recob::PFParticle &pfp, 
+  const T0TimingInfo &t0Info,
+  const std::vector<art::Ptr<recob::Hit>> &hits,
+  const std::vector<const recob::TrackHitMeta*> &thms,
+  const std::vector<art::Ptr<recob::SpacePoint>> &sps,
+  const std::vector<art::Ptr<anab::Calorimetry>> &calo,
+  const art::Ptr<recob::MCSFitResultGS> &mcs2DI1,
+  const art::Ptr<recob::MCSFitResultGS> &mcs2DI2,
+  const art::Ptr<recob::MCSFitResultGS> &mcs2DC,
+  const art::Ptr<sbn::RangeP> &rangeP,
+  const std::map<geo::WireID, art::Ptr<raw::RawDigit>> &rawdigits,
+  const std::vector<GlobalTrackInfo> &tracks,
+  const geo::GeometryCore *geo,
+  const geo::WireReadoutGeom *wireReadout,
+  const detinfo::DetectorClocksData &clock_data,
+  const cheat::BackTrackerService *bt_serv,
+  const sbn::EDet det,
+  const detinfo::DetectorPropertiesData &dprop) {
 
   // Fill top level stuff
   fTrack->meta = fMeta;
@@ -1174,6 +1355,59 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
   fTrack->dir.x = track.StartDirection().X();
   fTrack->dir.y = track.StartDirection().Y();
   fTrack->dir.z = track.StartDirection().Z(); 
+
+  fTrack->range_p = rangeP->range_p;
+  
+  fTrack->mcs_isdelta_2DI1 = mcs2DI1->IsDelta();
+  fTrack->mcs_isdelta_2DI2 = mcs2DI2->IsDelta();
+  fTrack->mcs_isdelta_2DC  = mcs2DC->IsDelta();
+  fTrack->mcs_isdelta_indexI1 = mcs2DI1->IsDeltaIndex();
+  fTrack->mcs_isdelta_indexI2 = mcs2DI2->IsDeltaIndex();
+  fTrack->mcs_isdelta_indexC  = mcs2DC->IsDeltaIndex();
+
+  fTrack->mcs_sigma3p_2DI1 = mcs2DI1->sigma3P();
+  fTrack->mcs_sigma3p_2DI2 = mcs2DI2->sigma3P();
+  fTrack->mcs_sigma3p_2DC  = mcs2DC->sigma3P();
+
+  fTrack->mcs_pbest_ML_2DI1 = mcs2DI1->bestMomentum_Likelihood();
+  fTrack->mcs_pbest_C2_2DI1 = mcs2DI1->bestMomentum();
+  fTrack->mcs_pbest_ML_2DI2 = mcs2DI2->bestMomentum_Likelihood();
+  fTrack->mcs_pbest_C2_2DI2 = mcs2DI2->bestMomentum();
+  fTrack->mcs_pbest_ML_2DC = mcs2DC->bestMomentum_Likelihood();
+  fTrack->mcs_pbest_C2_2DC = mcs2DC->bestMomentum();
+
+  for (size_t ja = 0; ja < mcs2DI1->expectedLinAngles().size(); ja++)  fTrack->mcs_thetal_exp_2DI1.push_back(mcs2DI1->expectedLinAngles().at(ja));
+  for (size_t ja = 0; ja < mcs2DI1->measuredLinAngles().size(); ja++)  fTrack->mcs_thetal_mea_2DI1.push_back(mcs2DI1->measuredLinAngles().at(ja));
+  for (size_t ja = 0; ja < mcs2DI1->expectedPolyAngles().size(); ja++) fTrack->mcs_thetap_exp_2DI1.push_back(mcs2DI1->expectedPolyAngles().at(ja));
+  for (size_t ja = 0; ja < mcs2DI1->measuredPolyAngles().size(); ja++) fTrack->mcs_thetap_mea_2DI1.push_back(mcs2DI1->measuredPolyAngles().at(ja));
+  for (size_t ja = 0; ja < mcs2DI1->momentumLinAngles().size(); ja++)  fTrack->mcs_thetal_mom_2DI1.push_back(mcs2DI1->momentumLinAngles().at(ja));
+  for (size_t ja = 0; ja < mcs2DI1->segmentLengths().size(); ja++)     fTrack->mcs_seglens_3D_2DI1.push_back(mcs2DI1->segmentLengths().at(ja));
+  for (size_t ja = 0; ja < mcs2DI1->segmentLengths2D().size(); ja++)   fTrack->mcs_seglens_2D_2DI1.push_back(mcs2DI1->segmentLengths2D().at(ja));
+  for (size_t ja = 0; ja < mcs2DI2->expectedLinAngles().size(); ja++)  fTrack->mcs_thetal_exp_2DI2.push_back(mcs2DI2->expectedLinAngles().at(ja));
+  for (size_t ja = 0; ja < mcs2DI2->measuredLinAngles().size(); ja++)  fTrack->mcs_thetal_mea_2DI2.push_back(mcs2DI2->measuredLinAngles().at(ja));
+  for (size_t ja = 0; ja < mcs2DI2->momentumLinAngles().size(); ja++)  fTrack->mcs_thetal_mom_2DI2.push_back(mcs2DI2->momentumLinAngles().at(ja));
+  for (size_t ja = 0; ja < mcs2DI2->expectedPolyAngles().size(); ja++) fTrack->mcs_thetap_exp_2DI2.push_back(mcs2DI2->expectedPolyAngles().at(ja));
+  for (size_t ja = 0; ja < mcs2DI2->measuredPolyAngles().size(); ja++) fTrack->mcs_thetap_mea_2DI2.push_back(mcs2DI2->measuredPolyAngles().at(ja));
+  for (size_t ja = 0; ja < mcs2DI2->segmentLengths().size(); ja++)     fTrack->mcs_seglens_3D_2DI2.push_back(mcs2DI2->segmentLengths().at(ja));
+  for (size_t ja = 0; ja < mcs2DI2->segmentLengths2D().size(); ja++)   fTrack->mcs_seglens_2D_2DI2.push_back(mcs2DI2->segmentLengths2D().at(ja));
+  
+  for (size_t ja = 0; ja < mcs2DC->expectedLinAngles().size(); ja++)  fTrack->mcs_thetal_exp_2DC.push_back(mcs2DC->expectedLinAngles().at(ja));
+  for (size_t ja = 0; ja < mcs2DC->measuredLinAngles().size(); ja++)  fTrack->mcs_thetal_mea_2DC.push_back(mcs2DC->measuredLinAngles().at(ja));
+  for (size_t ja = 0; ja < mcs2DC->momentumLinAngles().size(); ja++)  fTrack->mcs_thetal_mom_2DC.push_back(mcs2DC->momentumLinAngles().at(ja));
+  for (size_t ja = 0; ja < mcs2DC->expectedPolyAngles().size(); ja++) fTrack->mcs_thetap_exp_2DC.push_back(mcs2DC->expectedPolyAngles().at(ja));
+  for (size_t ja = 0; ja < mcs2DC->measuredPolyAngles().size(); ja++) fTrack->mcs_thetap_mea_2DC.push_back(mcs2DC->measuredPolyAngles().at(ja));
+  for (size_t ja = 0; ja < mcs2DC->segmentLengths().size(); ja++)     fTrack->mcs_seglens_3D_2DC.push_back(mcs2DC->segmentLengths().at(ja));
+  for (size_t ja = 0; ja < mcs2DC->segmentLengths2D().size(); ja++)   fTrack->mcs_seglens_2D_2DC.push_back(mcs2DC->segmentLengths2D().at(ja));
+
+  fTrack->mcs_l1DI1 = mcs2DI1->length1D();
+  fTrack->mcs_l2DI1 = mcs2DI1->length2D();
+  fTrack->mcs_l3DI1 = mcs2DI1->length3D();
+  fTrack->mcs_l1DI2 = mcs2DI2->length1D();
+  fTrack->mcs_l2DI2 = mcs2DI2->length2D();
+  fTrack->mcs_l3DI2 = mcs2DI2->length3D();
+  fTrack->mcs_l1DC  = mcs2DC->length1D();
+  fTrack->mcs_l2DC  = mcs2DC->length2D();
+  fTrack->mcs_l3DC  = mcs2DC->length3D();
 
   if(t0Info.hasT0Pandora)
     {
@@ -1511,6 +1745,65 @@ sbn::TrackHitInfo sbn::TrackCaloSkimmer::MakeHit(const recob::Hit &hit,
     hinfo.h.hasSP = false;
   }
   return hinfo;
+}
+
+void sbn::TrackCaloSkimmer::FillDroppedTrackTruth(
+  const detinfo::DetectorClocksData &clock_data,
+  const std::vector<art::Ptr<recob::Hit>> &trkHits,
+  const std::vector<art::Ptr<simb::MCParticle>> &mcparticles,
+  const std::vector<art::Ptr<simb::MCParticle>> &droppedmcparticles,
+  const std::vector<geo::BoxBoundedGeo> &active_volumes,
+  const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
+  const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map,
+  const std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map,
+  const detinfo::DetectorPropertiesData &dprop,
+  const geo::GeometryCore *geo,
+  const geo::WireReadoutGeom *wireReadout) {
+
+  // Lookup the true-particle match -- use utils in CAF
+  std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clock_data, trkHits, true);
+  float total_energy = CAFRecoUtils::TotalHitEnergy(clock_data, trkHits); 
+  fTrack->truth.depE = total_energy / 1000. /* MeV -> GeV */;
+  
+  // sort highest energy match to lowest
+  std::sort(matches.begin(), matches.end(),
+      [](const auto &a, const auto &b) {
+        return a.second > b.second;
+      }
+  );
+//std::cout << " dropped size " << droppedmcparticles.size() << std::endl;
+
+  // loop on matches
+  for (unsigned int j=0;j<matches.size();j++) {
+    std::pair<int, float> match = matches[j];
+
+
+    fTrack->truth.pur = match.second / total_energy;
+
+    for (const art::Ptr<simb::MCParticle> &p_mcp: droppedmcparticles) {
+     //std::cout << " nondropped trackid " << p_mcp->TrackId() << " pdg: " << p_mcp->PdgCode() << " process: " << p_mcp->Process() << std::endl;
+     //std::cout << " nondropped trackid " << p_mcp->TrackId() << " energy: " << p_mcp->E()  << std::endl;
+
+      if (p_mcp->TrackId() == match.first) {
+        //std::cout << "Matched reco track " << j << " Track ID: " << p_mcp->TrackId() << " pdg: " << p_mcp->PdgCode() << " process: " << p_mcp->EndProcess() << std::endl;
+        fTrack->truth.p = TrueParticleInfo(*p_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo, wireReadout);
+        fTrack->truth.eff = fTrack->truth.depE / (fTrack->truth.p.plane0VisE + fTrack->truth.p.plane1VisE + fTrack->truth.p.plane2VisE);
+
+        // Lookup any delta
+        for (const art::Ptr<simb::MCParticle> &d_mcp: mcparticles) {
+          if (d_mcp->Mother() == p_mcp->TrackId() && // correct parent
+              (d_mcp->Process() == "Decay" || d_mcp->Process() == "muIoni") && // correct process
+              abs(d_mcp->PdgCode()) == 11) { // correct PDG code
+
+            fTrack->truth.michel = TrueParticleInfo(*d_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo, wireReadout);
+            break;
+          }
+        }
+      }
+    }
+
+    
+  }
 }
 
 DEFINE_ART_MODULE(sbn::TrackCaloSkimmer)

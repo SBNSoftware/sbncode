@@ -157,6 +157,11 @@ bool TrackCaloSkimmerSelectStoppingTrack::Select(const TrackInfo &t) {
 
   bool valid_med_dqdx = ((med_dqdx > 0.) && (med_dqdx > fEndMediandQdxCut)) || (fEndMediandQdxCut < 0.);
 
+  std::cout << " downwards = " << downwards
+            << " end_is_fid = " << end_is_fid
+            << " time_is_fid = " << time_is_fid
+            << " valid_med_dqdx = " << valid_med_dqdx
+            << std::endl;
   return downwards && end_is_fid && time_is_fid && valid_med_dqdx;
 }
 
