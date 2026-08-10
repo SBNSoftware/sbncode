@@ -388,8 +388,8 @@ namespace hit {
                 fPeakFitterTool->findPeakParameters(
                   range.data(), mergedCands, peakParamsVec, chi2PerNDF, NDF);
 
-                // If the chi2 is infinite then there is a real problem so we bail
-                if (!(chi2PerNDF < std::numeric_limits<double>::infinity())) {
+                // If the chi2 is not finite then there is a real problem so we bail
+                if (!std::isfinite(chi2PerNDF)) {
                   chi2PerNDF = 2. * fChi2NDF.at(plane);
                   NDF = 2;
                 }
@@ -464,13 +464,12 @@ namespace hit {
               float nsigmaADC(2.0);
               float newright(0);
               float newleft(0);
+
               for (const auto& peakParams : peakParamsVec) {
                 // Extract values for this hit
                 float peakAmp = peakParams.peakAmplitude;
                 float peakMean = peakParams.peakCenter;
                 float peakWidth = peakParams.peakSigma;
-
-                //std::cout<<" ans hits "<<numHits<<" gaus "<<nGausForFit<<std::endl;
 
                 //ANS get prev and next
                 if (numHits == 0) {
@@ -484,12 +483,10 @@ namespace hit {
                 if (numHits < nGausForFit - 1) {
                   nextpeak = (peakParamsVec.at(numHits + 1)).peakCenter;
                   nextpeakSig = (peakParamsVec.at(numHits + 1)).peakSigma;
-                  //std::cout<<" ans size "<<peakParamsVec.size()<<" hit "<<numHits<<" next peak "<<nextpeak<<" sig "<<nextpeakSig<<std::endl;
                 }
                 if (numHits > 0) {
                   prevpeak = (peakParamsVec.at(numHits - 1)).peakCenter;
                   prevpeakSig = (peakParamsVec.at(numHits - 1)).peakSigma;
-                  //std::cout<<" ans size "<<peakParamsVec.size()<<"hit "<<numHits<<" prev peak "<<prevpeak<<" sig "<<prevpeakSig<<std::endl;
                 }
 
                 // Place one bit of protection here
@@ -498,6 +495,11 @@ namespace hit {
                             << ", start tick: " << startT << std::endl;
                   continue;
                 }
+
+                // Another protection: if peak is outside of the range, 
+                // skip the hit creation
+                // For details on this issue refer to SBN DocDB 47092
+                if ((peakMean < startT) || (peakMean >= endT)) continue;
 
                 // Extract errors
                 float peakAmpErr = peakParams.peakAmplitudeError;
@@ -546,9 +548,14 @@ namespace hit {
                 if (HitsumStartItr > HitsumEndItr) continue;
 
                 //avoid ranges out of ROI if it happens
-                if (HitsumStartItr < sumStartItr) HitsumStartItr = sumStartItr;
+                if (HitsumStartItr < sumStartItr) HitsumStartItr = sumStartItr; // COMMENT [1] below
+                if (HitsumEndItr > sumEndItr) HitsumEndItr = sumEndItr;         // COMMENT [1] below
 
-                if (HitsumEndItr > sumEndItr) HitsumEndItr = sumEndItr;
+                // COMMENT [1] 
+                // This line prevents the two checks [1] before to
+                // make any possible boundary flip
+                // For details on this issue refer to SBN DocDB 47092
+                if (HitsumStartItr > HitsumEndItr) continue;
 
                 // ### Sum of ADC counts
                 float ROIsumADC = std::accumulate(sumStartItr, sumEndItr, 0.);
@@ -638,19 +645,19 @@ namespace hit {
                 }
 
                 // Copy the hits we want to keep to the filtered hit collection
-//                for (const auto& filteredHit : filteredHitVec)
-//                  if (!fHitFilterAlg || fHitFilterAlg->IsGoodHit(filteredHit)) {
-//                    hitstruct tmp{std::move(filteredHit), channelROI};
-//                    filthitstruct_vec.push_back(std::move(tmp));
-//                  }
-//
+              //  for (const auto& filteredHit : filteredHitVec)
+              //    if (!fHitFilterAlg || fHitFilterAlg->IsGoodHit(filteredHit)) {
+              //      hitstruct tmp{std::move(filteredHit), channelROI};
+              //      filthitstruct_vec.push_back(std::move(tmp));
+              //    }
+
                 if (fFillHists) fChi2->Fill(chi2PerNDF);
               }
-            } //<---End loop over merged candidate hits
-          }   //<---End looping over ROI's
-        );    //end tbb parallel for
-      }       //<---End looping over all the wires
-    );        //end tbb parallel for
+            } //< End loop over merged candidate hits
+          }   //< End looping over ROI's
+        );    //< End tbb::parallel_for(ROI)
+      }       //< End looping over all the wires
+    );        //< End tbb::parallel_for(channelROI)
 
     for (size_t i = 0; i < hitstruct_vec.size(); i++) {
       allHitCol.emplace_back(hitstruct_vec[i].hit_tbb, hitstruct_vec[i].channelROI_tbb);
