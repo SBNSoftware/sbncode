@@ -65,16 +65,13 @@ namespace caf
   }
 
   void FillCRTHit(const sbn::crt::CRTHit &hit,
-                  bool use_ts0,
-                  int64_t CRT_T0_reference_time, // ns, signed
-                  double CRT_T1_reference_time, // us
+                  caf::CRTtimeRefShifter const& shifter,
                   const std::map<std::pair<int, int>, sim::AuxDetSimChannel> &crtsimchanmap,
                   caf::SRCRTHit &srhit,
                   bool allowEmpty) {
 
-    srhit.t0 = ( (long long)(hit.ts0()) /*u_int64_t to int64_t*/ + CRT_T0_reference_time )/1000.;
-    srhit.t1 = hit.ts1()/1000.+CRT_T1_reference_time; // ns -> us
-    srhit.time = use_ts0 ? srhit.t0 : srhit.t1;
+    // all times are in us
+    shifter.fillCRTtimes(hit.ts0(), hit.ts1(), &srhit.t0, &srhit.t1, &srhit.time);
 
     srhit.position.x = hit.x_pos;
     srhit.position.y = hit.y_pos;
@@ -136,11 +133,11 @@ namespace caf
   }
 
   void FillCRTTrack(const sbn::crt::CRTTrack &track,
-                  bool use_ts0,
-                  caf::SRCRTTrack &srtrack,
-                  bool allowEmpty) {
+                    caf::CRTtimeRefShifter const& shifter,
+                    caf::SRCRTTrack &srtrack,
+                    bool allowEmpty) {
 
-    srtrack.time = (use_ts0 ? (float)track.ts0_ns : track.ts1_ns) / 1000.;
+    srtrack.time = shifter.shiftTime(shifter.usingTS0()? track.ts0_ns: track.ts1_ns);
 
     srtrack.hita.position.x = track.x1_pos;
     srtrack.hita.position.y = track.y1_pos;
@@ -217,15 +214,17 @@ namespace caf
 
   void FillCRTPMTMatch(const sbn::crt::CRTPMTMatching &match,
 		       caf::SRCRTPMTMatch &srmatch,
+		       caf::TimeRefShifter<> const& PMTshifter,
+		       caf::CRTtimeRefShifter const& CRTshifter,
 		       bool allowEmpty){
     // allowEmpty does not (yet) matter here                                                           
     (void) allowEmpty;
     //srmatch.setDefault();
     srmatch.flashID = match.flashID;
-    srmatch.flashTime_us = match.flashTime;
+    srmatch.flashTime_us = PMTshifter.shiftedTime(match.flashTime);
     srmatch.flashGateTime = match.flashGateTime;
-    srmatch.firstOpHitPeakTime = match.firstOpHitPeakTime;
-    srmatch.firstOpHitStartTime = match.firstOpHitStartTime;
+    srmatch.firstOpHitPeakTime = PMTshifter.shiftedTime(match.firstOpHitPeakTime);
+    srmatch.firstOpHitStartTime = PMTshifter.shiftedTime(match.firstOpHitStartTime);
     srmatch.flashInGate = match.flashInGate;
     srmatch.flashInBeam = match.flashInBeam;
     srmatch.flashPE = match.flashPE;
@@ -235,8 +234,8 @@ namespace caf
     unsigned int topen = 0, topex = 0, sideen = 0, sideex = 0;
     for(const auto& matchedCRTHit : match.matchedCRTHits){
       caf::SRMatchedCRT matchedCRT;
-      matchedCRT.PMTTimeDiff = matchedCRTHit.PMTTimeDiff; 
-      matchedCRT.time = matchedCRTHit.time;
+      matchedCRT.PMTTimeDiff = matchedCRTHit.PMTTimeDiff;
+      matchedCRT.time = CRTshifter.shiftTime(matchedCRTHit.time * 1000);
       matchedCRT.sys = matchedCRTHit.sys;
       matchedCRT.region = matchedCRTHit.region;
       matchedCRT.position = SRVector3D(matchedCRTHit.position.X(), matchedCRTHit.position.Y(), matchedCRTHit.position.Z());
@@ -258,11 +257,12 @@ namespace caf
                   std::vector<recob::OpHit const*> const& hits,
                   int cryo, 
                   caf::SROpFlash &srflash,
+                  caf::TimeRefShifter<> const& shifter,
                   bool allowEmpty) {
 
     srflash.setDefault();
 
-    srflash.time = flash.Time();
+    srflash.time = shifter.shiftedTime(flash.Time());
     srflash.timewidth = flash.TimeWidth();
 
     double firstTime = std::numeric_limits<double>::max();
@@ -271,7 +271,7 @@ namespace caf
       if (firstTime > hitTime)
         firstTime = hitTime;
     }
-    srflash.firsttime = firstTime;
+    srflash.firsttime = shifter.shiftedTimeIfNot(firstTime, std::numeric_limits<double>::max());
 
     srflash.cryo = cryo; // 0 in SBND, 0/1 for E/W in ICARUS
 
@@ -306,11 +306,12 @@ namespace caf
     std::vector<recob::OpHit const*> const& hits,
     int tpc, 
     caf::SROpFlash &srflash,
+    caf::TimeRefShifter<> const& shifter,
     bool allowEmpty) {
 
     srflash.setDefault();
 
-    srflash.time = flash.Time();
+    srflash.time = shifter.shiftedTime(flash.Time());
     srflash.timewidth = flash.TimeWidth();
 
     double firstTime = std::numeric_limits<double>::max();
@@ -319,7 +320,7 @@ namespace caf
     if (firstTime > hitTime)
     firstTime = hitTime;
     }
-    srflash.firsttime = firstTime;
+    srflash.firsttime = shifter.shiftedTimeIfNot(firstTime, std::numeric_limits<double>::max());
     srflash.tpc = tpc;
 
     srflash.totalpe = flash.TotalPE();
@@ -564,7 +565,7 @@ namespace caf
   }
 
   void FillSliceOpT0Finder(const std::vector<art::Ptr<sbn::OpT0Finder>> &opt0_v,
-                           caf::SRSlice &slice)
+                           caf::SRSlice &slice, caf::TimeRefShifter<> const& shifter)
   {
     if (opt0_v.empty()==false){
       unsigned int nopt0 = opt0_v.size();
@@ -585,7 +586,7 @@ namespace caf
 
       const sbn::OpT0Finder &maxOpT0 = *opt0_v[max_idx];
       slice.opt0.tpc    = maxOpT0.tpc;
-      slice.opt0.time   = maxOpT0.time;
+      slice.opt0.time   = shifter.shiftedTime(maxOpT0.time);
       slice.opt0.score  = maxOpT0.score;
       slice.opt0.measPE = maxOpT0.measPE;
       slice.opt0.hypoPE = maxOpT0.hypoPE;
@@ -603,7 +604,7 @@ namespace caf
         }
         const sbn::OpT0Finder &secOpT0 = *opt0_v[sec_idx];
         slice.opt0_sec.tpc    = secOpT0.tpc;
-        slice.opt0_sec.time   = secOpT0.time;
+        slice.opt0_sec.time   = shifter.shiftedTime(secOpT0.time);
         slice.opt0_sec.score  = secOpT0.score;
         slice.opt0_sec.measPE = secOpT0.measPE;
         slice.opt0_sec.hypoPE = secOpT0.hypoPE;
@@ -679,9 +680,7 @@ namespace caf
   void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
                        const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,
                        const std::vector<art::Ptr<sbn::crt::CRTHitT0TaggingInfo>> &hitmatchinfo,
-                       bool use_ts0,
-                       int64_t CRT_T0_reference_time, // ns, signed
-                       double CRT_T1_reference_time, // us
+                       caf::CRTtimeRefShifter const& shifter,
                        const std::map<std::pair<int, int>, sim::AuxDetSimChannel> &crtsimchanmap,
                        caf::SRTrack &srtrack,
                        bool allowEmpty)
@@ -709,18 +708,19 @@ namespace caf
       srtrack.crthit.hit.plane = t0match[0]->fID;
     }
     if (hitmatch.size()) {
-      FillCRTHit(*hitmatch[0], use_ts0, CRT_T0_reference_time, CRT_T1_reference_time, crtsimchanmap, srtrack.crthit.hit, allowEmpty);
+      FillCRTHit(*hitmatch[0], shifter, crtsimchanmap, srtrack.crthit.hit, allowEmpty);
     }
   }
 
   void FillTrackCRTTrack(const std::vector<art::Ptr<anab::T0>> &t0match,
                        caf::SRTrack &srtrack,
+                       caf::CRTtimeRefShifter const& timeShifter,
                        bool allowEmpty)
   {
     if (t0match.size()) {
       assert(t0match.size() == 1);
       srtrack.crttrack.angle = t0match[0]->fTriggerConfidence;
-      srtrack.crttrack.time = t0match[0]->fTime / 1e3; /* ns -> us */
+      srtrack.crttrack.time = timeShifter.shiftTime(t0match[0]->fTime); // ns -> us
 
       // TODO/FIXME: FILL MORE ONCE WE HAVE THE CRT HIT!!!
 
@@ -1216,17 +1216,21 @@ namespace caf
   }
 
   void FillTPCPMTBarycenterMatch(const sbn::TPCPMTBarycenterMatch *matchInfo,
-                           caf::SRSlice& slice)
+                           caf::SRSlice& slice,
+                           caf::TimeRefShifter<> const& shifter)
   { 
     slice.barycenterFM.setDefault();
 
     if ( matchInfo != nullptr ) {
+      bool const matched = (matchInfo->radius >= 0.0);
       slice.barycenterFM.chargeTotal  = matchInfo->chargeTotal;
       slice.barycenterFM.chargeCenterXLocal  = matchInfo->chargeCenterXLocal;
       slice.barycenterFM.chargeCenter  = SRVector3D (matchInfo->chargeCenter.x(), matchInfo->chargeCenter.y(), matchInfo->chargeCenter.z());
       slice.barycenterFM.chargeWidth  = SRVector3D (matchInfo->chargeWidth.x(), matchInfo->chargeWidth.y(), matchInfo->chargeWidth.z());
-      slice.barycenterFM.flashFirstHit  = matchInfo->flashFirstHit;
-      slice.barycenterFM.flashTime  = matchInfo->flashTime;
+      slice.barycenterFM.flashFirstHit
+        = shifter.shiftedTimeIf(matchInfo->flashFirstHit, matched);
+      slice.barycenterFM.flashTime
+        = shifter.shiftedTimeIf(matchInfo->flashTime, matched);
       slice.barycenterFM.flashPEs  = matchInfo->flashPEs;
       slice.barycenterFM.flashCenter  = SRVector3D (matchInfo->flashCenter.x(), matchInfo->flashCenter.y(), matchInfo->flashCenter.z());
       slice.barycenterFM.flashWidth  = SRVector3D (matchInfo->flashWidth.x(), matchInfo->flashWidth.y(), matchInfo->flashWidth.z());

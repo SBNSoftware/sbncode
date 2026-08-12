@@ -392,24 +392,30 @@ namespace caf
       "OpFlash"
     };
 
-    Atom<long long> CRTSimT0Offset {
-      Name("CRTSimT0Offset"),
-      Comment("start of beam gate/simulation time in the simulated CRT clock"),
-      0,
-    };
-
     Atom<art::InputTag> TriggerLabel {
       Name("TriggerLabel"),
       Comment("Label of trigger."),
       "daqTrigger"
     };
 
-    Atom<art::InputTag> UnshiftedTriggerLabel {
-      Name("UnshiftedTriggerLabel"),
-      Comment("Label of trigger emulation before applying trigger time shifts."),
-      "emuTriggerUnshifted"
+    Atom<bool> ShiftTimeFromTriggerToBeamGate {
+      Name("ShiftTimeFromTriggerToBeamGate"),
+      Comment("Shifts time in branches from trigger time to beam gate time."),
+      false
     };
 
+    Atom<double> GlobalTimeReferenceOffset {
+      Name("GlobalTimeReferenceOffset"),
+      Comment("Additional offset added to all times [us]"),
+      0.0
+    };
+
+    Atom<double> CRTreferenceTimeOffset {
+      Name("CRTreferenceTimeOffset"),
+      Comment("Additional reference shift for relative CRT times (not timestamps) [us]"),
+      0.0
+    };
+    
     Atom<string> FlashTrigLabel {
       Name("FlashTrigLabel"),
       Comment("Label of bool of passing flash trigger."),
@@ -468,24 +474,6 @@ namespace caf
       Name("TrackHitFillRREndCut"),
       Comment("How long from the end of a track to save calo-point information. Set to -1 to save nothing"),
       25.
-    };
-
-    Atom<bool> ReferencePMTFromTriggerToBeam {
-      Name("ReferencePMTFromTriggerToBeam"),
-      Comment("Whether to switch the reference time of PMT reco from 'trigger' to 'beam spill' time."),
-      true
-    };
-
-    Atom<bool> ReferenceCRTT0ToBeam {
-      Name("ReferenceCRTT0ToBeam"),
-      Comment("Whether to switch the reference time of CRT T0 reco to the 'beam spill' time."),
-      true
-    };
-
-    Atom<bool> ReferenceCRTT1FromTriggerToBeam {
-      Name("ReferenceCRTT1FromTriggerToBeam"),
-      Comment("Whether to switch the reference time of CRT T1 reco from 'trigger' to the 'beam spill' time."),
-      true
     };
 
     Atom<string> CVNLabel {
