@@ -16,12 +16,13 @@
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
 find_package(cetmodules 3.20.00 REQUIRED)
-project(sbncode VERSION 10.06.00.14 LANGUAGES CXX)
+project(sbncode LANGUAGES CXX)
 
 message(STATUS "\n\n  ==========================   ${PROJECT_NAME}   ==========================")
 
 
 include(CetCMakeEnv)
+set(${PROJECT_NAME}_CMAKE_PROJECT_VERSION_STRING 10.06.00.14-lf01)
 cet_cmake_env()
 
 # The specification of the C++ standard is required because CET macros
