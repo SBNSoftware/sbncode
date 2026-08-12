@@ -3,6 +3,8 @@
 
 #include "QLLMatch.h"
 
+#pragma GCC diagnostic ignored "-Wdangling-reference"
+
 using namespace std::chrono;
 namespace flashmatch {
 

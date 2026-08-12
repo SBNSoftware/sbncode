@@ -350,7 +350,7 @@ void numu::NuMuEfficiencyStudy::analyze(art::Event const& ev)
         matching_track[i_cc] = particle_handle->at(i_part).Self();
         track_purity[i_cc] = matches[0].second / 
           std::accumulate(matches.begin(), matches.end(), 0.f,
-            [](auto &a, auto &b){return a + b.second;});
+            [](auto const &a, auto const &b){return a + b.second;});
         track_completeness[i_cc] = matches[0].second / muonVisE[i_cc];
       }
     }

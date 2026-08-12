@@ -3,6 +3,8 @@
 
 #include "ChargeAnalytical.h"
 
+#pragma GCC diagnostic ignored "-Wdangling-reference"
+
 namespace flashmatch {
 
   static ChargeAnalyticalFactory __global_ChargeAnalyticalFactory__;
