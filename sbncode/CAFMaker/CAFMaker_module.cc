@@ -1799,8 +1799,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   caf::SRTrigger srtrigger;
   if (isValidTrigger) {
     FillTrigger(*extratrig_handle, trig_handle->at(0), srtrigger, timeShifter);
-    if (fDet == kICARUS) 
-      FillTriggerICARUS(*extratrig_handle, srtrigger);
   }
 
   // Fill trigger emulation information
@@ -2757,10 +2755,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.crtpmt_matches = srcrtpmtmatches;
   rec.ncrtpmt_matches = srcrtpmtmatches.size();
 
+  // Update trigger info (on top of the other shifts from the configuration)
   if (isRealData && (fDet == kSBND))
   {
-    // Update trigger info (on top of the other shifts from the configuration)
     FillTriggerSBND(srsbndtiminginfo, srtrigger);
+  }
+  else if (fDet == kICARUS) {
+    FillTriggerICARUS(*extratrig_handle, srtrigger);
   }
 
   // Get metadata information for header
