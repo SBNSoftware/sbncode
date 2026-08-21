@@ -1398,43 +1398,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::fill_ptr_vector(mctruths, mctruth_handle);
   }
 
-
-  // Eta Debug Loop
-  for (size_t itruth = 0; itruth < mctruths.size(); ++itruth) {
-
-    const simb::MCTruth& truth = *mctruths[itruth];
-
-    std::cout << "\nTruth " << itruth
-            << " has " << truth.NParticles()
-            << " particles\n";
-
-
-    for (int i = 0; i < truth.NParticles(); ++i) {
-
-      const simb::MCParticle& p = truth.GetParticle(i);
-
-      if (std::abs(p.PdgCode()) == 221 || std::abs(p.PdgCode()) == 111 || std::abs(p.PdgCode()) == 22 || p.TrackId() == 6) {
-
-        std::cout << "\n====================\n";
-        std::cout << "Found GENIE eta or pi0 or gamma\n";
-        std::cout << "pdg        = " << p.PdgCode() << '\n';
-        std::cout << "track      = " << p.TrackId() << '\n';
-        std::cout << "mother     = " << p.Mother() << '\n';
-        std::cout << "status     = " << p.StatusCode() << '\n';
-        std::cout << "process    = " << p.Process() << '\n';
-        std::cout << "E          = " << p.E() << '\n';
-
-        std::cout << "vertex = "
-                << p.Vx() << " "
-                << p.Vy() << " "
-                << p.Vz() << '\n';
-      }
-    }
-  }
-
-  // End of Eta Debug
-
-
   // And associated GTruth objects
   art::FindManyP<simb::GTruth> fmp_gtruth = FindManyPStrict<simb::GTruth>(mctruths, evt, fParams.GenLabel());
 
@@ -1542,16 +1505,45 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // Fill truths & fake reco
   //#######################################################
   
- 
-  std::cout << std::endl;
-  std::cout << std::endl;
-  std::cout << "Start of True G4 Loop: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
-  std::cout << std::endl;
-  
-
   caf::SRTruthBranch                  srtruthbranch;
 
   if (mc_particles.isValid()) {
+
+
+    std::cout << std::endl;
+    std::cout << std::endl;
+    std::cout << std::endl;
+    std::cout << std::endl;
+    std::cout << std::endl;
+
+    std::cout << "//------------------------------------------------------------------------------- //" << std::endl;
+    std::cout << "//------------------------------------------------------------------------------- //" << std::endl;
+    std::cout << "//------------------------------------------------------------------------------- //" << std::endl;
+    std::cout << "//------------------------------------------------------------------------------- //" << std::endl;
+    
+    std::cout << "DEBUG DEBUG DEBUG" << std::endl;
+    std::cout << "DEBUG DEBUG DEBUG" << std::endl;
+    std::cout << "DEBUG DEBUG DEBUG" << std::endl;
+    std::cout << "DEBUG DEBUG DEBUG" << std::endl;
+    std::cout << "DEBUG DEBUG DEBUG" << std::endl;
+    std::cout << "DEBUG DEBUG DEBUG" << std::endl;
+    std::cout << "DEBUG DEBUG DEBUG" << std::endl;
+    std::cout << "DEBUG DEBUG DEBUG" << std::endl;
+    std::cout << "DEBUG DEBUG DEBUG" << std::endl;
+    std::cout << "DEBUG DEBUG DEBUG" << std::endl;
+
+    std::cout << "//------------------------------------------------------------------------------- //" << std::endl;
+    std::cout << "//------------------------------------------------------------------------------- //" << std::endl;
+    std::cout << "//------------------------------------------------------------------------------- //" << std::endl;
+    std::cout << "//------------------------------------------------------------------------------- //" << std::endl;
+
+
+    std::cout << std::endl;
+    std::cout << std::endl;
+    std::cout << std::endl;
+    std::cout << std::endl;
+    std::cout << std::endl;
+
     art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
     art::ServiceHandle<cheat::BackTrackerService> bt_serv;
 
@@ -1561,37 +1553,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     for (const simb::MCParticle &part: *mc_particles) {
       if (part.TrackId() > max_g4_track_id) max_g4_track_id = part.TrackId();
     }
-    std::cout << "Start of particle loop for FillTrueG4Particle ..." << std::endl;
-    int particle_counter = 0;
+    
     for (const simb::MCParticle &part: *mc_particles) {
-      std::cout << "Check particle " << particle_counter << " pdg " << part.PdgCode() << " trkID " << part.TrackId() << std::endl;
-      //if (part.PdgCode() == 212212) std::cout << "Weird parent is filled in FillTrueG4Particle !!!!" << std::endl;
-      /*
-      true_particles.emplace_back();
 
-      FillTrueG4Particle(part,
-                         fActiveVolumes,
-                         fTPCVolumes,
-                         id_to_ide_map,
-                         id_to_truehit_map,
-                         *bt_serv,
-                         *pi_serv,
-                         mctruths,
-                         true_particles.back());
-      */
-
-      //bool needs_missed_parent = false;
       std::optional<int> missed_parent_id = std::nullopt;
       // Now we need to check if the Mother is zero and the parent is not the neutrino/initial state particle. 
       // If a particle passed to G4 is primary and it's parent is zero, then the parent was not propagated to G4. This is a missed particle of interest that we need to fill in the CAF.
       if (part.Mother() == 0 && part.Process() == "primary") {
         std::cout << "Found a primary particle with no mother in FillTrueG4Particle !!!!" << std::endl;
-        std::cout << "PDG Code: " << part.PdgCode() << std::endl;
-        std::cout << "Track ID: " << part.TrackId() << std::endl;
-        std::cout << "Status Code: " << part.StatusCode() << std::endl;
-        std::cout << "Process: " << part.Process() << std::endl;
-        
-      
+  
         // Grab the MCTruth associated to this particle
         const art::Ptr<simb::MCTruth> inventoryTruth = pi_serv->TrackIdToMCTruth_P(part.TrackId());
         // Loop over the particles in the MCTruth to first find this particle and then check it's Mother again to find it's missed parent
@@ -1623,20 +1593,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           if (matchedGenie) {
             std::cout << "Found the matched GENIE particle in the MCTruth!" << std::endl;
             std::cout << "Best score: " << bestScore << std::endl;
-            std::cout << "PDG Code: " << matchedGenie->PdgCode() << std::endl;
-            std::cout << "Track ID: " << matchedGenie->TrackId() << std::endl;
-            std::cout << "Mother: " << matchedGenie->Mother() << std::endl;
-            std::cout << "Status Code: " << matchedGenie->StatusCode() << std::endl;
-            std::cout << "Process: " << matchedGenie->Process() << std::endl;
-
-            if (matchedGenie->Mother() != 0) {
-              std::cout << "Found a missed parent in the MCTruth for this particle !!!!" << std::endl;
-              std::cout << "Missed Parent PDG Code: " << inventoryTruth->GetParticle(matchedGenie->Mother()).PdgCode() << std::endl;
-              std::cout << "Missed Parent Track ID: " << inventoryTruth->GetParticle(matchedGenie->Mother()).TrackId() << std::endl;
-              std::cout << "Missed Parent Status Code: " << inventoryTruth->GetParticle(matchedGenie->Mother()).StatusCode() << std::endl;
-              std::cout << "Missed Parent Process: " << inventoryTruth->GetParticle(matchedGenie->Mother()).Process() << std::endl;
-            }
-
+  
             // Now we can fill this missed parent in the CAF using our custom FillTrueGENIEParticle function
             if (matchedGenie->Mother() != 0) {
               const simb::MCParticle& missedParent = inventoryTruth->GetParticle(matchedGenie->Mother());
@@ -1680,13 +1637,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
                   } else {
                     const simb::MCParticle* currentParent = &missedParent;
                     while (currentParent->Mother() != 0 && !IsInitialStateParticle(inventoryTruth->GetParticle(currentParent->Mother()), *inventoryTruth)) {
-                      const simb::MCParticle& nextParent = inventoryTruth->GetParticle(currentParent->Mother());
-                      std::cout << "Found a missed grandparent in the MCTruth for this particle !!!!" << std::endl;
-                      std::cout << "Missed Grandparent PDG Code: " << nextParent.PdgCode() << std::endl;
-                      std::cout << "Missed Grandparent Track ID: " << nextParent.TrackId() << std::endl;
-                      std::cout << "Missed Grandparent Status Code: " << nextParent.StatusCode() << std::endl;
-                      std::cout << "Missed Grandparent Process: " << nextParent.Process() << std::endl;
-                      
+                      const simb::MCParticle& nextParent = inventoryTruth->GetParticle(currentParent->Mother());         
                       mother_ids.push_back(nextParent.TrackId());
                       true_particles.emplace_back();
                       FillTrueGENIEParticle(nextParent,
@@ -1713,10 +1664,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
             }
           } // matched Genie Particle
         } // found inventoryTruth
-        std::cout << std::endl;
-        std::cout << std::endl;
       } // primary particle with no motherx
-      std::cout << "About to Fill particle " << particle_counter << " in FillTrueG4Particle ..." << std::endl;
+      
       true_particles.emplace_back();
 
       FillTrueG4Particle(part,
@@ -1728,106 +1677,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
                          *pi_serv,
                          mctruths,
                          true_particles.back(), missed_parent_id);
-      particle_counter++;
+      
     }
-    std::cout << "End of loop for FillTrueG4Particle /////////////////////////////////////////" << std::endl;
-    std::cout << std::endl;
-    std::cout << std::endl;
-
-    /*
-    std::cout << "Start of my loop over MC truths to find missed particles of interest ..." << std::endl;
-    std::cout << std::endl;
-
-    // Add loop for unstable Genie particles that don't get propogated to G4
-    for (std::size_t itruth = 0; itruth < mctruths.size(); ++itruth) {
-
-      std::cout << "Analyzing mctruth " << itruth << std::endl;
-      const simb::MCTruth& truth = *mctruths.at(itruth);
-       
-      if (truth.Origin() != simb::kBeamNeutrino)
-        continue;
-
-      if (!truth.NeutrinoSet())
-        continue;
-      std::cout << "mctruth is a beam neutrino interaction" << std::endl;
-
-      std::cout << std::endl;
-      std::cout << "Starting loop over true particles ..." << std::endl;
-      for (int ipart = 0; ipart < truth.NParticles(); ++ipart) {
-        const simb::MCParticle& genpart = truth.GetParticle(ipart);
-        std::cout << "Analyzing particle " << ipart << std::endl;
-        if (genpart.PdgCode() == 212212) std::cout << "Found missed parent! for event 138" << std::endl;
-        std::cout << "Check if particle has it's track ID matched by pi_serv->TrackIdToMCTruth_P" << std::endl;
-        try {
-          const art::Ptr<simb::MCTruth> inventoryTruth = pi_serv->TrackIdToMCTruth_P(genpart.TrackId());
-          if (inventoryTruth) {
-            // Should be contained in the FillTrueG4 loop
-            // However, some seem to get missed somehow?
-            std::cout << "ipart " << ipart << " passed pi_serv->TrackIdToMCTruth_P" <<std::endl; 
-            // check if this particle has already been filled ...
-            auto const matchedTrackId = genpart.TrackId();
-            bool wasFilled = false;
-            for (const simb::MCParticle &cafParticle: *mc_particles) {
-
-              if (cafParticle.TrackId() == matchedTrackId) {
-                std::cout
-                << "Matched MCTruth particle:"
-                << "genpart pdg=" << genpart.PdgCode()
-                << "cafpart pdg=" << cafParticle.PdgCode()
-                << " track=" << matchedTrackId
-                //<< "\nExisting CAF particle:"
-                //<< " pdg=" << cafParticle.pdg
-                //<< " interaction_id=" << cafParticle.interaction_id
-                //<< " start_process=" << cafParticle.start_process
-                //<< " parent=" << cafParticle.parent
-                << '\n';
-                wasFilled = true;
-              }
-            }
-            if (!wasFilled) std::cout << "Matched trackID not filled in FillTrueG4 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
-            continue;
-          }
-        }
-        catch (const std::exception& e) {
-        //if (!inventoryTruth) {
-          // This may be a missed particle of interest!
-          std::cout << "Particle failed the G4 track matching! Evaluate for our case ..." << std::endl;
-          //std::cout << "Exception: " << e.what() << std::endl;
-          if (genpart.Process() == "primary") {
-            std::cout << "Particle is primary!" << std::endl;
-            if (genpart.StatusCode() == 1) continue;
-            std::cout << "particle has bad status code" << std::endl;
-            std::cout << std::endl;
-            std::cout << "Check if it's an initial state particle ..." << std::endl;
-            bool isInitialStateParticle = IsInitialStateParticle(genpart, truth);
-            if (isInitialStateParticle) std::cout << "Is an initial state particle --> reject!" << std::endl;
-            if (isInitialStateParticle) continue;
-            std::cout << "Found a primary particle candidate !!!" << std::endl;
-            std::cout << "PDG Code: " << genpart.PdgCode() << std::endl;
-            std::cout << "genpart.Mother(): " << genpart.Mother() << std::endl;
-            std::cout << "genpart.TrackId(): " << genpart.TrackId() << std::endl;
-            std::cout << "genpart.StatusCode(): " << genpart.StatusCode() << std::endl;
-            std::cout << "genpart.Process(): " << genpart.Process() << std::endl;
-
-            std::cout << "About to use my custom fill function ..." << std::endl;
-            true_particles.emplace_back();
-            FillTrueGENIEParticle(genpart,
-                      fActiveVolumes,
-                      fTPCVolumes,
-                      id_to_ide_map,
-                      id_to_truehit_map,
-                      *bt_serv,
-                      *pi_serv,
-                      mctruths,
-                      true_particles.back(), static_cast<int>(itruth));
-            std::cout << "Made it through my fill function" << std::endl;
-          } // primary particles
-        } // invalid track match
-        std::cout << std::endl;
-        std::cout << std::endl;
-      }// loop over particles
-    }
-    */
   }
 
   std::vector<art::FindManyP<sbn::evwgh::EventWeightMap>> fmpewm;

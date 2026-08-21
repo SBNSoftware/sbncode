@@ -1044,18 +1044,9 @@ namespace caf {
       srparticle.daughters.push_back(particle.Daughter(i_d));
     }
 
-    // See if this MCParticle matches a genie truth
-    //srparticle.interaction_id = -1;
+    // Set interaction_id to the matched MCTruth
     srparticle.interaction_id = interaction_id;
-    /*
-    art::Ptr<simb::MCTruth> truth = inventory_service.TrackIdToMCTruth_P(particle.TrackId());
-    for (unsigned i = 0; i < neutrinos.size(); i++) {
-      if (truth.get() == neutrinos[i].get()) {
-        srparticle.interaction_id = i;
-        break;
-      }
-    }
-    */
+
   } //FillTrueGENIEParticle
 
 
