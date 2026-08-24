@@ -804,10 +804,10 @@ namespace caf {
     srparticle.endp = (exit_point >= 0) ? particle.Momentum(exit_point).Vect() : TVector3(-9999, -9999, -9999);
     srparticle.endE = (exit_point >= 0) ? particle.Momentum(exit_point).E() : -9999.;
 
-    srparticle.start_process = GetG4ProcessID(particle.Process());
+    srparticle.start_process = sbn::GetG4ProcessID(particle.Process());
     if (particle.PdgCode() == 221) std::cout << "Eta srparticle start process: " << srparticle.start_process << std::endl;
     
-    srparticle.end_process = GetG4ProcessID(particle.EndProcess());
+    srparticle.end_process = sbn::GetG4ProcessID(particle.EndProcess());
 
     srparticle.G4ID = particle.TrackId();
     srparticle.parent = particle.Mother() > 0 ? static_cast<unsigned>(particle.Mother()) : 0u;
@@ -851,15 +851,15 @@ namespace caf {
   void FillTrueGENIEParticle(const simb::MCParticle &particle,
         const std::vector<geo::BoxBoundedGeo> &active_volumes,
         const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
-        const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE *>>> &id_to_ide_map,
+        const std::map<int, std::vector<sbn::ReadoutIDE>> &id_to_ide_map,
         const std::map<int, std::vector<art::Ptr<recob::Hit>>> &id_to_truehit_map,
         const cheat::BackTrackerService &backtracker,
         const cheat::ParticleInventoryService &inventory_service,
         const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
                           caf::SRTrueParticle &srparticle, int interaction_id, int id_offset) {
 
-    std::vector<std::pair<geo::WireID, const sim::IDE *>> empty;
-    const std::vector<std::pair<geo::WireID, const sim::IDE *>> &particle_ides = id_to_ide_map.count(particle.TrackId()) ? id_to_ide_map.at(particle.TrackId()) : empty;
+    std::vector<sbn::ReadoutIDE> empty;
+    const std::vector<sbn::ReadoutIDE> &particle_ides = id_to_ide_map.count(particle.TrackId()) ? id_to_ide_map.at(particle.TrackId()) : empty;
 
     std::vector<art::Ptr<recob::Hit>> emptyHits;
     const std::vector<art::Ptr<recob::Hit>> &particle_hits = id_to_truehit_map.count(particle.TrackId()) ? id_to_truehit_map.at(particle.TrackId()) : emptyHits;
@@ -879,9 +879,9 @@ namespace caf {
       }
     }
 
-    for (auto const &ide_pair: particle_ides) {
-      const geo::WireID &w = ide_pair.first;
-      const sim::IDE *ide = ide_pair.second;
+    for (auto const &ide_p: particle_ides) {
+      const geo::WireID &w = ide_p.wire;
+      const sim::IDE *ide = ide_p.ide;
 
       if(w.Plane >= 0 && w.Plane < 3 && w.Cryostat < 2){
         srparticle.plane[w.Cryostat][w.Plane].visE += ide->energy / 1000. /* MeV -> GeV*/;
@@ -918,7 +918,7 @@ namespace caf {
     }
     // get the wall
     if (entry_point > 0) {
-      srparticle.wallin = GetWallCross(active_volumes.at(cryostat_index), particle.Position(entry_point).Vect(), particle.Position(entry_point-1).Vect());
+      srparticle.wallin = sbn::GetWallCross(active_volumes.at(cryostat_index), particle.Position(entry_point).Vect(), particle.Position(entry_point-1).Vect());
     }
 
     int exit_point = -1;
@@ -998,7 +998,7 @@ namespace caf {
       exit_point++; // to avoid exactly the same start and end positions when single index is inside the active volumne
     }
     if (exit_point >= 0 && ((unsigned)exit_point) < particle.NumberTrajectoryPoints() - 1) {
-      srparticle.wallout = GetWallCross(active_volumes.at(cryostat_index), particle.Position(exit_point).Vect(), particle.Position(exit_point+1).Vect());
+      srparticle.wallout = sbn::GetWallCross(active_volumes.at(cryostat_index), particle.Position(exit_point).Vect(), particle.Position(exit_point+1).Vect());
     }
 
     // other truth information
@@ -1019,10 +1019,10 @@ namespace caf {
     srparticle.endp = (exit_point >= 0) ? particle.Momentum(exit_point).Vect() : TVector3(-9999, -9999, -9999);
     srparticle.endE = (exit_point >= 0) ? particle.Momentum(exit_point).E() : -9999.;
 
-    srparticle.start_process = GetG4ProcessID(particle.Process());
+    srparticle.start_process = sbn::GetG4ProcessID(particle.Process());
     if (particle.PdgCode() == 221) std::cout << "Eta srparticle start process: " << srparticle.start_process << std::endl;
     
-    srparticle.end_process = GetG4ProcessID(particle.EndProcess());
+    srparticle.end_process = sbn::GetG4ProcessID(particle.EndProcess());
 
     // Special GENIE particles get a shifted positive ID so they do not overlap with G4 track IDs.
     srparticle.G4ID = particle.TrackId() + id_offset;
