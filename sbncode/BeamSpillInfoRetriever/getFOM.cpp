@@ -23,8 +23,8 @@ namespace sbn {
 
     double hp875_offset= spill.HP875Offset;
     double vp875_offset= spill.VP875Offset;
-	double vp873_offset= spill.VP873Offset;
-    double hptg1_offset= spill.HPTG1Offset;
+    double vp873_offset= spill.VP873Offset;
+	double hptg1_offset= spill.HPTG1Offset;
     //double vptg1_offset= spill.VPTG1Offset;
     double hptg2_offset= spill.HPTG2Offset;
     double vptg2_offset= spill.VPTG2Offset;
@@ -34,10 +34,10 @@ namespace sbn {
     int useVTG = 1;
 
 	//Z Position of the monitors in m
-    double const vp873_zpos= 191.153656;
-	double const hp875_zpos= 202.116104;
+    double const hp875_zpos= 202.116104;
     double const vp875_zpos= 202.3193205;
-    double const hptg1_zpos= 204.833267;
+    double const vp873_zpos= 191.153656;
+	double const hptg1_zpos= 204.833267;
     //double const vptg1_zpos= 204.629608;
     double const hptg2_zpos= 205.240662;
     double const vptg2_zpos= 205.036835;
@@ -52,7 +52,7 @@ namespace sbn {
     std::vector<double> tor875;
     std::vector<double> hp875;
     std::vector<double> vp875;
-    std::vector<double> vp873;
+	std::vector<double> vp873;
     std::vector<double> hptg1;
     std::vector<double> vptg1;
     std::vector<double> hptg2;
@@ -68,7 +68,7 @@ namespace sbn {
     hp875.push_back(spill.HP875);
     vp875.push_back(spill.VP875);
 	vp873.push_back(spill.VP873);
-    hptg1.push_back(spill.HPTG1);
+	hptg1.push_back(spill.HPTG1);
     vptg1.push_back(spill.VPTG1);
     hptg2.push_back(spill.HPTG2);
     vptg2.push_back(spill.VPTG2);
@@ -82,18 +82,19 @@ namespace sbn {
       return -1;
         
     /**
-    * @brief when creating ntuples for pot counting script the variables are filled with -999
-    * this could create a difference when passing events with FOM>1 since
-    * events with missing BPM data would get FOM=2, while events with BPM set to -999 will get FOM=0
-    * bad or missing MWR data gets FOM 4 in either case
-	*/
+     * @brief when creating ntuples for pot counting script the variables are filled with -999
+     * this could create a difference when passing events with FOM>1 since
+     * events with missing BPM data would get FOM=2, while events with BPM set to -999 will get FOM=0
+     * bad or missing MWR data gets FOM 4 in either case
+    */
+
     if (hptg2.empty()) hptg2.push_back(-999);
     if (hptg1.empty()) hptg1.push_back(-999);
     if (hp875.empty()) hp875.push_back(-999);
     if (vptg2.empty()) vptg2.push_back(-999);
     if (vptg1.empty()) vptg1.push_back(-999);
     if (vp875.empty()) vp875.push_back(-999);
-    if (vp873.empty()) vp873.push_back(-999);
+	if (vp873.empty()) vp873.push_back(-999);
     double horang;
     
 	auto interpolate_hp875 = [delta_hp875=(hp875[0]-hp875_offset), hp875_zpos, target_center_zpos]
@@ -208,12 +209,12 @@ namespace sbn {
       if (-mwdata[i]-minx    > threshold)                last_x=i+1;
       hProf->SetBinError(i+1,error);
     }
-    if (hProf->GetSumOfWeights()>0) {
+    if (hProf->GetSumOfWeights()>0) {      
       TFitResultPtr const fit = hProf->Fit("gaus","QNS","",-12+first_x*0.5,-12+last_x*0.5);
       x   = fit->Parameter(1);
       sx  = fit->Parameter(2);
       chi2= fit->Chi2() / fit->Ndf();
-      delete hProf;      
+      delete hProf;
     } else {
       x=99999;
       sx=99999;

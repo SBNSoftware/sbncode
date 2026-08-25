@@ -290,11 +290,11 @@ namespace sys
           throw std::runtime_error("WaireMLod --- Not a WAIRE1 file: " + path);
 
         uint32_t version = read_le<uint32_t>(f);
-        if (version != 2 && version != 3 && version != 4 && version != 5 && version != 6)
+        if (version != 2 && version != 3 && version != 4 && version != 5 && version != 6 && version != 7)
         {
           std::string msg = "WaireMLod --- Unsupported WAIRE format version: " +
                             std::to_string(version) +
-                            " (this reader expects version 2, 3, 4, 5, or 6). ";
+                            " (this reader expects version 2, 3, 4, 5, 6, or 7). ";
           if (version == 1)
             msg += "Version-1 weight files were produced before the 15-feature "
                    "augmentation landed. Retrain with the current "
@@ -750,6 +750,13 @@ namespace sys
       {
         std::array<float, N_FEATURES> features = derive_features(raw);
 
+        if (store_.version() == 7)
+        {
+          // ── v7 decoupled, VARIABLE depth: same forward as v6 but the backbone
+          //    and banks loop meta.core_blocks / meta.bank_cwls layers.
+          return infer_v7(features);
+        }
+
         if (store_.version() == 6)
         {
           // ── v6 decoupled: shared backbone → TWO independent expert banks
@@ -814,6 +821,143 @@ namespace sys
         }
 
       /**
+       * Truth-level per-hit feature extraction — the SINGLE SOURCE OF TRUTH for the
+       * N_RAW primitives the model is fed. Built from MC info (backtracker position,
+       * MC-trajectory direction, sim-electron dQ/dx) exactly as the deployment path.
+       * produceNew() and the WaireMLodShard producer BOTH call this, so the shard's
+       * features are byte-identical to what inference sees — which is precisely what
+       * the reco-infer-vs-MC-infer closure diagnostic needs.
+       *
+       * `valid == false`  ⇒ hit is not back-trackable (data/overlay) or has no usable
+       * MC trajectory ⇒ caller should leave the hit unmodified / skip the shard row.
+       * A plane-angle mismatch still throws (a real geometry/config error).
+       */
+      // Why a hit failed to yield truth features. Set at every early return of
+      // featuresForHit so callers can attribute a valid==false hit to a specific
+      // stage instead of a single opaque "not back-trackable". Purely diagnostic:
+      // the inference path only reads `valid`, `nraw`, `pitch`, `nElec`.
+      enum class FailReason : int {
+        kOK              = 0,  // features fully computed (valid == true)
+        kBacktrackThrow  = 1,  // HitToXYZ / HitToSimIDEs_Ps threw (see `note`)
+        kNoSimElectrons  = 2,  // backtracker returned no IDEs (nElec == 0)
+        kNoParticle      = 3,  // no matched MCParticle (TrueParticleID invalid)
+        kNoTrajectory    = 4,  // matched particle had no usable trajectory point
+        kNotEvaluated    = 5   // featuresForHit never run on this hit
+      };
+
+      struct HitFeatures
+      {
+        std::array<float, N_RAW> nraw{};  // {x,y,z, dirX,dirY,dirZ, dirYRel,dirZRel, chan, thetaXW, dQdx}
+        float pitch = 0.0f;               // path-length-corrected wire pitch [cm]
+        float nElec = 0.0f;               // summed sim electrons (truth charge)
+        bool  valid = false;
+        FailReason  reason  = FailReason::kNotEvaluated;  // diagnostic: why !valid
+        int         n_ides  = 0;                          // sim IDEs the backtracker returned
+        std::string note;                                 // diagnostic: caught-exception text
+      };
+
+      static HitFeatures featuresForHit(
+        const art::Ptr<recob::Hit>& hit,
+        const cheat::BackTrackerService* back_tracker,
+        const cheat::ParticleInventoryService* particles,
+        const detinfo::DetectorClocksData* det_clock,
+        const geo::WireReadoutGeom* wire_geom)
+      {
+        HitFeatures hf;
+        auto& [hitX, hitY, hitZ, hitDirX, hitDirY, hitDirZ,
+               hitDirYRel, hitDirZRel, hitChan, hitTheta, hitdQdx] = hf.nraw;
+
+        // Position + truth charge from the backtracker; failure ⇒ data/overlay hit.
+        float nElec = 0;
+        try
+        {
+          std::vector<double> hitXYZ = back_tracker->HitToXYZ(*det_clock, hit);
+          hitX = hitXYZ.at(0); hitY = hitXYZ.at(1); hitZ = hitXYZ.at(2);
+          std::vector<const sim::IDE*> simIDEs = back_tracker->HitToSimIDEs_Ps(*det_clock, hit);
+          hf.n_ides = static_cast<int>(simIDEs.size());
+          for (auto const& ide : simIDEs) nElec += ide->numElectrons;
+        }
+        catch (const std::exception& e)
+        {
+          hf.reason = FailReason::kBacktrackThrow;
+          hf.note   = e.what();
+          return hf;   // valid stays false
+        }
+        catch (...)
+        {
+          hf.reason = FailReason::kBacktrackThrow;
+          hf.note   = "non-std exception";
+          return hf;   // valid stays false
+        }
+        // A backtracked hit with zero associated IDEs has no truth charge to
+        // build dQ/dx from — flag it distinctly from an outright throw.
+        if (hf.n_ides == 0 || nElec <= 0.0f)
+        {
+          hf.reason = FailReason::kNoSimElectrons;
+          hf.nElec  = nElec;
+          return hf;   // valid stays false
+        }
+
+        // Direction from the nearest point on the matched MCParticle trajectory.
+        TruthMatchUtils::G4ID particleID = TruthMatchUtils::TrueParticleID(*det_clock, hit, true);
+        if (not TruthMatchUtils::Valid(particleID))
+        {
+          hf.reason = FailReason::kNoParticle;
+          return hf;
+        }
+        const simb::MCTrajectory trajectory = particles->TrackIdToParticle_P(particleID)->Trajectory();
+        float hitTrajMinDistSq = std::numeric_limits<float>::max();
+        hitDirX = hitDirY = hitDirZ = std::numeric_limits<float>::min();
+        for (auto const& tp : trajectory)
+        {
+          float d2 = std::pow(tp.first.X() - hitX, 2)
+                   + std::pow(tp.first.Y() - hitY, 2)
+                   + std::pow(tp.first.Z() - hitZ, 2);
+          if (d2 < hitTrajMinDistSq)
+          {
+            hitTrajMinDistSq = d2;
+            hitDirX = tp.second.Px() / tp.second.Vect().Mag();
+            hitDirY = tp.second.Py() / tp.second.Vect().Mag();
+            hitDirZ = tp.second.Pz() / tp.second.Vect().Mag();
+          }
+        }
+        if (hitDirX == std::numeric_limits<float>::min() ||
+            hitDirY == std::numeric_limits<float>::min() ||
+            hitDirZ == std::numeric_limits<float>::min())
+        {
+          hf.reason = FailReason::kNoTrajectory;
+          return hf;
+        }
+
+        // Geometry: plane angle, plane-relative dirs, ThetaXW (deg), corrected pitch, dQ/dx.
+        hitChan = hit->Channel();
+        geo::View_t hitView = hit->View();
+        geo::TPCID  hitTPC  = hit->WireID();
+        float planeTh = wire_geom->WireAngleToVertical(hitView, hitTPC);
+        planeTh = (planeTh < M_PI / 2) ? planeTh : planeTh - M_PI;
+        if (std::min({std::abs(planeTh - PLANE_THETA_1),
+                      std::abs(planeTh - PLANE_THETA_2),
+                      std::abs(planeTh - PLANE_THETA_3)}) > 1e-5f)
+          throw std::runtime_error("Plane Angle Mismatch! Got " + std::to_string(planeTh) +
+                                   " for view " + std::to_string(hitView));
+        float sinTh = std::sin(planeTh), cosTh = std::cos(planeTh);
+        hitDirYRel = hitDirY * cosTh - hitDirZ * sinTh;
+        hitDirZRel = hitDirY * sinTh + hitDirZ * cosTh;
+        float vertTh = wire_geom->WireAngleToVertical(hitView, hitTPC) - 0.5 * M_PI;
+        float cosG = std::abs(hitDirY * std::sin(vertTh) + hitDirZ * std::cos(vertTh));
+        hitTheta = std::atan(hitDirX / std::max(cosG, 1e-5f)) / DEG2RAD;
+        float pitch = wire_geom->Plane(hitTPC, hitView).WirePitch() / std::max(cosG, 1e-5f);
+        float gain = (hit->Channel() % CHANNELS_PER_BLOCK < 2304) ? GAIN[0]
+                   : (hit->Channel() % CHANNELS_PER_BLOCK < 8064) ? GAIN[1]
+                   :                                                GAIN[2];
+        hitdQdx = (nElec * gain) / pitch;
+
+        hf.pitch = pitch; hf.nElec = nElec; hf.valid = true;
+        hf.reason = FailReason::kOK;
+        return hf;
+      }
+
+      /**
        * Construct a vector of data-like hits from simulated hits.
        */
       std::vector<recob::Hit> produceNew(
@@ -821,7 +965,6 @@ namespace sys
         const cheat::BackTrackerService* back_tracker,
         const cheat::ParticleInventoryService* particles,
         const detinfo::DetectorClocksData* det_clock,
-        const detinfo::DetectorPropertiesData* det_prop,
         const geo::WireReadoutGeom* wire_geom) const;
 
     private:
@@ -858,6 +1001,12 @@ namespace sys
         CWLPtrs cwl_a1, cwl_a2, cwl_a3;                                 // v5/v6 A-expert bank
         CWLPtrs cwl_w1, cwl_w2, cwl_w3;                                 // v6 W-expert bank
         int n_exp = N_CLASSES;                                          // v5/v6: runtime expert count
+        // ── v7 (decoupled, VARIABLE depth) ───────────────────────────────────
+        // Backbone residual blocks and per-bank CWLs are sized at load from the
+        // file's meta.core_blocks / meta.bank_cwls, instead of the fixed 2 / 3.
+        struct RBPtrs { const float *gamma, *beta, *w, *b; };
+        std::vector<RBPtrs> rbs;                                        // backbone residual blocks
+        std::vector<CWLPtrs> cwl_a_vec, cwl_w_vec;                      // A / W expert banks
       };
       WeightPointers wp_;
 
@@ -875,6 +1024,40 @@ namespace sys
         wp_.rb2_beta  = store_.data("rb2.gn.beta");
         wp_.rb2_w     = store_.data("rb2.d.weight");
         wp_.rb2_b     = store_.data("rb2.d.bias");
+
+        // ── v7 (decoupled, VARIABLE depth): like v6 but the backbone has
+        //    meta.core_blocks residual blocks (rb1..rbN) and each bank has
+        //    meta.bank_cwls CWLs (cwl_a1..aM / cwl_w1..wM). Loop instead of the
+        //    fixed 2 / 3. Early-return (no v2..v6 tensors in a v7 file). ────────
+        if (store_.version() == 7)
+        {
+          auto load_cwl = [&](const std::string& p) {
+            return WeightPointers::CWLPtrs{
+              store_.data(p + ".weights"),      store_.data(p + ".biases"),
+              store_.data(p + ".norm.gamma"),   store_.data(p + ".norm.beta"),
+              store_.data(p + ".expert_scale"), store_.data(p + ".expert_bias") };
+          };
+          const int N = static_cast<int>(store_.data("meta.core_blocks")[0]);
+          const int M = static_cast<int>(store_.data("meta.bank_cwls")[0]);
+          for (int i = 1; i <= N; ++i)
+          {
+            std::string p = "rb" + std::to_string(i);
+            wp_.rbs.push_back({ store_.data(p + ".gn.gamma"), store_.data(p + ".gn.beta"),
+                                store_.data(p + ".d.weight"), store_.data(p + ".d.bias") });
+          }
+          wp_.n_exp       = static_cast<int>(store_.size("routing_a.bias"));
+          wp_.routing_a_w = store_.data("routing_a.weight");
+          wp_.routing_a_b = store_.data("routing_a.bias");
+          for (int i = 1; i <= M; ++i) wp_.cwl_a_vec.push_back(load_cwl("cwl_a" + std::to_string(i)));
+          wp_.ahead_l1_w = store_.data("ahead.l1.weight"); wp_.ahead_l1_b = store_.data("ahead.l1.bias");
+          wp_.ahead_l2_w = store_.data("ahead.l2.weight"); wp_.ahead_l2_b = store_.data("ahead.l2.bias");
+          wp_.routing_w_w = store_.data("routing_w.weight");
+          wp_.routing_w_b = store_.data("routing_w.bias");
+          for (int i = 1; i <= M; ++i) wp_.cwl_w_vec.push_back(load_cwl("cwl_w" + std::to_string(i)));
+          wp_.whead_l1_w = store_.data("whead.l1.weight"); wp_.whead_l1_b = store_.data("whead.l1.bias");
+          wp_.whead_l2_w = store_.data("whead.l2.weight"); wp_.whead_l2_b = store_.data("whead.l2.bias");
+          return;
+        }
 
         // ── v6 (decoupled): shared backbone + TWO independent expert banks. Same
         //    A-bank as v5, plus a W-bank (routing_w + cwl_w1/2/3 + 2-layer log-ŵ
@@ -1014,6 +1197,45 @@ namespace sys
         check("rb2.d.weight",     NEURON_N * NEURON_N);
         check("rb2.d.bias",       NEURON_N);
 
+        // ── v7 (decoupled, VARIABLE depth): rb1..rbN backbone + A/W banks with
+        //    cwl_*1..cwl_*M (N=meta.core_blocks, M=meta.bank_cwls), 2-layer heads. ─
+        if (store_.version() == 7)
+        {
+          const int N = static_cast<int>(store_.data("meta.core_blocks")[0]);
+          const int M = static_cast<int>(store_.data("meta.bank_cwls")[0]);
+          const int K = static_cast<int>(store_.size("routing_a.bias"));
+          for (int i = 1; i <= N; ++i)
+          {
+            std::string p = "rb" + std::to_string(i);
+            check(p + ".gn.gamma", NEURON_N);             check(p + ".gn.beta", NEURON_N);
+            check(p + ".d.weight", NEURON_N * NEURON_N);  check(p + ".d.bias",  NEURON_N);
+          }
+          for (const auto& rt : {"routing_a", "routing_w"})
+          {
+            std::string p(rt);
+            check(p + ".weight", K * NEURON_N); check(p + ".bias", K);
+          }
+          for (const char* bank : {"cwl_a", "cwl_w"})
+            for (int i = 1; i <= M; ++i)
+            {
+              std::string p = std::string(bank) + std::to_string(i);
+              check(p + ".weights",      NEURON_N * K * NEURON_N);
+              check(p + ".biases",       NEURON_N * K);
+              check(p + ".norm.gamma",   NEURON_N);
+              check(p + ".norm.beta",    NEURON_N);
+              check(p + ".expert_scale", NEURON_N * K);
+              check(p + ".expert_bias",  NEURON_N * K);
+            }
+          int head_in = K + NEURON_N;
+          for (const auto& hd : {"ahead", "whead"})
+          {
+            std::string p(hd);
+            check(p + ".l1.weight", HEAD_HIDDEN * head_in); check(p + ".l1.bias", HEAD_HIDDEN);
+            check(p + ".l2.weight", HEAD_HIDDEN);           check(p + ".l2.bias", 1);
+          }
+          return;
+        }
+
         // ── v6 (decoupled): backbone + A-bank + W-bank. Each bank: a router, 3
         //    CWLs (dense_out=NEURON_N), and a 2-layer log head. K = expert count
         //    (same for both banks, read from routing_a). ──────────────────────
@@ -1149,6 +1371,18 @@ namespace sys
         // Dense N_FEATURES → NEURON_N, gelu
         x = dense_gelu(x, wp_.d1_w, wp_.d1_b, NEURON_N, N_FEATURES);
 
+        // v7: variable-depth backbone — loop the residual blocks loaded from the
+        // file (rb1..rbN). v2..v6 leave `rbs` empty and use the fixed path below.
+        if (!wp_.rbs.empty())
+        {
+          for (const auto& rb : wp_.rbs)
+          {
+            Eigen::VectorXf normed = group_norm(x, NEURON_N, NORM_GROUPS, rb.gamma, rb.beta);
+            x += dense_gelu(normed, rb.w, rb.b, NEURON_N, NEURON_N);
+          }
+          return x;
+        }
+
         // ResBlock 1: GroupNorm → Dense(128→128, gelu) → residual
         {
           Eigen::VectorXf normed = group_norm(x, NEURON_N, NORM_GROUPS,
@@ -1248,6 +1482,48 @@ namespace sys
           wp_.ahead_l1_w, wp_.ahead_l1_b, wp_.ahead_l2_w, wp_.ahead_l2_b);  // logÂ
         Eigen::VectorXf logW = run_expert_bank(feats, K,
           wp_.routing_w_w, wp_.routing_w_b, wp_.cwl_w1, wp_.cwl_w2, wp_.cwl_w3,
+          wp_.whead_l1_w, wp_.whead_l1_b, wp_.whead_l2_w, wp_.whead_l2_b);  // logŵ
+        Eigen::VectorXf out = output_combine_log(logA, logW);
+        return {out[0], out[1]};
+      }
+
+      // v7: routed expert bank with a VARIABLE number of CWLs — first via
+      // _prepend_classes, the rest via _residual_combine — then a 2-layer log head.
+      // Same per-CWL math as run_expert_bank; only the count is data-driven.
+      Eigen::VectorXf run_expert_bank_vec(
+        const Eigen::VectorXf& feats, int K,
+        const float* route_w, const float* route_b,
+        const std::vector<WeightPointers::CWLPtrs>& cwls,
+        const float* h1_w, const float* h1_b,
+        const float* h2_w, const float* h2_b) const
+      {
+        Eigen::VectorXf r = softmax(dense_linear(feats, route_w, route_b, K, NEURON_N));  // (K,)
+        Eigen::VectorXf h(K + NEURON_N);
+        h.head(K) = r;
+        h.tail(NEURON_N) = feats;
+        bool first = true;
+        for (const auto& c : cwls)
+        {
+          Eigen::VectorXf x = cwl_forward(h, K, NEURON_N, NEURON_N, NORM_GROUPS,
+            c.weights, c.biases, c.gamma, c.beta, c.escale, c.ebias);
+          if (first) { h.tail(NEURON_N)  = x; first = false; }   // _prepend_classes
+          else       { h.tail(NEURON_N) += x; }                  // _residual_combine
+        }
+        Eigen::VectorXf hh = dense_gelu(h, h1_w, h1_b, HEAD_HIDDEN, K + NEURON_N);
+        return dense_linear(hh, h2_w, h2_b, 1, HEAD_HIDDEN);      // (1,) log output
+      }
+
+      // v7 decoupled forward — identical to v6 but with variable-depth backbone and
+      // banks (counts read from meta.core_blocks / meta.bank_cwls at load).
+      std::array<float, 2> infer_v7(const std::array<float, N_FEATURES>& features) const
+      {
+        const int K = wp_.n_exp;
+        Eigen::VectorXf feats = run_backbone(features);
+        Eigen::VectorXf logA = run_expert_bank_vec(feats, K,
+          wp_.routing_a_w, wp_.routing_a_b, wp_.cwl_a_vec,
+          wp_.ahead_l1_w, wp_.ahead_l1_b, wp_.ahead_l2_w, wp_.ahead_l2_b);  // logÂ
+        Eigen::VectorXf logW = run_expert_bank_vec(feats, K,
+          wp_.routing_w_w, wp_.routing_w_b, wp_.cwl_w_vec,
           wp_.whead_l1_w, wp_.whead_l1_b, wp_.whead_l2_w, wp_.whead_l2_b);  // logŵ
         Eigen::VectorXf out = output_combine_log(logA, logW);
         return {out[0], out[1]};
