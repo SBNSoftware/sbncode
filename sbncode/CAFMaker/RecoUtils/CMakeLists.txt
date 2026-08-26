@@ -12,5 +12,6 @@ art_make_library( LIBRARY_NAME caf_RecoUtils
                     larsim::MCCheater_BackTrackerService_service
                     larsim::MCCheater_ParticleInventoryService_service
                     larcorealg::Geometry
+                    sbnanaobj::StandardRecord
                 )
 install_headers()
