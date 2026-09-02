@@ -41,11 +41,13 @@ namespace flashmatch {
     DetectorSpecs(std::string filename="specs.cfg");
     ~DetectorSpecs(){}
 
-    inline static DetectorSpecs& GetME(std::string filename="detector_specs.cfg")
+    inline static DetectorSpecs& GetME(std::string filename)
     {
       if(!_me) _me = new DetectorSpecs(filename);
       return *_me;
     }
+
+    inline static DetectorSpecs& GetME() { return GetME("detector_specs.cfg"); }
 
     /// PMT XYZ position filler
     inline const geoalgo::Point_t& PMTPosition(size_t opch) { return _pmt_v.at(opch); }
