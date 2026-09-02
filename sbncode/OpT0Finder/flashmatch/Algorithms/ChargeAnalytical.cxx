@@ -3,8 +3,6 @@
 
 #include "ChargeAnalytical.h"
 
-#pragma GCC diagnostic ignored "-Wdangling-reference"
-
 namespace flashmatch {
 
   static ChargeAnalyticalFactory __global_ChargeAnalyticalFactory__;
@@ -17,9 +15,9 @@ namespace flashmatch {
   {
     _global_qe = pset.get<double>("GlobalQE");
     _qe_v      = pset.get<std::vector<double> >("VUVEfficiency");
-    if(_qe_v.size() != DetectorSpecs::GetME().NOpDets()) {
+    if(_qe_v.size() != DetectorSpecs::GetME()->NOpDets()) {
       FLASH_CRITICAL() << "VUV Efficiency array has size " << _qe_v.size()
-		       << " != number of opdet (" << DetectorSpecs::GetME().NOpDets() << ")!" << std::endl;
+		       << " != number of opdet (" << DetectorSpecs::GetME()->NOpDets() << ")!" << std::endl;
       throw OpT0FinderException();
     }
   }
@@ -28,7 +26,7 @@ namespace flashmatch {
 				      Flash_t &flash) const
   {
     
-    size_t n_pmt = DetectorSpecs::GetME().NOpDets();
+    size_t n_pmt = DetectorSpecs::GetME()->NOpDets();
     
     for (size_t i = 0; i < n_pmt; ++i) {
       flash.pe_v[i] = 0;
@@ -40,7 +38,7 @@ namespace flashmatch {
 	
 	auto const &pt = track[pt_index];
 
-	auto const& pmt_pos = DetectorSpecs::GetME().PMTPosition(pmt_index);
+	auto const& pmt_pos = DetectorSpecs::GetME()->PMTPosition(pmt_index);
 	double dx = pmt_pos[0] - pt.x;
 	double dy = pmt_pos[1] - pt.y;
 	double dz = pmt_pos[2] - pt.z;

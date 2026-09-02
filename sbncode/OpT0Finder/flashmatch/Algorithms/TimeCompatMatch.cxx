@@ -43,13 +43,13 @@ namespace flashmatch {
 
     // Earliest flash time => assume clus_x_max is @ detector X-max boundary
     #if USING_LARSOFT == 1
-    double xmax = DetectorSpecs::GetME().ActiveVolume().Max()[0];
-    double clus_t_min = (clus_x_max - xmax) / DetectorSpecs::GetME().DriftVelocity();
-    double clus_t_max = clus_x_min / DetectorSpecs::GetME().DriftVelocity();
+    double xmax = DetectorSpecs::GetME()->ActiveVolume().Max()[0];
+    double clus_t_min = (clus_x_max - xmax) / DetectorSpecs::GetME()->DriftVelocity();
+    double clus_t_max = clus_x_min / DetectorSpecs::GetME()->DriftVelocity();
     #else
-    double xmax = DetectorSpecs::GetME().ActiveVolume().Max()[0];
-    double clus_t_min = (clus_x_max - xmax) / DetectorSpecs::GetME().DriftVelocity();
-    double clus_t_max = clus_x_min / DetectorSpecs::GetME().DriftVelocity();
+    double xmax = DetectorSpecs::GetME()->ActiveVolume().Max()[0];
+    double clus_t_min = (clus_x_max - xmax) / DetectorSpecs::GetME()->DriftVelocity();
+    double clus_t_max = clus_x_min / DetectorSpecs::GetME()->DriftVelocity();
     #endif
     FLASH_INFO() << "Cluster xmax: " << xmax << ", clus_t_min: " << clus_t_min
                                              << ", clus_t_max: " << clus_t_max

@@ -3,8 +3,6 @@
 
 #include "QLLMatch.h"
 
-#pragma GCC diagnostic ignored "-Wdangling-reference"
-
 using namespace std::chrono;
 namespace flashmatch {
 
@@ -48,21 +46,21 @@ namespace flashmatch {
     _onepmt_pesum_threshold = pset.get<double>("OnePMTPESumThreshold");
     _onepmt_pefrac_threshold = pset.get<double>("OnePMTPEFracThreshold");
 
-    _xpos_v.resize(DetectorSpecs::GetME().NOpDets(),0.);
-    _ypos_v.resize(DetectorSpecs::GetME().NOpDets(),0.);
-    _zpos_v.resize(DetectorSpecs::GetME().NOpDets(),0.);
-    for(size_t ch=0; ch<DetectorSpecs::GetME().NOpDets(); ++ch) {
-      auto const& pmt_pos = DetectorSpecs::GetME().PMTPosition(ch);
+    _xpos_v.resize(DetectorSpecs::GetME()->NOpDets(),0.);
+    _ypos_v.resize(DetectorSpecs::GetME()->NOpDets(),0.);
+    _zpos_v.resize(DetectorSpecs::GetME()->NOpDets(),0.);
+    for(size_t ch=0; ch<DetectorSpecs::GetME()->NOpDets(); ++ch) {
+      auto const& pmt_pos = DetectorSpecs::GetME()->PMTPosition(ch);
       _xpos_v[ch] = pmt_pos[0];
       _ypos_v[ch] = pmt_pos[1];
       _zpos_v[ch] = pmt_pos[2];
     }
     if(_tpc == -1 || _cryo == -1) {
-      auto const& bbox = DetectorSpecs::GetME().ActiveVolume();
+      auto const& bbox = DetectorSpecs::GetME()->ActiveVolume();
       _vol_xmax = bbox.Max()[0];
       _vol_xmin = bbox.Min()[0];
     } else {
-      auto const& bbox = DetectorSpecs::GetME().ActiveVolume(_tpc, _cryo);
+      auto const& bbox = DetectorSpecs::GetME()->ActiveVolume(_tpc, _cryo);
       _vol_xmax = bbox.Max()[0];
       _vol_xmin = bbox.Min()[0];
     }
@@ -71,8 +69,8 @@ namespace flashmatch {
     // Note that this may be overridden by the manager
     // via the SetChannelMask() method.
     _channel_mask.clear();
-    _channel_mask.reserve(DetectorSpecs::GetME().NOpDets());
-    for (size_t i = 0; i < DetectorSpecs::GetME().NOpDets(); i++) {
+    _channel_mask.reserve(DetectorSpecs::GetME()->NOpDets());
+    for (size_t i = 0; i < DetectorSpecs::GetME()->NOpDets(); i++) {
       _channel_mask[i] = i;
     }
   }
@@ -81,7 +79,7 @@ namespace flashmatch {
     _tpc = tpc;
     _cryo = cryo;
 
-    auto const& bbox = DetectorSpecs::GetME().ActiveVolume(_tpc, _cryo);
+    auto const& bbox = DetectorSpecs::GetME()->ActiveVolume(_tpc, _cryo);
     _vol_xmax = bbox.Max()[0];
     _vol_xmin = bbox.Min()[0];
   }
@@ -93,7 +91,7 @@ namespace flashmatch {
 
     // combine cluster + flash mask for this match pair 
     _match_mask.clear();
-    _match_mask.resize(DetectorSpecs::GetME().NOpDets(), 0);
+    _match_mask.resize(DetectorSpecs::GetME()->NOpDets(), 0);
 
     for (size_t opch=0; opch < flash.pe_v.size(); opch++){
       if (flash.pds_mask_v.at(opch)!=0 || pt_v.tpc_mask_v.at(opch)!=0){
@@ -150,7 +148,7 @@ namespace flashmatch {
 
     // initialize the hypothesis flash
     Flash_t one_hypothesis;
-    one_hypothesis.pe_v.resize(DetectorSpecs::GetME().NOpDets(), 0.);
+    one_hypothesis.pe_v.resize(DetectorSpecs::GetME()->NOpDets(), 0.);
     for (auto &v : one_hypothesis.pe_v) v = 0;
     
     FillEstimate(_raw_trk,one_hypothesis);
@@ -158,7 +156,7 @@ namespace flashmatch {
     // initialize the measurement flash 
     auto    one_measurement = flash;
 
-    for (size_t ich = 0; ich < DetectorSpecs::GetME().NOpDets(); ++ich ) {
+    for (size_t ich = 0; ich < DetectorSpecs::GetME()->NOpDets(); ++ich ) {
       if (_match_mask.at(ich) != 0){
           one_hypothesis.pe_v[ich] = 0.;
           one_measurement.pe_v[ich] = 0.;
@@ -169,7 +167,7 @@ namespace flashmatch {
     // - when the measured flash PE is equal to 0 and the hypothesis is large, assume that the 
     //   measured flash PE was set to 0 due to saturation
     if (_saturated_thresh > 0){
-      for (size_t ich = 0; ich < DetectorSpecs::GetME().NOpDets(); ++ich ) {
+      for (size_t ich = 0; ich < DetectorSpecs::GetME()->NOpDets(); ++ich ) {
         // if above the saturated threshold, measured is zero, is a PMT, and is not masked 
         if ((one_hypothesis.pe_v[ich] >= _saturated_thresh) && (one_measurement.pe_v[ich] == 0) && (_channel_type[ich] == 0) && (_match_mask.at(ich) == 0)){
           std::cout << "Guessing " << ich << " is saturated, setting hypothesis to 0" << std::endl;
@@ -235,7 +233,7 @@ FlashMatch_t QLLMatch::OnePMTMatch(const Flash_t& flash) {
     }
 
     // Now see if Flash T0 can be consistent with an assumption MinX @ X=0.
-    double xdiff = fabs(_raw_xmin_pt.x - flash.time * DetectorSpecs::GetME().DriftVelocity());
+    double xdiff = fabs(_raw_xmin_pt.x - flash.time * DetectorSpecs::GetME()->DriftVelocity());
     if( xdiff > _onepmt_xdiff_threshold ) {
       //std::cout << "XDiffThreshold not met (xdiff=" << xdiff << ")" << std::endl;
       return res;
@@ -253,7 +251,7 @@ FlashMatch_t QLLMatch::OnePMTMatch(const Flash_t& flash) {
     // Compute TPC point
     res.tpc_point.x = res.tpc_point.y = res.tpc_point.z = 0;
     double weight = 0;
-    for (size_t pmt_index = 0; pmt_index < DetectorSpecs::GetME().NOpDets(); ++pmt_index) {
+    for (size_t pmt_index = 0; pmt_index < DetectorSpecs::GetME()->NOpDets(); ++pmt_index) {
 
       res.tpc_point.y += _ypos_v.at(pmt_index) * _hypothesis.pe_v[pmt_index];
       res.tpc_point.z += _zpos_v.at(pmt_index) * _hypothesis.pe_v[pmt_index];
@@ -293,7 +291,7 @@ FlashMatch_t QLLMatch::OnePMTMatch(const Flash_t& flash) {
 
     double weight = 0;
 
-    for (size_t pmt_index = 0; pmt_index < DetectorSpecs::GetME().NOpDets(); ++pmt_index) {
+    for (size_t pmt_index = 0; pmt_index < DetectorSpecs::GetME()->NOpDets(); ++pmt_index) {
 
       res.tpc_point.y += _ypos_v.at(pmt_index) * _hypothesis.pe_v[pmt_index];
       res.tpc_point.z += _zpos_v.at(pmt_index) * _hypothesis.pe_v[pmt_index];
@@ -319,13 +317,13 @@ FlashMatch_t QLLMatch::OnePMTMatch(const Flash_t& flash) {
 
     // Compute X-weighting
     /*
-    double x0 = _raw_xmin_pt.x - flash.time * DetectorSpecs::GetME().DriftVelocity();
+    double x0 = _raw_xmin_pt.x - flash.time * DetectorSpecs::GetME()->DriftVelocity();
     if( fabs(_reco_x_offset - x0) > _recox_penalty_threshold )
       res.score *= 1. / (1. + fabs(_reco_x_offset - x0) - _recox_penalty_threshold);
     // Compute Z-weighting
     double z0 = 0;
     weight = 0;
-    for (size_t pmt_index = 0; pmt_index < DetectorSpecs::GetME().NOpDets(); ++pmt_index) {
+    for (size_t pmt_index = 0; pmt_index < DetectorSpecs::GetME()->NOpDets(); ++pmt_index) {
       z0 += _zpos_v.at(pmt_index) * flash.pe_v[pmt_index];
       weight += flash.pe_v[pmt_index];
     }
@@ -338,8 +336,8 @@ FlashMatch_t QLLMatch::OnePMTMatch(const Flash_t& flash) {
 
   const Flash_t &QLLMatch::ChargeHypothesis(const double xoffset) {
     auto start = high_resolution_clock::now();
-    if (_hypothesis.pe_v.empty()) _hypothesis.pe_v.resize(DetectorSpecs::GetME().NOpDets(), 0.);
-    if (_hypothesis.pe_v.size() != DetectorSpecs::GetME().NOpDets()) {
+    if (_hypothesis.pe_v.empty()) _hypothesis.pe_v.resize(DetectorSpecs::GetME()->NOpDets(), 0.);
+    if (_hypothesis.pe_v.size() != DetectorSpecs::GetME()->NOpDets()) {
       throw OpT0FinderException("Hypothesis vector length != PMT count");
     }
 
@@ -526,7 +524,7 @@ FlashMatch_t QLLMatch::OnePMTMatch(const Flash_t& flash) {
   double QLLMatch::CallMinuit(const QCluster_t &tpc, const Flash_t &pmt, const bool init_x0) {
 
     if (_measurement.pe_v.empty()) {
-      _measurement.pe_v.resize(DetectorSpecs::GetME().NOpDets(), 0.);
+      _measurement.pe_v.resize(DetectorSpecs::GetME()->NOpDets(), 0.);
     }
     if (_measurement.pe_v.size() != pmt.pe_v.size()) {
       std::cout << _measurement.pe_v.size() << " " << pmt.pe_v.size() << std::endl;
@@ -572,7 +570,7 @@ FlashMatch_t QLLMatch::OnePMTMatch(const Flash_t& flash) {
     double reco_x = (_vol_xmax - _vol_xmin)/2;
 
     if (!init_x0) {
-      reco_x = (_raw_xmax_pt.x - _raw_xmin_pt.x) / 2. - pmt.time * DetectorSpecs::GetME().DriftVelocity() + _raw_xmin_pt.x;
+      reco_x = (_raw_xmax_pt.x - _raw_xmin_pt.x) / 2. - pmt.time * DetectorSpecs::GetME()->DriftVelocity() + _raw_xmin_pt.x;
 
       if(reco_x < _vol_xmin || reco_x > _vol_xmax)
       return kINVALID_DOUBLE;

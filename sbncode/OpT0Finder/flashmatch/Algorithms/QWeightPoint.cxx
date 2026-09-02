@@ -24,7 +24,7 @@ namespace flashmatch {
   {
 
     if(_vis_array.pe_v.empty())
-      _vis_array.pe_v.resize(DetectorSpecs::GetME().NOpDets());
+      _vis_array.pe_v.resize(DetectorSpecs::GetME()->NOpDets());
 
     // Prepare the return values (Mostly QWeightPoint)
     FlashMatch_t f;
@@ -62,10 +62,10 @@ namespace flashmatch {
       double vis_pe_sum = _vis_array.TotalPE();
 
       double weighted_z = 0;
-      for(size_t pmt_index=0; pmt_index<DetectorSpecs::GetME().NOpDets(); ++pmt_index) {
+      for(size_t pmt_index=0; pmt_index<DetectorSpecs::GetME()->NOpDets(); ++pmt_index) {
 
 	if(_vis_array.pe_v[pmt_index]<0) continue;
-	weighted_z += DetectorSpecs::GetME().PMTPosition(pmt_index)[2] * _vis_array.pe_v[pmt_index] / vis_pe_sum;
+	weighted_z += DetectorSpecs::GetME()->PMTPosition(pmt_index)[2] * _vis_array.pe_v[pmt_index] / vis_pe_sum;
 
       }
 
@@ -81,9 +81,9 @@ namespace flashmatch {
 
 	f.tpc_point.x = x_offset;
 
-	for(size_t pmt_index=0; pmt_index<DetectorSpecs::GetME().NOpDets(); ++pmt_index) {
+	for(size_t pmt_index=0; pmt_index<DetectorSpecs::GetME()->NOpDets(); ++pmt_index) {
 	  if(_vis_array.pe_v[pmt_index]<0) continue;
-	  f.tpc_point.y += DetectorSpecs::GetME().PMTPosition(pmt_index)[1] * _vis_array.pe_v[pmt_index] / vis_pe_sum;
+	  f.tpc_point.y += DetectorSpecs::GetME()->PMTPosition(pmt_index)[1] * _vis_array.pe_v[pmt_index] / vis_pe_sum;
 	}
 
 	f.tpc_point.z = weighted_z;	

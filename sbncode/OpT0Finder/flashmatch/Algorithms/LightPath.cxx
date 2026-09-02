@@ -3,8 +3,6 @@
 
 #include "LightPath.h"
 
-#pragma GCC diagnostic ignored "-Wdangling-reference"
-
 namespace flashmatch {
 
   static LightPathFactory __global_LightPathFactory__;
@@ -87,7 +85,7 @@ namespace flashmatch {
     }
 
     // Trimming Q_cluster
-    auto const& bbox = DetectorSpecs::GetME().ActiveVolume();
+    auto const& bbox = DetectorSpecs::GetME()->ActiveVolume();
     double _vol_xmax = bbox.Max()[0];
     double _vol_ymax = bbox.Max()[1];
     double _vol_zmax = bbox.Max()[2];

@@ -41,10 +41,10 @@ namespace flashmatch {
     DetectorSpecs(std::string filename="specs.cfg");
     ~DetectorSpecs(){}
 
-    inline static DetectorSpecs& GetME(std::string filename="detector_specs.cfg")
+    inline static DetectorSpecs* GetME(std::string filename="detector_specs.cfg")
     {
       if(!_me) _me = new DetectorSpecs(filename);
-      return *_me;
+      return _me;
     }
 
     /// PMT XYZ position filler
