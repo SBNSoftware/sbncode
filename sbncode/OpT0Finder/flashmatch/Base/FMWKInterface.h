@@ -38,7 +38,8 @@ namespace flashmatch {
   class DetectorSpecs {
 
   public:
-    DetectorSpecs(std::string filename="specs.cfg");
+    DetectorSpecs() = delete;
+    DetectorSpecs(std::string filename);
     ~DetectorSpecs(){}
 
     inline static DetectorSpecs& GetME(std::string filename)
