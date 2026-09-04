@@ -543,7 +543,13 @@ void CAFMaker::SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame) cons
 
       if(!std::isnan(pfp.trk.crtsbndtrack.score)) pfp.trk.crtsbndtrack.track.time += SBNDFrame;
     }
+
+    // CRUMBS CRT input features [us]
+    slc.crumbs_result.crt.tracktime += SBNDFrame / 1000.;
+    slc.crumbs_result.crt.sptime += SBNDFrame / 1000.;
   }
+
+  // TODO: SRSBNDCRTVeto.sp_time (FillReco.cxx) is not shifted here -- watch list.
 }
 
 void CAFMaker::SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame) const {
@@ -559,7 +565,22 @@ void CAFMaker::SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame) cons
   //OpT0 match to slice
   for (SRSlice &s: rec.slc) {
     s.opt0.time += SBNDFrame_us;
+    s.opt0_sec.time += SBNDFrame_us;
+
+    s.barycenterFM.flashTime += SBNDFrame_us;
+    s.barycenterFM.flashFirstHit += SBNDFrame_us;
+
+    s.fmatch.time += SBNDFrame_us;
+    s.fmatchop.time += SBNDFrame_us;
+    s.fmatchara.time += SBNDFrame_us;
+    s.fmatchopara.time += SBNDFrame_us;
+
+    s.crumbs_result.pds.fmtime += SBNDFrame_us;
   }
+
+  // TODO: SRCorrectedOpFlash (slice.correctedOpFlash) not yet shifted here; see
+  //   https://github.com/SBNSoftware/sbncode/pull/668#pullrequestreview-5117853839
+  // TODO: SRSoftwareTrigger.flash_peaktime not yet shifted here.
 }
 
 void CAFMaker::FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_time) {
@@ -2696,9 +2717,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   // TODO: TPC?
   
-  // SBND: Fix the Reference time in data depending on the stream
-  // For more information, see: 
-  // https://sbn-docdb.fnal.gov/cgi-bin/sso/RetrieveFile?docid=43090
+  // SBND: Fix the reference time in data exclusively for Gen2 Sample (v10_14_02)
+  // For information, see: https://sbn-docdb.fnal.gov/cgi-bin/sso/RetrieveFile?docid=43090
+  // Otherwise, this code block is legacy for sbncode > v10_20_09
 
   if (isRealData && (fDet == kSBND) && fSubRunPOT > 0)
   {
@@ -2709,11 +2730,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     if (!std::isnan(rec.sbnd_frames.frameApplyAtCaf) && (rec.sbnd_frames.frameApplyAtCaf != 0.0)){
       mf::LogInfo("CAFMaker") << "Setting Reference Timing for timing object in SBND \n"
                               << "    Shift Apply At Caf Level = " << rec.sbnd_frames.frameApplyAtCaf << " ns\n";
-      
-      //shift reference frame for CRT objects: crt trk, crt sp, crt sp match, crt trk match
+
+      //shift reference frame for CRT objects: crt trk, crt sp, crt sp match, crt trk match, CRUMBS CRT features
       SBNDShiftCRTReference(rec, rec.sbnd_frames.frameApplyAtCaf);
 
-      //shift reference frame for PMT objects: opflash, opt0
+      //shift reference frame for PMT objects: opflash, opt0/opt0_sec, barycenter flash match, simple flash matches, CRUMBS PDS feature
       SBNDShiftPMTReference(rec, rec.sbnd_frames.frameApplyAtCaf);
     }
   }
