@@ -42,6 +42,8 @@
 
 #include "ifdh_art/IFDHService/IFDH_service.h"
 
+#include "dk2nu/tree/dk2nu.h"
+
 // ROOT includes
 #include "TFile.h"
 #include "TH1D.h"
@@ -338,6 +340,8 @@ class CAFMaker : public art::EDProducer {
   void SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame) const;
   void SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame) const;
 
+  void CorrectMCTiming(StandardRecord &rec) const;
+
   /// Equivalent of FindManyP except a return that is !isValid() prints a
   /// messsage and aborts if StrictMode is true.
   template <class T, class U>
@@ -550,6 +554,94 @@ void CAFMaker::SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame) cons
   }
 
   // TODO: SRSBNDCRTVeto.sp_time (FillReco.cxx) is not shifted here -- watch list.
+}
+
+void CAFMaker::CorrectMCTiming(StandardRecord &rec) const {
+
+  // Recovers the dk2nu v01_11_00 SetT(0) bug (fixed in v01_12_00)
+  // by adding the missing meson decay time + neutrino tof from meson decay to flux window
+  constexpr double kSpeedOfLight = 29.9792458; // cm/ns
+
+  // TODO: Does not correct TPC timing variables yet:
+  //   SRCaloPoint.t, SRHit.peakTime, SRPFP.t0,
+  //   SRBlip.time/.timeTick,
+  //   SRBlipHitClust.time/.startTime/.endTime/.timespan/.timeTick
+
+  // Per-neutrino offset, indexed the same as rec.mc.nu / SRSlice.tmatch.index.
+  std::vector<double> offset_ns(rec.mc.nu.size(), std::numeric_limits<double>::signaling_NaN());
+
+  for (unsigned i = 0; i < rec.mc.nu.size(); i++) {
+    SRTrueInteraction &nu = rec.mc.nu[i];
+    if (std::isnan(nu.prod_time)) continue; // no dk2nu info for this sample/interaction
+
+    offset_ns[i] = nu.prod_time + nu.dk2gen * 100. / kSpeedOfLight;
+    double const delta_us = offset_ns[i] / 1000.;
+
+    nu.time += delta_us;
+
+    for (SRTrueParticle &part: nu.prim) {
+      if (part.genT   > -9998.) part.genT   += delta_us;
+      if (part.startT > -9998.) part.startT += delta_us;
+      if (part.endT   > -9998.) part.endT   += delta_us;
+    }
+  }
+
+  // Apply the matched neutrino's own offset to slice-scoped reco objects (and the
+  // slice's stale truth copy). SRSlice.tmatch.index (set by MatchSlice2Truth,
+  // purity/charge-based, independent of nu.time) indexes directly into rec.mc.nu.
+  // Unmatched/cosmic slices (tmatch.index < 0) are left untouched.
+  for (SRSlice &slc: rec.slc) {
+    if (slc.tmatch.index < 0 || std::isnan(offset_ns[slc.tmatch.index])) continue;
+
+    double const off_ns   = offset_ns[slc.tmatch.index];
+    double const delta_us = off_ns / 1000.;
+
+    // slc.truth is a copy of rec.mc.nu[tmatch.index] taken before this function
+    // runs (FillTrue.cxx:372) -- needs the same correction applied separately.
+    slc.truth.time += delta_us;
+    for (SRTrueParticle &part: slc.truth.prim) {
+      if (part.genT   > -9998.) part.genT   += delta_us;
+      if (part.startT > -9998.) part.startT += delta_us;
+      if (part.endT   > -9998.) part.endT   += delta_us;
+    }
+
+    slc.opt0.time     += delta_us;
+    slc.opt0_sec.time += delta_us;
+
+    slc.barycenterFM.flashTime     += delta_us;
+    slc.barycenterFM.flashFirstHit += delta_us;
+
+    // PMT/XARAPUCA simple flash matches (fmatch=PMT-SimpleFlash, fmatchop=PMT-OpFlash,
+    // fmatchara=XARAPUCA-SimpleFlash, fmatchopara=XARAPUCA-OpFlash)
+    slc.fmatch.time      += delta_us;
+    slc.fmatchop.time    += delta_us;
+    slc.fmatchara.time   += delta_us;
+    slc.fmatchopara.time += delta_us;
+
+    slc.crumbs_result.pds.fmtime    += delta_us;
+    slc.crumbs_result.crt.tracktime += delta_us;
+    slc.crumbs_result.crt.sptime    += delta_us;
+
+    for (SRPFP &pfp: slc.reco.pfp) {
+      if (!std::isnan(pfp.trk.crtspacepoint.score)) pfp.trk.crtspacepoint.spacepoint.time += off_ns;
+      if (!std::isnan(pfp.trk.crtsbndtrack.score))  pfp.trk.crtsbndtrack.track.time      += off_ns;
+    }
+  }
+
+  // TODO: watch list -- no truth-matching path currently exists to assign a
+  // per-object offset to these EVENT-GLOBAL (not slice-scoped) collections:
+  //   rec.opflashes             -- would need a PhotonBackTracker-based match; none
+  //                                exists in SBND today (OpDetBacktrackerRecords are
+  //                                dropped from reco output; PhotonBackTracker unused)
+  //   rec.crt_spacepoints, rec.sbnd_crt_tracks
+  //                             -- CRTBackTrackerAlg exists (sbndcode CRT/CRTBackTracker/
+  //                                CRTBackTrackerAlg.{h,cc}) but is only invoked from the
+  //                                CRTAnalysis analyzer, not persisted as an art product;
+  //                                CAFMaker would need to call it directly (not done here)
+  //   SRSBNDCRTVeto.sp_time
+  //   SRCorrectedOpFlash (slice.correctedOpFlash); see
+  //     https://github.com/SBNSoftware/sbncode/pull/668#pullrequestreview-5117853839
+  //   SRSoftwareTrigger.flash_peaktime
 }
 
 void CAFMaker::SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame) const {
@@ -1475,6 +1567,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::fill_ptr_vector(mcfluxes, mcflux_handle);
   }
 
+  art::Handle<std::vector<bsim::Dk2Nu>> dk2nu_handle;
+  GetByLabelStrict(evt, std::string("generator"), dk2nu_handle);
+
+  std::vector<art::Ptr<bsim::Dk2Nu>> dk2nus;
+  if (dk2nu_handle.isValid()) {
+    art::fill_ptr_vector(dk2nus, dk2nu_handle);
+  }
+
   // get the MCReco for the fake-reco
   art::Handle<std::vector<sim::MCTrack>> mctrack_handle;
   GetByLabelStrict(evt, std::string("mcreco"), mctrack_handle);
@@ -1558,9 +1658,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // holder for invalid MCFlux
   simb::MCFlux badflux; // default constructor gives nonsense values
 
+  // holder for invalid Dk2Nu (default-constructed ancestor vector is empty -- treated as "absent")
+  bsim::Dk2Nu baddk2nu;
+
   for (size_t i=0; i<mctruths.size(); i++) {
     auto const& mctruth = mctruths.at(i);
     const simb::MCFlux &mcflux = (mcfluxes.size()) ? *mcfluxes.at(i) : badflux;
+    const bsim::Dk2Nu &dk2nu = (dk2nus.size()) ? *dk2nus.at(i) : baddk2nu;
 
     simb::GTruth gtruth;
     bool ok = GetAssociatedProduct(fmp_gtruth, i, gtruth);
@@ -1575,7 +1679,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     if ( !isRealData ){
 
-      FillTrueNeutrino(mctruth, mcflux, gtruth, true_particles, id_to_truehit_map, srtruthbranch.nu.back(), i, fActiveVolumes);
+      FillTrueNeutrino(mctruth, mcflux, dk2nu, gtruth, true_particles, id_to_truehit_map, srtruthbranch.nu.back(), i, fActiveVolumes);
 
       srtruthbranch.nu.back().genie_evtrec_idx = fGenieEventCounter;
 
@@ -2714,6 +2818,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 			  << "    Beam Gate Time =  " << srtrigger.beam_gate_det_time << " us";
 
   FixPMTReferenceTimes(rec, PMT_reference_time);
+
+  // SBND MC: recover the dk2nu v01_11_00 SetT(0) vertex-time bug (gen2-tag production)
+  if (!isRealData && (fDet == kSBND)) {
+    CorrectMCTiming(rec);
+  }
 
   // TODO: TPC?
   
