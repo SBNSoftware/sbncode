@@ -170,11 +170,11 @@ namespace caf
    * Hits with filter value (`ngFilterResult`) lower than `ng_filter_cut` are counted as background.
    */
   void FillPFPNuGraph(const std::vector<art::Ptr<recob::Hit>> &pfpHits,
-		      const std::vector<art::Ptr<anab::FeatureVector<1>>> &ngFilterResult,
-		      const std::vector<art::Ptr<anab::FeatureVector<5>>> &ngSemanticResult,
-          const float filter_cut,
-		      caf::SRPFP& srpfp,
-		      bool allowEmpty= false);
+                      const std::vector<art::Ptr<anab::FeatureVector<1>>> &ngFilterResult,
+                      const std::vector<art::Ptr<anab::FeatureVector<5>>> &ngSemanticResult,
+                      const float filter_cut,
+                      caf::SRPFP& srpfp,
+                      bool allowEmpty = false);
 
   void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
                        const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,

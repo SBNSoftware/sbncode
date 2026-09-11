@@ -1732,7 +1732,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       if (fParams.UsePandoraAfterNuGraph()) {
         nuGraphSlices = slices;
       } else {
-        nuGraphSlices = evt.getProduct<std::vector<art::Ptr<recob::Slice>>>(fParams.NuGraphSlicesLabel().label() + pandora_tag_suffix);
+        auto const& moreSlices = evt.getProduct<std::vector<art::Ptr<recob::Slice>>>(fParams.NuGraphSlicesLabel().label() + pandora_tag_suffix);
+        nuGraphSlices.insert(nuGraphSlices.end(), moreSlices.begin(), moreSlices.end());
       }
       for (unsigned i = 0; i < thisSlices->size(); i++) {
         slice_tag_suffixes.push_back(pandora_tag_suffix);
@@ -1851,9 +1852,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     if (fmPFPClusters.isValid()) {
       for (size_t ipf=0; ipf<fmPFPart.size();++ipf) {
         std::vector<art::Ptr<recob::Hit>> pfphits;
-        std::vector<art::Ptr<recob::Cluster>> pfclusters = fmPFPClusters.at(ipf);
+        std::vector<art::Ptr<recob::Cluster>> const& pfclusters = fmPFPClusters.at(ipf);
         art::FindManyP<recob::Hit> fmCluHits = FindManyPStrict<recob::Hit>(pfclusters, evt, fParams.PFParticleLabel() + slice_tag_suff);
-        for (size_t icl=0; icl<fmCluHits.size();icl++) {
+        for (auto const& hit : fmCluHits.at(icl)) {
           for (auto hit : fmCluHits.at(icl)) {
             pfphits.push_back(hit);
           }
@@ -2078,7 +2079,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       float vtx_wire[3];
       float vtx_tick[3];
 
-      if (vertex != NULL) {
+      if (vertex) {
         auto const& tpcID = geom->FindTPCAtPosition(vertex->position());
         if (tpcID.isValid) {
           for (geo::PlaneID const& p : wireReadout.Iterate<geo::PlaneID>()) {
@@ -2090,7 +2091,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         }
       }
 
-      if (ng2_filter_vec.size() > 0 || ng2_semantic_vec.size() > 0) {
+      if (!ng2_filter_vec.empty() || !ng2_semantic_vec.empty()) {
         FillSliceNuGraph(slcHits, ng2_filter_vec, ng2_semantic_vec, fmPFPartHits, 
                          vtx_wire, vtx_tick, fParams.NuGraphHIPTagWireDist(), fParams.NuGraphHIPTagTickDist(), 
                          fParams.NuGraphFilterCut(), recslc);
@@ -2098,14 +2099,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
       // overwrite the `ng_filt_pass_frac` variable with post-NuGraph2-filtering 
       if (fParams.UsePandoraAfterNuGraph()) {
-        art::Handle<std::vector<anab::FeatureVector<1>>> ngFilterVecHandle;
-        evt.getByLabel(art::InputTag("NGMultiSlice" + slice_tag_suff, "filter"), ngFilterVecHandle);
+        auto ngFilterVecHandle = evt.getHandle<std::vector<anab::FeatureVector<1>>>
+          (art::InputTag("NGMultiSlice" + slice_tag_suff, "filter"));
         art::Handle<std::vector<recob::Hit>> ngFilteredHitsHandle;
         GetByLabelStrict(evt, "ngfilteredhits" + slice_tag_suff, ngFilteredHitsHandle);
         if (ngFilterVecHandle.isValid() && 
             ngFilteredHitsHandle.isValid() &&
             ngFilterVecHandle->size() > 0) {
-          recslc.ng_filt_pass_frac = float(ngFilteredHitsHandle->size()) / float(ngFilterVecHandle->size());
+          recslc.ng_filt_pass_frac = double(ngFilteredHitsHandle->size()) / double(ngFilterVecHandle->size());
         }
       }
 

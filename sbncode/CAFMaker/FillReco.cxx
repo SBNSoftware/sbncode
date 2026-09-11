@@ -579,24 +579,25 @@ namespace caf
   }
 
   void FillSliceNuGraph(const std::vector<art::Ptr<recob::Hit>> &inputHits,
-			const std::vector<art::Ptr<anab::FeatureVector<1>>> &ngFilterResult,
-			const std::vector<art::Ptr<anab::FeatureVector<5>>> &ngSemanticResult,
-      const std::vector<std::vector<art::Ptr<recob::Hit>>> &fmPFPartHits,
-      const float vtx_wire[3], 
-      const float vtx_tick[3],
-      const float vtx_wire_dist, 
-      const float vtx_tick_dist,
-      const float filter_cut,
-			caf::SRSlice &slice)
+                        const std::vector<art::Ptr<anab::FeatureVector<1>>> &ngFilterResult,
+                        const std::vector<art::Ptr<anab::FeatureVector<5>>> &ngSemanticResult,
+                        const std::vector<std::vector<art::Ptr<recob::Hit>>> &fmPFPartHits,
+                        const float vtx_wire[3], 
+                        const float vtx_tick[3],
+                        const float vtx_wire_dist, 
+                        const float vtx_tick_dist,
+                        const float filter_cut,
+                        caf::SRSlice &slice)
   {
 
     // NuGraph2 filter fraction
     unsigned int nHits = inputHits.size();
     unsigned int npass = 0;
 
-    for ( unsigned int i = 0; i < nHits; i++ ) {
-      if (ngFilterResult.at(i).isNull()) continue;
-      if (ngFilterResult.at(i)->at(0) >= filter_cut) npass++;
+    assert(ngFilterResult.size() == nHits);
+    for ( auto const& ngFilt: ngFilterResult) {
+      if (!ngFilt) continue;
+      if (ngFilt->at(0) >= filter_cut) npass++;
     }
     slice.ng_filt_pass_frac = (nHits > 0) ? float(npass) / nHits : 0.f;
 
@@ -611,13 +612,13 @@ namespace caf
     // NuGraph2 plane-by-plane slice variables
     for (unsigned int plane = 0; plane < 3; ++plane) {
 
-      int nMIPHits = 0;             ///< `MIP` hits in the slice
-      int nHIPHits = 0;             ///< `HIP` hits in the slice
-      int nShrHits = 0;             ///< `Shower` hits in the slice
-      int nMhlHits = 0;             ///< `Michel` hits in the slice
-      int nDifHits = 0;             ///< `Diffuse` hits in the slice
-      int nVtxHIPHits = 0;          ///< `HIP` hits in the slice around the vertex
-      int nUnclusteredShrHits = 0;  ///< `Shower` hits in the slice not belonging to a PFP
+      int nMIPHits = 0;             // `MIP` hits in the slice
+      int nHIPHits = 0;             // `HIP` hits in the slice
+      int nShrHits = 0;             // `Shower` hits in the slice
+      int nMhlHits = 0;             // `Michel` hits in the slice
+      int nDifHits = 0;             // `Diffuse` hits in the slice
+      int nVtxHIPHits = 0;          // `HIP` hits in the slice around the vertex
+      int nUnclusteredShrHits = 0;  // `Shower` hits in the slice not belonging to a PFP
 
       for ( unsigned int i = 0; i < nHits; i++ ) {
         const recob::Hit& hit = *inputHits.at(i);
@@ -672,13 +673,14 @@ namespace caf
         }
       }
 
-      slice.ng_plane[plane].mip_hits = nMIPHits;
-      slice.ng_plane[plane].hip_hits = nHIPHits;
-      slice.ng_plane[plane].shr_hits = nShrHits;
-      slice.ng_plane[plane].mhl_hits = nMhlHits;
-      slice.ng_plane[plane].dif_hits = nDifHits;
-      slice.ng_plane[plane].ng_vtx_hip_hits = nVtxHIPHits;
-      slice.ng_plane[plane].unclustered_shr_hits = nUnclusteredShrHits;
+      auto& hitInfo = slice.ng_plane[plane];
+      hitInfo.mip_hits = nMIPHits;
+      hitInfo.hip_hits = nHIPHits;
+      hitInfo.shr_hits = nShrHits;
+      hitInfo.mhl_hits = nMhlHits;
+      hitInfo.dif_hits = nDifHits;
+      hitInfo.ng_vtx_hip_hits = nVtxHIPHits;
+      hitInfo.unclustered_shr_hits = nUnclusteredShrHits;
     }
   }
 
@@ -1122,14 +1124,13 @@ namespace caf
 
         if (ngFilterResult.at(pos).isNull()) continue;
 
-	      auto const& bkgscore = ngFilterResult.at(pos);
-	      if (bkgscore->at(0) < filter_cut) {
-	        ng2bkgpfpcount++;
-	      } else {
+        auto const& bkgscore = ngFilterResult.at(pos);
+        if (bkgscore->at(0) < filter_cut) {
+          ng2bkgpfpcount++;
+        } else {
           if (ngSemanticResult.at(pos).isNull()) continue;
           auto const& scores = ngSemanticResult.at(pos);
-          std::vector<float> ng2semscores;
-          for (size_t i=0;i<scores->size();i++) ng2semscores.push_back(scores->at(i));
+          std::vector<float> ng2semscores{ scores.begin(), scores.end() };
           size_t sem_label = std::distance(ng2semscores.begin(), std::max_element(ng2semscores.begin(), ng2semscores.end()));//arg_max(ng2semscores);
           ng2sempfpcounts[sem_label]++;
         }
