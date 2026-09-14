@@ -3,8 +3,6 @@
 
 #include "LightPath.h"
 
-#pragma GCC diagnostic ignored "-Wdangling-reference"
-
 namespace flashmatch {
 
   static LightPathFactory __global_LightPathFactory__;
