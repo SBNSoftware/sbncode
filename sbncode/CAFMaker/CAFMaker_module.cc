@@ -1854,8 +1854,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         std::vector<art::Ptr<recob::Hit>> pfphits;
         std::vector<art::Ptr<recob::Cluster>> const& pfclusters = fmPFPClusters.at(ipf);
         art::FindManyP<recob::Hit> fmCluHits = FindManyPStrict<recob::Hit>(pfclusters, evt, fParams.PFParticleLabel() + slice_tag_suff);
-        for (auto const& hit : fmCluHits.at(icl)) {
-          for (auto hit : fmCluHits.at(icl)) {
+        for (size_t icl = 0; icl < pfclusters.size(); ++icl) {
+          for (auto const& hit : fmCluHits.at(icl)) {
             pfphits.push_back(hit);
           }
         }

@@ -1130,7 +1130,9 @@ namespace caf
         } else {
           if (ngSemanticResult.at(pos).isNull()) continue;
           auto const& scores = ngSemanticResult.at(pos);
-          std::vector<float> ng2semscores{ scores.begin(), scores.end() };
+          std::vector<float> ng2semscores;
+          for (size_t i = 0; i < scores->size(); i++) 
+            ng2semscores.push_back(scores->at(i));
           size_t sem_label = std::distance(ng2semscores.begin(), std::max_element(ng2semscores.begin(), ng2semscores.end()));//arg_max(ng2semscores);
           ng2sempfpcounts[sem_label]++;
         }
