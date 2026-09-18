@@ -13,7 +13,7 @@ namespace flashmatch{
 #include "flashmatch/Base/FMWKTools/PhotonVisibilityService.h"
 namespace flashmatch{
 
-  DetectorSpecs::DetectorSpecs(std::string filename) {
+  DetectorSpecs::DetectorSpecs(const std::string& filename) {
 
     assert(!filename.empty());
     if(filename.find("/") != 0)
@@ -68,7 +68,7 @@ namespace flashmatch{
 
 #else
 namespace flashmatch{
-  DetectorSpecs::DetectorSpecs(std::string filename){
+  DetectorSpecs::DetectorSpecs(const std::string& filename){
     ::art::ServiceHandle<geo::Geometry> const geo;
     auto const clock_data = ::art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
     auto const det_prop = ::art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataForJob(clock_data);
