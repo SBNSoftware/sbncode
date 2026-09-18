@@ -13,6 +13,7 @@ namespace caf
   //......................................................................
   void FillSliceFlashMatch(const sbn::SimpleFlashMatch* fmatch /* can be nullptr */,
                            caf::SRFlashMatch& srflash,
+                           caf::TimeRefShifter<> const& shifter /* = {} */,
                            bool allowEmpty)
   {
     if (fmatch == nullptr) {
@@ -20,7 +21,7 @@ namespace caf
       return;
     }
     srflash.present    = fmatch->present;
-    srflash.time       = fmatch->time;
+    srflash.time       = shifter.shiftedTime(fmatch->time);
     srflash.chargeQ    = fmatch->charge.q;
     srflash.lightPE    = fmatch->light.pe;
     srflash.score      = fmatch->score.total;
