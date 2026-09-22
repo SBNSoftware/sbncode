@@ -1135,7 +1135,11 @@ void sys::WireModUtility::ModifyROI(std::vector<float> & roi_data,
                   << (sigma_distance <= sigmaWindow ? "  [scaled]" : "  [pass-through]") << '\n'
                   << "    q_orig=" << q_orig << '\n';
     }
-      
+
+    // sigma_distance is charge-weighted, since gausFunc carries the
+    // a/(sigma*sqrt(2pi)) normalisation.
+    if (q_orig > 0.) sigma_distance /= q_orig;
+
     double delta = q_mod - q_orig;
 
     // do some sanity checks
