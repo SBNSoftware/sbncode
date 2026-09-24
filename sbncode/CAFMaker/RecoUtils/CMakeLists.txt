@@ -2,6 +2,7 @@
 art_make_library( LIBRARY_NAME caf_RecoUtils
                   SOURCE  RecoUtils.cc
                   LIBRARIES
+                    sbnanaobj::StandardRecord
                     art::Framework_Core
                     art::Framework_Services_Registry
                     art::Framework_Principal

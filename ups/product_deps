@@ -254,13 +254,13 @@ libdir	fq_dir		lib
 product			version		qual	flags		<table_format=2>
 genie_xsec		v3_06_00	-
 larcv2			v2_2_6		-
-larsoft			v10_21_02	-
-sbnalg		        v10_21_01	-
-sbndaq_artdaq_core	v1_10_06	-
+larsoft			v10_26_00	-
+sbnalg		        v10_26_00	-
+sbndaq_artdaq_core	v1_10_06_01	-
 sbndata			v01_10		-
-systematicstools	v01_04_05	-
-nusystematics		v1_05_14	-
-geant4reweight          v01_21_03       -
+systematicstools	v01_05_00	-
+nusystematics		v1_05_15	-
+geant4reweight          v01_21_04       -
 cetmodules		v3_24_01	-	only_for_build
 end_product_list
 ####################################
@@ -321,6 +321,8 @@ c14:debug	c14:debug	c14:debug	c14:s131:debug     AR2320i00000:e1000:k250  -nq-  
 c14:prof	c14:prof	c14:prof	c14:s131:prof      AR2320i00000:e1000:k250  -nq-     c14:p3915:prof   c14:prof          c14:prof	    c14:prof:s131     -nq-
 e26:debug	e26:debug	e26:debug	e26:s131:debug     AR2320i00000:e1000:k250  -nq-     debug:e26:p3915  e26:debug	        e26:debug	    e26:debug:s131    -nq-
 e26:prof	e26:prof	e26:prof	e26:s131:prof      AR2320i00000:e1000:k250  -nq-     e26:p3915:prof   e26:prof	        e26:prof	    e26:prof:s131     -nq-
+e28:debug	e28:debug	e28:debug	e28:s131:debug     AR2320i00000:e1000:k250  -nq-     debug:e28:p3915  e28:debug	        e28:debug	    e28:debug:s131    -nq-
+e28:prof	e28:prof	e28:prof	e28:s131:prof      AR2320i00000:e1000:k250  -nq-     e28:p3915:prof   e28:prof	        e28:prof	    e28:prof:s131     -nq-
 end_qualifier_list
 ####################################
 

@@ -14,8 +14,8 @@ art_make_library(
     larcore::Geometry_Geometry_service
     cetlib_except::cetlib_except
     Geant4::G4ptl
-    ReweightBaseLib
-    PropBaseLib
+    geant4reweight::ReweightBaseLib
+    geant4reweight::PropBaseLib
     ROOT::Tree
 )
 
