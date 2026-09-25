@@ -688,11 +688,6 @@ void CAFMaker::SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame) cons
     if (!std::isnan(s.opt0.time))     s.opt0.time     += SBNDFrame_us; // NaN default
     if (!std::isnan(s.opt0_sec.time)) s.opt0_sec.time += SBNDFrame_us; // NaN default
 
-    if (s.correctedOpFlash.OpFlashT0 != -9999.) { // -9999. default
-      s.correctedOpFlash.OpFlashT0          += SBNDFrame_us;
-      s.correctedOpFlash.OpFlashT0Corrected += SBNDFrame_us;
-    }
-
     if (s.barycenterFM.flashTime     != -9999.) s.barycenterFM.flashTime     += SBNDFrame_us; // -9999. default
     if (s.barycenterFM.flashFirstHit != -9999.) s.barycenterFM.flashFirstHit += SBNDFrame_us; // -9999. default
 
@@ -706,6 +701,10 @@ void CAFMaker::SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame) cons
 
   // TODO: SRCorrectedOpFlash.NuToFLight/.NuToFCharge not shifted here -- ToF/duration
   //   quantities, a constant offset cancels (see CorrectMCTiming for the same reasoning).
+  // SRCorrectedOpFlash.OpFlashT0/.OpFlashT0Corrected not shifted here (data path only --
+  //   CorrectMCTiming still shifts them for MC): LightPropagationCorrection_module.cc computes
+  //   them from the real SPECTDC RWM/trigger timestamps for data (!fIsMC), already reference-frame
+  //   corrected upstream of CAFMaker -- shifting again here would double-correct.
   // TODO: SRSoftwareTrigger.flash_peaktime not yet shifted here.
 }
 
