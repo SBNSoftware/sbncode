@@ -573,6 +573,12 @@ void CAFMaker::CorrectMCTiming(StandardRecord &rec) const {
 
   for (unsigned i = 0; i < rec.mc.nu.size(); i++) {
     SRTrueInteraction &nu = rec.mc.nu[i];
+    // This is a GENIE-dk2nu-specific correction (see the bug writeup above); rec.mc.nu can
+    // also hold non-GENIE interactions (e.g. HNL decays from MeVPrtlGen, which reuses the
+    // same "generator" producer label), so an explicit generator check comes first -- the
+    // NaN check on prod_time only happens to also exclude those today because MeVPrtlGen
+    // never produces a bsim::Dk2Nu product, which is incidental, not a real guarantee.
+    if (nu.generator != caf::kGENIE) continue;
     if (std::isnan(nu.prod_time)) continue; // no dk2nu info for this sample/interaction
 
     offset_ns[i] = nu.prod_time + nu.dk2gen * 100. / kSpeedOfLight;
@@ -1711,6 +1717,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     if ( !isRealData ){
 
       FillTrueNeutrino(mctruth, mcflux, dk2nu, gtruth, true_particles, id_to_truehit_map, srtruthbranch.nu.back(), i, fActiveVolumes);
+
+      // rec.mc.nu is populated from whatever GenLabel() points to, not GENIE
+      // specifically -- e.g. MeVPrtlGen (HNL/dissonant-Higgs productions) reuses
+      // the same "generator" producer label and pushes its own MCTruth here too.
+      // simb::GTruth is only ever produced alongside a GENIE MCTruth, so whether
+      // one was found (ok, above) is the definitive per-entry generator tag.
+      srtruthbranch.nu.back().generator = ok ? caf::kGENIE : caf::kUnknownGenerator;
 
       srtruthbranch.nu.back().genie_evtrec_idx = fGenieEventCounter;
 
