@@ -548,9 +548,10 @@ void CAFMaker::SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame) cons
       if(!std::isnan(pfp.trk.crtsbndtrack.score)) pfp.trk.crtsbndtrack.track.time += SBNDFrame;
     }
 
-    // CRUMBS CRT input features [us]
-    slc.crumbs_result.crt.tracktime += SBNDFrame / 1000.;
-    slc.crumbs_result.crt.sptime += SBNDFrame / 1000.;
+    // CRUMBS CRT input features [us]. SRCRUMBSResult has no setDefault() --
+    // "unfilled" is the plain default-constructed NaN, not -9999.
+    if (!std::isnan(slc.crumbs_result.crt.tracktime)) slc.crumbs_result.crt.tracktime += SBNDFrame / 1000.;
+    if (!std::isnan(slc.crumbs_result.crt.sptime))    slc.crumbs_result.crt.sptime    += SBNDFrame / 1000.;
   }
 
   // TODO: SRSBNDCRTVeto.sp_time (FillReco.cxx) is not shifted here -- watch list.
@@ -605,22 +606,41 @@ void CAFMaker::CorrectMCTiming(StandardRecord &rec) const {
       if (part.endT   > -9998.) part.endT   += delta_us;
     }
 
-    slc.opt0.time     += delta_us;
-    slc.opt0_sec.time += delta_us;
+    // Every field below comes from an optional reco association that isn't
+    // guaranteed to exist for a given slice (OpT0Finder candidate,
+    // TPCPMTBarycenterMatch, SimpleFlashMatch, CRUMBSResult); an absent one
+    // leaves its CAF field at that struct's own "unfilled" default. Each
+    // struct only ever uses ONE convention (confirmed from source +
+    // empirically), so each guard below checks only that field's actual
+    // sentinel: SROpT0Finder/SRCRUMBSResult have no setDefault(), just a
+    // NaN-initializing constructor, so those fields guard on isnan() alone;
+    // SRTPCPMTBarycenterMatch/SRCorrectedOpFlash/sbn::SimpleFlashMatch (the
+    // fmatch* upstream producer, copied through even when absent) default
+    // to -9999. via setDefault()/the producer's own sentinel, so those guard
+    // on != -9999. alone. Shifting an unfilled default blindly turns an
+    // honest "not filled" sentinel into a bogus near-default value that
+    // looks filled but isn't -- same bug class as the correctedOpFlash fix.
+    if (!std::isnan(slc.opt0.time))     slc.opt0.time     += delta_us; // NaN default
+    if (!std::isnan(slc.opt0_sec.time)) slc.opt0_sec.time += delta_us; // NaN default
 
-    slc.barycenterFM.flashTime     += delta_us;
-    slc.barycenterFM.flashFirstHit += delta_us;
+    if (slc.correctedOpFlash.OpFlashT0 != -9999.) { // -9999. default
+      slc.correctedOpFlash.OpFlashT0          += delta_us;
+      slc.correctedOpFlash.OpFlashT0Corrected += delta_us;
+    }
+
+    if (slc.barycenterFM.flashTime     != -9999.) slc.barycenterFM.flashTime     += delta_us; // -9999. default
+    if (slc.barycenterFM.flashFirstHit != -9999.) slc.barycenterFM.flashFirstHit += delta_us; // -9999. default
 
     // PMT/XARAPUCA simple flash matches (fmatch=PMT-SimpleFlash, fmatchop=PMT-OpFlash,
     // fmatchara=XARAPUCA-SimpleFlash, fmatchopara=XARAPUCA-OpFlash)
-    slc.fmatch.time      += delta_us;
-    slc.fmatchop.time    += delta_us;
-    slc.fmatchara.time   += delta_us;
-    slc.fmatchopara.time += delta_us;
+    if (slc.fmatch.time      != -9999.) slc.fmatch.time      += delta_us; // -9999. default
+    if (slc.fmatchop.time    != -9999.) slc.fmatchop.time    += delta_us; // -9999. default
+    if (slc.fmatchara.time   != -9999.) slc.fmatchara.time   += delta_us; // -9999. default
+    if (slc.fmatchopara.time != -9999.) slc.fmatchopara.time += delta_us; // -9999. default
 
-    slc.crumbs_result.pds.fmtime    += delta_us;
-    slc.crumbs_result.crt.tracktime += delta_us;
-    slc.crumbs_result.crt.sptime    += delta_us;
+    if (!std::isnan(slc.crumbs_result.pds.fmtime))    slc.crumbs_result.pds.fmtime    += delta_us; // NaN default
+    if (!std::isnan(slc.crumbs_result.crt.tracktime)) slc.crumbs_result.crt.tracktime += delta_us; // NaN default
+    if (!std::isnan(slc.crumbs_result.crt.sptime))    slc.crumbs_result.crt.sptime    += delta_us; // NaN default
 
     for (SRPFP &pfp: slc.reco.pfp) {
       if (!std::isnan(pfp.trk.crtspacepoint.score)) pfp.trk.crtspacepoint.spacepoint.time += off_ns;
@@ -639,8 +659,9 @@ void CAFMaker::CorrectMCTiming(StandardRecord &rec) const {
   //                                CRTAnalysis analyzer, not persisted as an art product;
   //                                CAFMaker would need to call it directly (not done here)
   //   SRSBNDCRTVeto.sp_time
-  //   SRCorrectedOpFlash (slice.correctedOpFlash); see
-  //     https://github.com/SBNSoftware/sbncode/pull/668#pullrequestreview-5117853839
+  //   SRCorrectedOpFlash.NuToFLight/.NuToFCharge (slice.correctedOpFlash) -- these are
+  //     time-of-flight differences between already-shifted quantities, so a constant
+  //     offset cancels; OpFlashT0/OpFlashT0Corrected are corrected above.
   //   SRSoftwareTrigger.flash_peaktime
 }
 
@@ -654,24 +675,31 @@ void CAFMaker::SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame) cons
     opf.firsttime += SBNDFrame_us;
   }
   
-  //OpT0 match to slice
+  //OpT0 match to slice. Guards match each field's actual "unfilled"
+  //convention (NaN via plain constructor, or -9999. via setDefault()/the
+  //upstream producer's own sentinel) -- see CorrectMCTiming for the detail.
   for (SRSlice &s: rec.slc) {
-    s.opt0.time += SBNDFrame_us;
-    s.opt0_sec.time += SBNDFrame_us;
+    if (!std::isnan(s.opt0.time))     s.opt0.time     += SBNDFrame_us; // NaN default
+    if (!std::isnan(s.opt0_sec.time)) s.opt0_sec.time += SBNDFrame_us; // NaN default
 
-    s.barycenterFM.flashTime += SBNDFrame_us;
-    s.barycenterFM.flashFirstHit += SBNDFrame_us;
+    if (s.correctedOpFlash.OpFlashT0 != -9999.) { // -9999. default
+      s.correctedOpFlash.OpFlashT0          += SBNDFrame_us;
+      s.correctedOpFlash.OpFlashT0Corrected += SBNDFrame_us;
+    }
 
-    s.fmatch.time += SBNDFrame_us;
-    s.fmatchop.time += SBNDFrame_us;
-    s.fmatchara.time += SBNDFrame_us;
-    s.fmatchopara.time += SBNDFrame_us;
+    if (s.barycenterFM.flashTime     != -9999.) s.barycenterFM.flashTime     += SBNDFrame_us; // -9999. default
+    if (s.barycenterFM.flashFirstHit != -9999.) s.barycenterFM.flashFirstHit += SBNDFrame_us; // -9999. default
 
-    s.crumbs_result.pds.fmtime += SBNDFrame_us;
+    if (s.fmatch.time      != -9999.) s.fmatch.time      += SBNDFrame_us; // -9999. default
+    if (s.fmatchop.time    != -9999.) s.fmatchop.time    += SBNDFrame_us; // -9999. default
+    if (s.fmatchara.time   != -9999.) s.fmatchara.time   += SBNDFrame_us; // -9999. default
+    if (s.fmatchopara.time != -9999.) s.fmatchopara.time += SBNDFrame_us; // -9999. default
+
+    if (!std::isnan(s.crumbs_result.pds.fmtime)) s.crumbs_result.pds.fmtime += SBNDFrame_us; // NaN default
   }
 
-  // TODO: SRCorrectedOpFlash (slice.correctedOpFlash) not yet shifted here; see
-  //   https://github.com/SBNSoftware/sbncode/pull/668#pullrequestreview-5117853839
+  // TODO: SRCorrectedOpFlash.NuToFLight/.NuToFCharge not shifted here -- ToF/duration
+  //   quantities, a constant offset cancels (see CorrectMCTiming for the same reasoning).
   // TODO: SRSoftwareTrigger.flash_peaktime not yet shifted here.
 }
 
@@ -683,12 +711,15 @@ void CAFMaker::FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_ti
     f.firsttime += PMT_reference_time;
   }
 
-  // Fix the flash matches
+  // Fix the flash matches. Both fields default to -9999. (setDefault()/the
+  // upstream producer's own sentinel), not NaN -- see CorrectMCTiming for
+  // the detail. Runs unconditionally for MC and data, so the guard matters
+  // on both paths.
   for (SRSlice &s: rec.slc) {
-    s.fmatch.time += PMT_reference_time;
+    if (s.fmatch.time != -9999.) s.fmatch.time += PMT_reference_time;
 
-    s.barycenterFM.flashTime +=PMT_reference_time;
-    s.barycenterFM.flashFirstHit +=PMT_reference_time;
+    if (s.barycenterFM.flashTime     != -9999.) s.barycenterFM.flashTime     += PMT_reference_time;
+    if (s.barycenterFM.flashFirstHit != -9999.) s.barycenterFM.flashFirstHit += PMT_reference_time;
   }
 
   // TODO: fix more?
