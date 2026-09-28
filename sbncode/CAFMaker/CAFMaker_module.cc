@@ -1673,10 +1673,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
       FillTrueNeutrino(mctruth, mcflux, dk2nu, gtruth, true_particles, id_to_truehit_map, srtruthbranch.nu.back(), i, fActiveVolumes);
 
-      // rec.mc.nu isn't GENIE-only -- MeVPrtlGen (HNL/Higgs) reuses the same
-      // "generator" label. GTruth only exists alongside a GENIE MCTruth, so
-      // whether one was found (ok) is the definitive per-entry generator tag.
-      srtruthbranch.nu.back().generator = ok ? caf::kGENIE : caf::kUnknownGenerator;
+      if (ok) {
+        srtruthbranch.nu.back().generator = caf::kGENIE;
+      } else if (i < mevprtl_truths.size()) {
+        srtruthbranch.nu.back().generator = caf::kMeVPrtl;
+      } else {
+        srtruthbranch.nu.back().generator = caf::kUnknownGenerator;
+      }
 
       srtruthbranch.nu.back().genie_evtrec_idx = fGenieEventCounter;
 
