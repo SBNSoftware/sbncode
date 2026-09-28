@@ -676,8 +676,6 @@ void CAFMaker::FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_ti
     f.firsttime += PMT_reference_time;
   }
 
-  // Fix the flash matches. Runs unconditionally for MC and data, so the
-  // -9999. unfilled-default guard matters on both paths (see CorrectMCTiming).
   for (SRSlice &s: rec.slc) {
     if (s.fmatch.time != -9999.) s.fmatch.time += PMT_reference_time;
 
