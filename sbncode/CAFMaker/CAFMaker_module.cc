@@ -580,6 +580,7 @@ void CAFMaker::CorrectMCTiming(StandardRecord &rec) const {
     // never produces a bsim::Dk2Nu product, which is incidental, not a real guarantee.
     if (nu.generator != caf::kGENIE) continue;
     if (std::isnan(nu.prod_time)) continue; // no dk2nu info for this sample/interaction
+    if (nu.dk2gen <= -998.) continue; // simb::MCFlux::fdk2gen unfilled default is -999.
 
     offset_ns[i] = nu.prod_time + nu.dk2gen * 100. / kSpeedOfLight;
     double const delta_us = offset_ns[i] / 1000.;
