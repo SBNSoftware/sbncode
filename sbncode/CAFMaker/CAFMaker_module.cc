@@ -540,45 +540,34 @@ void CAFMaker::SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame) cons
     trk.time += SBNDFrame; //ns
   }
 
-  //TODO: CRT Space Point and Track Match
   for (SRSlice &slc: rec.slc){
     for (SRPFP &pfp: slc.reco.pfp){
+      //PFP track-matched CRT
       if(!std::isnan(pfp.trk.crtspacepoint.score)) pfp.trk.crtspacepoint.spacepoint.time += SBNDFrame;
-
       if(!std::isnan(pfp.trk.crtsbndtrack.score)) pfp.trk.crtsbndtrack.track.time += SBNDFrame;
     }
 
-    // CRUMBS CRT input features [us]. SRCRUMBSResult has no setDefault() --
-    // "unfilled" is the plain default-constructed NaN, not -9999.
+    // CRUMBS CRT input features [us]; unfilled default is NaN, not -9999.
     if (!std::isnan(slc.crumbs_result.crt.tracktime)) slc.crumbs_result.crt.tracktime += SBNDFrame / 1000.;
     if (!std::isnan(slc.crumbs_result.crt.sptime))    slc.crumbs_result.crt.sptime    += SBNDFrame / 1000.;
   }
 
-  // TODO: SRSBNDCRTVeto.sp_time (FillReco.cxx) is not shifted here -- watch list.
+  // Note: SRSBNDCRTVeto.sp_time data is already RWM-shifted in CRTVeto module
 }
 
 void CAFMaker::CorrectMCTiming(StandardRecord &rec) const {
 
-  // Recovers the dk2nu v01_11_00 SetT(0) bug (fixed in v01_12_00)
-  // by adding the missing meson decay time + neutrino tof from meson decay to flux window
+  // Recovers the dk2nu v01_11_00 SetT(0) bug (fixed in v01_12_00) by adding back
+  // the missing meson decay time + tof from decay to flux window.
   constexpr double kSpeedOfLight = 29.9792458; // cm/ns
-
-  // TODO: Does not correct TPC timing variables yet:
-  //   SRCaloPoint.t, SRHit.peakTime, SRPFP.t0,
-  //   SRBlip.time/.timeTick,
-  //   SRBlipHitClust.time/.startTime/.endTime/.timespan/.timeTick
 
   // Per-neutrino offset, indexed the same as rec.mc.nu / SRSlice.tmatch.index.
   std::vector<double> offset_ns(rec.mc.nu.size(), std::numeric_limits<double>::signaling_NaN());
 
   for (unsigned i = 0; i < rec.mc.nu.size(); i++) {
     SRTrueInteraction &nu = rec.mc.nu[i];
-    // This is a GENIE-dk2nu-specific correction (see the bug writeup above); rec.mc.nu can
-    // also hold non-GENIE interactions (e.g. HNL decays from MeVPrtlGen, which reuses the
-    // same "generator" producer label), so an explicit generator check comes first -- the
-    // NaN check on prod_time only happens to also exclude those today because MeVPrtlGen
-    // never produces a bsim::Dk2Nu product, which is incidental, not a real guarantee.
-    if (nu.generator != caf::kGENIE) continue;
+
+    if (nu.generator != caf::kGENIE) continue; //GENIE-dk2nu-specific correction;
     if (std::isnan(nu.prod_time)) continue; // no dk2nu info for this sample/interaction
     if (nu.dk2gen <= -998.) continue; // simb::MCFlux::fdk2gen unfilled default is -999.
 
@@ -594,9 +583,7 @@ void CAFMaker::CorrectMCTiming(StandardRecord &rec) const {
     }
   }
 
-  // Apply the matched neutrino's own offset to slice-scoped reco objects (and the
-  // slice's stale truth copy). SRSlice.tmatch.index (set by MatchSlice2Truth,
-  // purity/charge-based, independent of nu.time) indexes directly into rec.mc.nu.
+  // Apply each slice's matched neutrino's own offset (SRSlice.tmatch.index)
   // Unmatched/cosmic slices (tmatch.index < 0) are left untouched.
   for (SRSlice &slc: rec.slc) {
     if (slc.tmatch.index < 0 || std::isnan(offset_ns[slc.tmatch.index])) continue;
@@ -604,8 +591,7 @@ void CAFMaker::CorrectMCTiming(StandardRecord &rec) const {
     double const off_ns   = offset_ns[slc.tmatch.index];
     double const delta_us = off_ns / 1000.;
 
-    // slc.truth is a copy of rec.mc.nu[tmatch.index] taken before this function
-    // runs (FillTrue.cxx:372) -- needs the same correction applied separately.
+    // slc.truth is a copy of rec.mc.nu[tmatch.index] taken earlier (FillTrue.cxx:372).
     slc.truth.time += delta_us;
     for (SRTrueParticle &part: slc.truth.prim) {
       if (part.genT   > -9998.) part.genT   += delta_us;
@@ -613,63 +599,42 @@ void CAFMaker::CorrectMCTiming(StandardRecord &rec) const {
       if (part.endT   > -9998.) part.endT   += delta_us;
     }
 
-    // Every field below comes from an optional reco association that isn't
-    // guaranteed to exist for a given slice (OpT0Finder candidate,
-    // TPCPMTBarycenterMatch, SimpleFlashMatch, CRUMBSResult); an absent one
-    // leaves its CAF field at that struct's own "unfilled" default. Each
-    // struct only ever uses ONE convention (confirmed from source +
-    // empirically), so each guard below checks only that field's actual
-    // sentinel: SROpT0Finder/SRCRUMBSResult have no setDefault(), just a
-    // NaN-initializing constructor, so those fields guard on isnan() alone;
-    // SRTPCPMTBarycenterMatch/SRCorrectedOpFlash/sbn::SimpleFlashMatch (the
-    // fmatch* upstream producer, copied through even when absent) default
-    // to -9999. via setDefault()/the producer's own sentinel, so those guard
-    // on != -9999. alone. Shifting an unfilled default blindly turns an
-    // honest "not filled" sentinel into a bogus near-default value that
-    // looks filled but isn't -- same bug class as the correctedOpFlash fix.
+    // Opt0 FM
     if (!std::isnan(slc.opt0.time))     slc.opt0.time     += delta_us; // NaN default
     if (!std::isnan(slc.opt0_sec.time)) slc.opt0_sec.time += delta_us; // NaN default
 
+    // BFM
+    if (slc.barycenterFM.flashTime     != -9999.) slc.barycenterFM.flashTime     += delta_us; // -9999. default
+    if (slc.barycenterFM.flashFirstHit != -9999.) slc.barycenterFM.flashFirstHit += delta_us; // -9999. default
+
+    // BFM + Light Propagation Module
     if (slc.correctedOpFlash.OpFlashT0 != -9999.) { // -9999. default
       slc.correctedOpFlash.OpFlashT0          += delta_us;
       slc.correctedOpFlash.OpFlashT0Corrected += delta_us;
     }
 
-    if (slc.barycenterFM.flashTime     != -9999.) slc.barycenterFM.flashTime     += delta_us; // -9999. default
-    if (slc.barycenterFM.flashFirstHit != -9999.) slc.barycenterFM.flashFirstHit += delta_us; // -9999. default
-
-    // PMT/XARAPUCA simple flash matches (fmatch=PMT-SimpleFlash, fmatchop=PMT-OpFlash,
-    // fmatchara=XARAPUCA-SimpleFlash, fmatchopara=XARAPUCA-OpFlash)
+    // Simple FM: PMT & XARAPUCA
     if (slc.fmatch.time      != -9999.) slc.fmatch.time      += delta_us; // -9999. default
     if (slc.fmatchop.time    != -9999.) slc.fmatchop.time    += delta_us; // -9999. default
     if (slc.fmatchara.time   != -9999.) slc.fmatchara.time   += delta_us; // -9999. default
     if (slc.fmatchopara.time != -9999.) slc.fmatchopara.time += delta_us; // -9999. default
 
-    if (!std::isnan(slc.crumbs_result.pds.fmtime))    slc.crumbs_result.pds.fmtime    += delta_us; // NaN default
-    if (!std::isnan(slc.crumbs_result.crt.tracktime)) slc.crumbs_result.crt.tracktime += delta_us; // NaN default
-    if (!std::isnan(slc.crumbs_result.crt.sptime))    slc.crumbs_result.crt.sptime    += delta_us; // NaN default
-
+    //PFP track-matched CRT
     for (SRPFP &pfp: slc.reco.pfp) {
       if (!std::isnan(pfp.trk.crtspacepoint.score)) pfp.trk.crtspacepoint.spacepoint.time += off_ns;
       if (!std::isnan(pfp.trk.crtsbndtrack.score))  pfp.trk.crtsbndtrack.track.time      += off_ns;
     }
+
+    // CRUMBS BDT
+    if (!std::isnan(slc.crumbs_result.pds.fmtime))    slc.crumbs_result.pds.fmtime    += delta_us; // NaN default
+    if (!std::isnan(slc.crumbs_result.crt.tracktime)) slc.crumbs_result.crt.tracktime += delta_us; // NaN default
+    if (!std::isnan(slc.crumbs_result.crt.sptime))    slc.crumbs_result.crt.sptime    += delta_us; // NaN default
   }
 
-  // TODO: watch list -- no truth-matching path currently exists to assign a
-  // per-object offset to these EVENT-GLOBAL (not slice-scoped) collections:
-  //   rec.opflashes             -- would need a PhotonBackTracker-based match; none
-  //                                exists in SBND today (OpDetBacktrackerRecords are
-  //                                dropped from reco output; PhotonBackTracker unused)
-  //   rec.crt_spacepoints, rec.sbnd_crt_tracks
-  //                             -- CRTBackTrackerAlg exists (sbndcode CRT/CRTBackTracker/
-  //                                CRTBackTrackerAlg.{h,cc}) but is only invoked from the
-  //                                CRTAnalysis analyzer, not persisted as an art product;
-  //                                CAFMaker would need to call it directly (not done here)
-  //   SRSBNDCRTVeto.sp_time
-  //   SRCorrectedOpFlash.NuToFLight/.NuToFCharge (slice.correctedOpFlash) -- these are
-  //     time-of-flight differences between already-shifted quantities, so a constant
-  //     offset cancels; OpFlashT0/OpFlashT0Corrected are corrected above.
-  //   SRSoftwareTrigger.flash_peaktime
+  // TODO: Non-correction list
+  // 1. No slice-truth-matching path exists: rec.opflashes, rec.crt_spacepoints, rec.sbnd_crt_tracks
+  // 2. TPC timing variables: SRCaloPoint.t, SRHit.peakTime, SRPFP.t0, SRBlip.time/.timeTick, SRBlipHitClust.time/.startTime/.endTime/.timespan/.timeTick
+  // 3. Has their own timing shift in local modules: SRSBNDCRTVeto.sp_time, SRSoftwareTrigger.flash_peaktime
 }
 
 void CAFMaker::SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame) const {
@@ -682,9 +647,7 @@ void CAFMaker::SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame) cons
     opf.firsttime += SBNDFrame_us;
   }
   
-  //OpT0 match to slice. Guards match each field's actual "unfilled"
-  //convention (NaN via plain constructor, or -9999. via setDefault()/the
-  //upstream producer's own sentinel) -- see CorrectMCTiming for the detail.
+  // OpT0 match to slice; guards match each field's own unfilled convention (see CorrectMCTiming)
   for (SRSlice &s: rec.slc) {
     if (!std::isnan(s.opt0.time))     s.opt0.time     += SBNDFrame_us; // NaN default
     if (!std::isnan(s.opt0_sec.time)) s.opt0_sec.time += SBNDFrame_us; // NaN default
@@ -700,13 +663,9 @@ void CAFMaker::SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame) cons
     if (!std::isnan(s.crumbs_result.pds.fmtime)) s.crumbs_result.pds.fmtime += SBNDFrame_us; // NaN default
   }
 
-  // TODO: SRCorrectedOpFlash.NuToFLight/.NuToFCharge not shifted here -- ToF/duration
-  //   quantities, a constant offset cancels (see CorrectMCTiming for the same reasoning).
-  // SRCorrectedOpFlash.OpFlashT0/.OpFlashT0Corrected not shifted here (data path only --
-  //   CorrectMCTiming still shifts them for MC): LightPropagationCorrection_module.cc computes
-  //   them from the real SPECTDC RWM/trigger timestamps for data (!fIsMC), already reference-frame
-  //   corrected upstream of CAFMaker -- shifting again here would double-correct.
-  // TODO: SRSoftwareTrigger.flash_peaktime not yet shifted here.
+  // Note:
+  // 1. SRSoftwareTrigger.flash_peaktime data: already RWM-shifted in SoftwareTrigger module
+  // 2. correctedOpFlash.OpFlashT0/.OpFlashT0Corrected: already RWM-shifted in LightPropagation module
 }
 
 void CAFMaker::FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_time) {
@@ -717,10 +676,8 @@ void CAFMaker::FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_ti
     f.firsttime += PMT_reference_time;
   }
 
-  // Fix the flash matches. Both fields default to -9999. (setDefault()/the
-  // upstream producer's own sentinel), not NaN -- see CorrectMCTiming for
-  // the detail. Runs unconditionally for MC and data, so the guard matters
-  // on both paths.
+  // Fix the flash matches. Runs unconditionally for MC and data, so the
+  // -9999. unfilled-default guard matters on both paths (see CorrectMCTiming).
   for (SRSlice &s: rec.slc) {
     if (s.fmatch.time != -9999.) s.fmatch.time += PMT_reference_time;
 
@@ -1718,11 +1675,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
       FillTrueNeutrino(mctruth, mcflux, dk2nu, gtruth, true_particles, id_to_truehit_map, srtruthbranch.nu.back(), i, fActiveVolumes);
 
-      // rec.mc.nu is populated from whatever GenLabel() points to, not GENIE
-      // specifically -- e.g. MeVPrtlGen (HNL/dissonant-Higgs productions) reuses
-      // the same "generator" producer label and pushes its own MCTruth here too.
-      // simb::GTruth is only ever produced alongside a GENIE MCTruth, so whether
-      // one was found (ok, above) is the definitive per-entry generator tag.
+      // rec.mc.nu isn't GENIE-only -- MeVPrtlGen (HNL/Higgs) reuses the same
+      // "generator" label. GTruth only exists alongside a GENIE MCTruth, so
+      // whether one was found (ok) is the definitive per-entry generator tag.
       srtruthbranch.nu.back().generator = ok ? caf::kGENIE : caf::kUnknownGenerator;
 
       srtruthbranch.nu.back().genie_evtrec_idx = fGenieEventCounter;
