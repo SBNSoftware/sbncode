@@ -676,11 +676,12 @@ void CAFMaker::FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_ti
     f.firsttime += PMT_reference_time;
   }
 
+  // Fix the flash matches
   for (SRSlice &s: rec.slc) {
-    if (s.fmatch.time != -9999.) s.fmatch.time += PMT_reference_time;
+    s.fmatch.time += PMT_reference_time;
 
-    if (s.barycenterFM.flashTime     != -9999.) s.barycenterFM.flashTime     += PMT_reference_time;
-    if (s.barycenterFM.flashFirstHit != -9999.) s.barycenterFM.flashFirstHit += PMT_reference_time;
+    s.barycenterFM.flashTime +=PMT_reference_time;
+    s.barycenterFM.flashFirstHit +=PMT_reference_time;
   }
 
   // TODO: fix more?
