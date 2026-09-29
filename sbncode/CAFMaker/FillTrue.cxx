@@ -1,5 +1,7 @@
 #include "FillTrue.h"
 
+#include "dk2nu/tree/dk2nu.h"
+
 #include "larcorealg/GeoAlgo/GeoAlgo.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/WireReadoutGeom.h"
@@ -457,6 +459,7 @@ namespace caf {
   //------------------------------------------------
   void FillTrueNeutrino(const art::Ptr<simb::MCTruth> mctruth,
       const simb::MCFlux &mcflux,
+      const bsim::Dk2Nu &dk2nu,
       const simb::GTruth& gtruth,
       const std::vector<caf::SRTrueParticle> &srparticles,
       const std::map<int, std::vector<art::Ptr<recob::Hit>>> &id_to_truehit_map,
@@ -549,6 +552,9 @@ namespace caf {
     // Set the MCFlux stuff
     srneutrino.initpdg = mcflux.fntype;
     srneutrino.baseline = mcflux.fdk2gen + mcflux.fgen2vtx;
+    srneutrino.dk2gen = mcflux.fdk2gen;
+    srneutrino.prod_time = (!dk2nu.ancestor.empty())
+        ? dk2nu.ancestor.back().startt : std::numeric_limits<float>::signaling_NaN();
     srneutrino.parent_pdg = mcflux.fptype;
     srneutrino.parent_dcy_mode = mcflux.fndecay;
     srneutrino.prod_vtx.x = mcflux.fvx;
