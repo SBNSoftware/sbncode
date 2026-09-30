@@ -387,7 +387,7 @@ namespace caf {
    srtruth.position.y = truth.decay_pos.Y();
    srtruth.position.z = truth.decay_pos.Z();
    srtruth.time = truth.decay_pos.T();
-   srtruth.prod_time = truth.meson_dpos_beamcoord.T();
+   srtruth.prod_time = truth.meson_dpos_beamcoord.T(); //Meson time from flux file.
 
    srtruth.momentum.x = truth.mevprtl_mom.X();
    srtruth.momentum.y = truth.mevprtl_mom.Y();
