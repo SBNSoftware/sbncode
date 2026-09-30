@@ -2835,6 +2835,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   if (isRealData && (fDet == kSBND) && fSubRunPOT > 0)
   {
+    std::cout << "CAFMaker: run " << evt.run() << " subRun " << evt.subRun()
+              << " fSubRunPOT=" << fSubRunPOT
+              << " frameApplyAtCaf=" << rec.sbnd_frames.frameApplyAtCaf << std::endl;
+
     // Fill trigger info
     FillTriggerSBND(srsbndtiminginfo, srtrigger);
 
