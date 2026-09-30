@@ -557,6 +557,8 @@ void CAFMaker::SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame) cons
 
 void CAFMaker::CorrectMCTiming(StandardRecord &rec) const {
 
+  std::cout << "CAFMaker::CorrectMCTiming: running" << std::endl;
+
   // Recovers the dk2nu v01_11_00 SetT(0) bug (fixed in v01_12_00) by adding back
   // the missing meson decay time + tof from decay to flux window.
   constexpr double kSpeedOfLight = 29.9792458; // cm/ns
