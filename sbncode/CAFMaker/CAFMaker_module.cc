@@ -42,6 +42,8 @@
 
 #include "ifdh_art/IFDHService/IFDH_service.h"
 
+#include "dk2nu/tree/dk2nu.h"
+
 // ROOT includes
 #include "TFile.h"
 #include "TH1D.h"
@@ -338,6 +340,8 @@ class CAFMaker : public art::EDProducer {
   void SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame) const;
   void SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame) const;
 
+  void CorrectMCTiming(StandardRecord &rec) const;
+
   /// Equivalent of FindManyP except a return that is !isValid() prints a
   /// messsage and aborts if StrictMode is true.
   template <class T, class U>
@@ -536,14 +540,103 @@ void CAFMaker::SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame) cons
     trk.time += SBNDFrame; //ns
   }
 
-  //TODO: CRT Space Point and Track Match
   for (SRSlice &slc: rec.slc){
     for (SRPFP &pfp: slc.reco.pfp){
+      //PFP track-matched CRT
       if(!std::isnan(pfp.trk.crtspacepoint.score)) pfp.trk.crtspacepoint.spacepoint.time += SBNDFrame;
-
       if(!std::isnan(pfp.trk.crtsbndtrack.score)) pfp.trk.crtsbndtrack.track.time += SBNDFrame;
     }
+
+    // CRUMBS CRT input features [us]; unfilled default is NaN, not -9999.
+    if (!std::isnan(slc.crumbs_result.crt.tracktime)) slc.crumbs_result.crt.tracktime += SBNDFrame / 1000.;
+    if (!std::isnan(slc.crumbs_result.crt.sptime))    slc.crumbs_result.crt.sptime    += SBNDFrame / 1000.;
   }
+
+  // Note: SRSBNDCRTVeto.sp_time data is already RWM-shifted in CRTVeto module
+}
+
+void CAFMaker::CorrectMCTiming(StandardRecord &rec) const {
+
+  std::cout << "CAFMaker::CorrectMCTiming: running" << std::endl;
+
+  // Recovers the dk2nu v01_11_00 SetT(0) bug (fixed in v01_12_00) by adding back
+  // the missing meson decay time + tof from decay to flux window.
+  constexpr double kSpeedOfLight = 29.9792458; // cm/ns
+
+  // Per-neutrino offset, indexed the same as rec.mc.nu / SRSlice.tmatch.index.
+  std::vector<double> offset_ns(rec.mc.nu.size(), std::numeric_limits<double>::signaling_NaN());
+
+  for (unsigned i = 0; i < rec.mc.nu.size(); i++) {
+    SRTrueInteraction &nu = rec.mc.nu[i];
+
+    if (nu.generator != caf::kGENIE) continue; //GENIE-dk2nu-specific correction;
+    if (std::isnan(nu.prod_time)) continue; // no dk2nu info for this sample/interaction
+    if (nu.dk2gen <= -998.) continue; // simb::MCFlux::fdk2gen unfilled default is -999.
+
+    offset_ns[i] = nu.prod_time + nu.dk2gen * 100. / kSpeedOfLight;
+    double const delta_us = offset_ns[i] / 1000.;
+
+    nu.time += delta_us;
+
+    for (SRTrueParticle &part: nu.prim) {
+      if (part.genT   > -9998.) part.genT   += delta_us;
+      if (part.startT > -9998.) part.startT += delta_us;
+      if (part.endT   > -9998.) part.endT   += delta_us;
+    }
+  }
+
+  // Apply each slice's matched neutrino's own offset (SRSlice.tmatch.index)
+  // Unmatched/cosmic slices (tmatch.index < 0) are left untouched.
+  for (SRSlice &slc: rec.slc) {
+    if (slc.tmatch.index < 0 || std::isnan(offset_ns[slc.tmatch.index])) continue;
+
+    double const off_ns   = offset_ns[slc.tmatch.index];
+    double const delta_us = off_ns / 1000.;
+
+    // slc.truth is a copy of rec.mc.nu[tmatch.index] taken earlier (FillTrue.cxx:372).
+    slc.truth.time += delta_us;
+    for (SRTrueParticle &part: slc.truth.prim) {
+      if (part.genT   > -9998.) part.genT   += delta_us;
+      if (part.startT > -9998.) part.startT += delta_us;
+      if (part.endT   > -9998.) part.endT   += delta_us;
+    }
+
+    // Opt0 FM
+    if (!std::isnan(slc.opt0.time))     slc.opt0.time     += delta_us; // NaN default
+    if (!std::isnan(slc.opt0_sec.time)) slc.opt0_sec.time += delta_us; // NaN default
+
+    // BFM
+    if (slc.barycenterFM.flashTime     != -9999.) slc.barycenterFM.flashTime     += delta_us; // -9999. default
+    if (slc.barycenterFM.flashFirstHit != -9999.) slc.barycenterFM.flashFirstHit += delta_us; // -9999. default
+
+    // BFM + Light Propagation Module
+    if (slc.correctedOpFlash.OpFlashT0 != -9999.) { // -9999. default
+      slc.correctedOpFlash.OpFlashT0          += delta_us;
+      slc.correctedOpFlash.OpFlashT0Corrected += delta_us;
+    }
+
+    // Simple FM: PMT & XARAPUCA
+    if (slc.fmatch.time      != -9999.) slc.fmatch.time      += delta_us; // -9999. default
+    if (slc.fmatchop.time    != -9999.) slc.fmatchop.time    += delta_us; // -9999. default
+    if (slc.fmatchara.time   != -9999.) slc.fmatchara.time   += delta_us; // -9999. default
+    if (slc.fmatchopara.time != -9999.) slc.fmatchopara.time += delta_us; // -9999. default
+
+    //PFP track-matched CRT
+    for (SRPFP &pfp: slc.reco.pfp) {
+      if (!std::isnan(pfp.trk.crtspacepoint.score)) pfp.trk.crtspacepoint.spacepoint.time += off_ns;
+      if (!std::isnan(pfp.trk.crtsbndtrack.score))  pfp.trk.crtsbndtrack.track.time      += off_ns;
+    }
+
+    // CRUMBS BDT
+    if (!std::isnan(slc.crumbs_result.pds.fmtime))    slc.crumbs_result.pds.fmtime    += delta_us; // NaN default
+    if (!std::isnan(slc.crumbs_result.crt.tracktime)) slc.crumbs_result.crt.tracktime += delta_us; // NaN default
+    if (!std::isnan(slc.crumbs_result.crt.sptime))    slc.crumbs_result.crt.sptime    += delta_us; // NaN default
+  }
+
+  // TODO: Non-correction list
+  // 1. No slice-truth-matching path exists: rec.opflashes, rec.crt_spacepoints, rec.sbnd_crt_tracks
+  // 2. TPC timing variables: SRCaloPoint.t, SRHit.peakTime, SRPFP.t0, SRBlip.time/.timeTick, SRBlipHitClust.time/.startTime/.endTime/.timespan/.timeTick
+  // 3. Has their own timing shift in local modules: SRSBNDCRTVeto.sp_time, SRSoftwareTrigger.flash_peaktime
 }
 
 void CAFMaker::SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame) const {
@@ -556,10 +649,25 @@ void CAFMaker::SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame) cons
     opf.firsttime += SBNDFrame_us;
   }
   
-  //OpT0 match to slice
+  // OpT0 match to slice; guards match each field's own unfilled convention (see CorrectMCTiming)
   for (SRSlice &s: rec.slc) {
-    s.opt0.time += SBNDFrame_us;
+    if (!std::isnan(s.opt0.time))     s.opt0.time     += SBNDFrame_us; // NaN default
+    if (!std::isnan(s.opt0_sec.time)) s.opt0_sec.time += SBNDFrame_us; // NaN default
+
+    if (s.barycenterFM.flashTime     != -9999.) s.barycenterFM.flashTime     += SBNDFrame_us; // -9999. default
+    if (s.barycenterFM.flashFirstHit != -9999.) s.barycenterFM.flashFirstHit += SBNDFrame_us; // -9999. default
+
+    if (s.fmatch.time      != -9999.) s.fmatch.time      += SBNDFrame_us; // -9999. default
+    if (s.fmatchop.time    != -9999.) s.fmatchop.time    += SBNDFrame_us; // -9999. default
+    if (s.fmatchara.time   != -9999.) s.fmatchara.time   += SBNDFrame_us; // -9999. default
+    if (s.fmatchopara.time != -9999.) s.fmatchopara.time += SBNDFrame_us; // -9999. default
+
+    if (!std::isnan(s.crumbs_result.pds.fmtime)) s.crumbs_result.pds.fmtime += SBNDFrame_us; // NaN default
   }
+
+  // Note:
+  // 1. SRSoftwareTrigger.flash_peaktime data: already RWM-shifted in SoftwareTrigger module
+  // 2. correctedOpFlash.OpFlashT0/.OpFlashT0Corrected: already RWM-shifted in LightPropagation module
 }
 
 void CAFMaker::FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_time) {
@@ -1454,6 +1562,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::fill_ptr_vector(mcfluxes, mcflux_handle);
   }
 
+  art::Handle<std::vector<bsim::Dk2Nu>> dk2nu_handle;
+  GetByLabelStrict(evt, std::string("generator"), dk2nu_handle);
+
+  std::vector<art::Ptr<bsim::Dk2Nu>> dk2nus;
+  if (dk2nu_handle.isValid()) {
+    art::fill_ptr_vector(dk2nus, dk2nu_handle);
+  }
+
   // get the MCReco for the fake-reco
   art::Handle<std::vector<sim::MCTrack>> mctrack_handle;
   GetByLabelStrict(evt, std::string("mcreco"), mctrack_handle);
@@ -1537,9 +1653,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // holder for invalid MCFlux
   simb::MCFlux badflux; // default constructor gives nonsense values
 
+  // holder for invalid Dk2Nu (default-constructed ancestor vector is empty -- treated as "absent")
+  bsim::Dk2Nu baddk2nu;
+
   for (size_t i=0; i<mctruths.size(); i++) {
     auto const& mctruth = mctruths.at(i);
     const simb::MCFlux &mcflux = (mcfluxes.size()) ? *mcfluxes.at(i) : badflux;
+    const bsim::Dk2Nu &dk2nu = (dk2nus.size()) ? *dk2nus.at(i) : baddk2nu;
 
     simb::GTruth gtruth;
     bool ok = GetAssociatedProduct(fmp_gtruth, i, gtruth);
@@ -1554,7 +1674,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     if ( !isRealData ){
 
-      FillTrueNeutrino(mctruth, mcflux, gtruth, true_particles, id_to_truehit_map, srtruthbranch.nu.back(), i, fActiveVolumes);
+      FillTrueNeutrino(mctruth, mcflux, dk2nu, gtruth, true_particles, id_to_truehit_map, srtruthbranch.nu.back(), i, fActiveVolumes);
+
+      if (ok) {
+        srtruthbranch.nu.back().generator = caf::kGENIE;
+      } else if (i < mevprtl_truths.size()) {
+        srtruthbranch.nu.back().generator = caf::kMeVPrtl;
+      } else {
+        srtruthbranch.nu.back().generator = caf::kUnknownGenerator;
+      }
 
       srtruthbranch.nu.back().genie_evtrec_idx = fGenieEventCounter;
 
@@ -2694,14 +2822,23 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   FixPMTReferenceTimes(rec, PMT_reference_time);
 
+  // SBND MC: recover the dk2nu v01_11_00 SetT(0) vertex-time bug (gen2-tag production)
+  if (!isRealData && (fDet == kSBND)) {
+    CorrectMCTiming(rec);
+  }
+
   // TODO: TPC?
   
-  // SBND: Fix the Reference time in data depending on the stream
-  // For more information, see: 
-  // https://sbn-docdb.fnal.gov/cgi-bin/sso/RetrieveFile?docid=43090
+  // SBND: Fix the reference time in data exclusively for Gen2 Sample (v10_14_02)
+  // For information, see: https://sbn-docdb.fnal.gov/cgi-bin/sso/RetrieveFile?docid=43090
+  // Otherwise, this code block is legacy for sbncode > v10_20_09
 
   if (isRealData && (fDet == kSBND) && fSubRunPOT > 0)
   {
+    std::cout << "CAFMaker: run " << evt.run() << " subRun " << evt.subRun()
+              << " fSubRunPOT=" << fSubRunPOT
+              << " frameApplyAtCaf=" << rec.sbnd_frames.frameApplyAtCaf << std::endl;
+
     // Fill trigger info
     FillTriggerSBND(srsbndtiminginfo, srtrigger);
 
@@ -2709,11 +2846,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     if (!std::isnan(rec.sbnd_frames.frameApplyAtCaf) && (rec.sbnd_frames.frameApplyAtCaf != 0.0)){
       mf::LogInfo("CAFMaker") << "Setting Reference Timing for timing object in SBND \n"
                               << "    Shift Apply At Caf Level = " << rec.sbnd_frames.frameApplyAtCaf << " ns\n";
-      
-      //shift reference frame for CRT objects: crt trk, crt sp, crt sp match, crt trk match
+
+      //shift reference frame for CRT objects: crt trk, crt sp, crt sp match, crt trk match, CRUMBS CRT features
       SBNDShiftCRTReference(rec, rec.sbnd_frames.frameApplyAtCaf);
 
-      //shift reference frame for PMT objects: opflash, opt0
+      //shift reference frame for PMT objects: opflash, opt0/opt0_sec, barycenter flash match, simple flash matches, CRUMBS PDS feature
       SBNDShiftPMTReference(rec, rec.sbnd_frames.frameApplyAtCaf);
     }
   }
