@@ -1020,11 +1020,14 @@ namespace caf {
     srparticle.endp = (exit_point >= 0) ? particle.Momentum(exit_point).Vect() : TVector3(-9999, -9999, -9999);
     srparticle.endE = (exit_point >= 0) ? particle.Momentum(exit_point).E() : -9999.;
 
+    std::cout << "Filling GENIE particle start_process for pdg " << particle.PdgCode() << std::endl;
     srparticle.start_process = GetG4ProcessID(particle.Process());
     if (particle.PdgCode() == 221) std::cout << "Eta srparticle start process: " << srparticle.start_process << std::endl;
-    
+    std::cout << "Filling GENIE particle end_process for pdg " << particle.PdgCode() << std::endl;
+
     srparticle.end_process = GetG4ProcessID(particle.EndProcess());
 
+    std::cout << "Filling GENIE particle G4ID for pdg " << particle.PdgCode() << std::endl;
     // Special GENIE particles get a shifted positive ID so they do not overlap with G4 track IDs.
     srparticle.G4ID = particle.TrackId() + id_offset;
     srparticle.parent = particle.Mother() > 0 ? static_cast<unsigned>(particle.Mother() + id_offset) : 0u;
@@ -1048,6 +1051,8 @@ namespace caf {
     // Set interaction_id to the matched MCTruth
     srparticle.interaction_id = interaction_id;
 
+    std::cout << std::endl;
+    
   } //FillTrueGENIEParticle
 
 

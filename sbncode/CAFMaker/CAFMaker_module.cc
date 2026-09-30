@@ -1559,11 +1559,29 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     std::vector<int> mother_ids; // these are the missed mothers
     int max_g4_track_id = 0;
     int min_g4_track_id = std::numeric_limits<int>::max();
+    std::vector<int> genie_track_id_offsets(mctruths.size(), 0);
+    int cumulative_genie_track_id_max = 0;
     for (const simb::MCParticle &part: *mc_particles) {
       if (part.TrackId() > max_g4_track_id) max_g4_track_id = part.TrackId();
       if (part.TrackId() < min_g4_track_id) min_g4_track_id = part.TrackId();
     }
+    for (unsigned iTruth = 0; iTruth < mctruths.size(); ++iTruth) {
+      const art::Ptr<simb::MCTruth>& truth = mctruths[iTruth];
+      if (!truth) continue;
+      int max_truth_genie_track_id = 0;
+      for (int ipart = 0; ipart < truth->NParticles(); ++ipart) {
+        const simb::MCParticle& genpart = truth->GetParticle(ipart);
+        if (genpart.TrackId() > max_truth_genie_track_id) max_truth_genie_track_id = genpart.TrackId();
+      }
+      genie_track_id_offsets[iTruth] = cumulative_genie_track_id_max;
+      cumulative_genie_track_id_max += max_truth_genie_track_id + 1;
+    }
     std::cout << "Minimum G4 Track ID " << min_g4_track_id << std::endl;
+    std::cout << "GENIE track ID offsets:";
+    for (unsigned iTruth = 0; iTruth < genie_track_id_offsets.size(); ++iTruth) {
+      std::cout << " [" << iTruth << "]: " << genie_track_id_offsets[iTruth];
+    }
+    std::cout << std::endl;
     for (const simb::MCParticle &part: *mc_particles) {
 
       std::optional<int> missed_parent_id = std::nullopt;
@@ -1582,10 +1600,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           const simb::MCParticle* matchedGenie = nullptr;
           double bestScore = std::numeric_limits<double>::infinity();
 
-          int max_genie_track_id = max_g4_track_id;
           for (int ipart = 0; ipart < inventoryTruth->NParticles(); ++ipart) {
             const simb::MCParticle& genpart = inventoryTruth->GetParticle(ipart);
-            if (genpart.TrackId() > max_genie_track_id) max_genie_track_id = genpart.TrackId();
             if (genpart.PdgCode() != part.PdgCode())
               continue;
             const auto& gp = part.Momentum(0);
@@ -1613,23 +1629,20 @@ void CAFMaker::produce(art::Event& evt) noexcept {
               if (isInitialStateParticle) {
                 std::cout << "Missed parent is an initial state particle --> reject!" << std::endl;
               } else {
-                //need_missed_parent = true;
-                const int special_id_offset = max_genie_track_id + max_g4_track_id + 1;
+                int interaction_id = -1;
+                for (unsigned iTruth = 0; iTruth < mctruths.size(); iTruth++) {
+                  if (inventoryTruth.get() == mctruths[iTruth].get()) {
+                    interaction_id = iTruth;
+                    break;
+                  }
+                }
+                const int special_id_offset = genie_track_id_offsets[interaction_id] + max_g4_track_id + 1;
                 const int special_parent_id = special_id_offset + missedParent.TrackId();
                 missed_parent_id = special_parent_id;
+                const int synthetic_missed_parent_id = special_parent_id;
                 // need to check if the Mother ID is already in the list of missed mothers to avoid double counting
-                if (std::find(mother_ids.begin(), mother_ids.end(), missedParent.Mother()) != mother_ids.end()) {
-                  std::cout << "This missed parent has already been filled in the CAF, skipping ..." << std::endl;
-                } else {
-                  std::cout << "About to use my custom fill function for the missed parent ..." << std::endl;
-                  int interaction_id = -1;
-                  for (unsigned iTruth = 0; iTruth < mctruths.size(); iTruth++) {
-                    if (inventoryTruth.get() == mctruths[iTruth].get()) { // TODO this gave an error ‘const class simb::MCTruth’ has no member named ‘get
-                      interaction_id = iTruth;
-                      break;
-                    }
-                  }
-                  mother_ids.push_back(missedParent.TrackId());
+                if (std::find(mother_ids.begin(), mother_ids.end(), synthetic_missed_parent_id) == mother_ids.end()) {
+                  mother_ids.push_back(synthetic_missed_parent_id);
                   true_particles.emplace_back();
                   FillTrueGENIEParticle(missedParent,
                             fActiveVolumes,
@@ -1639,19 +1652,19 @@ void CAFMaker::produce(art::Event& evt) noexcept {
                             *bt_serv,
                             *pi_serv,
                             mctruths,
-                            true_particles.back(), static_cast<int>(interaction_id), special_id_offset); // TODO --> need to ge the itruth index 
+                            true_particles.back(), static_cast<int>(interaction_id), special_id_offset); 
                   std::cout << "Made it through my fill function for the missed parent" << std::endl;
 
                   // Now, In principle the parent's parent could also be missed and so forth. Let's while loop until we find a parent that is either an initial state particle or has a mother of zero.
                   // First check if the next parent is already in the Mother list
-                  if (std::find(mother_ids.begin(), mother_ids.end(), missedParent.Mother()) != mother_ids.end()) {
-                    std::cout << "first grandparent has already been filled in the CAF, skipping ..." << std::endl;
-                  } else {
+                  const int synthetic_missed_grandparent_id = special_id_offset + missedParent.Mother();
+                  if (std::find(mother_ids.begin(), mother_ids.end(), synthetic_missed_grandparent_id) == mother_ids.end()) {
                     const simb::MCParticle* currentParent = &missedParent;
                     //while (currentParent->Mother() != 0 && !IsInitialStateParticle(inventoryTruth->GetParticle(currentParent->Mother()), *inventoryTruth)) {
                     while (currentParent->Mother() != min_g4_track_id-1 && !IsInitialStateParticle(inventoryTruth->GetParticle(currentParent->Mother()), *inventoryTruth)) {
-                      const simb::MCParticle& nextParent = inventoryTruth->GetParticle(currentParent->Mother());         
-                      mother_ids.push_back(nextParent.TrackId());
+                      const simb::MCParticle& nextParent = inventoryTruth->GetParticle(currentParent->Mother());
+                      const int synthetic_next_parent_id = special_id_offset + nextParent.TrackId();
+                      mother_ids.push_back(synthetic_next_parent_id);
                       true_particles.emplace_back();
                       FillTrueGENIEParticle(nextParent,
                                 fActiveVolumes,
@@ -1662,13 +1675,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
                                 *pi_serv,
                                 mctruths,
                                 true_particles.back(), static_cast<int>(interaction_id), special_id_offset);
-                      std::cout << "Made it through my fill function for the missed grandparent" << std::endl;
-
-                      if (std::find(mother_ids.begin(), mother_ids.end(), nextParent.Mother()) != mother_ids.end()) {
-                        std::cout << "next grandparent has already been filled in the CAF, exiting while loop ..." << std::endl;
+                     
+                      const int synthetic_next_grandparent_id = special_id_offset + nextParent.Mother();
+                      if (std::find(mother_ids.begin(), mother_ids.end(), synthetic_next_grandparent_id) != mother_ids.end()) {
                         break;
                       }
-
                       currentParent = &nextParent;
                     }
                   }
@@ -1677,6 +1688,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
             }
           } // matched Genie Particle
         } // found inventoryTruth
+        std::cout << std::endl;
+        std::cout << std::endl;
       } // primary particle with no motherx
       
       true_particles.emplace_back();
