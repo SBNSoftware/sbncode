@@ -28,7 +28,7 @@ art_make_library(
         sbn_MWRData
         larcorealg::CoreUtils
         LIBRARY_NAME sbn_POTTools
-        SOURCE POTTools.cpp
+        SOURCE POTTools.cpp MWRMatching.cpp
 )
 
 art_make_library(

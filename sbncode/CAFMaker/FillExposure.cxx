@@ -14,15 +14,17 @@ namespace caf
     std::cout << "makeSRBNBInfo: Manually calculated width:" << FOM << std::endl;
     std::cout << "makeSRBNBInfo: Pre-Fit width from database:" << PreFitFOM << std::endl;
     std::cout << "makeSRBNBInfo: Assuming width of 1.0:" << NoMultiWireFOM << std::endl;
-    if((FOM > 0.0) & (FOM <= 1.0)){
+    // valid FOM values are in [0, 1]; getBNBqualityFOM() flags failures with
+    // -999, -1, 2, 3 (a FOM of exactly 0, beam fully off target, is valid)
+    if((FOM >= 0.0) && (FOM <= 1.0)){
         finalFOM = FOM;
         std::cout << "makeSRBNBInfo: Chose manually calculated width" << std::endl;
     }
-    else if((PreFitFOM > 0.0) & (PreFitFOM <= 1.0)){
+    else if((PreFitFOM >= 0.0) && (PreFitFOM <= 1.0)){
         finalFOM = PreFitFOM;
         std::cout << "makeSRBNBInfo: Chose pre-fit width" << std::endl;
     }
-    else if((NoMultiWireFOM > 0.0) & (NoMultiWireFOM <= 1.0))
+    else if((NoMultiWireFOM >= 0.0) && (NoMultiWireFOM <= 1.0))
     {
         finalFOM = 100.+NoMultiWireFOM;
         std::cout << "makeSRBNBInfo: Chose assumed width of 1.0" << std::endl;
