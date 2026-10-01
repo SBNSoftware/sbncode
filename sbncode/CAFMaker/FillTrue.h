@@ -1,6 +1,7 @@
 #ifndef CAF_FILLTRUE_H
 #define CAF_FILLTRUE_H
 
+#include <optional>
 #include "TRandom.h"
 #include "TDatabasePDG.h"
 #include "CLHEP/Random/RandEngine.h" // CLHEP::HepRandomEngine
@@ -78,7 +79,24 @@ namespace caf
         const cheat::BackTrackerService &backtracker,
         const cheat::ParticleInventoryService &inventory_service,
         const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
-        caf::SRTrueParticle &srparticle);
+        caf::SRTrueParticle &srparticle, std::optional<int> new_mother);
+
+
+  // Added for unstable particles that don't propogate to G4
+  void FillTrueGENIEParticle(const simb::MCParticle &particle,
+        const std::vector<geo::BoxBoundedGeo> &active_volumes,
+        const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
+        const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE *>>> &id_to_ide_map,
+        const std::map<int, std::vector<art::Ptr<recob::Hit>>> &id_to_truehit_map,
+        const cheat::BackTrackerService &backtracker,
+        const cheat::ParticleInventoryService &inventory_service,
+        const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
+        caf::SRTrueParticle &srparticle,
+        int interaction_id,
+        int id_offset);
+
+  bool IsInitialStateParticle(const simb::MCParticle& particle,
+                              const simb::MCTruth& truth);
 
   void FillMeVPrtlTruth(const evgen::ldm::MeVPrtlTruth &truth,
                         const std::vector<geo::BoxBoundedGeo> &active_volumes,
