@@ -86,6 +86,16 @@ public:
       Comment{ "Window of time in seconds to use for mwr ifbeam queries." } 
       };
 
+    fhicl::Atom<double> MWRMaxTimeDiff {
+      Name{ "MWRMaxTimeDiff" },
+      Comment{ "largest time difference between a multiwire reading and its spill [s]; <= 0 disables" },
+      0.0333 // default: half the 15 Hz Booster period
+      };
+    fhicl::Atom<bool> ReuseLastBPMOffsets {
+      Name{ "ReuseLastBPMOffsets" },
+      Comment{ "if a BPM offset cannot be read, use the last valid value seen in this job" },
+      true // default
+      };
     fhicl::Atom<std::string> TriggerDatabaseFile {
       Name{ "TriggerDatabaseFile" },
       Comment{ "path of local database of all recorded events and their trigger, in SQLite format" } 
@@ -135,7 +145,10 @@ private:
   sqlite3 *db;
   int rc;
 
-  static constexpr double MWRtoroidDelay = -0.035; ///< the same time point is measured _t_ by MWR and _t + MWRtoroidDelay`_ by the toroid [ms]
+  static constexpr double MWRtoroidDelay = -0.035; ///< the same time point is measured _t_ by MWR and _t + MWRtoroidDelay`_ by the toroid [s]
+  double fMWRMaxTimeDiff; ///< largest accepted multiwire-spill time difference [s]
+  bool fReuseLastBPMOffsets; ///< whether to fill missing BPM offsets from fOffsetCache
+  mutable sbn::pot::BPMOffsetCache_t fOffsetCache; ///< last valid BPM offsets seen
 
   /// Returns the information of the trigger in the current event.
   sbn::pot::TriggerInfo_t extractTriggerInfo(art::Event const& e) const;
@@ -229,6 +242,8 @@ sbn::ICARUSBNBRetriever::ICARUSBNBRetriever(Parameters const& params)
   vp873(     ifbeam_handle->getBeamFolder(params().VP873Bundle(), params().URL(), params().TimeWindow())),
   offsets(     ifbeam_handle->getBeamFolder(params().OffsetBundle(), params().URL(), params().TimeWindow())),
   bfp_mwr( ifbeam_handle->getBeamFolder(params().MultiWireBundle(), params().URL(), params().MWR_TimeWindow())),
+  fMWRMaxTimeDiff(params().MWRMaxTimeDiff()),
+  fReuseLastBPMOffsets(params().ReuseLastBPMOffsets()),
   fTriggerDatabaseFile(params().TriggerDatabaseFile())
 {
   
@@ -366,8 +381,6 @@ int sbn::ICARUSBNBRetriever::matchMultiWireData(
   // DAQ trigger times
   int spill_count = 0;
   int spills_removed = 0;
-  std::vector<int> matched_MWR;
-  matched_MWR.resize(3);
   
   ///reject time_stamps which have a trigger_type == 1 from data-base
   //To-Do 
@@ -410,47 +423,14 @@ int sbn::ICARUSBNBRetriever::matchMultiWireData(
     //Great we found a matched spill! Let's count it
     spill_count++;
 
-    //Loop through the multiwire devices:
-    
-    for(int dev = 0; dev < int(MWR_times.size()); dev++){
-      
-      //Loop through the multiwire times:
-      double Tdiff = 1000000000.;
-      matched_MWR[dev] = 0;
+    // Associate one reading of each multiwire device to this spill (-1: none)
+    std::vector<int> const matched_MWR = sbn::pot::matchMWRToSpill(
+      MWR_times, times_temps, i,
+      triggerInfo.t_previous_event+fTimePad, triggerInfo.t_current_event+fTimePad,
+      fMWRMaxTimeDiff);
 
-      for(int mwrt = 0;  mwrt < int(MWR_times[dev].size()); mwrt++){
-
-	//found a candidate match! 
-	if(fabs((MWR_times[dev][mwrt] - times_temps[i])) >= Tdiff){continue;}
-	
-	bool best_match = true;
-	  
-	//Check for a better match...
-	for (size_t j = 0; j < times_temps.size(); j++) {
-	  if( j == i) continue;
-	  if(times_temps[j] > (triggerInfo.t_current_event+fTimePad)){continue;}
-	  if(times_temps[j] <= (triggerInfo.t_previous_event+fTimePad)){continue;}
-	  
-	  //is there a better match later in the spill sequence
-	  if(fabs((MWR_times[dev][mwrt] - times_temps[j])) < 
-	     fabs((MWR_times[dev][mwrt] - times_temps[i]))){
-	    //we can have patience...
-	    best_match = false;
-	    break;
-	  }	     
-	}//end better match check
-	
-	//Verified best match!
-	if(best_match == true){
-	  matched_MWR[dev] = mwrt;
-	  Tdiff = fabs((MWR_times[dev][mwrt] - times_temps[i]));
-	}
-	
-      }//end loop over MWR times 
-      
-    }//end loop over MWR devices
-    
-    sbn::BNBSpillInfo spillInfo = sbn::pot::makeBNBSpillInfo(eventID, times_temps[i], MWRdata, matched_MWR, bfp, offsets, vp873);
+    sbn::BNBSpillInfo spillInfo = sbn::pot::makeBNBSpillInfo(eventID, times_temps[i], MWRdata, matched_MWR, bfp, offsets, vp873,
+                                                            fReuseLastBPMOffsets? &fOffsetCache: nullptr);
     std::tuple<float, float, float> allFOM = sbn::getBNBqualityFOM(spillInfo);
     spillInfo.FOM = std::get<0>(allFOM);
     spillInfo.PreFitFOM = std::get<1>(allFOM);
@@ -483,6 +463,18 @@ void sbn::ICARUSBNBRetriever::endSubRun(art::SubRun& sr)
 
 mf::LogDebug("ICARUSBNBRetriever")<< "Total number of DAQ Spills : " << TotalBeamSpills << std::endl;
 mf::LogDebug("ICARUSBNBRetriever")<< "Total number of Selected Spills : " << fOutbeamInfos.size() << std::endl;
+
+  // Spills recorded before the first valid BPM offset reading of the job could
+  // not be patched from the cache at the time: do it now and redo their FOM.
+  if (fReuseLastBPMOffsets) {
+    for (sbn::BNBSpillInfo& info: fOutbeamInfos) {
+      if (!sbn::pot::fillMissingBPMOffsets(info, fOffsetCache)) continue;
+      std::tuple<float, float, float> const allFOM = sbn::getBNBqualityFOM(info);
+      info.FOM = std::get<0>(allFOM);
+      info.PreFitFOM = std::get<1>(allFOM);
+      info.NoMultiWireFOM = std::get<2>(allFOM);
+    }
+  }
 
   auto p =  std::make_unique< std::vector< sbn::BNBSpillInfo > >();
   std::swap(*p, fOutbeamInfos);

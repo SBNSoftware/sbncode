@@ -9,6 +9,8 @@
 
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
 
+#include <tuple>
+
 
 
 namespace sbn
@@ -18,8 +20,18 @@ namespace sbn
    *
    * The figure of merit is described in [SBN DocDB 41901](https://sbn-docdb.fnal.gov/cgi-bin/sso/ShowDocument?docid=41901).
    * Inputs the BNBSpillInfo and returns the BNB Quality Metric called FOM, derived from MicroBooNE's FOM
+   *
+   * @return { FOM with fitted multiwire width, FOM with database ("pre-fit")
+   *           width, FOM with nominal width }
+   *
+   * Each value is in [0, 1], or one of these codes (same for all three):
+   *  * `-1`: no valid intensity (TOR860 and TOR875 missing or <= 0, i.e. no beam)
+   *  * `2`:  horizontal position/angle cannot be formed (missing BPM or BPM offset)
+   *  * `3`:  vertical position/angle cannot be formed (missing BPM or BPM offset)
+   * The first two values are additionally `-999` when no usable width is found.
+   * A device value of `-999` is treated as missing.
    */
-  std::tuple<float, float, float> getBNBqualityFOM(BNBSpillInfo& spill);
+  std::tuple<float, float, float> getBNBqualityFOM(BNBSpillInfo const& spill);
 
   /**
     * @brief Inside the getFOM script, takes the positions and angles of the beam and calculates the BNB FOM
@@ -41,8 +53,9 @@ namespace sbn
  
   /**
     * @brief Inputs the MWR Data and determines the centroid, sigma, and chi2 value of a gaussian fit of the beam
+    * @return whether the fit succeeded (valid status, positive degrees of freedom)
     */
-  void processBNBprofile(const double* mwdata, double &x, double& sx, double& chi2); 
+  bool processBNBprofile(const double* mwdata, double &x, double& sx, double& chi2);
   
 }
 #endif
