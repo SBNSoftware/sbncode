@@ -5,6 +5,9 @@
  */
 #include "sbncode/BeamSpillInfoRetriever/getFOM.h"
 #include <math.h>
+#include <algorithm>
+#include <cmath>
+#include <utility>
 #include "TH1D.h"
 #include "TFitResult.h"
 #include <vector>
@@ -15,32 +18,38 @@ using namespace std;
 
 namespace sbn {
   
-  bool onePlot = true;
+  namespace {
 
-  std::tuple<float, float, float> getBNBqualityFOM(BNBSpillInfo & spill )
+    /// Value used by the retrievers for a device that could not be read.
+    constexpr double MissingValue = -999.;
+
+    /// A device reading is usable if it is finite and not the "missing" marker.
+    bool isValid(double v) { return std::isfinite(v) && v != MissingValue; }
+
+    /// Number of wires per plane in the multiwire chambers.
+    constexpr std::size_t NWires = 48;
+
+    /// Straight-line extrapolation to the target centre through two BPMs.
+    /// Positions in mm, z in m: the slope is in mm/m, i.e. mrad, which is what
+    /// calcFOM() expects for the angle (no atan: the slope already *is* the angle).
+    std::pair<double, double> extrapolate
+      (double delta0, double z0, double delta1, double z1, double ztarget)
+    {
+      double const ang = (delta1 - delta0) / (z1 - z0);
+      double const pos = delta0 + ang * (ztarget - z0);
+      return { ang, pos };
+    }
+
+  } // local namespace
+
+
+  std::tuple<float, float, float> getBNBqualityFOM(BNBSpillInfo const& spill)
   {
-    double fom=0;
-    double prefitfom=0;
-    double noMWfom=0;
-
-    double hp875_offset= spill.HP875Offset;
-    double vp875_offset= spill.VP875Offset;
-	double vp873_offset= spill.VP873Offset;
-    double hptg1_offset= spill.HPTG1Offset;
-    //double vptg1_offset= spill.VPTG1Offset;
-    double hptg2_offset= spill.HPTG2Offset;
-    double vptg2_offset= spill.VPTG2Offset;
-        
-    //Decides which position monitor to check first
-    int useHTG = 1;
-    int useVTG = 1;
-
-	//Z Position of the monitors in m
+    //Z Position of the monitors in m
     double const vp873_zpos= 191.153656;
-	double const hp875_zpos= 202.116104;
+    double const hp875_zpos= 202.116104;
     double const vp875_zpos= 202.3193205;
     double const hptg1_zpos= 204.833267;
-    //double const vptg1_zpos= 204.629608;
     double const hptg2_zpos= 205.240662;
     double const vptg2_zpos= 205.036835;
     double const target_center_zpos= 206.870895;
@@ -48,201 +57,102 @@ namespace sbn {
     double const p875y[]={0.279128, 0.337048, 0};
     double const p876x[]={0.166172, 0.30999, -0.00630299};
     double const p876y[]={0.13425, 0.580862, 0};
-    
-    
-    std::vector<double> tor860;
-    std::vector<double> tor875;
-    std::vector<double> hp875;
-    std::vector<double> vp875;
-    std::vector<double> vp873;
-    std::vector<double> hptg1;
-    std::vector<double> vptg1;
-    std::vector<double> hptg2;
-    std::vector<double> vptg2;
 
-    std::vector<double> m875hs; // Multiwire station after Mag 875, Fit to Horizontal Sigma
-    std::vector<double> m875hm; // Multiwire station after Mag 875, Fit to Horizontal Mean 
-    std::vector<double> m875vs; // Multiwire station after Mag 875, Fit to Vertical Sigma
-    std::vector<double> m875vm; // Multiwire station after Mag 875, Fit to Vertical Mean 
+    // ---- intensity: TOR860, falling back to TOR875.
+    // A missing toroid is stored as -999e12; a spill with no (or negative)
+    // intensity has no meaningful FOM (the optics model needs ppp > 0).
+    double tor = -1.;
+    if (isValid(spill.TOR860) && spill.TOR860 > 0.)      tor = spill.TOR860;
+    else if (isValid(spill.TOR875) && spill.TOR875 > 0.) tor = spill.TOR875;
+    else return {-1, -1, -1};
 
-    std::vector<double> m876hs; // Multiwire station after Mag 876, Fit to Horizontal Sigma
-    std::vector<double> m876hm; // Multiwire station after Mag 876, Fit to Horizontal Mean 
-    std::vector<double> m876vs; // Multiwire station after Mag 876, Fit to Vertical Sigma
-    std::vector<double> m876vm; // Multiwire station after Mag 876, Fit to Vertical Mean 
-    
-    std::vector<double> mw875(spill.M875BB.begin(), spill.M875BB.end());
-    std::vector<double> mw876(spill.M876BB.begin(), spill.M876BB.end());
-    std::vector<double> mwtgt(spill.MMBTBB.begin(), spill.MMBTBB.end());
-    
-    
-    tor860.push_back(spill.TOR860);
-    tor875.push_back(spill.TOR875);
-    hp875.push_back(spill.HP875);
-    vp875.push_back(spill.VP875);
-	vp873.push_back(spill.VP873);
-    hptg1.push_back(spill.HPTG1);
-    vptg1.push_back(spill.VPTG1);
-    hptg2.push_back(spill.HPTG2);
-    vptg2.push_back(spill.VPTG2);
-    
-    m875hs.push_back(spill.M875HS);
-    m875hm.push_back(spill.M875HM);
-    m875vs.push_back(spill.M875VS);
-    m875vm.push_back(spill.M875VM);
+    // ---- horizontal: HP875 and HPTG1 (HPTG2 as fallback), offsets subtracted.
+    // Missing devices used to be fed into the extrapolation as -999 (the
+    // previous `.empty()` checks could never trigger), placing the beam ~1 m
+    // off target and losing the spill.
+    bool const okHP875 = isValid(spill.HP875) && isValid(spill.HP875Offset);
+    bool const okHPTG1 = isValid(spill.HPTG1) && isValid(spill.HPTG1Offset);
+    bool const okHPTG2 = isValid(spill.HPTG2) && isValid(spill.HPTG2Offset);
+    if (!okHP875 || (!okHPTG1 && !okHPTG2)) return {2, 2, 2};
+    double const delta_hp875 = spill.HP875 - spill.HP875Offset;
+    auto const [ horang, horpos ] = okHPTG1
+      ? extrapolate(delta_hp875, hp875_zpos, spill.HPTG1 - spill.HPTG1Offset, hptg1_zpos, target_center_zpos)
+      : extrapolate(delta_hp875, hp875_zpos, spill.HPTG2 - spill.HPTG2Offset, hptg2_zpos, target_center_zpos);
 
-    m876hs.push_back(spill.M876HS);
-    m876hm.push_back(spill.M876HM);
-    m876vs.push_back(spill.M876VS);
-    m876vm.push_back(spill.M876VM);
+    // ---- vertical: VP875 and VP873 (VPTG2 as fallback), offsets subtracted.
+    bool const okVP875 = isValid(spill.VP875) && isValid(spill.VP875Offset);
+    bool const okVP873 = isValid(spill.VP873) && isValid(spill.VP873Offset);
+    bool const okVPTG2 = isValid(spill.VPTG2) && isValid(spill.VPTG2Offset);
+    if (!okVP875 || (!okVP873 && !okVPTG2)) return {3, 3, 3};
+    double const delta_vp875 = spill.VP875 - spill.VP875Offset;
+    auto const [ verang, verpos ] = okVP873
+      ? extrapolate(delta_vp875, vp875_zpos, spill.VP873 - spill.VP873Offset, vp873_zpos, target_center_zpos)
+      : extrapolate(delta_vp875, vp875_zpos, spill.VPTG2 - spill.VPTG2Offset, vptg2_zpos, target_center_zpos);
 
-    double tor;
-    if (!tor860.empty())
-      tor=tor860[0];
-    else if (!tor875.empty())
-      tor=tor875[0];
-    else
-      return {-1,-1,-1};
-        
-    /**
-    * @brief when creating ntuples for pot counting script the variables are filled with -999
-    * this could create a difference when passing events with FOM>1 since
-    * events with missing BPM data would get FOM=2, while events with BPM set to -999 will get FOM=0
-    * bad or missing MWR data gets FOM 4 in either case
-	*/
-    if (hptg2.empty()) hptg2.push_back(-999);
-    if (hptg1.empty()) hptg1.push_back(-999);
-    if (hp875.empty()) hp875.push_back(-999);
-    if (vptg2.empty()) vptg2.push_back(-999);
-    if (vptg1.empty()) vptg1.push_back(-999);
-    if (vp875.empty()) vp875.push_back(-999);
-    if (vp873.empty()) vp873.push_back(-999);
-    double horang;
-    
-	auto interpolate_hp875 = [delta_hp875=(hp875[0]-hp875_offset), hp875_zpos, target_center_zpos]
-      (double delta_value, double zpos)
-      {
-      double const ang = (delta_value-delta_hp875)/(zpos-hp875_zpos);
-      double const pos = delta_hp875+ang*(target_center_zpos-hp875_zpos);
-      return std::pair(ang, pos);
-      };
-	
-    // return 2 when missing essential beam horizontal position data:
-    if (hp875.empty() || (hptg1.empty() && hptg2.empty())) return {2,2,2};
-    bool const doUseHTG1 = (useHTG == 1) || hptg2.empty();
-    auto const [ Tanhorang, horpos ] = doUseHTG1?
-       interpolate_hp875(hptg1[0] - hptg1_offset, hptg1_zpos):
-       interpolate_hp875(hptg2[0] - hptg2_offset, hptg2_zpos);
+    const double smallSigmaX =0.5, largeSigmaX = 10, smallSigmaY = 0.3, largeSigmaY =10, maxChi2X = 20, maxChi2Y = 20;
+    auto inWindow = [&](double sx, double sy)
+      { return sx>smallSigmaX && sx<largeSigmaX && sy>smallSigmaY && sy<largeSigmaY; };
 
-
-    double verang;
-  auto interpolate_vp875 = [delta_vp875=(vp875[0]-vp875_offset), vp875_zpos, target_center_zpos]
-      (double delta_value, double zpos)
-      {
-      double const ang = (delta_value-delta_vp875)/(zpos-vp875_zpos);
-      double const pos = delta_vp875+ang*(target_center_zpos-vp875_zpos);
-      return std::pair(ang, pos);
-      };
-	
-   // return 3 when missing essential beam horizontal position data:
-    if (vp875.empty() || (vptg1.empty() && vptg2.empty())) return {3,3,3};
-    bool const doUseVTG1 = (useVTG == 1) || vptg2.empty();
-    auto const [ Tanverang, verpos ] = doUseVTG1?
-       interpolate_vp875(vp873[0] - vp873_offset, vp873_zpos):
-       interpolate_vp875(vptg2[0] - vptg2_offset, vptg2_zpos);
-
-    horang=atan(Tanhorang);
-    verang=atan(Tanverang);
-    double xx,yy,sx,sy,chi2x,chi2y;
-    double tgtsx, tgtsy;
-    bool good_tgt=false;
-    bool good_876=false;
-    bool good_875=false;
-	constexpr size_t FirstXMWtgt =0;
-	constexpr size_t FirstYMWtgt =48;
-	const double smallSigmaX =0.5, largeSigmaX = 10, smallSigmaY = 0.3, largeSigmaY =10, maxChi2X = 20, maxChi2Y = 20;
-
-    // First calculate try the version of the FOM where we fit the width ourselves
-    if (mwtgt.size()>0) {
-      processBNBprofile(&mwtgt[FirstXMWtgt], xx, sx,chi2x);
-      processBNBprofile(&mwtgt[FirstYMWtgt], yy, sy, chi2y);
-      if (sx>smallSigmaX && sx<largeSigmaX && sy>smallSigmaY && sy<largeSigmaY && chi2x<maxChi2X && chi2y<maxChi2Y) {
-		tgtsx=sx;
-		tgtsy=sy;
-		good_tgt=true;
+    // ---- FOM with the width fitted from the multiwire profiles.
+    // Each profile is 48 horizontal wires followed by 48 vertical ones; a
+    // profile is used only if it is complete (the old check, `size() > 0`,
+    // allowed reading past the end of a short vector) and both fits succeed.
+    // Preference: target multiwire (no transformation), then M876, then M875.
+    struct MWDevice_t {
+      std::vector<int> const* data;
+      double const* px; double const* py;
+    };
+    MWDevice_t const mwDevices[] = {
+      { &spill.MMBTBB, nullptr, nullptr },
+      { &spill.M876BB, p876x,   p876y   },
+      { &spill.M875BB, p875x,   p875y   },
+    };
+    double tgtsx = MissingValue, tgtsy = MissingValue;
+    bool goodFit = false;
+    for (auto const& dev: mwDevices) {
+      if (dev.data->size() < 2*NWires) continue;
+      std::vector<double> const mw(dev.data->begin(), dev.data->begin() + 2*NWires);
+      double xx, yy, sx, sy, chi2x, chi2y;
+      bool const fitOK = processBNBprofile(&mw[0], xx, sx, chi2x)
+                       & processBNBprofile(&mw[NWires], yy, sy, chi2y);
+      if (!fitOK) continue;
+      if (dev.px) {
+        sx = dev.px[0] + dev.px[1]*sx + dev.px[2]*sx*sx;
+        sy = dev.py[0] + dev.py[1]*sy + dev.py[2]*sy*sy;
+      }
+      if (inWindow(sx, sy) && chi2x < maxChi2X && chi2y < maxChi2Y) {
+        tgtsx = sx; tgtsy = sy;
+        goodFit = true;
+        break;
       }
     }
-    if (!good_tgt && mw876.size()>0) {
-      processBNBprofile(&mw876[FirstXMWtgt], xx,sx,chi2x);
-      processBNBprofile(&mw876[FirstYMWtgt], yy,sy,chi2y);
-      double tgtsx876=p876x[0]+p876x[1]*sx+p876x[2]*sx*sx;
-      double tgtsy876=p876y[0]+p876y[1]*sy+p876y[2]*sy*sy;
-      if (tgtsx876>smallSigmaX && tgtsx876<largeSigmaX && tgtsy876>smallSigmaY && tgtsy876<largeSigmaY && chi2x< maxChi2X && chi2y< maxChi2Y) {
-		tgtsx=tgtsx876;
-		tgtsy=tgtsy876;
-		good_876=true;
-      }
-    }
-    if (!good_tgt && !good_876 && mw875.size()>0){
-      processBNBprofile(&mw875[FirstXMWtgt], xx,sx,chi2x);
-      processBNBprofile(&mw875[FirstYMWtgt], yy,sy,chi2y);
-      double tgtsx875=p875x[0]+p875x[1]*sx+p875x[2]*sx*sx;
-      double tgtsy875=p875y[0]+p875y[1]*sy+p875y[2]*sy*sy;
-      if (tgtsx875>smallSigmaX && tgtsx875<largeSigmaX && tgtsy875>smallSigmaY && tgtsy875<largeSigmaY && chi2x<maxChi2X && chi2y<maxChi2Y) {
-		tgtsx=tgtsx875;
-		tgtsy=tgtsy875;
-		good_875=true;
-      }
-    }
-    if (!good_tgt && !good_876 && !good_875) {
-      //failed getting multiwire data
-      fom=-999;
-    }
-    else{
-      fom=1-pow(10,sbn::calcFOM(horpos,horang,verpos,verang,tor,tgtsx,tgtsy));
+    double const fom = goodFit
+      ? 1-pow(10,sbn::calcFOM(horpos,horang,verpos,verang,tor,tgtsx,tgtsy))
+      : MissingValue;
+
+    // ---- "pre-fit" FOM with the widths fitted online (database M876/M875).
+    // There is no chi2 for these: the old code applied the chi2 of whichever
+    // multiwire profile it fitted last (uninitialised if none was fitted).
+    double prefitfom = MissingValue;
+    struct DBWidth_t { double hs, vs; double const* px; double const* py; };
+    DBWidth_t const dbWidths[] = {
+      { spill.M876HS, spill.M876VS, p876x, p876y },
+      { spill.M875HS, spill.M875VS, p875x, p875y },
+    };
+    for (auto const& w: dbWidths) {
+      if (!isValid(w.hs) || !isValid(w.vs)) continue;
+      double const sx = w.px[0] + w.px[1]*w.hs + w.px[2]*w.hs*w.hs;
+      double const sy = w.py[0] + w.py[1]*w.vs + w.py[2]*w.vs*w.vs;
+      if (!inWindow(sx, sy)) continue;
+      prefitfom = 1-pow(10,sbn::calcFOM(horpos,horang,verpos,verang,tor,sx,sy));
+      break;
     }
 
-    bool good_prefit876=false;
-    bool good_prefit875=false;
-    sx = 0;
-    sy = 0;
-
-    // Now calculate the "pre-fit" FOM values
-    if (!m876hs.empty() && !m876vs.empty() && !m876hm.empty() && !m876vm.empty()) {
-      sx = m876hs[0];
-      sy = m876vs[0];
-      double tgtsx876=p876x[0]+p876x[1]*sx+p876x[2]*sx*sx;
-      double tgtsy876=p876y[0]+p876y[1]*sy+p876y[2]*sy*sy;
-      if (tgtsx876>smallSigmaX && tgtsx876<largeSigmaX && tgtsy876>smallSigmaY && tgtsy876<largeSigmaY && chi2x< maxChi2X && chi2y< maxChi2Y) {
-		tgtsx=tgtsx876;
-		tgtsy=tgtsy876;
-		good_prefit876=true;
-      }
-    }
-    if (!good_prefit876 && !m875hs.empty() && !m875vs.empty() && !m875hm.empty() && !m875vm.empty()) {
-      sx = m875hs[0];
-      sy = m875vs[0];
-      double tgtsx875=p875x[0]+p875x[1]*sx+p875x[2]*sx*sx;
-      double tgtsy875=p875y[0]+p875y[1]*sy+p875y[2]*sy*sy;
-      if (tgtsx875>smallSigmaX && tgtsx875<largeSigmaX && tgtsy875>smallSigmaY && tgtsy875<largeSigmaY && chi2x< maxChi2X && chi2y< maxChi2Y) {
-		tgtsx=tgtsx875;
-		tgtsy=tgtsy875;
-		good_prefit875=true;
-      }
-    }
-    if (!good_prefit876 && !good_prefit875) {
-      //failed getting multiwire data
-      prefitfom=-999;
-    }
-    else{
-      prefitfom=1-pow(10,sbn::calcFOM(horpos,horang,verpos,verang,tor,tgtsx,tgtsy));
-    }
-
-    // Lastly calculate the "no multiwire" fom values, defaults values for tgtsx,y will be caught
-    // internally in order to set scalex=scaley=1
-    noMWfom=1-pow(10,sbn::calcFOM(horpos,horang,verpos,verang,tor));
+    // ---- FOM with the nominal beam width (scale factors 1)
+    double const noMWfom = 1-pow(10,sbn::calcFOM(horpos,horang,verpos,verang,tor));
     return {fom, prefitfom, noMWfom};
   }
-  
+
 
 /**
     * @brief Extracts statistics from multiwire monitor data.
@@ -250,44 +160,44 @@ namespace sbn {
     * @param[out] x mean position from the fit [mm]
     * @param[out] sx &sigma; from the fit [mm]
     * @param[out] chi2 &chi;&sup2;/NDF for the Gaussian fit
-    * 
+    * @return whether the fit succeeded
+    *
     * This function takes multiwire data (`mwdata`),
     * finds the min and max,
     * finds the first and last bin where amplitude is greater than 20%,
     * fits the peak between first and last bin with Gaussian (assuming 2% relative errors)
     * and returns the parameters of the fit.
+    * The 48 wires cover 24 mm (0.5 mm pitch).
     */
-    void processBNBprofile(const double* mwdata, double &x, double& sx, double& chi2)
+  bool processBNBprofile(const double* mwdata, double &x, double& sx, double& chi2)
   {
+    x = sx = chi2 = 99999;
     // values' sign is inverted
-    double minx = std::min(-*std::max_element(mwdata, mwdata + 48), 0.0);
-    double maxx = std::max(-*std::min_element(mwdata, mwdata + 48), 0.0);
+    double minx = std::min(-*std::max_element(mwdata, mwdata + NWires), 0.0);
+    double maxx = std::max(-*std::min_element(mwdata, mwdata + NWires), 0.0);
     int first_x = -1; int last_x = -1;
-    static int entry = 1;
-    TH1D* hProf = new TH1D("hProfMW","",48,-12.0,12.0); // coverage is 24 cm
+    // local histogram, not registered in gDirectory (no name clashes, no leak)
+    TH1D hProf("hProfMW","",NWires,-12.0,12.0);
+    hProf.SetDirectory(nullptr);
     double const threshold = (maxx-minx)*0.2; // 20% of the range
     double const error = (maxx-minx)*0.02; // 2% of the range
-    for (unsigned int i=0;i<48;i++) {
-      hProf->SetBinContent(i+1,-mwdata[i]-minx);
+    for (unsigned int i=0;i<NWires;i++) {
+      hProf.SetBinContent(i+1,-mwdata[i]-minx);
       if (-mwdata[i]-minx    > threshold && first_x==-1) first_x=i;
       if (-mwdata[i]-minx    > threshold)                last_x=i+1;
-      hProf->SetBinError(i+1,error);
+      hProf.SetBinError(i+1,error);
     }
-    if (hProf->GetSumOfWeights()>0) {
-      TFitResultPtr const fit = hProf->Fit("gaus","QNS","",-12+first_x*0.5,-12+last_x*0.5);
-      x   = fit->Parameter(1);
-      sx  = fit->Parameter(2);
-      chi2= fit->Chi2() / fit->Ndf();
-      delete hProf;      
-    } else {
-      x=99999;
-      sx=99999;
-      chi2=99999;
-    }
-    entry += 1;
+    if (hProf.GetSumOfWeights() <= 0 || first_x < 0) return false;
+
+    TFitResultPtr const fit = hProf.Fit("gaus","QNS","",-12+first_x*0.5,-12+last_x*0.5);
+    if (!fit.Get() || fit->Status() != 0 || fit->Ndf() <= 0) return false;
+    x   = fit->Parameter(1);
+    sx  = fit->Parameter(2);
+    chi2= fit->Chi2() / fit->Ndf();
+    return true;
   }
-  
-  
+
+
   double calcFOM(double horpos, double horang, double verpos, double verang, double ppp, double tgtsx, double tgtsy)
   {
     ppp /= 1e12; //converts to 10^12 POT
@@ -480,7 +390,7 @@ namespace sbn {
       }
       x = x + dx;
     }
-    sum = sum*dx*dy/(2.0*3.14159*sx*sy*sqrt(1.0-rho2));
+    sum = sum*dx*dy/(2.0*M_PI*sx*sy*sqrt(1.0-rho2));
 
 
     // add a guard for double precision
