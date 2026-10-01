@@ -806,17 +806,13 @@ namespace caf {
     srparticle.endE = (exit_point >= 0) ? particle.Momentum(exit_point).E() : -9999.;
 
     srparticle.start_process = GetG4ProcessID(particle.Process());
-    if (particle.PdgCode() == 221) std::cout << "Eta srparticle start process: " << srparticle.start_process << std::endl;
-    
     srparticle.end_process = GetG4ProcessID(particle.EndProcess());
 
     srparticle.G4ID = particle.TrackId();
     srparticle.parent = particle.Mother() > 0 ? static_cast<unsigned>(particle.Mother()) : 0u;
     if (new_mother.has_value()) {
       const int requested_parent = new_mother.value();
-      std::cout << "Changing parent of particle " << srparticle.G4ID << " from " << srparticle.parent << " to " << requested_parent << std::endl;
       srparticle.parent = static_cast<unsigned>(requested_parent);
-      std::cout << "srparticle.parent is now " << srparticle.parent << std::endl;
     }
 
     // Set the initial cryostat
@@ -1020,14 +1016,9 @@ namespace caf {
     srparticle.endp = (exit_point >= 0) ? particle.Momentum(exit_point).Vect() : TVector3(-9999, -9999, -9999);
     srparticle.endE = (exit_point >= 0) ? particle.Momentum(exit_point).E() : -9999.;
 
-    std::cout << "Filling GENIE particle start_process for pdg " << particle.PdgCode() << std::endl;
     srparticle.start_process = GetG4ProcessID(particle.Process());
-    if (particle.PdgCode() == 221) std::cout << "Eta srparticle start process: " << srparticle.start_process << std::endl;
-    std::cout << "Filling GENIE particle end_process for pdg " << particle.PdgCode() << std::endl;
-
     srparticle.end_process = GetG4ProcessID(particle.EndProcess());
 
-    std::cout << "Filling GENIE particle G4ID for pdg " << particle.PdgCode() << std::endl;
     // Special GENIE particles get a shifted positive ID so they do not overlap with G4 track IDs.
     srparticle.G4ID = particle.TrackId() + id_offset;
     srparticle.parent = particle.Mother() > 0 ? static_cast<unsigned>(particle.Mother() + id_offset) : 0u;
@@ -1050,9 +1041,6 @@ namespace caf {
 
     // Set interaction_id to the matched MCTruth
     srparticle.interaction_id = interaction_id;
-
-    std::cout << std::endl;
-    
   } //FillTrueGENIEParticle
 
 
