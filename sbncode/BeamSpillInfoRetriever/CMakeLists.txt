@@ -34,7 +34,7 @@ art_make_library(
         larcorealg::CoreUtils
 	
 	LIBRARY_NAME sbn_POTTools
-        SOURCE POTTools.cpp
+        SOURCE POTTools.cpp MWRMatching.cpp
 )
 
 art_make_library(
@@ -46,7 +46,7 @@ art_make_library(
 
 
 	LIBRARY_NAME sbn_getFOM
-	SOURCE getFOM.cpp        
+	SOURCE getFOM.cpp BNBFOMFill.cpp
 )
 
 install_headers()
