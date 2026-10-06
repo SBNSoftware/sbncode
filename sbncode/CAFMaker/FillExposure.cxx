@@ -26,9 +26,12 @@ namespace caf
     }
     else if((NoMultiWireFOM >= 0.0) && (NoMultiWireFOM <= 1.0))
     {
-        finalFOM = 100.+NoMultiWireFOM;
+        // nominal-width FOM: used as is (it used to be stored as 100 + FOM,
+        // which made the standard 0.98 < FOM <= 1 cut reject these spills;
+        // the beam-quality status, product "fomStatus" of the retriever, has
+        // bit 64 set for them)
+        finalFOM = NoMultiWireFOM;
         std::cout << "makeSRBNBInfo: Chose assumed width of 1.0" << std::endl;
-        std::cout << "makeSRBNBInfo: Note, that this gets prefixed with 100 so it doesn't get automatically included in standard FOM cuts" << std::endl;
     }
 
     caf::SRBNBInfo single_store;

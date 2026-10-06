@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cmath>
 #include <utility>
+#include <tuple>
 #include "TH1D.h"
 #include "TFitResult.h"
 #include <vector>
@@ -43,113 +44,214 @@ namespace sbn {
   } // local namespace
 
 
+  namespace {
+
+    // Z positions of the monitors [m]
+    constexpr double vp873_zpos = 191.153656;
+    constexpr double hp875_zpos = 202.116104;
+    constexpr double vp875_zpos = 202.3193205;
+    constexpr double hptg1_zpos = 204.833267;
+    constexpr double hptg2_zpos = 205.240662;
+    constexpr double vptg2_zpos = 205.036835;
+    constexpr double target_center_zpos = 206.870895;
+
+    // multiwire sigma -> sigma at the target (quadratic polynomials)
+    constexpr double p875x[] = {0.431857, 0.158077, 0.00303551};
+    constexpr double p875y[] = {0.279128, 0.337048, 0};
+    constexpr double p876x[] = {0.166172, 0.30999, -0.00630299};
+    constexpr double p876y[] = {0.13425, 0.580862, 0};
+
+    constexpr double smallSigmaX = 0.5, largeSigmaX = 10, smallSigmaY = 0.3, largeSigmaY = 10;
+    constexpr double maxChi2X = 20, maxChi2Y = 20;
+    bool inWindow(double sx, double sy)
+      { return sx > smallSigmaX && sx < largeSigmaX && sy > smallSigmaY && sy < largeSigmaY; }
+
+    /// A database (online-fitted) multiwire sigma above this [mm] means the
+    /// chamber saw no beam: the online fit went to noise (beam: 1-2.5 mm, empty
+    /// profile: ~7 mm). Such a width is not used.
+    constexpr double EmptyMWSigma = 4.0;
+
+    double poly(double const* p, double s) { return p[0] + p[1]*s + p[2]*s*s; }
+
+    /**
+     * Autotune calibration times [s, UTC] of the two horizontal target BPMs
+     * (from IFBeam, Z. Pavlovic; same table as sbnana's getBNBFoM.cxx).
+     * Autotune steers the beam on HP875 and on the target BPM calibrated most
+     * recently, so that one reads the beam at its setpoint; the offset of the
+     * other one may be stale (HPTG1 before 2023-03-03: +1.5 mm, i.e. the beam
+     * projected 2.6 mm off-centre). New autotune calibrations must be added here.
+     */
+    constexpr unsigned long HPTG1CalibTimes[] = { 1420092000, 1576014670, 1606510357, 1677887110, 1711030691 };
+    constexpr unsigned long HPTG2CalibTimes[] = { 1420092000, 1574190444, 1576014670, 1588603117, 1605706657,
+                                                  1606510357, 1608593857, 1668802510 };
+
+    template <std::size_t N>
+    unsigned long lastCalibration(unsigned long const (&times)[N], unsigned long t) {
+      unsigned long last = 0;
+      for (unsigned long c: times) if (c <= t) last = c;
+      return last;
+    }
+
+    /// Fills position, angle and the related status bits of `state`.
+    void fillGeometry(BNBSpillInfo const& spill, BNBBeamState& state) {
+      using namespace fomstatus;
+      // ---- horizontal: HP875 and the primary target BPM, offsets subtracted.
+      // The other target BPM is not used as a fallback: its offset is not the
+      // one autotune steers on, so the position would be biased (mm level).
+      bool const useHPTG2 = hptg2IsPrimary(spill.spill_time_s);
+      if (useHPTG2) state.status |= HPTG2Primary;
+      bool const okHP875 = isValid(spill.HP875) && isValid(spill.HP875Offset);
+      bool const okHPTG1 = isValid(spill.HPTG1) && isValid(spill.HPTG1Offset);
+      bool const okHPTG2 = isValid(spill.HPTG2) && isValid(spill.HPTG2Offset);
+      bool const okPrimary = useHPTG2? okHPTG2: okHPTG1;
+      if (!okHP875 || !okPrimary) {
+        state.status |= NoHBPM;
+        if (okHP875 && (useHPTG2? okHPTG1: okHPTG2)) state.status |= FallbackRemoved;
+      }
+      else {
+        double const delta_hp875 = spill.HP875 - spill.HP875Offset;
+        std::tie(state.hang, state.hpos) = useHPTG2
+          ? extrapolate(delta_hp875, hp875_zpos, spill.HPTG2 - spill.HPTG2Offset, hptg2_zpos, target_center_zpos)
+          : extrapolate(delta_hp875, hp875_zpos, spill.HPTG1 - spill.HPTG1Offset, hptg1_zpos, target_center_zpos);
+      }
+
+      // ---- vertical: VP875 and VP873, offsets subtracted (VPTG2 is not used
+      // as a fallback for the same reason).
+      bool const okVP875 = isValid(spill.VP875) && isValid(spill.VP875Offset);
+      bool const okVP873 = isValid(spill.VP873) && isValid(spill.VP873Offset);
+      bool const okVPTG2 = isValid(spill.VPTG2) && isValid(spill.VPTG2Offset);
+      if (!okVP875 || !okVP873) {
+        state.status |= NoVBPM;
+        if (okVP875 && okVPTG2) state.status |= FallbackRemoved;
+      }
+      else {
+        double const delta_vp875 = spill.VP875 - spill.VP875Offset;
+        std::tie(state.vang, state.vpos) =
+          extrapolate(delta_vp875, vp875_zpos, spill.VP873 - spill.VP873Offset, vp873_zpos, target_center_zpos);
+      }
+    }
+
+    /// Width from the multiwire profiles fitted here (M876, then M875).
+    /// The target multiwire (MMBTBB) is not used: its profiles are noise.
+    bool fittedWidth(BNBSpillInfo const& spill, double& tgtsx, double& tgtsy, int& source) {
+      struct MWDevice_t { std::vector<int> const* data; double const* px; double const* py; int source; };
+      MWDevice_t const mwDevices[] = {
+        { &spill.M876BB, p876x, p876y, BNBBeamState::FitM876 },
+        { &spill.M875BB, p875x, p875y, BNBBeamState::FitM875 },
+      };
+      for (auto const& dev: mwDevices) {
+        // each profile is 48 horizontal wires followed by 48 vertical ones
+        if (dev.data->size() < 2*NWires) continue;
+        std::vector<double> const mw(dev.data->begin(), dev.data->begin() + 2*NWires);
+        double xx, yy, sx, sy, chi2x, chi2y;
+        bool const fitOK = processBNBprofile(&mw[0], xx, sx, chi2x)
+                         & processBNBprofile(&mw[NWires], yy, sy, chi2y);
+        if (!fitOK) continue;
+        sx = poly(dev.px, sx);
+        sy = poly(dev.py, sy);
+        if (inWindow(sx, sy) && chi2x < maxChi2X && chi2y < maxChi2Y) {
+          tgtsx = sx; tgtsy = sy; source = dev.source;
+          return true;
+        }
+      }
+      return false;
+    }
+
+    /// Width from the online ("pre-fit", database) multiwire widths.
+    /// Sets `empty` if the device chosen saw no beam (no width returned then).
+    bool databaseWidth(BNBSpillInfo const& spill, double& tgtsx, double& tgtsy, int& source, bool& empty) {
+      struct DBWidth_t { double hs, vs; double const* px; double const* py; int source; };
+      DBWidth_t const dbWidths[] = {
+        { spill.M876HS, spill.M876VS, p876x, p876y, BNBBeamState::DatabaseM876 },
+        { spill.M875HS, spill.M875VS, p875x, p875y, BNBBeamState::DatabaseM875 },
+      };
+      empty = false;
+      for (auto const& w: dbWidths) {
+        if (!isValid(w.hs) || !isValid(w.vs)) continue;
+        double const sx = poly(w.px, w.hs);
+        double const sy = poly(w.py, w.vs);
+        if (!inWindow(sx, sy)) continue;
+        if (w.hs > EmptyMWSigma || w.vs > EmptyMWSigma) { empty = true; return false; }
+        tgtsx = sx; tgtsy = sy; source = w.source;
+        return true;
+      }
+      return false;
+    }
+
+  } // local namespace
+
+
+  bool hptg2IsPrimary(unsigned long spill_time_s) {
+    return lastCalibration(HPTG2CalibTimes, spill_time_s) >= lastCalibration(HPTG1CalibTimes, spill_time_s);
+  }
+
+
+  double beamIntensity(BNBSpillInfo const& spill, bool* tor875used) {
+    // TOR860 sometimes reads ~1e-3 of the beam TOR875 sees (TOR860 drop-out):
+    // then TOR875 is the intensity. A missing toroid is -999.
+    bool const ok860 = isValid(spill.TOR860) && spill.TOR860 > 0.;
+    bool const ok875 = isValid(spill.TOR875) && spill.TOR875 > 0.;
+    bool const dropout = ok860 && ok875 && spill.TOR860 < TOR860DropoutFraction * spill.TOR875;
+    if (tor875used) *tor875used = dropout;
+    if (ok860 && !dropout) return spill.TOR860;
+    if (ok875) return spill.TOR875;
+    return -1.;
+  }
+
+
+  BNBBeamState getBNBBeamState(BNBSpillInfo const& spill) {
+    using namespace fomstatus;
+    BNBBeamState state;
+    bool tor875used = false;
+    state.tor = beamIntensity(spill, &tor875used);
+    if (tor875used) state.status |= TOR875Used;
+    if (state.tor <= 0.) state.status |= NoTOR;
+    fillGeometry(spill, state);
+
+    // width: fitted profile, else database width, else nominal
+    bool empty = false;
+    if (!fittedWidth(spill, state.sx, state.sy, state.widthSource)
+      && !databaseWidth(spill, state.sx, state.sy, state.widthSource, empty))
+    {
+      state.sx = state.sy = MissingValue;
+      state.widthSource = BNBBeamState::Nominal;
+      state.status |= NoMWWidth;
+      if (empty) state.status |= MWEmpty;
+    }
+    return state;
+  }
+
+
+  double computeFOM(BNBBeamState const& state, bool nominalWidth) {
+    if (!state.hasFOM()) return MissingValue;
+    bool const measured = !nominalWidth && state.widthSource != BNBBeamState::Nominal;
+    return measured
+      ? 1-pow(10, sbn::calcFOM(state.hpos, state.hang, state.vpos, state.vang, state.tor, state.sx, state.sy))
+      : 1-pow(10, sbn::calcFOM(state.hpos, state.hang, state.vpos, state.vang, state.tor));
+  }
+
+
   std::tuple<float, float, float> getBNBqualityFOM(BNBSpillInfo const& spill)
   {
-    //Z Position of the monitors in m
-    double const vp873_zpos= 191.153656;
-    double const hp875_zpos= 202.116104;
-    double const vp875_zpos= 202.3193205;
-    double const hptg1_zpos= 204.833267;
-    double const hptg2_zpos= 205.240662;
-    double const vptg2_zpos= 205.036835;
-    double const target_center_zpos= 206.870895;
-    double const p875x[]={0.431857, 0.158077, 0.00303551};
-    double const p875y[]={0.279128, 0.337048, 0};
-    double const p876x[]={0.166172, 0.30999, -0.00630299};
-    double const p876y[]={0.13425, 0.580862, 0};
+    BNBBeamState const state = getBNBBeamState(spill);
+    if (state.status & fomstatus::NoTOR)  return {-1, -1, -1};
+    if (state.status & fomstatus::NoHBPM) return {2, 2, 2};
+    if (state.status & fomstatus::NoVBPM) return {3, 3, 3};
 
-    // ---- intensity: TOR860, falling back to TOR875.
-    // A missing toroid is stored as -999e12; a spill with no (or negative)
-    // intensity has no meaningful FOM (the optics model needs ppp > 0).
-    double tor = -1.;
-    if (isValid(spill.TOR860) && spill.TOR860 > 0.)      tor = spill.TOR860;
-    else if (isValid(spill.TOR875) && spill.TOR875 > 0.) tor = spill.TOR875;
-    else return {-1, -1, -1};
+    // FOM with the width fitted from the multiwire profiles
+    double fom = MissingValue, prefitfom = MissingValue;
+    double sx = MissingValue, sy = MissingValue;
+    int source = BNBBeamState::Nominal;
+    if (fittedWidth(spill, sx, sy, source))
+      fom = 1-pow(10, sbn::calcFOM(state.hpos, state.hang, state.vpos, state.vang, state.tor, sx, sy));
 
-    // ---- horizontal: HP875 and HPTG1 (HPTG2 as fallback), offsets subtracted.
-    // Missing devices used to be fed into the extrapolation as -999 (the
-    // previous `.empty()` checks could never trigger), placing the beam ~1 m
-    // off target and losing the spill.
-    bool const okHP875 = isValid(spill.HP875) && isValid(spill.HP875Offset);
-    bool const okHPTG1 = isValid(spill.HPTG1) && isValid(spill.HPTG1Offset);
-    bool const okHPTG2 = isValid(spill.HPTG2) && isValid(spill.HPTG2Offset);
-    if (!okHP875 || (!okHPTG1 && !okHPTG2)) return {2, 2, 2};
-    double const delta_hp875 = spill.HP875 - spill.HP875Offset;
-    auto const [ horang, horpos ] = okHPTG1
-      ? extrapolate(delta_hp875, hp875_zpos, spill.HPTG1 - spill.HPTG1Offset, hptg1_zpos, target_center_zpos)
-      : extrapolate(delta_hp875, hp875_zpos, spill.HPTG2 - spill.HPTG2Offset, hptg2_zpos, target_center_zpos);
+    // "pre-fit" FOM with the widths fitted online (database M876/M875)
+    bool empty = false;
+    if (databaseWidth(spill, sx, sy, source, empty))
+      prefitfom = 1-pow(10, sbn::calcFOM(state.hpos, state.hang, state.vpos, state.vang, state.tor, sx, sy));
 
-    // ---- vertical: VP875 and VP873 (VPTG2 as fallback), offsets subtracted.
-    bool const okVP875 = isValid(spill.VP875) && isValid(spill.VP875Offset);
-    bool const okVP873 = isValid(spill.VP873) && isValid(spill.VP873Offset);
-    bool const okVPTG2 = isValid(spill.VPTG2) && isValid(spill.VPTG2Offset);
-    if (!okVP875 || (!okVP873 && !okVPTG2)) return {3, 3, 3};
-    double const delta_vp875 = spill.VP875 - spill.VP875Offset;
-    auto const [ verang, verpos ] = okVP873
-      ? extrapolate(delta_vp875, vp875_zpos, spill.VP873 - spill.VP873Offset, vp873_zpos, target_center_zpos)
-      : extrapolate(delta_vp875, vp875_zpos, spill.VPTG2 - spill.VPTG2Offset, vptg2_zpos, target_center_zpos);
-
-    const double smallSigmaX =0.5, largeSigmaX = 10, smallSigmaY = 0.3, largeSigmaY =10, maxChi2X = 20, maxChi2Y = 20;
-    auto inWindow = [&](double sx, double sy)
-      { return sx>smallSigmaX && sx<largeSigmaX && sy>smallSigmaY && sy<largeSigmaY; };
-
-    // ---- FOM with the width fitted from the multiwire profiles.
-    // Each profile is 48 horizontal wires followed by 48 vertical ones; a
-    // profile is used only if it is complete (the old check, `size() > 0`,
-    // allowed reading past the end of a short vector) and both fits succeed.
-    // Preference: target multiwire (no transformation), then M876, then M875.
-    struct MWDevice_t {
-      std::vector<int> const* data;
-      double const* px; double const* py;
-    };
-    MWDevice_t const mwDevices[] = {
-      { &spill.MMBTBB, nullptr, nullptr },
-      { &spill.M876BB, p876x,   p876y   },
-      { &spill.M875BB, p875x,   p875y   },
-    };
-    double tgtsx = MissingValue, tgtsy = MissingValue;
-    bool goodFit = false;
-    for (auto const& dev: mwDevices) {
-      if (dev.data->size() < 2*NWires) continue;
-      std::vector<double> const mw(dev.data->begin(), dev.data->begin() + 2*NWires);
-      double xx, yy, sx, sy, chi2x, chi2y;
-      bool const fitOK = processBNBprofile(&mw[0], xx, sx, chi2x)
-                       & processBNBprofile(&mw[NWires], yy, sy, chi2y);
-      if (!fitOK) continue;
-      if (dev.px) {
-        sx = dev.px[0] + dev.px[1]*sx + dev.px[2]*sx*sx;
-        sy = dev.py[0] + dev.py[1]*sy + dev.py[2]*sy*sy;
-      }
-      if (inWindow(sx, sy) && chi2x < maxChi2X && chi2y < maxChi2Y) {
-        tgtsx = sx; tgtsy = sy;
-        goodFit = true;
-        break;
-      }
-    }
-    double const fom = goodFit
-      ? 1-pow(10,sbn::calcFOM(horpos,horang,verpos,verang,tor,tgtsx,tgtsy))
-      : MissingValue;
-
-    // ---- "pre-fit" FOM with the widths fitted online (database M876/M875).
-    // There is no chi2 for these: the old code applied the chi2 of whichever
-    // multiwire profile it fitted last (uninitialised if none was fitted).
-    double prefitfom = MissingValue;
-    struct DBWidth_t { double hs, vs; double const* px; double const* py; };
-    DBWidth_t const dbWidths[] = {
-      { spill.M876HS, spill.M876VS, p876x, p876y },
-      { spill.M875HS, spill.M875VS, p875x, p875y },
-    };
-    for (auto const& w: dbWidths) {
-      if (!isValid(w.hs) || !isValid(w.vs)) continue;
-      double const sx = w.px[0] + w.px[1]*w.hs + w.px[2]*w.hs*w.hs;
-      double const sy = w.py[0] + w.py[1]*w.vs + w.py[2]*w.vs*w.vs;
-      if (!inWindow(sx, sy)) continue;
-      prefitfom = 1-pow(10,sbn::calcFOM(horpos,horang,verpos,verang,tor,sx,sy));
-      break;
-    }
-
-    // ---- FOM with the nominal beam width (scale factors 1)
-    double const noMWfom = 1-pow(10,sbn::calcFOM(horpos,horang,verpos,verang,tor));
+    // FOM with the nominal beam width (scale factors 1)
+    double const noMWfom = computeFOM(state, true);
     return {fom, prefitfom, noMWfom};
   }
 

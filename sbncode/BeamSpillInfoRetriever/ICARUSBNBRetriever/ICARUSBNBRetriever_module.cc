@@ -18,6 +18,7 @@
 #include <sqlite3.h>
 #include "sbncode/BeamSpillInfoRetriever/POTTools.h"
 #include "sbncode/BeamSpillInfoRetriever/getFOM.h"
+#include "sbncode/BeamSpillInfoRetriever/BNBFOMFill.h"
 
 namespace sbn {
   class ICARUSBNBRetriever;
@@ -96,6 +97,21 @@ public:
       Comment{ "if a BPM offset cannot be read, use the last valid value seen in this job" },
       true // default
       };
+    fhicl::Atom<bool> ImproveFOM {
+      Name{ "ImproveFOM" },
+      Comment{ "at the end of the subrun, recover the FOM of spills with missing inputs from their neighbours (see BNBFOMFill.h)" },
+      true // default
+      };
+    fhicl::Atom<double> NeighbourMinFOM {
+      Name{ "NeighbourMinFOM" },
+      Comment{ "neighbour fill only if both adjacent spills have FOM above this (< 0: no requirement)" },
+      0.998 // default (ICARUS Run 2 closure test)
+      };
+    fhicl::Atom<bool> FillBPMDropouts {
+      Name{ "FillBPMDropouts" },
+      Comment{ "fill HP875+VP875 drop-outs from the target BPMs and the measured spills on both sides" },
+      true // default
+      };
     fhicl::Atom<std::string> TriggerDatabaseFile {
       Name{ "TriggerDatabaseFile" },
       Comment{ "path of local database of all recorded events and their trigger, in SQLite format" } 
@@ -149,6 +165,8 @@ private:
   double fMWRMaxTimeDiff; ///< largest accepted multiwire-spill time difference [s]
   bool fReuseLastBPMOffsets; ///< whether to fill missing BPM offsets from fOffsetCache
   mutable sbn::pot::BPMOffsetCache_t fOffsetCache; ///< last valid BPM offsets seen
+  bool fImproveFOM; ///< whether to run sbn::improveBNBqualityFOMs() at the end of the subrun
+  sbn::BNBFOMFillConfig fFOMFillConfig; ///< its configuration
 
   /// Returns the information of the trigger in the current event.
   sbn::pot::TriggerInfo_t extractTriggerInfo(art::Event const& e) const;
@@ -244,6 +262,7 @@ sbn::ICARUSBNBRetriever::ICARUSBNBRetriever(Parameters const& params)
   bfp_mwr( ifbeam_handle->getBeamFolder(params().MultiWireBundle(), params().URL(), params().MWR_TimeWindow())),
   fMWRMaxTimeDiff(params().MWRMaxTimeDiff()),
   fReuseLastBPMOffsets(params().ReuseLastBPMOffsets()),
+  fImproveFOM(params().ImproveFOM()),
   fTriggerDatabaseFile(params().TriggerDatabaseFile())
 {
   
@@ -267,6 +286,9 @@ sbn::ICARUSBNBRetriever::ICARUSBNBRetriever(Parameters const& params)
   //bfp_mwr->setValidWindow(86400);  
   bfp_mwr->setValidWindow(3605);  
   produces< std::vector< sbn::BNBSpillInfo >, art::InSubRun >();
+  produces< std::vector< unsigned int >, art::InSubRun >("fomStatus");
+  fFOMFillConfig.nbMinFOM = params().NeighbourMinFOM();
+  fFOMFillConfig.burstFill = params().FillBPMDropouts();
   TotalBeamSpills = 0;
 
   cet::search_path sp("FW_SEARCH_PATH");
@@ -475,6 +497,13 @@ mf::LogDebug("ICARUSBNBRetriever")<< "Total number of Selected Spills : " << fOu
       info.NoMultiWireFOM = std::get<2>(allFOM);
     }
   }
+
+  // Beam-quality status of each spill, and the FOM of spills with missing
+  // inputs from their neighbours (empty multiwire, BPM gaps, 875 drop-outs).
+  auto status = std::make_unique< std::vector<unsigned int> >();
+  if (fImproveFOM) *status = sbn::improveBNBqualityFOMs(fOutbeamInfos, fFOMFillConfig);
+  else for (sbn::BNBSpillInfo const& info: fOutbeamInfos) status->push_back(sbn::getBNBBeamState(info).status);
+  sr.put(std::move(status), "fomStatus", art::subRunFragment());
 
   auto p =  std::make_unique< std::vector< sbn::BNBSpillInfo > >();
   std::swap(*p, fOutbeamInfos);
