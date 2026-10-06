@@ -840,8 +840,6 @@ namespace caf {
     }
   } //FillTrueG4Particle
 
-
-
   void FillTrueGENIEParticle(const simb::MCParticle &particle,
         const std::vector<geo::BoxBoundedGeo> &active_volumes,
         const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
@@ -1040,7 +1038,6 @@ namespace caf {
     srparticle.interaction_id = interaction_id;
   } //FillTrueGENIEParticle
 
-
   bool IsInitialStateParticle(const simb::MCParticle& particle,
                             const simb::MCTruth& truth)
   {
@@ -1059,8 +1056,6 @@ namespace caf {
 
     return false;
   }
-
-
 
   void FillFakeReco(const std::vector<art::Ptr<simb::MCTruth>> &mctruths,
                     const std::vector<caf::SRTrueParticle> &srparticles,
@@ -1886,8 +1881,3 @@ caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
   }
   return ret;
 }//Slc2Truth
-
-
-
-
-

@@ -81,7 +81,6 @@ namespace caf
         const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
         caf::SRTrueParticle &srparticle, std::optional<int> new_mother);
 
-
   // Added for unstable particles that don't propogate to G4
   void FillTrueGENIEParticle(const simb::MCParticle &particle,
         const std::vector<geo::BoxBoundedGeo> &active_volumes,
