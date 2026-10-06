@@ -10,6 +10,7 @@
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
 #include "sbncode/BeamSpillInfoRetriever/POTTools.h"
 #include "sbncode/BeamSpillInfoRetriever/getFOM.h"
+#include "sbncode/BeamSpillInfoRetriever/BNBFOMFill.h"
 
 namespace sbn {
   class SBNDBNBRetriever;
@@ -46,6 +47,8 @@ private:
   double fMWRMaxTimeDiff; ///< largest accepted multiwire-spill time difference [s]
   bool fReuseLastBPMOffsets; ///< whether to fill missing BPM offsets from fOffsetCache
   mutable sbn::pot::BPMOffsetCache_t fOffsetCache; ///< last valid BPM offsets seen
+  bool fImproveFOM; ///< whether to run sbn::improveBNBqualityFOMs() at the end of the subrun
+  sbn::BNBFOMFillConfig fFOMFillConfig; ///< its configuration
 
   sbn::pot::TriggerInfo_t extractTriggerInfo(art::Event const& e) const;
   int matchMultiWireData(
@@ -60,6 +63,10 @@ private:
 sbn::SBNDBNBRetriever::SBNDBNBRetriever(fhicl::ParameterSet const & params)
   : EDProducer{params} {
   produces< std::vector< sbn::BNBSpillInfo >, art::InSubRun >();
+  produces< std::vector< unsigned int >, art::InSubRun >("fomStatus");
+  fImproveFOM = params.get<bool>("ImproveFOM", true);
+  fFOMFillConfig.nbMinFOM = params.get<double>("NeighbourMinFOM", -1.);
+  fFOMFillConfig.burstFill = params.get<bool>("FillBPMDropouts", false);
   fTimePad = params.get<double>("TimePadding");
   fBESOffset = params.get<double>("BESOffset");
   fDeviceUsedForTiming = params.get<std::string>("DeviceUsedForTiming");
@@ -229,6 +236,13 @@ void sbn::SBNDBNBRetriever::endSubRun(art::SubRun& sr)
       info.NoMultiWireFOM = std::get<2>(allFOM);
     }
   }
+
+  // Beam-quality status of each spill, and the FOM of spills with missing
+  // inputs from their neighbours (empty multiwire, BPM gaps, 875 drop-outs).
+  auto status = std::make_unique< std::vector<unsigned int> >();
+  if (fImproveFOM) *status = sbn::improveBNBqualityFOMs(fOutbeamInfos, fFOMFillConfig);
+  else for (sbn::BNBSpillInfo const& info: fOutbeamInfos) status->push_back(sbn::getBNBBeamState(info).status);
+  sr.put(std::move(status), "fomStatus", art::subRunFragment());
 
   auto p =  std::make_unique< std::vector< sbn::BNBSpillInfo > >();
   std::swap(*p, fOutbeamInfos);

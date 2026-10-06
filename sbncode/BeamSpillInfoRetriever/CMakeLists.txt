@@ -46,7 +46,7 @@ art_make_library(
 
 
 	LIBRARY_NAME sbn_getFOM
-	SOURCE getFOM.cpp        
+	SOURCE getFOM.cpp BNBFOMFill.cpp
 )
 
 install_headers()
