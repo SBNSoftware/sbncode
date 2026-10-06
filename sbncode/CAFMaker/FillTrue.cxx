@@ -478,12 +478,9 @@ namespace caf {
     }
 
     for(const caf::SRTrueParticle& part: srparticles){
-      if (part.pdg == 212212) std::cout << "Weird parent in FillTrueNeutrino" << std::endl; 
-
       // save the G4 particles that came from this interaction
       if(part.interaction_id == (int)i) {
         if(part.start_process == caf::kG4primary) srneutrino.prim.push_back(part);
-        //std::cout << "succeeded FillNeutrino check" << std::endl; 
         // total up the deposited energy
         for(int p = 0; p < 3; ++p) { 
           for (int i_cryo = 0; i_cryo < 2; i_cryo++) {
