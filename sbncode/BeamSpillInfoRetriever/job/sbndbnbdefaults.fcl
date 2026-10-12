@@ -19,6 +19,8 @@ sbndbnbspillinfo: {
     ImproveFOM: true #recover the FOM of spills with missing inputs from their neighbours (BNBFOMFill.h)
     NeighbourMinFOM: -1 #no FOM requirement on the neighbours (SBND closure test: 43 bad spills in 909k)
     FillBPMDropouts: false #875 drop-outs in SBND are single spills, covered by the neighbour fill
+    BunchRotationBundle: "" #IFBeam bundle with the Booster bunch-rotation settings; empty: not read (no bundle holds them yet)
+    BunchRotationDevices: [ "B_BRRMPS[8]", "B_BRRMPQ[1]", "B_BRRMPL[9]" ] #scale factor, frequency, start time
 }
 
 END_PROLOG

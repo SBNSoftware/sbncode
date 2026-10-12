@@ -111,6 +111,22 @@ namespace sbn::pot{
    * offset reading of the job could not use the cache when they were made.
    */
   bool fillMissingBPMOffsets(sbn::BNBSpillInfo& info, BPMOffsetCache_t const& cache);
+
+  /**
+   * @brief Fills the Booster bunch-rotation settings of a spill.
+   * @param info the spill (`BRRMPS8`, `BRRMPQ1`, `BRRMPL9` are set)
+   * @param time spill time [s]
+   * @param folder IFBeam folder of a bundle holding the settings
+   * @param devices IFBeam names of the scale factor, frequency and start time,
+   *                in this order (e.g. `B_BRRMPS[8]`, `B_BRRMPQ[1]`, `B_BRRMPL[9]`)
+   * @param cache if not null, last valid value of each setting: used when a query
+   *              fails, and updated otherwise
+   *
+   * The settings are logged every 15 minutes, so the folder needs an epsilon of
+   * at least that. A setting that cannot be found is -999.
+   */
+  void fillBunchRotation(sbn::BNBSpillInfo& info, double time, ifbeam_ns::BeamFolder& folder,
+                         std::vector<std::string> const& devices, BPMOffsetCache_t* cache);
 }
 
 #endif
