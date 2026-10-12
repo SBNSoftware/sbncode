@@ -19,7 +19,13 @@ namespace caf
     std::cout << "makeSRBNBInfo: Assuming width of 1.0:" << NoMultiWireFOM << std::endl;
     // valid FOM values are in [0, 1]; getBNBqualityFOM() flags failures with
     // -999, -1, 2, 3 (a FOM of exactly 0, beam fully off target, is valid)
-    if((FOM >= 0.0) && (FOM <= 1.0)){
+    if(info.fom_version == 0){
+        // made before the back-up FOMs existed (they read back as -999):
+        // keep the stored value, as the production CAFs of that input have it
+        finalFOM = FOM;
+        std::cout << "makeSRBNBInfo: Input without back-up FOMs, kept the stored FOM" << std::endl;
+    }
+    else if((FOM >= 0.0) && (FOM <= 1.0)){
         finalFOM = FOM;
         std::cout << "makeSRBNBInfo: Chose manually calculated width" << std::endl;
     }
