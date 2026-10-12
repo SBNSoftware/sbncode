@@ -260,10 +260,10 @@ sbn::ICARUSBNBRetriever::ICARUSBNBRetriever(Parameters const& params)
   vp873(     ifbeam_handle->getBeamFolder(params().VP873Bundle(), params().URL(), params().TimeWindow())),
   offsets(     ifbeam_handle->getBeamFolder(params().OffsetBundle(), params().URL(), params().TimeWindow())),
   bfp_mwr( ifbeam_handle->getBeamFolder(params().MultiWireBundle(), params().URL(), params().MWR_TimeWindow())),
+  fTriggerDatabaseFile(params().TriggerDatabaseFile()),
   fMWRMaxTimeDiff(params().MWRMaxTimeDiff()),
   fReuseLastBPMOffsets(params().ReuseLastBPMOffsets()),
-  fImproveFOM(params().ImproveFOM()),
-  fTriggerDatabaseFile(params().TriggerDatabaseFile())
+  fImproveFOM(params().ImproveFOM())
 {
   
   // Check fTimePad is positive 
