@@ -1,8 +1,7 @@
-# ACNet logger search: BNB BPMs missing from IFBeam (ICARUS Run 2, 2023)
+# ACNet logger readings of BNB BPMs missing from IFBeam (ICARUS Run 2, 2023)
 
-- `d44_search.py`: a read-only sweep through the D44 `DLPNodes` and `dataLogger` endpoints. It caches every reply and waits at least 1.1 s between requests.
-- `d44_search.py` writes `results.tsv` (node, event, device, window, result) and caches every raw reply under `raw/`
-  (first line of each file: the URL requested). These outputs are not included here; rerunning the script recreates them.
+Used by `logger_fill.py` (`update_flatcafs.py --logger-fill`). The D44 query script that recovered them is in the code archive of the beam-quality technote.
+
 
 Result: the per-spill (15 Hz event) data is not kept on any node. 1-minute readings for HP875, VP875, HPTG1, HPTG2 and VPTG2
 do exist on node 96 (Backup), and node 70 (MBoon) returns the same values at p,60000. VP873 is not logged on any periodic node.
