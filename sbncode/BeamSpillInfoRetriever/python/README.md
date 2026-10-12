@@ -68,7 +68,7 @@ Intermediate files go to `<outdir>/bnb_work/`, including the per-spill table `ti
 | 32 | multiwire profile rejected (> 33 ms from the spill) |
 | 64 | nominal width |
 | 128 | neighbor fill |
-| 256 | TOR875 used |
+| 256 | intensity from TOR875 (TOR860 dropped out, ≤ 0 or missing) |
 | 512 | empty chamber |
 | 1024 | width from the neighbors |
 | 2048 | backup target BPM not used |
