@@ -7,7 +7,6 @@
 #include "sbnobj/Common/POTAccounting/NuMISpillInfo.h"
 
 #include <vector>
-#include <iostream>
 
 namespace caf
 {

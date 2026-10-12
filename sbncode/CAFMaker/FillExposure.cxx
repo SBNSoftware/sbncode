@@ -9,37 +9,29 @@ namespace caf
 
   caf::SRBNBInfo makeSRBNBInfo(sbn::BNBSpillInfo const& info)
   {
-    float FOM = info.FOM;
-    float PreFitFOM = info.PreFitFOM;
-    float NoMultiWireFOM = info.NoMultiWireFOM;
+    // Legacy FOM field: the FOM with the fitted multiwire width, else with the
+    // database width, else with the nominal width. Valid values are in [0, 1] (a
+    // FOM of exactly 0, beam fully off target, is valid); getBNBqualityFOM()
+    // flags failures with -999, -1, 2, 3.
+    auto const inRange = [](float v){ return (v >= 0.0f) && (v <= 1.0f); };
+    // input written by a release without the beam-quality result (fom_version 0)
+    bool const olderInput = (info.fom_version == 0);
+    // back-up FOMs present: written by a release that had them (SBN2025A, or
+    // later); otherwise they read back as their default -999
+    bool const hasBackupFOMs = (info.PreFitFOM != -999.0f) || (info.NoMultiWireFOM != -999.0f);
     float finalFOM = -999.;
-    std::cout << "makeSRBNBInfo: Choosing FOM from available" << std::endl;
-    std::cout << "makeSRBNBInfo: Manually calculated width:" << FOM << std::endl;
-    std::cout << "makeSRBNBInfo: Pre-Fit width from database:" << PreFitFOM << std::endl;
-    std::cout << "makeSRBNBInfo: Assuming width of 1.0:" << NoMultiWireFOM << std::endl;
-    // valid FOM values are in [0, 1]; getBNBqualityFOM() flags failures with
-    // -999, -1, 2, 3 (a FOM of exactly 0, beam fully off target, is valid)
-    if(info.fom_version == 0){
-        // made before the back-up FOMs existed (they read back as -999):
-        // keep the stored value, as the production CAFs of that input have it
-        finalFOM = FOM;
-        std::cout << "makeSRBNBInfo: Input without back-up FOMs, kept the stored FOM" << std::endl;
+    if (olderInput && !hasBackupFOMs) {
+      // the stored value, as the production CAFs of that input have it
+      finalFOM = info.FOM;
     }
-    else if((FOM >= 0.0) && (FOM <= 1.0)){
-        finalFOM = FOM;
-        std::cout << "makeSRBNBInfo: Chose manually calculated width" << std::endl;
-    }
-    else if((PreFitFOM >= 0.0) && (PreFitFOM <= 1.0)){
-        finalFOM = PreFitFOM;
-        std::cout << "makeSRBNBInfo: Chose pre-fit width" << std::endl;
-    }
-    else if((NoMultiWireFOM >= 0.0) && (NoMultiWireFOM <= 1.0))
-    {
-        // nominal-width FOM: used as is (it used to be stored as 100 + FOM,
-        // which made the standard 0.98 < FOM <= 1 cut reject these spills;
-        // they have fom_source 5 and fom_status bit 64)
-        finalFOM = NoMultiWireFOM;
-        std::cout << "makeSRBNBInfo: Chose assumed width of 1.0" << std::endl;
+    else if (inRange(info.FOM)) finalFOM = info.FOM;
+    else if (inRange(info.PreFitFOM)) finalFOM = info.PreFitFOM;
+    else if (inRange(info.NoMultiWireFOM)) {
+      // nominal width: used as is (fom_source 5, fom_status bit 64). The releases
+      // without the beam-quality result stored it as 100 + FOM, so that the
+      // standard 0.98 < FOM <= 1 cut rejects it: kept for their input, so that a
+      // re-made CAF has the same FOM field as their production CAFs.
+      finalFOM = olderInput? 100.0f + info.NoMultiWireFOM: info.NoMultiWireFOM;
     }
 
     caf::SRBNBInfo single_store;
