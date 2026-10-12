@@ -241,6 +241,20 @@ void sbn::SBNDBNBZEROBIASRetriever::endSubRun(art::SubRun& sr)
 {
   mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "Total number of DAQ Spills : " << TotalBeamSpills << std::endl;
   mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "Total number of Selected Spills : " << fOutbeamInfosTotal.size() << std::endl;
+
+  // Spills recorded before the first valid BPM offset reading of the job could
+  // not be patched from the cache at the time: do it now and redo their FOM
+  // (the per-event products, already written, keep the per-spill result).
+  if (fReuseLastBPMOffsets) {
+    for (sbn::BNBSpillInfo& info: fOutbeamInfosTotal) {
+      if (!sbn::pot::fillMissingBPMOffsets(info, fOffsetCache)) continue;
+      std::tuple<float, float, float> const allFOM = sbn::getBNBqualityFOM(info);
+      info.FOM = std::get<0>(allFOM);
+      info.PreFitFOM = std::get<1>(allFOM);
+      info.NoMultiWireFOM = std::get<2>(allFOM);
+    }
+  }
+
   // Beam-quality result of each spill (BNBSpillInfo::FOM_best, fom_status...),
   // with the FOM of spills with missing inputs from their neighbours (empty
   // multiwire, BPM gaps, 875 drop-outs).

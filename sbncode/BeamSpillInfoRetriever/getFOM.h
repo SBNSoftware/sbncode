@@ -50,6 +50,11 @@ namespace sbn
   /// Intensity [protons] below which a spill gets `fomstatus::LowTOR`.
   constexpr double LowTORThreshold = 1e11;
 
+  /// A database (online-fitted) multiwire sigma above this [mm] means the
+  /// chamber saw no beam: the online fit went to noise (beam: 1-2.5 mm, empty
+  /// profile: ~7 mm). Such a width is not used.
+  constexpr double EmptyMWSigma = 4.0;
+
   /// Beam at the centre of the target, as used by the figure of merit.
   struct BNBBeamState {
     enum WidthSource_t: int { FitM876 = 1, FitM875 = 2, DatabaseM876 = 3, DatabaseM875 = 4, Nominal = 5 };
