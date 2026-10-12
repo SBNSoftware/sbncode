@@ -35,7 +35,11 @@ namespace sbn{
       }
     }
   } else {
-    cout <<"BeamSpillInfoRetriever: MRWData: Bad data!"<<endl;
+    // malformed record: no profiles and no time stamps (the caller pairs the
+    // two by index, so returning four empty profiles without times made it
+    // read past the end of `time_stamp`)
+    cout <<"BeamSpillInfoRetriever: MRWData: Bad data! (" << row.size() << " fields instead of 447, record skipped)"<<endl;
+    unpacked_data.clear();
     return unpacked_data;
   }
 

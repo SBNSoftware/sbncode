@@ -384,6 +384,14 @@ namespace sbn::pot{
   	//   we'll just remove that here to match to the spill times
   	std::vector< std::vector< int > > unpacked_MWR_temp = mwrdata.unpackMWR(packed_data_str,MWR_times_temp,MWRtoroidDelay);
   	
+  	// a malformed record has no time stamps: skip it rather than pair
+  	// profiles with times that do not exist
+  	if (MWR_times_temp.size() != unpacked_MWR_temp.size()) {
+  	  mf::LogWarning("SBNDBNBRetriever") << "Malformed multiwire record for " << var << " near t=" << time_for_mwr
+  	    << " (" << unpacked_MWR_temp.size() << " profiles, " << MWR_times_temp.size() << " times): skipped";
+  	  continue;
+  	}
+  	
   	//There are four events that are packed into one MWR IFBeam entry
   	for(std::size_t s: util::counter(unpacked_MWR_temp.size())){
   	  	  
