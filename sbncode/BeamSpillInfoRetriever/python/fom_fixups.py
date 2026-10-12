@@ -10,7 +10,8 @@ edge-case scan (bnb_fom.py itself is left untouched).  Applied in this order:
                           HP875 -> HPTG2 (missing offsets: nearest valid in the run, else the autotune
                           table) and their FOM recomputed; bit 32768 HPTG2_PRIMARY.  --hptg1-only disables.
  1. TOR875 back-up        TOR860 < 0.5 * TOR875 (TOR860 dropout, reads ~1e9-1e10) -> the
-                          intensity is TOR875; the FOM is recomputed; bit 256 TOR875_USED.
+                          intensity is TOR875; the FOM is recomputed; bit 256 TOR875_USED, also
+                          set when TOR860 is missing or <= 0 (TOR875 used already by bnb_fom.py).
                           New branch tor_used = intensity used for the FOM: sum it for POT.
  2. second-BPM fallback   spills whose FOM used HPTG2 / VPTG2 because HPTG1 / VP873 had no
                           reading (biased position) lose that FOM.  With step 0 the 'first' horizontal
@@ -194,7 +195,11 @@ def fix_group(d, S):
     S["hptg2_pot"] += float(tor[sw & beam].sum())
     S["hptg2_spills"] += int((sw & beam).sum())
 
-    # 1. TOR875 back-up
+    # 1. TOR875 back-up. Bit 256 marks every spill whose intensity is TOR875: the
+    # dropouts, and spills where TOR860 is missing or not positive (bnb_fom.py already
+    # used TOR875 for those, so their FOM does not change)
+    g860, g875 = ok(t860) & (t860 > 0), ok(t875) & (t875 > 0)
+    st[g875 & ~g860] |= 256
     st[drop] |= 256
     st[drop] &= ~16
     st[drop & (tor < MIN_TOR)] |= 16

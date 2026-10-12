@@ -26,7 +26,7 @@ namespace sbn
     constexpr unsigned int MWTimeCut          = 32;     ///< (analysis level only) a profile was rejected by the time cut
     constexpr unsigned int NoMWWidth          = 64;     ///< no usable multiwire width: nominal width
     constexpr unsigned int NeighborFilled     = 128;    ///< position/angle from the adjacent spills
-    constexpr unsigned int TOR875Used         = 256;    ///< TOR860 drop-out: intensity from TOR875
+    constexpr unsigned int TOR875Used         = 256;    ///< intensity from TOR875: TOR860 dropped out, <= 0 or missing
     constexpr unsigned int MWEmpty            = 512;    ///< database multiwire width is an empty chamber
     constexpr unsigned int WidthFromNeighbors = 1024;   ///< width from the adjacent spills
     constexpr unsigned int FallbackRemoved    = 2048;   ///< only the non-primary BPM read: not used
@@ -75,8 +75,8 @@ namespace sbn
   /// this time: the one autotune was calibrated on most recently.
   bool hptg2IsPrimary(unsigned long spill_time_s);
 
-  /// Intensity for the FOM [protons]: TOR860, or TOR875 if TOR860 is missing or
-  /// dropped out (`*tor875used` is set in the latter case); -1 if none.
+  /// Intensity for the FOM [protons]: TOR860, or TOR875 if TOR860 is missing,
+  /// not positive or dropped out (`*tor875used` is then set); -1 if none.
   double beamIntensity(BNBSpillInfo const& spill, bool* tor875used = nullptr);
 
   /// Position, angle, width and status of the beam at the target for one spill.

@@ -183,12 +183,13 @@ namespace sbn {
 
 
   double beamIntensity(BNBSpillInfo const& spill, bool* tor875used) {
-    // TOR860 sometimes reads ~1e-3 of the beam TOR875 sees (TOR860 drop-out):
-    // then TOR875 is the intensity. A missing toroid is -999.
+    // TOR860 sometimes reads ~1e-3 of the beam TOR875 sees (TOR860 drop-out), or
+    // zero or less, or nothing (-999): then TOR875 is the intensity, and the
+    // spill is flagged (*tor875used) whenever TOR875 is used.
     bool const ok860 = isValid(spill.TOR860) && spill.TOR860 > 0.;
     bool const ok875 = isValid(spill.TOR875) && spill.TOR875 > 0.;
     bool const dropout = ok860 && ok875 && spill.TOR860 < TOR860DropoutFraction * spill.TOR875;
-    if (tor875used) *tor875used = dropout;
+    if (tor875used) *tor875used = ok875 && (dropout || !ok860);
     if (ok860 && !dropout) return spill.TOR860;
     if (ok875) return spill.TOR875;
     return -1.;
