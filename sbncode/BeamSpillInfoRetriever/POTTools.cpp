@@ -2,6 +2,7 @@
 #include "sbncode/BeamSpillInfoRetriever/getFOM.h" // sbn::fomstatus
 
 #include <cmath>
+#include <iterator> // std::size
 
 using namespace std;
 
@@ -285,6 +286,23 @@ namespace sbn::pot{
     fill("E_VPTG2S", info.VPTG2Offset);
     if (filled) info.fom_status |= sbn::fomstatus::OffsetFilled;
     return filled;
+  }
+
+  void fillBunchRotation(sbn::BNBSpillInfo& info, double time, ifbeam_ns::BeamFolder& folder,
+                         std::vector<std::string> const& devices, BPMOffsetCache_t* cache)
+  {
+    float* const fields[] = { &info.BRRMPS8, &info.BRRMPQ1, &info.BRRMPL9 };
+    for (std::size_t k = 0; k < std::size(fields) && k < devices.size(); ++k) {
+      double value = -999;
+      try{folder.GetNamedData(time, devices[k], &value);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << devices[k] << ": " << we.what() << "\n";}
+      if (std::isfinite(value) && value != -999) {
+        if (cache) (*cache)[devices[k]] = value;
+      }
+      else if (cache) {
+        if (auto const it = cache->find(devices[k]); it != cache->end()) value = it->second;
+      }
+      *fields[k] = std::isfinite(value)? value: -999;
+    }
   }
 
   bool BrokenClock(double time, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp)
