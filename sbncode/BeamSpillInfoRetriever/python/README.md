@@ -1,147 +1,83 @@
-# BNB beam quality: analysis-level tools (Python)
+# BNB beam quality: updating flat CAFs (Python)
 
-The BNB beam-quality procedure has two parts.
+`update_flatcafs.py` takes the flat CAFs of a SAM definition (or a file list) and writes a
+copy of each, with the BNB beam-quality result of the full procedure in
+`rec.hdr.bnbinfo` (every spill) and `rec.hdr.spillbnbinfo` (the triggered spill):
 
-* **Tier 1 / Tier 1W** run in production, in the BNB retriever modules of this
-  directory (`getFOM.cpp`, `BNBFOMFill.cpp`). Each spill gets `FOM_best`,
-  `fom_source`, `fom_status`, `tor_used`, the beam at the target and `fom_version`
-  in `sbn::BNBSpillInfo` and in the CAF (`rec.hdr.bnbinfo`, `rec.hdr.spillbnbinfo`).
-* **Tier 2** runs once per data period, on the merged `bnbinfo` record of all its
-  CAFs. It recovers spills that Tier 1 could not give a FOM, using the spills on both
-  sides and, for one ICARUS outage, ACNet logger readings. Every method has passed a
-  closure test.
+`FOM_best`, `fom_source`, `fom_status`, `tor_used`, `hpos_tgt`, `hang_tgt`, `vpos_tgt`,
+`vang_tgt`, `tgt_sigx`, `tgt_sigy`, `fom_version`
 
-This directory holds the Python side:
-* the **reference implementation** of Tier 1 (`bnb_fom.py`), against which the C++ is
-  validated spill by spill;
-* **Tier 2** (`fom_fixups.py`, `logger_fill.py`);
-* the tools to dump CAFs, validate the result and compare it with the production (C++)
-  result.
+These are the fields of `caf::SRBNBInfo` that the production retrievers fill (Tier 1 and the
+end-of-subrun Tier 1W, `getFOM.h`, `BNBFOMFill.h`). This tool adds the Tier-2 recovery, which
+needs every spill of a data period, and fills them in CAFs made before the retrievers had
+them. Missing values are NaN and `fom_source` is −1. Nothing else in the file changes. A
+`TNamed` called `bnb_beam_quality` records the tool, options, definition and date.
 
-The method, its validation and the numbers are documented in the BNB beam-quality
-technical note.
-
-They are plain Python (numpy, pandas, awkward, uproot, numba), read flat CAFs with
-uproot, and do not need art or ROOT. They are installed with the product under
-`$SBNCODE_DIR/python/bnb_beam_quality/`.
+Steps (all files are processed before any is written, because Tier 2 needs the whole period):
+1. dump the beam information of every CAF and merge it (`dump_bnb_quality.py`, `merge_bnb_dumps.py`);
+2. compute Tier 1 per spill (`bnb_fom.py`, the reference implementation, sped up by `bnb_fom_fast.py`);
+3. run Tier 2 over the whole set (`fom_fixups.py`, `neighbor_fill.py`, `logger_fill.py` + `acnet/`);
+4. copy each CAF with the fields set from the resulting per-spill table.
 
 ## Environment
 
-The art/UPS release environment does not provide uproot, awkward or numba; use a
-virtual environment:
+Steps 1–3 need numpy, pandas, awkward, uproot and numba (`requirements.txt`, in a virtual
+environment). The copy needs ROOT with PyROOT. On the SBND GPVMs: the spack ROOT plus a venv,
+with `samweb` on the `PATH` for `-d`.
+
+## Usage
 
 ```bash
-python3 -m venv bq-venv && source bq-venv/bin/activate
-pip install -r $SBNCODE_DIR/python/bnb_beam_quality/requirements.txt
-export PATH=$SBNCODE_DIR/python/bnb_beam_quality:$PATH
+update_flatcafs.py -d <flat CAF definition> -e sbnd   --detector sbnd   -o <outdir> -j 16
+update_flatcafs.py -d <flat CAF definition> -e icarus --detector icarus -o <outdir> -j 16 [--logger-fill]
+update_flatcafs.py -f "dir/*.flat.caf.root" --detector sbnd -o <outdir>        # files instead of SAM
 ```
 
-On the GPVMs, `root://` inputs on `/pnfs` are read through the local mount
-automatically. Elsewhere install `fsspec-xrootd`.
+Detector settings:
+* `--detector icarus` fills a spill from its neighbors only if both neighbors have FOM > 0.998, and turns on the 875-station dropout fill.
+* `--detector sbnd` applies neither.
+* `--logger-fill` is for ICARUS Run 2 only (the June 2023 outage); the calibration in `acnet/` is used.
 
-## Processing a data period
+Other options:
+* `--chunk-files N` dumps large definitions N files at a time.
+* `--groups N` runs Tier 2 in N groups of runs, to limit memory.
+* `-n N` processes only the first N files.
 
-```bash
-export BQ_DATA=<directory for the per-spill files>  BQ_WORK=<scratch directory>
-# 1. CAFs (SAM definition, file list or files) -> per-spill dump, in chunks; merge
-dump_bnb_quality.py -d <definition> -e sbn -j 32 --chunk-files 5000 -o $BQ_DATA/<s>.root
-merge_bnb_dumps.py -l $BQ_DATA/<s>_chunks.txt -o $BQ_DATA/<s>_all.root
-# 2. Tier 1 per spill (fast version; --check compares it with the reference first)
-bnb_fom_fast.py --check <small dump>.root
-bnb_fom_fast.py $BQ_DATA/<s>_all.root -o $BQ_DATA/<s>_fixed.root
-# 3. Tier-1 corrections and Tier-2 recovery
-fom_fixups.py $BQ_DATA/<s>_fixed.root -o $BQ_DATA/<s>_fixed_fx.root                  # SBND
-fom_fixups.py $BQ_DATA/<s>_fixed.root -o $BQ_DATA/<s>_fixed_fx.root --groups 12 \
-    --nb-min-fom 0.998 --burst-fill [--logger-fill]                                   # ICARUS
-# 4. validation report
-validate_fom.py $BQ_DATA/<s>_fixed_fx.root --label "<label>" -o $BQ_WORK/fom_validation
-```
+Intermediate files go to `<outdir>/bnb_work/`, including the per-spill table `tier2.root` and its report `tier2_fixups.md`. A rerun reuses the finished steps and skips CAFs already written.
 
-* **Merge before step 2.** Offsets are filled from the nearest valid spill of the same
-  run *within the input file*, so the chunks must be merged first.
-* **Logger fill.** `--logger-fill` (ICARUS Run 2, June 2023 outage only) needs
-  `logger_fill.py calibrate $BQ_DATA/<s>_fixed.root`, run twice: the first pass
-  caches the outage spills. The calibration is written to `$BQ_ACNET_DIR` (default
-  `acnet/` next to the code, which is read-only once installed).
+## Fields
 
-`bnb_beam_quality.py` is a single entry point for all the steps:
-`dump`, `fom`, `plot`, `all`, `fixups`, `validate`, `compare-cpp`, `selftest`.
-
-## Checking production
-
-```bash
-# a few new CAFs: Python Tier 1 must equal the C++ FOM_best / fom_source (exit 0 = pass)
-bnb_beam_quality.py selftest <caf files>
-# spill-by-spill comparison of a CAF with the production result against a reference CAF
-# of the same input and this code's Tier 1 / Tier 2 outputs
-compare_cpp_caf.py --new <new.flat.caf.root> --prod <reference.flat.caf.root> \
-    --py1 <..._fixed.root> --py2 <..._fixed_fx.root> [--oldfmt <caf from an older BNBSpillInfo>]
-```
-
-On CAFs made before the production code carried the result (`fom_version` 0 or
-absent), `selftest` instead checks that the recomputed legacy FOM reproduces the CAF
-`FOM`.
-
-## Files
-
-| file | role |
+| field | meaning |
 |---|---|
-| `bnb_beam_quality.py` | entry point for all the steps, and `selftest` |
-| `dump_bnb_quality.py`, `merge_bnb_dumps.py` | CAFs → per-spill dump (trees `spill`, `bnbinfo`, with multiwire profiles); parallel, chunked, resumable; merging (use it instead of `hadd`) |
-| `bnb_fom.py` | **reference** implementation: the legacy algorithm (reproduces the old CAF `FOM`) and the Tier-1 algorithm. Change it only by a documented, versioned update, together with `getFOM.cpp` |
-| `bnb_fom_fast.py` | same results with numba kernels, 5–8× faster; `--check` compares with the reference |
-| `fom_fixups.py` | target-BPM choice, TOR875 back-up, backup-BPM removal, empty-chamber and MMBTBB widths, and the Tier-2 recovery steps (neighbor width and fill, logger fill, 875-dropout fill) |
-| `neighbor_fill.py` | neighbor fill on its own (also used by `fom_fixups.py`) |
-| `logger_fill.py`, `acnet/` | logger fill for the June 2023 ICARUS outage: recovered one-minute ACNet readings, calibration, and the D44 query script (`acnet/README.md`) |
-| `validate_fom.py` | validation report and plots |
-| `compare_cpp_caf.py` | production (C++) result in a CAF vs a reference CAF and this code, spill by spill |
-| `spill_event_map.py` | spill → (run, subrun, event) map |
-| `plot_fom_compare.py` | old vs new FOM plots and summary |
+| `FOM_best` | fraction of the beam on target, in [0, 1]; NaN if none can be formed. Cut on this |
+| `fom_source` | width used: 1/2 fitted M876/M875 profile, 3/4 M876/M875 database width, 5 nominal; −1 none |
+| `fom_status` | bit mask, `sbn::fomstatus` in `getFOM.h` |
+| `tor_used` | intensity used for the FOM [protons]: TOR860, or TOR875 after a TOR860 drop-out |
+| `hpos_tgt`, `hang_tgt`, `vpos_tgt`, `vang_tgt` | beam position [mm] and angle [mrad] at the target center (NaN for a plane that could not be formed) |
+| `tgt_sigx`, `tgt_sigy` | beam width at the target [mm]; NaN: nominal width |
+| `fom_version` | 1 (algorithm version, as `sbn::FOMVersion`); 0 for a spill not found in the table |
 
-The studies behind the technical note are kept with the note's code archive, not here:
-- the threshold and closure studies;
-- the device timelines;
-- the POT tables;
-- the flux study;
-- the figure scripts.
-
-## Output columns
-
-The trees of `bnb_fom.py` / `fom_fixups.py` keep the input and ID columns they use and add:
-
-| column | meaning |
-|---|---|
-| `FOM_best` | FOM of the spill in [0, 1]; NaN if none can be formed. No +100 offset |
-| `fom_source` | width used: 1/2 fitted M876/M875 profile, 3/4 M876/M875 database width, 5 nominal; 0 fitted MMBTBB (legacy only); −1 none |
-| `fom_status` | bit mask (below) |
-| `tor_used` | intensity used [protons]: TOR860, or TOR875 after a TOR860 drop-out (`fom_fixups.py`) |
-| `hpos_tgt`, `hang_tgt`, `vpos_tgt`, `vang_tgt` | beam position [mm] and angle [mrad] at the target center |
-| `tgt_sigx`, `tgt_sigy` | beam width at the target used for the FOM [mm]; NaN: nominal |
-| `FOM_legacy` (+ `_fit`, `_prefit`, `_nomw`, `fom_legacy_source`) | the old production algorithm |
-| `FOM_fit`, `FOM_prefit`, `FOM_nomw` | Tier-1 FOM with each width estimator |
-
-The dump (`dump_bnb_quality.py`) also keeps the production result of CAFs that carry it, as
-`cpp_<name>` (`cpp_FOM_best`, `cpp_fom_status`, …, `cpp_fom_version`), next to the device readings.
-
-`fom_status` bits (`sbn::fomstatus` in `getFOM.h`):
+`fom_status` bits:
 
 | bit | meaning |
 |---|---|
 | 1 | no valid intensity |
-| 2 / 4 | horizontal / vertical position or angle cannot be formed |
-| 8 | BPM offset filled |
-| 16 | intensity below 1e11 |
-| 32 | multiwire profile rejected, more than 33 ms from the spill (analysis level only) |
+| 2 / 4 | horizontal / vertical position or angle missing |
+| 8 | offset filled |
+| 16 | intensity < 1e11 |
+| 32 | multiwire profile rejected (> 33 ms from the spill) |
 | 64 | nominal width |
 | 128 | neighbor fill |
 | 256 | TOR875 used |
 | 512 | empty chamber |
 | 1024 | width from the neighbors |
 | 2048 | backup target BPM not used |
-| 4096 | MMBTBB width replaced (analysis level only) |
-| 8192 | ACNet logger fill (analysis level only) |
-| 16384 | 875-station drop-out fill |
+| 4096 | MMBTBB width replaced |
+| 8192 | ACNet logger fill |
+| 16384 | 875-station dropout fill |
 | 32768 | horizontal projection through HPTG2 |
 
-A spill has a FOM if `FOM_best` is finite. Filled spills keep bits 2/4, which record why
-they were filled.
+Filled spills keep bits 2/4, which record why they were filled.
+
+`bnb_fom.py` is the reference implementation of Tier 1 against which the C++ (`getFOM.cpp`) is
+validated. Change the two together, by a documented, versioned update.
