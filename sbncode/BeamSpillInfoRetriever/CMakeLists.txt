@@ -6,6 +6,7 @@ add_subdirectory(SBNDBNBZEROBIASRetriever)
 add_subdirectory(NuMIRetriever)
 add_subdirectory(NuMIEXTRetriever)
 add_subdirectory(job)
+add_subdirectory(python)
 
 find_package(ifbeam)
 find_package(ifdh_art)
@@ -28,7 +29,7 @@ art_make_library(
         sbn_MWRData
         larcorealg::CoreUtils
         LIBRARY_NAME sbn_POTTools
-        SOURCE POTTools.cpp
+        SOURCE POTTools.cpp MWRMatching.cpp
 )
 
 art_make_library(
@@ -40,7 +41,7 @@ art_make_library(
 
 
 	LIBRARY_NAME sbn_getFOM
-	SOURCE getFOM.cpp        
+	SOURCE getFOM.cpp BNBFOMFill.cpp
 )
 
 install_headers()
