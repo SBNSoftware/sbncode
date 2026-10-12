@@ -202,10 +202,12 @@ namespace sbn {
   BNBBeamState getBNBBeamState(BNBSpillInfo const& spill) {
     using namespace fomstatus;
     BNBBeamState state;
+    state.status = spill.fom_status & RetrievalBits; // set by the retriever, not recomputable here
     bool tor875used = false;
     state.tor = beamIntensity(spill, &tor875used);
     if (tor875used) state.status |= TOR875Used;
     if (state.tor <= 0.) state.status |= NoTOR;
+    else if (state.tor < LowTORThreshold) state.status |= LowTOR;
     fillGeometry(spill, state);
 
     // width: fitted profile, else database width, else nominal
@@ -228,6 +230,29 @@ namespace sbn {
     return measured
       ? 1-pow(10, sbn::calcFOM(state.hpos, state.hang, state.vpos, state.vang, state.tor, state.sx, state.sy))
       : 1-pow(10, sbn::calcFOM(state.hpos, state.hang, state.vpos, state.vang, state.tor));
+  }
+
+
+  void setBNBQualityResult(BNBSpillInfo& spill, BNBBeamState const& state, double fom) {
+    bool const hasFOM = isValid(fom) && fom >= 0. && fom <= 1.;
+    auto const value = [](double v){ return isValid(v) ? static_cast<float>(v) : static_cast<float>(MissingValue); };
+    spill.FOM_best    = hasFOM ? fom : MissingValue;
+    spill.fom_source  = hasFOM ? state.widthSource : -1;
+    spill.fom_status  = state.status;
+    spill.tor_used    = state.tor > 0. ? state.tor : MissingValue;
+    spill.hpos_tgt    = value(state.hpos);
+    spill.hang_tgt    = value(state.hang);
+    spill.vpos_tgt    = value(state.vpos);
+    spill.vang_tgt    = value(state.vang);
+    spill.tgt_sigx    = value(state.sx);
+    spill.tgt_sigy    = value(state.sy);
+    spill.fom_version = FOMVersion;
+  }
+
+
+  void fillBNBQualityResult(BNBSpillInfo& spill) {
+    BNBBeamState const state = getBNBBeamState(spill);
+    setBNBQualityResult(spill, state, computeFOM(state));
   }
 
 

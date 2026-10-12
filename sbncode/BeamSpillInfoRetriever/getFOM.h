@@ -21,18 +21,34 @@ namespace sbn
     constexpr unsigned int NoTOR              = 1;      ///< no valid, positive TOR860 or TOR875 (no beam)
     constexpr unsigned int NoHBPM             = 2;      ///< horizontal position/angle cannot be formed
     constexpr unsigned int NoVBPM             = 4;      ///< vertical position/angle cannot be formed
+    constexpr unsigned int OffsetFilled       = 8;      ///< a BPM offset was taken from the cache of valid offsets
+    constexpr unsigned int LowTOR             = 16;     ///< intensity below `sbn::LowTORThreshold`
+    constexpr unsigned int MWTimeCut          = 32;     ///< (analysis level only) a profile was rejected by the time cut
     constexpr unsigned int NoMWWidth          = 64;     ///< no usable multiwire width: nominal width
     constexpr unsigned int NeighborFilled     = 128;    ///< position/angle from the adjacent spills
     constexpr unsigned int TOR875Used         = 256;    ///< TOR860 drop-out: intensity from TOR875
     constexpr unsigned int MWEmpty            = 512;    ///< database multiwire width is an empty chamber
     constexpr unsigned int WidthFromNeighbors = 1024;   ///< width from the adjacent spills
     constexpr unsigned int FallbackRemoved    = 2048;   ///< only the non-primary BPM read: not used
+    constexpr unsigned int MMBTBBDropped      = 4096;   ///< (analysis level only) the only width was an MMBTBB fit
+    constexpr unsigned int LoggerFill         = 8192;   ///< (analysis level only) filled from the ACNet logger
     constexpr unsigned int BurstFill          = 16384;  ///< 875-station drop-out filled from both sides
     constexpr unsigned int HPTG2Primary       = 32768;  ///< horizontal projection through HPTG2
+
+    /// Bits set when the spill is retrieved, which `getBNBBeamState()` keeps
+    /// from `BNBSpillInfo::fom_status` (all the others it recomputes).
+    constexpr unsigned int RetrievalBits = OffsetFilled;
   }
+
+  /// Version of the beam-quality algorithm, stored in `BNBSpillInfo::fom_version`.
+  /// Increase it whenever a change can modify `FOM_best`, `fom_source` or `fom_status`.
+  constexpr unsigned int FOMVersion = 1;
 
   /// TOR860 below this fraction of TOR875 is a TOR860 drop-out.
   constexpr double TOR860DropoutFraction = 0.5;
+
+  /// Intensity [protons] below which a spill gets `fomstatus::LowTOR`.
+  constexpr double LowTORThreshold = 1e11;
 
   /// Beam at the centre of the target, as used by the figure of merit.
   struct BNBBeamState {
@@ -63,6 +79,15 @@ namespace sbn
 
   /// FOM of a beam state (-999 if it has none); `nominalWidth` ignores its width.
   double computeFOM(BNBBeamState const& state, bool nominalWidth = false);
+
+  /// Stores a beam state and its FOM (-999: none) in the beam-quality fields
+  /// of the spill (`FOM_best`, `fom_source`, `fom_status`, `tor_used`, beam at
+  /// the target, `fom_version`).
+  void setBNBQualityResult(BNBSpillInfo& spill, BNBBeamState const& state, double fom);
+
+  /// Computes the beam state and FOM of the spill on its own (no neighbours)
+  /// and stores them with `setBNBQualityResult()`.
+  void fillBNBQualityResult(BNBSpillInfo& spill);
 
   /**
    * @brief Returns a Figure of Merit on BNB beam quality.

@@ -36,7 +36,7 @@ namespace sbn {
   } // local namespace
 
 
-  std::vector<unsigned int> improveBNBqualityFOMs
+  void improveBNBqualityFOMs
     (std::vector<BNBSpillInfo>& spills, BNBFOMFillConfig const& cfg)
   {
     using namespace fomstatus;
@@ -166,15 +166,14 @@ namespace sbn {
       }
     }
 
-    std::vector<unsigned int> status(n);
     for (std::size_t j = 0; j < n; ++j) {
-      status[order[j]] = S[j].status;
+      BNBSpillInfo& spill = spills[order[j]];
+      setBNBQualityResult(spill, S[j], fom[j]);
       if (!changed[j]) continue;
       BNBBeamState computed = S[j];
       computed.status &= ~(NoHBPM | NoVBPM);
-      storeFOM(spills[order[j]], computed, fom[j]);
+      storeFOM(spill, computed, fom[j]);
     }
-    return status;
   }
 
 } // namespace sbn

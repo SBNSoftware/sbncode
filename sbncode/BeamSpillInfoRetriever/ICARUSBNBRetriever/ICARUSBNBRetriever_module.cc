@@ -286,7 +286,6 @@ sbn::ICARUSBNBRetriever::ICARUSBNBRetriever(Parameters const& params)
   //bfp_mwr->setValidWindow(86400);  
   bfp_mwr->setValidWindow(3605);  
   produces< std::vector< sbn::BNBSpillInfo >, art::InSubRun >();
-  produces< std::vector< unsigned int >, art::InSubRun >("fomStatus");
   fFOMFillConfig.nbMinFOM = params().NeighbourMinFOM();
   fFOMFillConfig.burstFill = params().FillBPMDropouts();
   TotalBeamSpills = 0;
@@ -457,6 +456,7 @@ int sbn::ICARUSBNBRetriever::matchMultiWireData(
     spillInfo.FOM = std::get<0>(allFOM);
     spillInfo.PreFitFOM = std::get<1>(allFOM);
     spillInfo.NoMultiWireFOM = std::get<2>(allFOM);
+    sbn::fillBNBQualityResult(spillInfo); // beam-quality result of this spill on its own
 
     beamInfos.push_back(std::move(spillInfo));
 
@@ -498,12 +498,11 @@ mf::LogDebug("ICARUSBNBRetriever")<< "Total number of Selected Spills : " << fOu
     }
   }
 
-  // Beam-quality status of each spill, and the FOM of spills with missing
-  // inputs from their neighbours (empty multiwire, BPM gaps, 875 drop-outs).
-  auto status = std::make_unique< std::vector<unsigned int> >();
-  if (fImproveFOM) *status = sbn::improveBNBqualityFOMs(fOutbeamInfos, fFOMFillConfig);
-  else for (sbn::BNBSpillInfo const& info: fOutbeamInfos) status->push_back(sbn::getBNBBeamState(info).status);
-  sr.put(std::move(status), "fomStatus", art::subRunFragment());
+  // Beam-quality result of each spill (BNBSpillInfo::FOM_best, fom_status...),
+  // with the FOM of spills with missing inputs from their neighbours (empty
+  // multiwire, BPM gaps, 875 drop-outs).
+  if (fImproveFOM) sbn::improveBNBqualityFOMs(fOutbeamInfos, fFOMFillConfig);
+  else for (sbn::BNBSpillInfo& info: fOutbeamInfos) sbn::fillBNBQualityResult(info);
 
   auto p =  std::make_unique< std::vector< sbn::BNBSpillInfo > >();
   std::swap(*p, fOutbeamInfos);

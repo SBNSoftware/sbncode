@@ -1,4 +1,5 @@
 #include "POTTools.h"
+#include "sbncode/BeamSpillInfoRetriever/getFOM.h" // sbn::fomstatus
 
 using namespace std;
 
@@ -167,6 +168,7 @@ namespace sbn::pot{
     // BPM offsets are settings that change rarely; the query (epsilon of a few
     // minutes) does fail at times, which used to leave -999 and cost the spill
     // its FOM. With a cache, fall back to the last valid value.
+    bool offsetFromCache = false;
     auto getOffset = [&](std::string const& name, double& value) {
       try{offsets->GetNamedData(time, name.c_str(), &value);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
       if (!offsetCache) return;
@@ -175,6 +177,7 @@ namespace sbn::pot{
       }
       else if (auto const it = offsetCache->find(name); it != offsetCache->end()) {
         value = it->second;
+        offsetFromCache = true;
         mf::LogDebug("BNBRetriever") << "At time : " << time << " " << name << " missing, using last valid value " << value;
       }
     };
@@ -226,6 +229,7 @@ namespace sbn::pot{
     beamInfo.VPTG1Offset = VPTG1Offset;
     beamInfo.VPTG2Offset = VPTG2Offset;
     beamInfo.FOM = FOM;
+    if (offsetFromCache) beamInfo.fom_status |= sbn::fomstatus::OffsetFilled;
 
     
     // A device has no reading for this spill if it reported nothing at all or
@@ -274,6 +278,7 @@ namespace sbn::pot{
     fill("E_HPTG2S", info.HPTG2Offset);
     fill("E_VPTG1S", info.VPTG1Offset);
     fill("E_VPTG2S", info.VPTG2Offset);
+    if (filled) info.fom_status |= sbn::fomstatus::OffsetFilled;
     return filled;
   }
 

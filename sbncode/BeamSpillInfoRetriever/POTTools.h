@@ -104,7 +104,8 @@ namespace sbn::pot{
 
   /**
    * @brief Fills BPM offsets still missing (-999) in `info` from `cache`.
-   * @return whether any offset was filled (the FOM then needs recomputing)
+   * @return whether any offset was filled (the FOM then needs recomputing);
+   *         if so, `fomstatus::OffsetFilled` is set in `info.fom_status`
    *
    * Meant for the end of the subrun: spills recorded before the first valid
    * offset reading of the job could not use the cache when they were made.

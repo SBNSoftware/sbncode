@@ -51,12 +51,14 @@ namespace sbn {
    * @brief Improves the FOM of the spills of one subrun using their neighbours.
    * @param spills all the spills of the subrun (any order); FOMs are updated
    * @param config which fills to apply and their thresholds
-   * @return the status word (`sbn::fomstatus` bits) of each spill, same order
    *
-   * Spills that are not filled keep the result of `getBNBqualityFOM()`.
-   * A filled spill gets its FOM in `FOM` (measured width) or in
-   * `NoMultiWireFOM` (nominal width), the others set to -999; its BPM
-   * readings are not changed, so a filled spill still shows missing readings.
+   * Every spill gets its beam-quality result (`FOM_best`, `fom_source`,
+   * `fom_status`, beam at the target...; `setBNBQualityResult()`).
+   * For the legacy fields, spills that are not filled keep the result of
+   * `getBNBqualityFOM()`; a filled spill gets its FOM in `FOM` (measured width)
+   * or in `NoMultiWireFOM` (nominal width), the others set to -999.
+   * The BPM readings are not changed, so a filled spill still shows missing
+   * readings, and its `fom_status` keeps the bits saying which.
    *
    * 1. neighbour width (bit `WidthFromNeighbors`)
    * 2. neighbour fill (bit `NeighborFilled`): the spill takes the mean position
@@ -66,7 +68,7 @@ namespace sbn {
    *    the target and the angle of the nearest measured spill on each side;
    *    BPM offsets cancel in the differences
    */
-  std::vector<unsigned int> improveBNBqualityFOMs
+  void improveBNBqualityFOMs
     (std::vector<BNBSpillInfo>& spills, BNBFOMFillConfig const& config);
 
 } // namespace sbn
