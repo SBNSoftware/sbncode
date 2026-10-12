@@ -1,6 +1,9 @@
 
 #include "sbncode/CAFMaker/FillExposure.h"
 
+#include <cmath>
+#include <limits>
+
 namespace caf
 {
 
@@ -28,8 +31,7 @@ namespace caf
     {
         // nominal-width FOM: used as is (it used to be stored as 100 + FOM,
         // which made the standard 0.98 < FOM <= 1 cut reject these spills;
-        // the beam-quality status, product "fomStatus" of the retriever, has
-        // bit 64 set for them)
+        // they have fom_source 5 and fom_status bit 64)
         finalFOM = NoMultiWireFOM;
         std::cout << "makeSRBNBInfo: Chose assumed width of 1.0" << std::endl;
     }
@@ -76,6 +78,22 @@ namespace caf
     single_store.M875BB_spill_time_diff = info.M875BB_spill_time_diff;
     single_store.M876BB_spill_time_diff = info.M876BB_spill_time_diff;
     single_store.MMBTBB_spill_time_diff = info.MMBTBB_spill_time_diff;
+
+    // beam-quality result: missing values (-999) become NaN, so that a cut on
+    // FOM_best rejects spills without a FOM
+    auto const orNaN = [](float v)
+      { return (std::isfinite(v) && v != -999.f)? v: std::numeric_limits<float>::quiet_NaN(); };
+    single_store.FOM_best = orNaN(info.FOM_best);
+    single_store.fom_source = info.fom_source;
+    single_store.fom_status = info.fom_status;
+    single_store.tor_used = orNaN(info.tor_used);
+    single_store.hpos_tgt = orNaN(info.hpos_tgt);
+    single_store.hang_tgt = orNaN(info.hang_tgt);
+    single_store.vpos_tgt = orNaN(info.vpos_tgt);
+    single_store.vang_tgt = orNaN(info.vang_tgt);
+    single_store.tgt_sigx = orNaN(info.tgt_sigx);
+    single_store.tgt_sigy = orNaN(info.tgt_sigy);
+    single_store.fom_version = info.fom_version;
     return single_store;
   }
 
