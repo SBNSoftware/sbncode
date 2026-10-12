@@ -6,6 +6,7 @@ add_subdirectory(SBNDBNBZEROBIASRetriever)
 add_subdirectory(NuMIRetriever)
 add_subdirectory(NuMIEXTRetriever)
 add_subdirectory(job)
+add_subdirectory(python)
 
 find_package(ifbeam)
 find_package(ifdh_art)
