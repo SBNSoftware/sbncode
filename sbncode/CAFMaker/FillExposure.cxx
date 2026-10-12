@@ -92,6 +92,9 @@ namespace caf
     single_store.tgt_sigx = orNaN(info.tgt_sigx);
     single_store.tgt_sigy = orNaN(info.tgt_sigy);
     single_store.fom_version = info.fom_version;
+    single_store.BRRMPS8 = orNaN(info.BRRMPS8);
+    single_store.BRRMPQ1 = orNaN(info.BRRMPQ1);
+    single_store.BRRMPL9 = orNaN(info.BRRMPL9);
     return single_store;
   }
 
