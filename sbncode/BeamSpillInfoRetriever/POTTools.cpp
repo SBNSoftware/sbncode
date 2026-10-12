@@ -1,6 +1,8 @@
 #include "POTTools.h"
 #include "sbncode/BeamSpillInfoRetriever/getFOM.h" // sbn::fomstatus
 
+#include <cmath>
+
 using namespace std;
 
 namespace sbn::pot{
@@ -172,7 +174,7 @@ namespace sbn::pot{
     auto getOffset = [&](std::string const& name, double& value) {
       try{offsets->GetNamedData(time, name.c_str(), &value);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
       if (!offsetCache) return;
-      if (value != -999) {
+      if (std::isfinite(value) && value != -999) {
         (*offsetCache)[name] = value;
       }
       else if (auto const it = offsetCache->find(name); it != offsetCache->end()) {
@@ -189,9 +191,12 @@ namespace sbn::pot{
     getOffset("E_VPTG1S", VPTG1Offset);
     getOffset("E_VPTG2S", VPTG2Offset);
 
-    //crunch the times 
-    unsigned long int time_closest_int = (int) TOR860_time;
-    double time_closest_ns = (TOR860_time - time_closest_int)*1e9;
+    // crunch the times: the TOR860 time stamp, or the requested spill time if
+    // TOR860 could not be read (its -999 gave a meaningless spill time, hence the
+    // wrong target-BPM era and the wrong place in the time order of the subrun)
+    double const spill_time = (TOR860_time > 0.)? TOR860_time: time;
+    unsigned long int time_closest_int = static_cast<unsigned long int>(spill_time);
+    double time_closest_ns = (spill_time - time_closest_int)*1e9;
   
     //Store everything in our data-product
     sbn::BNBSpillInfo beamInfo;
@@ -268,7 +273,7 @@ namespace sbn::pot{
   {
     bool filled = false;
     auto fill = [&](char const* name, auto& value) {
-      if (value != -999) return;
+      if (std::isfinite(value) && value != -999) return;
       if (auto const it = cache.find(name); it != cache.end()) { value = it->second; filled = true; }
     };
     fill("E_VP873S", info.VP873Offset);
@@ -366,6 +371,7 @@ namespace sbn::pot{
     // 
   
     int t_steps = int(((triggerInfo.t_current_event + fTimePad) - (triggerInfo.t_previous_event - fTimePad - 20.))/0.5)+25;
+    unsigned int nEmptyRecords = 0; // multiwire records without data (or malformed)
   
     for(int t = 0; t < t_steps; t++){//Iterate through time increments
       for (std::string const& var : vars) {// Iterate through the devices
@@ -413,6 +419,8 @@ namespace sbn::pot{
   	//   we'll just remove that here to match to the spill times
   	std::vector< std::vector< int > > unpacked_MWR_temp = mwrdata.unpackMWR(packed_data_str,MWR_times_temp,MWRtoroidDelay);
   	
+  	if (unpacked_MWR_temp.empty()) { ++nEmptyRecords; continue; }
+
   	// a malformed record has no time stamps: skip it rather than pair
   	// profiles with times that do not exist
   	if (MWR_times_temp.size() != unpacked_MWR_temp.size()) {
@@ -438,6 +446,11 @@ namespace sbn::pot{
       }// Iterate over all the multiwire devices
     }// Iterate over all times
   
+    if (nEmptyRecords > 0) {
+      mf::LogWarning("SBNDBNBRetriever") << nEmptyRecords << " multiwire records without data skipped"
+        << " (" << MWR_times[0].size() << ", " << MWR_times[1].size() << ", " << MWR_times[2].size()
+        << " readings found for M875BB, M876BB, MMBTBB)";
+    }
     mf::LogDebug("SBNDBNBRetriever") << " Number of MWR[0] times : " << MWR_times[0].size() << std::endl;	
     mf::LogDebug("SBNDBNBRetriever") << " Number of MWR[0]s : " << unpacked_MWR[0].size() << std::endl;	
     mf::LogDebug("SBNDBNBRetriever") << " Number of MWR[1] times : " << MWR_times[1].size() << std::endl;	

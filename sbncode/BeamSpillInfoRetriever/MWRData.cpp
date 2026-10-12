@@ -35,10 +35,11 @@ namespace sbn{
       }
     }
   } else {
-    // malformed record: no profiles and no time stamps (the caller pairs the
-    // two by index, so returning four empty profiles without times made it
-    // read past the end of `time_stamp`)
-    cout <<"BeamSpillInfoRetriever: MRWData: Bad data! (" << row.size() << " fields instead of 447, record skipped)"<<endl;
+    // record without data (IFBeam returns an empty vector) or malformed: no
+    // profiles and no time stamps. The caller pairs the two by index, so
+    // returning four empty profiles without times made it read past the end of
+    // `time_stamp`; it also counts these records and reports them once per event
+    // (they can be every record of a file: one line each flooded the job log).
     unpacked_data.clear();
     return unpacked_data;
   }

@@ -9,6 +9,7 @@
 #include <cmath>
 #include <utility>
 #include <tuple>
+#include "TDirectory.h"
 #include "TH1D.h"
 #include "TFitResult.h"
 #include <vector>
@@ -65,11 +66,6 @@ namespace sbn {
     constexpr double maxChi2X = 20, maxChi2Y = 20;
     bool inWindow(double sx, double sy)
       { return sx > smallSigmaX && sx < largeSigmaX && sy > smallSigmaY && sy < largeSigmaY; }
-
-    /// A database (online-fitted) multiwire sigma above this [mm] means the
-    /// chamber saw no beam: the online fit went to noise (beam: 1-2.5 mm, empty
-    /// profile: ~7 mm). Such a width is not used.
-    constexpr double EmptyMWSigma = 4.0;
 
     double poly(double const* p, double s) { return p[0] + p[1]*s + p[2]*s*s; }
 
@@ -303,7 +299,9 @@ namespace sbn {
     double minx = std::min(-*std::max_element(mwdata, mwdata + NWires), 0.0);
     double maxx = std::max(-*std::min_element(mwdata, mwdata + NWires), 0.0);
     int first_x = -1; int last_x = -1;
-    // local histogram, not registered in gDirectory (no name clashes, no leak)
+    // local histogram, never registered in a directory: no name clashes, no
+    // leak, and no use of the (shared) current directory
+    TDirectory::TContext const noDirectory{nullptr};
     TH1D hProf("hProfMW","",NWires,-12.0,12.0);
     hProf.SetDirectory(nullptr);
     double const threshold = (maxx-minx)*0.2; // 20% of the range

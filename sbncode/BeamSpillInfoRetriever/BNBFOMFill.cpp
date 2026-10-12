@@ -149,7 +149,7 @@ namespace sbn {
         e.vpos = 0.5 * ((A.vpos - spA.VPTG2) + (B.vpos - spB.VPTG2)) + sp.VPTG2;
         e.vang = 0.5 * (A.vang + B.vang);
         // own width unless the M876 database width says the chamber was empty
-        bool const m876empty = (isValid(sp.M876HS) && sp.M876HS > 4.0) || (isValid(sp.M876VS) && sp.M876VS > 4.0);
+        bool const m876empty = (isValid(sp.M876HS) && sp.M876HS > EmptyMWSigma) || (isValid(sp.M876VS) && sp.M876VS > EmptyMWSigma);
         if (m876empty || !measuredWidth(e)) {
           e.sx = e.sy = MissingValue;
           e.widthSource = BNBBeamState::Nominal;
