@@ -35,6 +35,7 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <cstdlib>
 
 #ifdef DARWINBUILD
 #include <libgen.h>
@@ -79,6 +80,7 @@
 #include "canvas/Persistency/Common/FindOneP.h"
 #include "canvas/Persistency/Common/Ptr.h"
 #include "canvas/Persistency/Common/PtrVector.h"
+#include "canvas/Utilities/Exception.h"
 
 #include "cetlib_except/exception.h"
 #include "cetlib_except/demangle.h"
@@ -1510,14 +1512,136 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   //#######################################################
   // Fill truths & fake reco
   //#######################################################
-
+  
   caf::SRTruthBranch                  srtruthbranch;
 
   if (mc_particles.isValid()) {
+
     art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
     art::ServiceHandle<cheat::BackTrackerService> bt_serv;
 
+    // We need to add a vector of particle mothers IDS that we can check against to make sure we are not double counting! 
+    std::vector<int> mother_ids; // these are the missed mothers
+    int max_g4_track_id = 0;
+    int min_g4_track_id = std::numeric_limits<int>::max();
+    std::vector<int> genie_track_id_offsets(mctruths.size(), 0);
+    int cumulative_genie_track_id_max = 0;
     for (const simb::MCParticle &part: *mc_particles) {
+      if (part.TrackId() > max_g4_track_id) max_g4_track_id = part.TrackId();
+      if (part.TrackId() < min_g4_track_id) min_g4_track_id = part.TrackId();
+    }
+    for (unsigned iTruth = 0; iTruth < mctruths.size(); ++iTruth) {
+      const art::Ptr<simb::MCTruth>& truth = mctruths[iTruth];
+      if (!truth) continue;
+      int max_truth_genie_track_id = 0;
+      for (int ipart = 0; ipart < truth->NParticles(); ++ipart) {
+        const simb::MCParticle& genpart = truth->GetParticle(ipart);
+        if (genpart.TrackId() > max_truth_genie_track_id) max_truth_genie_track_id = genpart.TrackId();
+      }
+      genie_track_id_offsets[iTruth] = cumulative_genie_track_id_max;
+      cumulative_genie_track_id_max += max_truth_genie_track_id + 1;
+    }
+
+    for (const simb::MCParticle &part: *mc_particles) {
+
+      std::optional<int> missed_parent_id = std::nullopt;
+      // Now we need to check if the Mother is missing (== min_g4_track_id-1) and the parent is not the neutrino/initial state particle. 
+      // If a particle passed to G4 is primary and it's parent is the smallest G4 track ID -1, then the parent was not propagated to G4. 
+      // This is a missed particle of interest that we need to fill in the CAF.
+      if (part.Mother() == min_g4_track_id-1 && part.Process() == "primary") {
+       
+        // Grab the MCTruth associated to this particle
+        const art::Ptr<simb::MCTruth> inventoryTruth = pi_serv->TrackIdToMCTruth_P(part.TrackId());
+        // Loop over the particles in the MCTruth to first find this particle and then check it's Mother again to find it's missed parent
+        if (inventoryTruth) {
+
+          // Loop over the particles in the MCTruth to find this particle and then check it's Mother again to find it's missed parent
+          const simb::MCParticle* matchedGenie = nullptr;
+          double bestScore = std::numeric_limits<double>::infinity();
+
+          for (int ipart = 0; ipart < inventoryTruth->NParticles(); ++ipart) {
+            const simb::MCParticle& genpart = inventoryTruth->GetParticle(ipart);
+            if (genpart.PdgCode() != part.PdgCode())
+              continue;
+            const auto& gp = part.Momentum(0);
+            const auto& tp = genpart.Momentum(0);
+            const double score =
+              std::pow(gp.Px() - tp.Px(), 2) +
+              std::pow(gp.Py() - tp.Py(), 2) +
+              std::pow(gp.Pz() - tp.Pz(), 2) +
+              std::pow(gp.E()  - tp.E(),  2);
+
+            if (score < bestScore) {
+              bestScore = score;
+              matchedGenie = &genpart;
+            }
+          }
+          if (matchedGenie) {
+  
+            // Now we can check if we need to fill this missed parent in the CAF 
+            if (matchedGenie->Mother() != min_g4_track_id-1) {
+              const simb::MCParticle& missedParent = inventoryTruth->GetParticle(matchedGenie->Mother());
+              bool isInitialStateParticle = IsInitialStateParticle(missedParent, *inventoryTruth);
+              if (!isInitialStateParticle) {
+                int interaction_id = -1;
+                for (unsigned iTruth = 0; iTruth < mctruths.size(); iTruth++) {
+                  if (inventoryTruth.get() == mctruths[iTruth].get()) {
+                    interaction_id = iTruth;
+                    break;
+                  }
+                }
+                const int special_id_offset = genie_track_id_offsets[interaction_id] + max_g4_track_id + 1;
+                const int special_parent_id = special_id_offset + missedParent.TrackId();
+                missed_parent_id = special_parent_id;
+                const int synthetic_missed_parent_id = special_parent_id;
+                // need to check if the Mother ID is already in the list of missed mothers to avoid double counting
+                if (std::find(mother_ids.begin(), mother_ids.end(), synthetic_missed_parent_id) == mother_ids.end()) {
+                  mother_ids.push_back(synthetic_missed_parent_id);
+                  true_particles.emplace_back();
+                  FillTrueGENIEParticle(missedParent,
+                            fActiveVolumes,
+                            fTPCVolumes,
+                            id_to_ide_map,
+                            id_to_truehit_map,
+                            *bt_serv,
+                            *pi_serv,
+                            mctruths,
+                            true_particles.back(), static_cast<int>(interaction_id), special_id_offset); 
+                  
+                  // Now, In principle the parent's parent could also be missed and so forth. 
+                  // First check if the next parent is already in the Mother list
+                  const int synthetic_missed_grandparent_id = special_id_offset + missedParent.Mother();
+                  if (std::find(mother_ids.begin(), mother_ids.end(), synthetic_missed_grandparent_id) == mother_ids.end()) {
+                    const simb::MCParticle* currentParent = &missedParent;
+                    while (currentParent->Mother() != min_g4_track_id-1 && !IsInitialStateParticle(inventoryTruth->GetParticle(currentParent->Mother()), *inventoryTruth)) {
+                      const simb::MCParticle& nextParent = inventoryTruth->GetParticle(currentParent->Mother());
+                      const int synthetic_next_parent_id = special_id_offset + nextParent.TrackId();
+                      mother_ids.push_back(synthetic_next_parent_id);
+                      true_particles.emplace_back();
+                      FillTrueGENIEParticle(nextParent,
+                                fActiveVolumes,
+                                fTPCVolumes,
+                                id_to_ide_map,
+                                id_to_truehit_map,
+                                *bt_serv,
+                                *pi_serv,
+                                mctruths,
+                                true_particles.back(), static_cast<int>(interaction_id), special_id_offset);
+                     
+                      const int synthetic_next_grandparent_id = special_id_offset + nextParent.Mother();
+                      if (std::find(mother_ids.begin(), mother_ids.end(), synthetic_next_grandparent_id) != mother_ids.end()) {
+                        break;
+                      }
+                      currentParent = &nextParent;
+                    }
+                  }
+                }
+              }
+            }
+          } // matched Genie Particle
+        } // found inventoryTruth
+      } // primary particle with no mother
+      
       true_particles.emplace_back();
 
       FillTrueG4Particle(part,
@@ -1528,7 +1652,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
                          *bt_serv,
                          *pi_serv,
                          mctruths,
-                         true_particles.back());
+                         true_particles.back(), missed_parent_id);
+      
     }
   }
 
