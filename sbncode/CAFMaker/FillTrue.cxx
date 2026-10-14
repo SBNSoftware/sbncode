@@ -556,7 +556,7 @@ namespace caf {
     srneutrino.baseline = (mcflux.fdk2gen + mcflux.fgen2vtx) * util::kMeterToCentimeter;
     srneutrino.dk2gen = mcflux.fdk2gen * util::kMeterToCentimeter;
     srneutrino.prod_time = (!dk2nu.ancestor.empty())
-        ? dk2nu.ancestor.back().startt : std::numeric_limits<float>::signaling_NaN();
+        ? dk2nu.ancestor.back().startt / 1000. /* ns -> us */ : std::numeric_limits<float>::signaling_NaN();
     srneutrino.parent_pdg = mcflux.fptype;
     srneutrino.parent_dcy_mode = mcflux.fndecay;
     srneutrino.prod_vtx.x = mcflux.fvx;
