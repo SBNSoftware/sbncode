@@ -587,7 +587,7 @@ void CAFMaker::CorrectMCTiming(StandardRecord &rec) const {
     if (std::isnan(nu.prod_time)) continue; // no dk2nu info for this sample/interaction
     if (nu.dk2gen <= -998.) continue; // simb::MCFlux::fdk2gen unfilled default is -999.
 
-    offset_vector_ns[i] = nu.prod_time + nu.dk2gen / util::kc;
+    offset_vector_ns[i] = nu.prod_time * 1000. + nu.dk2gen / util::kc; // prod_time is us, dk2gen/kc is ns
     double const offset_us = offset_vector_ns[i] / 1000.;
 
     shiftTruthTimes(nu, offset_us);
