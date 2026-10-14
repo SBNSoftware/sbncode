@@ -7,6 +7,7 @@
 #include "larcorealg/Geometry/WireReadoutGeom.h"
 #include "larevt/SpaceCharge/SpaceCharge.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
+#include "larcoreobj/SimpleTypesAndConstants/PhysicalConstants.h"
 #include "RecoUtils/RecoUtils.h"
 
 #include "CLHEP/Random/RandGauss.h"
@@ -552,8 +553,8 @@ namespace caf {
 
     // Set the MCFlux stuff
     srneutrino.initpdg = mcflux.fntype;
-    srneutrino.baseline = mcflux.fdk2gen + mcflux.fgen2vtx;
-    srneutrino.dk2gen = mcflux.fdk2gen;
+    srneutrino.baseline = (mcflux.fdk2gen + mcflux.fgen2vtx) * util::kMeterToCentimeter;
+    srneutrino.dk2gen = mcflux.fdk2gen * util::kMeterToCentimeter;
     srneutrino.prod_time = (!dk2nu.ancestor.empty())
         ? dk2nu.ancestor.back().startt : std::numeric_limits<float>::signaling_NaN();
     srneutrino.parent_pdg = mcflux.fptype;
