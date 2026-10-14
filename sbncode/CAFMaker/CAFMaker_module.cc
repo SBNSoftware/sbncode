@@ -138,6 +138,7 @@
 
 #include "canvas/Persistency/Provenance/ProcessConfiguration.h"
 #include "larcoreobj/SummaryData/POTSummary.h"
+#include "larcoreobj/SimpleTypesAndConstants/PhysicalConstants.h"
 
 // StandardRecord
 #include "sbnanaobj/StandardRecord/StandardRecord.h"
@@ -340,6 +341,8 @@ class CAFMaker : public art::EDProducer {
   void SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame) const;
   void SBNDShiftPMTReference(StandardRecord &rec, double SBNDFrame) const;
 
+  /// Corrects the dk2nu v01_11_00 vertex-time bug (fixed in dk2nu v01_12_00, larsoft v10_23_00)
+  /// by adding each GENIE neutrino's `prod_time`/`dk2gen` offset to its truth time and matched slice.
   void CorrectMCTiming(StandardRecord &rec) const;
 
   /// Equivalent of FindManyP except a return that is !isValid() prints a
@@ -557,14 +560,25 @@ void CAFMaker::SBNDShiftCRTReference(StandardRecord &rec, double SBNDFrame) cons
 
 void CAFMaker::CorrectMCTiming(StandardRecord &rec) const {
 
-  std::cout << "CAFMaker::CorrectMCTiming: running" << std::endl;
+  mf::LogDebug("CAFMaker") << "CorrectMCTiming: running";
 
   // Recovers the dk2nu v01_11_00 SetT(0) bug (fixed in v01_12_00) by adding back
   // the missing meson decay time + tof from decay to flux window.
-  constexpr double kSpeedOfLight = 29.9792458; // cm/ns
+
+  // Shifts a true particle's gen/start/end times, skipping any left at its unfilled default.
+  auto shiftMCParticleTimes = [](SRTrueParticle &part, double offset_us) {
+    if (part.genT   > -9998.) part.genT   += offset_us;
+    if (part.startT > -9998.) part.startT += offset_us;
+    if (part.endT   > -9998.) part.endT   += offset_us;
+  };
+  // Shifts a true interaction's own time plus all of its primary particles' times.
+  auto shiftTruthTimes = [&shiftMCParticleTimes](SRTrueInteraction &truth, double offset_us) {
+    truth.time += offset_us;
+    for (SRTrueParticle &part: truth.prim) shiftMCParticleTimes(part, offset_us);
+  };
 
   // Per-neutrino offset, indexed the same as rec.mc.nu / SRSlice.tmatch.index.
-  std::vector<double> offset_ns(rec.mc.nu.size(), std::numeric_limits<double>::signaling_NaN());
+  std::vector<double> offset_vector_ns(rec.mc.nu.size(), std::numeric_limits<double>::signaling_NaN());
 
   for (unsigned i = 0; i < rec.mc.nu.size(); i++) {
     SRTrueInteraction &nu = rec.mc.nu[i];
@@ -573,64 +587,53 @@ void CAFMaker::CorrectMCTiming(StandardRecord &rec) const {
     if (std::isnan(nu.prod_time)) continue; // no dk2nu info for this sample/interaction
     if (nu.dk2gen <= -998.) continue; // simb::MCFlux::fdk2gen unfilled default is -999.
 
-    offset_ns[i] = nu.prod_time + nu.dk2gen * 100. / kSpeedOfLight;
-    double const delta_us = offset_ns[i] / 1000.;
+    offset_vector_ns[i] = nu.prod_time + nu.dk2gen / util::kc;
+    double const offset_us = offset_vector_ns[i] / 1000.;
 
-    nu.time += delta_us;
-
-    for (SRTrueParticle &part: nu.prim) {
-      if (part.genT   > -9998.) part.genT   += delta_us;
-      if (part.startT > -9998.) part.startT += delta_us;
-      if (part.endT   > -9998.) part.endT   += delta_us;
-    }
+    shiftTruthTimes(nu, offset_us);
   }
 
   // Apply each slice's matched neutrino's own offset (SRSlice.tmatch.index)
   // Unmatched/cosmic slices (tmatch.index < 0) are left untouched.
   for (SRSlice &slc: rec.slc) {
-    if (slc.tmatch.index < 0 || std::isnan(offset_ns[slc.tmatch.index])) continue;
+    if (slc.tmatch.index < 0 || std::isnan(offset_vector_ns[slc.tmatch.index])) continue;
 
-    double const off_ns   = offset_ns[slc.tmatch.index];
-    double const delta_us = off_ns / 1000.;
+    double const offset_ns = offset_vector_ns[slc.tmatch.index];
+    double const offset_us = offset_ns / 1000.;
 
     // slc.truth is a copy of rec.mc.nu[tmatch.index] taken earlier (FillTrue.cxx:372).
-    slc.truth.time += delta_us;
-    for (SRTrueParticle &part: slc.truth.prim) {
-      if (part.genT   > -9998.) part.genT   += delta_us;
-      if (part.startT > -9998.) part.startT += delta_us;
-      if (part.endT   > -9998.) part.endT   += delta_us;
-    }
+    shiftTruthTimes(slc.truth, offset_us);
 
     // Opt0 FM
-    if (!std::isnan(slc.opt0.time))     slc.opt0.time     += delta_us; // NaN default
-    if (!std::isnan(slc.opt0_sec.time)) slc.opt0_sec.time += delta_us; // NaN default
+    if (!std::isnan(slc.opt0.time))     slc.opt0.time     += offset_us; // NaN default
+    if (!std::isnan(slc.opt0_sec.time)) slc.opt0_sec.time += offset_us; // NaN default
 
     // BFM
-    if (slc.barycenterFM.flashTime     != -9999.) slc.barycenterFM.flashTime     += delta_us; // -9999. default
-    if (slc.barycenterFM.flashFirstHit != -9999.) slc.barycenterFM.flashFirstHit += delta_us; // -9999. default
+    if (slc.barycenterFM.flashTime     != -9999.) slc.barycenterFM.flashTime     += offset_us; // -9999. default
+    if (slc.barycenterFM.flashFirstHit != -9999.) slc.barycenterFM.flashFirstHit += offset_us; // -9999. default
 
     // BFM + Light Propagation Module
     if (slc.correctedOpFlash.OpFlashT0 != -9999.) { // -9999. default
-      slc.correctedOpFlash.OpFlashT0          += delta_us;
-      slc.correctedOpFlash.OpFlashT0Corrected += delta_us;
+      slc.correctedOpFlash.OpFlashT0          += offset_us;
+      slc.correctedOpFlash.OpFlashT0Corrected += offset_us;
     }
 
     // Simple FM: PMT & XARAPUCA
-    if (slc.fmatch.time      != -9999.) slc.fmatch.time      += delta_us; // -9999. default
-    if (slc.fmatchop.time    != -9999.) slc.fmatchop.time    += delta_us; // -9999. default
-    if (slc.fmatchara.time   != -9999.) slc.fmatchara.time   += delta_us; // -9999. default
-    if (slc.fmatchopara.time != -9999.) slc.fmatchopara.time += delta_us; // -9999. default
+    if (slc.fmatch.time      != -9999.) slc.fmatch.time      += offset_us; // -9999. default
+    if (slc.fmatchop.time    != -9999.) slc.fmatchop.time    += offset_us; // -9999. default
+    if (slc.fmatchara.time   != -9999.) slc.fmatchara.time   += offset_us; // -9999. default
+    if (slc.fmatchopara.time != -9999.) slc.fmatchopara.time += offset_us; // -9999. default
 
     //PFP track-matched CRT
     for (SRPFP &pfp: slc.reco.pfp) {
-      if (!std::isnan(pfp.trk.crtspacepoint.score)) pfp.trk.crtspacepoint.spacepoint.time += off_ns;
-      if (!std::isnan(pfp.trk.crtsbndtrack.score))  pfp.trk.crtsbndtrack.track.time      += off_ns;
+      if (!std::isnan(pfp.trk.crtspacepoint.score)) pfp.trk.crtspacepoint.spacepoint.time += offset_ns;
+      if (!std::isnan(pfp.trk.crtsbndtrack.score))  pfp.trk.crtsbndtrack.track.time      += offset_ns;
     }
 
     // CRUMBS BDT
-    if (!std::isnan(slc.crumbs_result.pds.fmtime))    slc.crumbs_result.pds.fmtime    += delta_us; // NaN default
-    if (!std::isnan(slc.crumbs_result.crt.tracktime)) slc.crumbs_result.crt.tracktime += delta_us; // NaN default
-    if (!std::isnan(slc.crumbs_result.crt.sptime))    slc.crumbs_result.crt.sptime    += delta_us; // NaN default
+    if (!std::isnan(slc.crumbs_result.pds.fmtime))    slc.crumbs_result.pds.fmtime    += offset_us; // NaN default
+    if (!std::isnan(slc.crumbs_result.crt.tracktime)) slc.crumbs_result.crt.tracktime += offset_us; // NaN default
+    if (!std::isnan(slc.crumbs_result.crt.sptime))    slc.crumbs_result.crt.sptime    += offset_us; // NaN default
   }
 
   // TODO: Non-correction list
@@ -1555,7 +1558,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   }
 
   art::Handle<std::vector<simb::MCFlux>> mcflux_handle;
-  GetByLabelStrict(evt, std::string("generator"), mcflux_handle);
+  GetByLabelStrict(evt, fParams.GenLabel(), mcflux_handle);
 
   std::vector<art::Ptr<simb::MCFlux>> mcfluxes;
   if (mcflux_handle.isValid()) {
@@ -1563,12 +1566,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   }
 
   art::Handle<std::vector<bsim::Dk2Nu>> dk2nu_handle;
-  GetByLabelStrict(evt, std::string("generator"), dk2nu_handle);
+  GetByLabelStrict(evt, fParams.GenLabel(), dk2nu_handle);
 
-  std::vector<art::Ptr<bsim::Dk2Nu>> dk2nus;
-  if (dk2nu_handle.isValid()) {
-    art::fill_ptr_vector(dk2nus, dk2nu_handle);
-  }
+  std::vector<bsim::Dk2Nu> const* dk2nus =
+    dk2nu_handle.isValid() ? dk2nu_handle.product() : nullptr;
 
   // get the MCReco for the fake-reco
   art::Handle<std::vector<sim::MCTrack>> mctrack_handle;
@@ -1654,12 +1655,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   simb::MCFlux badflux; // default constructor gives nonsense values
 
   // holder for invalid Dk2Nu (default-constructed ancestor vector is empty -- treated as "absent")
-  bsim::Dk2Nu baddk2nu;
+  bsim::Dk2Nu const baddk2nu;
 
   for (size_t i=0; i<mctruths.size(); i++) {
     auto const& mctruth = mctruths.at(i);
     const simb::MCFlux &mcflux = (mcfluxes.size()) ? *mcfluxes.at(i) : badflux;
-    const bsim::Dk2Nu &dk2nu = (dk2nus.size()) ? *dk2nus.at(i) : baddk2nu;
+    const bsim::Dk2Nu &dk2nu = dk2nus ? dk2nus->at(i) : baddk2nu;
 
     simb::GTruth gtruth;
     bool ok = GetAssociatedProduct(fmp_gtruth, i, gtruth);
@@ -1676,13 +1677,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
       FillTrueNeutrino(mctruth, mcflux, dk2nu, gtruth, true_particles, id_to_truehit_map, srtruthbranch.nu.back(), i, fActiveVolumes);
 
-      if (ok) {
-        srtruthbranch.nu.back().generator = caf::kGENIE;
-      } else if (i < mevprtl_truths.size()) {
-        srtruthbranch.nu.back().generator = caf::kMeVPrtl;
-      } else {
-        srtruthbranch.nu.back().generator = caf::kUnknownGenerator;
-      }
+      SRTrueInteraction &nu = srtruthbranch.nu.back();
+      caf::generator_ &generator = nu.generator;
+      if (ok)                             generator = caf::kGENIE;
+      else if (i < mevprtl_truths.size()) generator = caf::kMeVPrtl;
+      else                                generator = caf::kUnknownGenerator;
 
       srtruthbranch.nu.back().genie_evtrec_idx = fGenieEventCounter;
 
@@ -2835,9 +2834,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   if (isRealData && (fDet == kSBND) && fSubRunPOT > 0)
   {
-    std::cout << "CAFMaker: run " << evt.run() << " subRun " << evt.subRun()
-              << " fSubRunPOT=" << fSubRunPOT
-              << " frameApplyAtCaf=" << rec.sbnd_frames.frameApplyAtCaf << std::endl;
+    mf::LogDebug("CAFMaker") << "run " << evt.run() << " subRun " << evt.subRun()
+                             << " fSubRunPOT=" << fSubRunPOT
+                             << " frameApplyAtCaf=" << rec.sbnd_frames.frameApplyAtCaf;
 
     // Fill trigger info
     FillTriggerSBND(srsbndtiminginfo, srtrigger);
