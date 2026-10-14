@@ -1,10 +1,13 @@
 #include "FillTrue.h"
 
+#include "dk2nu/tree/dk2nu.h"
+
 #include "larcorealg/GeoAlgo/GeoAlgo.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/WireReadoutGeom.h"
 #include "larevt/SpaceCharge/SpaceCharge.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
+#include "larcoreobj/SimpleTypesAndConstants/PhysicalConstants.h"
 #include "RecoUtils/RecoUtils.h"
 
 #include "CLHEP/Random/RandGauss.h"
@@ -385,6 +388,7 @@ namespace caf {
    srtruth.position.y = truth.decay_pos.Y();
    srtruth.position.z = truth.decay_pos.Z();
    srtruth.time = truth.decay_pos.T();
+   srtruth.prod_time = truth.meson_dpos_beamcoord.T(); //Meson time from flux file.
 
    srtruth.momentum.x = truth.mevprtl_mom.X();
    srtruth.momentum.y = truth.mevprtl_mom.Y();
@@ -457,6 +461,7 @@ namespace caf {
   //------------------------------------------------
   void FillTrueNeutrino(const art::Ptr<simb::MCTruth> mctruth,
       const simb::MCFlux &mcflux,
+      const bsim::Dk2Nu &dk2nu,
       const simb::GTruth& gtruth,
       const std::vector<caf::SRTrueParticle> &srparticles,
       const std::map<int, std::vector<art::Ptr<recob::Hit>>> &id_to_truehit_map,
@@ -548,7 +553,10 @@ namespace caf {
 
     // Set the MCFlux stuff
     srneutrino.initpdg = mcflux.fntype;
-    srneutrino.baseline = mcflux.fdk2gen + mcflux.fgen2vtx;
+    srneutrino.baseline = (mcflux.fdk2gen + mcflux.fgen2vtx) * util::kMeterToCentimeter;
+    srneutrino.dk2gen = mcflux.fdk2gen * util::kMeterToCentimeter;
+    srneutrino.prod_time = (!dk2nu.ancestor.empty())
+        ? dk2nu.ancestor.back().startt / 1000. /* ns -> us */ : std::numeric_limits<float>::signaling_NaN();
     srneutrino.parent_pdg = mcflux.fptype;
     srneutrino.parent_dcy_mode = mcflux.fndecay;
     srneutrino.prod_vtx.x = mcflux.fvx;
