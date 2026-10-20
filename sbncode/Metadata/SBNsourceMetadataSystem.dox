@@ -8,7 +8,7 @@ into the _art_/ROOT and `TFileService` files, and the output module
 console.
 
 The system to achieve that result is quite convoluted, and this documentation
-will describe that in detail.
+describes it in detail.
 
 
 Which information is extracted
@@ -63,7 +63,7 @@ where the file can be found, which is not trivial given the relocation of
 distributed code.
 The reason why FHiCL configuration was not preferred is that only _art_/ROOT
 files automatically include that information. In addition, each job
-configuration needs to know _exactly_ which repositories are being included,
+configuration would need to know _exactly_ which repositories are being included,
 since FHiCL parser does not tolerate missing information. The first limitation
 can be worked around, for example with the experimental `icaruscode` module
 `SaveConfigurationIntoTFile`, which was never fully completed or tested.
@@ -76,9 +76,9 @@ number of repository libraries, and if one is missing, the resulting error
 The limitation of this option will be discussed later in this section.
 
 The difficulty of this system is that it needs to connect very heterogeneous
-information sources, which never available all at the same time.
-The source repository is available only in the build stage, while the execution
-environment is present only... well, during the job execution.
+information sources, which are never all available at the same time.
+The source repository is available only at build stage, while the execution
+environment is present only... well, during job execution.
 The strategy is then to create one shared library for each repository, with
 a standard name (`RepositoryVersion_\<repository\>`), with the repository
 version information, and to have some modular software that can read these
@@ -106,7 +106,7 @@ of all the repositories that we need to version, but there is not such a root:
 `sbnanaobj` (CAF data objects) depends only on ROOT (so, ironically, the root
 dependency in our source tree _is_ in fact ROOT, but unfortunately it does not
 make sense to add this infrastructure in there). The practical workaround to
-this riddle is to duplicate the macro file, which obvious maintenance
+this riddle is to duplicate the macro file, with obvious maintenance
 consequences.
 
 @note An **important limitation** of this system is that the information is
@@ -115,7 +115,7 @@ consequences.
       moment of writing, the details are not yet clear.
       To make sure that the GIT versions are correct, the only safe way is to
       zap the area (`mrb z`) and build everything from scratch. This is always
-      a good idea anyway after one thinks the code is ready for prime time.
+      a good idea anyway once the code is ready for prime time.
       Again, remember: after code is committed to GIT, an integral rebuild is
       likely needed for the code version metadata to reflect the new repository
       status.
@@ -148,7 +148,7 @@ How to arrange a repository with a version library
    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cmake}
    find_package( sbnobj REQUIRED )
    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-   in the `find_package` section not present already, and
+   if the `find_package` section not present already, and
    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cmake}
    include(SBNutils)
    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
