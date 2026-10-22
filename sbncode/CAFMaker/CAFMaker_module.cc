@@ -2417,16 +2417,23 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         if (fmSpacePoint.isValid()) {
           thisPoint = fmSpacePoint.at(iHit);
         }
-        if (!thisParticle.empty() && !thisPoint.empty()) {
+        const bool associated = !thisParticle.empty() && !thisPoint.empty();
+        if (!associated && !fParams.FillUnassociatedHits()) continue;
+
+        rec.reco.nhit++;
+        rec.reco.hit.push_back(SRHit());
+
+        if (associated) {
           assert(thisParticle.size() == 1);
           assert(thisPoint.size() == 1);
-          rec.reco.nhit++;
-          rec.reco.hit.push_back(SRHit());
-
           FillHitVars(thisHit, producer, *thisPoint[0], *thisParticle[0], rec.reco.hit.back());
-          recslc.reco.hit.push_back(rec.reco.hit.back());
-          recslc.reco.nhit = recslc.reco.hit.size();
         }
+        else {
+          FillHitVars(thisHit, producer, rec.reco.hit.back());
+        }
+
+        recslc.reco.hit.push_back(rec.reco.hit.back());
+        recslc.reco.nhit = recslc.reco.hit.size();
       }
     }
 
