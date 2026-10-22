@@ -142,6 +142,11 @@ namespace caf
 
   void FillHitVars(const recob::Hit& hit,
                    unsigned producer,
+                   caf::SRHit& srhit,
+                   bool allowEmpty = false);
+
+  void FillHitVars(const recob::Hit& hit,
+                   unsigned producer,
                    const recob::SpacePoint& spacepoint,
                    const recob::PFParticle& particle,
                    caf::SRHit& srhit,
