@@ -1313,7 +1313,7 @@ void sbn::TrackCaloSkimmer::FillTrackCRTHitInfo(
   const sbn::crt::CRTHitT0TaggingInfo &t = *tag.at(0);
   fTrack->PCAdir.x = t.PCAEigenVector.X();
   fTrack->PCAdir.y = t.PCAEigenVector.Y();
-  fTrack->PCAdir.z =  t.PCAEigenVector.Z();
+  fTrack->PCAdir.z = t.PCAEigenVector.Z();
 }
 
 void sbn::TrackCaloSkimmer::FillTrack(
@@ -1383,6 +1383,8 @@ void sbn::TrackCaloSkimmer::FillTrack(
   for (size_t ja = 0; ja < mcs2DI1->momentumLinAngles().size(); ja++)  fTrack->mcs_thetal_mom_2DI1.push_back(mcs2DI1->momentumLinAngles().at(ja));
   for (size_t ja = 0; ja < mcs2DI1->segmentLengths().size(); ja++)     fTrack->mcs_seglens_3D_2DI1.push_back(mcs2DI1->segmentLengths().at(ja));
   for (size_t ja = 0; ja < mcs2DI1->segmentLengths2D().size(); ja++)   fTrack->mcs_seglens_2D_2DI1.push_back(mcs2DI1->segmentLengths2D().at(ja));
+  for (size_t ja = 0; ja < mcs2DI1->segmentSides().size(); ja++)       fTrack->mcs_segsides_2DI1.push_back(mcs2DI1->segmentSides().at(ja));
+
   for (size_t ja = 0; ja < mcs2DI2->expectedLinAngles().size(); ja++)  fTrack->mcs_thetal_exp_2DI2.push_back(mcs2DI2->expectedLinAngles().at(ja));
   for (size_t ja = 0; ja < mcs2DI2->measuredLinAngles().size(); ja++)  fTrack->mcs_thetal_mea_2DI2.push_back(mcs2DI2->measuredLinAngles().at(ja));
   for (size_t ja = 0; ja < mcs2DI2->momentumLinAngles().size(); ja++)  fTrack->mcs_thetal_mom_2DI2.push_back(mcs2DI2->momentumLinAngles().at(ja));
@@ -1390,6 +1392,7 @@ void sbn::TrackCaloSkimmer::FillTrack(
   for (size_t ja = 0; ja < mcs2DI2->measuredPolyAngles().size(); ja++) fTrack->mcs_thetap_mea_2DI2.push_back(mcs2DI2->measuredPolyAngles().at(ja));
   for (size_t ja = 0; ja < mcs2DI2->segmentLengths().size(); ja++)     fTrack->mcs_seglens_3D_2DI2.push_back(mcs2DI2->segmentLengths().at(ja));
   for (size_t ja = 0; ja < mcs2DI2->segmentLengths2D().size(); ja++)   fTrack->mcs_seglens_2D_2DI2.push_back(mcs2DI2->segmentLengths2D().at(ja));
+  for (size_t ja = 0; ja < mcs2DI2->segmentSides().size(); ja++)       fTrack->mcs_segsides_2DI2.push_back(mcs2DI2->segmentSides().at(ja));
   
   for (size_t ja = 0; ja < mcs2DC->expectedLinAngles().size(); ja++)  fTrack->mcs_thetal_exp_2DC.push_back(mcs2DC->expectedLinAngles().at(ja));
   for (size_t ja = 0; ja < mcs2DC->measuredLinAngles().size(); ja++)  fTrack->mcs_thetal_mea_2DC.push_back(mcs2DC->measuredLinAngles().at(ja));
@@ -1398,6 +1401,7 @@ void sbn::TrackCaloSkimmer::FillTrack(
   for (size_t ja = 0; ja < mcs2DC->measuredPolyAngles().size(); ja++) fTrack->mcs_thetap_mea_2DC.push_back(mcs2DC->measuredPolyAngles().at(ja));
   for (size_t ja = 0; ja < mcs2DC->segmentLengths().size(); ja++)     fTrack->mcs_seglens_3D_2DC.push_back(mcs2DC->segmentLengths().at(ja));
   for (size_t ja = 0; ja < mcs2DC->segmentLengths2D().size(); ja++)   fTrack->mcs_seglens_2D_2DC.push_back(mcs2DC->segmentLengths2D().at(ja));
+  for (size_t ja = 0; ja < mcs2DC->segmentSides().size(); ja++)       fTrack->mcs_segsides_2DC.push_back(mcs2DC->segmentSides().at(ja));
 
   fTrack->mcs_l1DI1 = mcs2DI1->length1D();
   fTrack->mcs_l2DI1 = mcs2DI1->length2D();
