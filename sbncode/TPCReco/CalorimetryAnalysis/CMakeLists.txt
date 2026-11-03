@@ -16,6 +16,7 @@ cet_build_plugin( CalorimetryAnalysis art::module
                             caf_RecoUtils
                             larreco::RecoAlg
                             lardataobj::AnalysisBase
+                            lardataobj::Simulation
                             lardataobj::RecoBase
                             larcorealg::Geometry
                             larcore::Geometry_Geometry_service

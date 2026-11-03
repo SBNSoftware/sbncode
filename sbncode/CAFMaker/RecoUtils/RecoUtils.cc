@@ -1,5 +1,16 @@
 #include "RecoUtils.h"
 
+// framework
+#include "art/Framework/Services/Registry/ServiceHandle.h"
+ 
+// LArSoft
+#include "larsim/MCCheater/BackTrackerService.h"
+#include "larsim/MCCheater/ParticleInventoryService.h"
+ 
+// C++
+#include <map>
+
+
 std::vector<std::pair<int, float>> CAFRecoUtils::AllTrueParticleIDEnergyMatches(const detinfo::DetectorClocksData &clockData, const std::vector<art::Ptr<recob::Hit> >& hits, bool rollup_unsaved_ids) {
   art::ServiceHandle<cheat::BackTrackerService> bt_serv;
   std::map<int, float> trackIDToEDepMap;

@@ -14,6 +14,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "art_root_io/TFileService.h"
+#include "TTree.h"
 
 #include "sbncode/CAFMaker/RecoUtils/RecoUtils.h"
 #include "lardataobj/RecoBase/Hit.h"

@@ -3,9 +3,12 @@
 
 #include <iostream>
 #include <map>
+#include <array>
+#include <vector>
 
 #include "TDatabasePDG.h"
 #include "TParticlePDG.h"
+#include "TTree.h"
 #include "art/Framework/Core/EDAnalyzer.h"
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/ParameterSet.h"
@@ -30,6 +33,7 @@
 
 #include "larreco/RecoAlg/TrackMomentumCalculator.h"
 
+#include "lardataobj/Simulation/SimChannel.h"
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Shower.h"
 #include "lardataobj/RecoBase/Slice.h"
@@ -37,6 +41,7 @@
 #include "lardataobj/RecoBase/Wire.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/Cluster.h"
+#include "lardataobj/RecoBase/SpacePoint.h"
 #include "lardataobj/AnalysisBase/Calorimetry.h"
 #include "lardataobj/AnalysisBase/ParticleID.h"
 #include "lardataobj/AnalysisBase/T0.h"
@@ -56,6 +61,7 @@
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "larsim/MCCheater/BackTrackerService.h"
 
 // #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
 

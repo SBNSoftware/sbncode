@@ -10,32 +10,14 @@
 ///////////////////////////////////////////////
 
 // framework
-#include "art/Framework/Principal/Event.h"
-#include "fhiclcpp/ParameterSet.h" 
-#include "art/Framework/Principal/Handle.h" 
-#include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "canvas/Persistency/Common/Ptr.h" 
-#include "canvas/Persistency/Common/PtrVector.h" 
-#include "canvas/Persistency/Common/FindManyP.h"
 
 // LArSoft
-#include "nusimdata/SimulationBase/MCParticle.h"
-#include "nusimdata/SimulationBase/MCTruth.h"
+#include "lardataalg/DetectorInfo/DetectorClocksData.h"
 #include "lardataobj/RecoBase/Hit.h"
-#include "lardataobj/RecoBase/Track.h"
-#include "lardataobj/RecoBase/Shower.h"
-//#include "lardataobj/AnalysisBase/MVAPIDResult.h"
-//#include "lardataobj/AnalysisBase/ParticleID.h"
-#include "larsim/MCCheater/BackTrackerService.h"
-#include "larsim/MCCheater/ParticleInventoryService.h"
-#include "larcore/Geometry/Geometry.h"
 
-// c++
+// C++
 #include <vector>
-#include <map>
-
-// ROOT
-#include "TTree.h"
 
 namespace CAFRecoUtils{
 

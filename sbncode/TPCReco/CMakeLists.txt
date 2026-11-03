@@ -17,6 +17,7 @@ cet_build_plugin(NuVertexChargeTree art::module
         art::Utilities canvas::canvas
         cetlib::cetlib cetlib_except::cetlib_except
         ROOT::X3d
+        ROOT::Tree
         messagefacility::MF_MessageLogger
         lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
         sbnobj::Common_Reco
