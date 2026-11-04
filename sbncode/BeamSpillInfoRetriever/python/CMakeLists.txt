@@ -4,6 +4,7 @@
 
 set(bq_scripts
   update_flatcafs.py
+  bunch_rotation.py
   dump_bnb_quality.py
   merge_bnb_dumps.py
   bnb_fom.py

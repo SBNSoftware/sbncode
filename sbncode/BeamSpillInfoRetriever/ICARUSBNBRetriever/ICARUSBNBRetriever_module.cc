@@ -10,6 +10,7 @@
  */
 
 #include "art/Framework/Core/EDProducer.h"
+#include "fhiclcpp/types/Sequence.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
 #include "sbncode/BeamSpillInfoRetriever/POTTools.h"
@@ -112,6 +113,16 @@ public:
       Comment{ "fill HP875+VP875 drop-outs from the target BPMs and the measured spills on both sides" },
       true // default
       };
+    fhicl::Atom<std::string> BunchRotationBundle {
+      Name{ "BunchRotationBundle" },
+      Comment{ "IFBeam bundle with the Booster bunch-rotation settings (empty: not read, fields stay -999)" },
+      "" // default
+      };
+    fhicl::Sequence<std::string> BunchRotationDevices {
+      Name{ "BunchRotationDevices" },
+      Comment{ "IFBeam names of the bunch-rotation scale factor, frequency and start time, in this order" },
+      std::vector<std::string>{ "B_BRRMPS[8]", "B_BRRMPQ[1]", "B_BRRMPL[9]" } // default
+      };
     fhicl::Atom<std::string> TriggerDatabaseFile {
       Name{ "TriggerDatabaseFile" },
       Comment{ "path of local database of all recorded events and their trigger, in SQLite format" } 
@@ -167,6 +178,9 @@ private:
   mutable sbn::pot::BPMOffsetCache_t fOffsetCache; ///< last valid BPM offsets seen
   bool fImproveFOM; ///< whether to run sbn::improveBNBqualityFOMs() at the end of the subrun
   sbn::BNBFOMFillConfig fFOMFillConfig; ///< its configuration
+  std::unique_ptr<ifbeam_ns::BeamFolder> bunchRot; ///< bunch-rotation settings (null: not read)
+  std::vector<std::string> fBunchRotDevices; ///< their IFBeam names
+  mutable sbn::pot::BPMOffsetCache_t fBunchRotCache; ///< last valid value of each
 
   /// Returns the information of the trigger in the current event.
   sbn::pot::TriggerInfo_t extractTriggerInfo(art::Event const& e) const;
@@ -282,6 +296,11 @@ sbn::ICARUSBNBRetriever::ICARUSBNBRetriever(Parameters const& params)
   bfp_mwr->set_epsilon(0.5);
   vp873->set_epsilon(0.02);
   offsets->set_epsilon(600);
+  fBunchRotDevices = params().BunchRotationDevices();
+  if (!params().BunchRotationBundle().empty()) {
+    bunchRot = ifbeam_handle->getBeamFolder(params().BunchRotationBundle(), params().URL(), params().TimeWindow());
+    bunchRot->set_epsilon(1000); // settings logged every 15 min
+  }
 
   //bfp_mwr->setValidWindow(86400);  
   bfp_mwr->setValidWindow(3605);  
@@ -452,6 +471,7 @@ int sbn::ICARUSBNBRetriever::matchMultiWireData(
 
     sbn::BNBSpillInfo spillInfo = sbn::pot::makeBNBSpillInfo(eventID, times_temps[i], MWRdata, matched_MWR, bfp, offsets, vp873,
                                                             fReuseLastBPMOffsets? &fOffsetCache: nullptr);
+    if (bunchRot) sbn::pot::fillBunchRotation(spillInfo, times_temps[i], *bunchRot, fBunchRotDevices, &fBunchRotCache);
     std::tuple<float, float, float> allFOM = sbn::getBNBqualityFOM(spillInfo);
     spillInfo.FOM = std::get<0>(allFOM);
     spillInfo.PreFitFOM = std::get<1>(allFOM);

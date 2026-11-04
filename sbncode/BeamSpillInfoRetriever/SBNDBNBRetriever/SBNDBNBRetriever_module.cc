@@ -47,6 +47,9 @@ private:
   double fMWRMaxTimeDiff; ///< largest accepted multiwire-spill time difference [s]
   bool fReuseLastBPMOffsets; ///< whether to fill missing BPM offsets from fOffsetCache
   mutable sbn::pot::BPMOffsetCache_t fOffsetCache; ///< last valid BPM offsets seen
+  std::unique_ptr<ifbeam_ns::BeamFolder> bunchRot; ///< bunch-rotation settings (null: not read)
+  std::vector<std::string> fBunchRotDevices; ///< their IFBeam names
+  mutable sbn::pot::BPMOffsetCache_t fBunchRotCache; ///< last valid value of each
   bool fImproveFOM; ///< whether to run sbn::improveBNBqualityFOMs() at the end of the subrun
   sbn::BNBFOMFillConfig fFOMFillConfig; ///< its configuration
 
@@ -83,6 +86,13 @@ sbn::SBNDBNBRetriever::SBNDBNBRetriever(fhicl::ParameterSet const & params)
  
   offsets = ifbeam_handle->getBeamFolder(params.get<std::string>("OffsetBundle"), params.get<std::string>("URL"), timeWindow);
   offsets->set_epsilon(1000);
+
+  // Booster bunch-rotation settings, read only if a bundle holding them is configured
+  fBunchRotDevices = params.get<std::vector<std::string>>("BunchRotationDevices", std::vector<std::string>{ "B_BRRMPS[8]", "B_BRRMPQ[1]", "B_BRRMPL[9]" });
+  if (std::string const bundle = params.get<std::string>("BunchRotationBundle", ""); !bundle.empty()) {
+    bunchRot = ifbeam_handle->getBeamFolder(bundle, params.get<std::string>("URL"), timeWindow);
+    bunchRot->set_epsilon(1000); // settings logged every 15 min
+  }
 
 }
 
@@ -198,6 +208,7 @@ int sbn::SBNDBNBRetriever::matchMultiWireData(
     
     sbn::BNBSpillInfo spillInfo = makeBNBSpillInfo(eventID, times_temps[i], MWRdata, matched_MWR, bfp, offsets, vp873,
                                                    fReuseLastBPMOffsets? &fOffsetCache: nullptr);
+    if (bunchRot) sbn::pot::fillBunchRotation(spillInfo, times_temps[i], *bunchRot, fBunchRotDevices, &fBunchRotCache);
     std::tuple<float, float, float> allFOM = sbn::getBNBqualityFOM(spillInfo);
     spillInfo.FOM = std::get<0>(allFOM);
     spillInfo.PreFitFOM = std::get<1>(allFOM);

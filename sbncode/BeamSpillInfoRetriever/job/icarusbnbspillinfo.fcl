@@ -21,5 +21,7 @@ icarusbnbspillinfo: {
     ImproveFOM: true #recover the FOM of spills with missing inputs from their neighbours (BNBFOMFill.h)
     NeighbourMinFOM: 0.998 #neighbour fill only between spills with FOM > 0.998 (closure test, ICARUS Run 2)
     FillBPMDropouts: true #fill HP875+VP875 drop-outs from the target BPMs + measured spills on both sides
+    BunchRotationBundle: "" #IFBeam bundle with the Booster bunch-rotation settings; empty: not read (no bundle holds them yet)
+    BunchRotationDevices: [ "B_BRRMPS[8]", "B_BRRMPQ[1]", "B_BRRMPL[9]" ] #scale factor, frequency, start time
 }
 END_PROLOG

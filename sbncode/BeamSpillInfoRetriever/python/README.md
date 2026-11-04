@@ -13,6 +13,8 @@ needs every spill of a data period, and fills them in CAFs made before the retri
 them. Missing values are NaN and `fom_source` is −1. Nothing else in the file changes. A
 `TNamed` called `bnb_beam_quality` records the tool, options, definition and date.
 
+Unless `--no-bunch-rotation` is given, the Booster bunch-rotation settings `BRRMPS8` (scale factor, 0 = off), `BRRMPQ1` (frequency, kHz) and `BRRMPL9` (start time, µs) are also set for each spill (`bunch_rotation.py`). They come from IFBeam from 2025-10-09 on, and from the ACNet data logger before that (where `BRRMPL9` is not logged). This needs network access to `dbweb1.fnal.gov` and `www-bd.fnal.gov`. The production retrievers read them only when a bundle holding them is configured (`BunchRotationBundle`).
+
 Steps (all files are processed before any is written, because Tier 2 needs the whole period):
 1. dump the beam information of every CAF and merge it (`dump_bnb_quality.py`, `merge_bnb_dumps.py`);
 2. compute Tier 1 per spill (`bnb_fom.py`, the reference implementation, sped up by `bnb_fom_fast.py`);
@@ -56,6 +58,7 @@ Intermediate files go to `<outdir>/bnb_work/`, including the per-spill table `ti
 | `hpos_tgt`, `hang_tgt`, `vpos_tgt`, `vang_tgt` | beam position [mm] and angle [mrad] at the target center (NaN for a plane that could not be formed) |
 | `tgt_sigx`, `tgt_sigy` | beam width at the target [mm]; NaN: nominal width |
 | `fom_version` | 1 (algorithm version, as `sbn::FOMVersion`); 0 for a spill not found in the table |
+| `BRRMPS8`, `BRRMPQ1`, `BRRMPL9` | Booster bunch-rotation scale factor (0 = off), frequency [kHz] and start time [µs] in force at the spill; NaN if not available |
 
 `fom_status` bits:
 

@@ -13,6 +13,8 @@ BNB beam-quality result of the full procedure (Tier 1 + Tier 2).
          tgt_sigx tgt_sigy fom_version
      set from step 2 (added if the CAF predates these fields). Nothing else in the file
      changes; a TNamed "bnb_beam_quality" records how the file was updated.
+     Also set, unless --no-bunch-rotation: the Booster bunch-rotation settings BRRMPS8,
+     BRRMPQ1, BRRMPL9 of each spill, from IFBeam / the ACNet data logger [bunch_rotation.py].
 
 Missing values are NaN (FOM_best, positions, angles, widths: nominal width), fom_source -1.
 
@@ -47,6 +49,7 @@ FOM_VERSION = 1          # same algorithm as sbn::FOMVersion (getFOM.h), with th
 FILLED = 128 | 8192 | 16384
 DETECTOR_OPTIONS = {"sbnd": [], "icarus": ["--nb-min-fom", "0.998", "--burst-fill"]}
 BNB, SPILL = "rec.hdr.bnbinfo.", "rec.hdr.spillbnbinfo."
+ROT_FIELDS = [("BRRMPS8", "F", np.float32), ("BRRMPQ1", "F", np.float32), ("BRRMPL9", "F", np.float32)]
 
 
 # --------------------------------------------------------------------------- steps 1-2
@@ -148,11 +151,15 @@ def _copy_dir(src, dst):
 
 
 _TABLE = None
+_ROT = None
 
 
-def _init_worker(table_path):
-    global _TABLE
+def _init_worker(table_path, rot_path):
+    global _TABLE, _ROT
     _TABLE = load_table(table_path)          # once per worker process
+    if rot_path:
+        import bunch_rotation
+        _ROT = bunch_rotation.load(rot_path)
 
 
 def update_file(src, dst, provenance):
@@ -172,6 +179,15 @@ def update_file(src, dst, provenance):
     # a record without a triggered spill (time 0) is not "missing"
     miss_s -= int(((a[SPILL + "spill_time_sec"] == 0) | (a[SPILL + "spill_time_sec"] > 4e9)).sum())
     off = np.concatenate([[0], np.cumsum(nb)])
+    fields = list(FIELDS)
+    if _ROT is not None:                     # bunch-rotation settings at each spill time
+        import bunch_rotation
+        fields += ROT_FIELDS
+        tb = sec_b.astype(float) + 1e-9 * nsec_b.astype(float)
+        ts = a[SPILL + "spill_time_sec"].astype(float) + 1e-9 * a[SPILL + "spill_time_nsec"].astype(float)
+        for name, _, _ in ROT_FIELDS:
+            vb[name] = bunch_rotation.values_at(_ROT[name], tb)
+            vs[name] = bunch_rotation.values_at(_ROT[name], ts)
 
     import ROOT
     fin = ROOT.TFile.Open(src)
@@ -183,7 +199,7 @@ def update_file(src, dst, provenance):
     tout = tin.CloneTree(0)
     nmax = max(1, int(nb.max()) if len(nb) else 1)
     bufs, sbufs = {}, {}
-    for name, code, dt in FIELDS:
+    for name, code, dt in fields:
         bufs[name] = np.zeros(nmax, dt)
         sbufs[name] = np.zeros(1, dt)
         for br, buf, leaf in ((BNB + name, bufs[name], f"{BNB}{name}[{BNB}.length]/{code}"),
@@ -195,7 +211,7 @@ def update_file(src, dst, provenance):
     for e in range(tin.GetEntries()):
         tin.GetEntry(e)
         lo, hi = off[e], off[e + 1]
-        for name, _, _ in FIELDS:
+        for name, _, _ in fields:
             bufs[name][:hi - lo] = vb[name][lo:hi]
             sbufs[name][0] = vs[name][e]
         tout.Fill()
@@ -236,21 +252,33 @@ def main(argv=None):
     p.add_argument("--chunk-files", type=int, default=0, metavar="N", help="dump N files at a time (large definitions)")
     p.add_argument("--groups", type=int, default=1, help="Tier 2 in this many groups of runs (memory)")
     p.add_argument("--table-version", default="", help="label recorded in each output file")
+    p.add_argument("--no-bunch-rotation", action="store_true",
+                   help="do not add the Booster bunch-rotation settings (they need network access to IFBeam "
+                        "and the ACNet data logger)")
     a = p.parse_args(argv)
     a.work = a.work or os.path.join(a.outdir, "bnb_work")
     os.makedirs(a.outdir, exist_ok=True)
 
     table, files = beam_quality_table(a)
+    rot = ""
+    if not a.no_bunch_rotation:
+        import uproot, bunch_rotation
+        with uproot.open(table) as f:
+            t = np.concatenate([f[tr]["spill_time_sec"].array(library="np") for tr in ("bnbinfo", "spill")
+                                if tr in f and f[tr].num_entries])
+        t = t[(t > 1e9) & (t < 4e9)]
+        rot = bunch_rotation.fetch(float(t.min()), float(t.max()) + 1, os.path.join(a.work, "bunch_rotation.npz"))
     prov = {"tool": "sbncode BeamSpillInfoRetriever/python/update_flatcafs.py",
             "sbncode": os.environ.get("SBNCODE_VERSION", "unknown"), "fom_version": FOM_VERSION,
             "detector": a.detector, "logger_fill": a.logger_fill, "table_version": a.table_version,
+            "bunch_rotation": "IFBeam (from 2025-10-09) / ACNet logger Backup (before)" if rot else "not added",
             "definition": a.defname or "", "date": datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z"}
     print(f"\n##### [3/3] {len(files)} flat CAFs -> {a.outdir}/", file=sys.stderr)
     todo = [(_local(f), os.path.join(a.outdir, os.path.basename(f.split("?")[0]))) for f in files]
     todo = [(s, d) for s, d in todo if not os.path.exists(d)]
     nmiss = 0
     with cf.ProcessPoolExecutor(max_workers=max(1, min(a.jobs, len(todo) or 1)),
-                                initializer=_init_worker, initargs=(table,)) as ex:
+                                initializer=_init_worker, initargs=(table, rot)) as ex:
         for name, n, mb, ms in ex.map(update_file, [s for s, _ in todo], [d for _, d in todo],
                                       [prov] * len(todo)):
             nmiss += mb + ms
