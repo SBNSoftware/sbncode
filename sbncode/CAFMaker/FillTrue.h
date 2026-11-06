@@ -33,6 +33,8 @@
 #include "sbnanaobj/StandardRecord/StandardRecord.h"
 #include "sbnanaobj/StandardRecord/SRMeVPrtl.h"
 
+namespace bsim { class Dk2Nu; }
+
 namespace caf
 {
   struct HitsEnergy {
@@ -86,6 +88,7 @@ namespace caf
 
   void FillTrueNeutrino(const art::Ptr<simb::MCTruth> mctruth,
                         const simb::MCFlux &mcflux,
+                        const bsim::Dk2Nu &dk2nu,
                         const simb::GTruth& gtruth,
                         const std::vector<caf::SRTrueParticle> &srparticles,
                         const std::map<int, std::vector<art::Ptr<recob::Hit>>> &id_to_truehit_map,

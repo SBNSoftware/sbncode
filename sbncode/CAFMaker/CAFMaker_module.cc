@@ -42,6 +42,7 @@
 #endif
 
 #include "ifdh_art/IFDHService/IFDH_service.h"
+#include "dk2nu/tree/dk2nu.h"
 
 // ROOT includes
 #include "TFile.h"
@@ -1470,12 +1471,18 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   }
 
   art::Handle<std::vector<simb::MCFlux>> mcflux_handle;
-  GetByLabelStrict(evt, std::string("generator"), mcflux_handle);
+  GetByLabelStrict(evt, fParams.GenLabel(), mcflux_handle);
 
   std::vector<art::Ptr<simb::MCFlux>> mcfluxes;
   if (mcflux_handle.isValid()) {
     art::fill_ptr_vector(mcfluxes, mcflux_handle);
   }
+
+  art::Handle<std::vector<bsim::Dk2Nu>> dk2nu_handle;
+  GetByLabelStrict(evt, fParams.GenLabel(), dk2nu_handle);
+
+  std::vector<bsim::Dk2Nu> const* dk2nus =
+    dk2nu_handle.isValid() ? dk2nu_handle.product() : nullptr;
 
   // get the MCReco for the fake-reco
   art::Handle<std::vector<sim::MCTrack>> mctrack_handle;
@@ -1560,9 +1567,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // holder for invalid MCFlux
   simb::MCFlux badflux; // default constructor gives nonsense values
 
+  // holder for invalid Dk2Nu (default-constructed ancestor vector is empty -- treated as "absent")
+  bsim::Dk2Nu const baddk2nu;
+
   for (size_t i=0; i<mctruths.size(); i++) {
     auto const& mctruth = mctruths.at(i);
     const simb::MCFlux &mcflux = (mcfluxes.size()) ? *mcfluxes.at(i) : badflux;
+    const bsim::Dk2Nu &dk2nu = dk2nus ? dk2nus->at(i) : baddk2nu;
 
     simb::GTruth gtruth;
     bool ok = GetAssociatedProduct(fmp_gtruth, i, gtruth);
@@ -1577,7 +1588,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     if ( !isRealData ){
 
-      FillTrueNeutrino(mctruth, mcflux, gtruth, true_particles, id_to_truehit_map, srtruthbranch.nu.back(), i, fActiveVolumes);
+      FillTrueNeutrino(mctruth, mcflux, dk2nu, gtruth, true_particles, id_to_truehit_map, srtruthbranch.nu.back(), i, fActiveVolumes);
+
+      SRTrueInteraction &nu = srtruthbranch.nu.back();
+      caf::generator_ &generator = nu.generator;
+      if (ok)                             generator = caf::kGENIE;
+      else if (i < mevprtl_truths.size()) generator = caf::kMeVPrtl;
+      else                                generator = caf::kUnknownGenerator;
 
       srtruthbranch.nu.back().genie_evtrec_idx = fGenieEventCounter;
 
