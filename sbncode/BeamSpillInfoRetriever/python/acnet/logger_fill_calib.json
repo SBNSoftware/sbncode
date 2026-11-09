@@ -1,0 +1,48 @@
+{
+ "outage": "A_2023-06-09to12",
+ "window_utc": [
+  1686344400.0,
+  1686592800.0
+ ],
+ "bias": [
+  -2.0755213708932976,
+  -1.5869047152536202,
+  -1.40093356291207,
+  -0.46439319973272963
+ ],
+ "margin": 0.003975666009215617,
+ "bias_order": [
+  "hpos_mm",
+  "hang_mrad",
+  "vpos_mm",
+  "vang_mrad"
+ ],
+ "calibration_spills": 898355,
+ "closure": {
+  "before->after": {
+   "test_spills": 150000,
+   "false_accepts": 0,
+   "false_rejects": 0,
+   "true_pass": 1.0,
+   "dfom_99": 4.257842692934842e-05,
+   "dfom_max": 0.0013306331771028024,
+   "pos_err_90_mm": [
+    0.4410604549833492,
+    1.0084706835462003
+   ]
+  },
+  "after->before": {
+   "test_spills": 150000,
+   "false_accepts": 0,
+   "false_rejects": 0,
+   "true_pass": 1.0,
+   "dfom_99": 0.00043925324611448596,
+   "dfom_max": 0.003975666009215617,
+   "pos_err_90_mm": [
+    0.47465249816215316,
+    0.9995991376407295
+   ]
+  }
+ },
+ "source_file": "icarus_run2_full_fixed.root"
+}
