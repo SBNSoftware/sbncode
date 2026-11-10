@@ -1,6 +1,6 @@
 BEGIN_PROLOG
 
-## Proton available process keys: "total"
+## Proton available process keys: "total", "elastic"
 
 ProtonParameters: [
   {
@@ -9,7 +9,16 @@ ProtonParameters: [
     Range:      [10.0, 2005.0]
     Nominal:    1.0
     Sigma:      0.2
+  },
+
+    {
+    Name:       "fProtonElast"
+    Cut:        "elast"
+    Range:      [10.0, 2005.00]
+    Nominal:    1.0
+    Sigma:      0.2
   }
+
 ]
 
 END_PROLOG 
