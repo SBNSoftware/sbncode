@@ -179,6 +179,22 @@ CPP_RESULT = ("FOM_best", "fom_source", "fom_status", "tor_used", "hpos_tgt", "h
               "vpos_tgt", "vang_tgt", "tgt_sigx", "tgt_sigy", "fom_version")
 
 
+# Float beam-quality fields that CAFMaker and update_flatcafs.py write as -999 when the
+# value is missing (CAF convention: -999 = set, but invalid). Flat CAFs updated before
+# that convention hold NaN instead; both read back as NaN, which the analysis code
+# here uses for "missing".
+MISSING_AS_NAN = ("FOM_best", "tor_used", "hpos_tgt", "hang_tgt", "vpos_tgt", "vang_tgt",
+                  "tgt_sigx", "tgt_sigy", "BRRMPS8", "BRRMPQ1", "BRRMPL9")
+
+
+def _values(arr, name, prefix):
+    """Leaf values as numpy; -999 -> NaN for the fields in MISSING_AS_NAN."""
+    v = ak.to_numpy(arr)
+    if _strip(name, prefix) in MISSING_AS_NAN:
+        v = np.where(v == -999.0, np.float32(np.nan), v).astype(v.dtype)
+    return v
+
+
 def _column(name, prefix):
     col = _strip(name, prefix)
     return "cpp_" + col if col in CPP_RESULT else col
@@ -252,7 +268,7 @@ def read_file(path, read_mw=True):
              "subrun": ak.to_numpy(a["rec.hdr.subrun"]),
              "evt": ak.to_numpy(a["rec.hdr.evt"])}
     for b in sbr:
-        spill[_column(b, SPILL)] = ak.to_numpy(a[b])
+        spill[_column(b, SPILL)] = _values(a[b], b, SPILL)
     mw_spill = {m: (a[SPILL + m] if read_mw else _empty_lists(len(a))) for m in MULTIWIRE}
 
     # ---------------- per-subrun spill list (only filled on first_in_subrun records)
@@ -263,7 +279,7 @@ def read_file(path, read_mw=True):
            "subrun": np.repeat(spill["subrun"], nsp),
            "subrun_pot": np.repeat(ak.to_numpy(a["rec.hdr.pot"]), nsp)}
     for br in bbr:
-        sub[_column(br, SUBRUN)] = ak.to_numpy(ak.flatten(b[br]))
+        sub[_column(br, SUBRUN)] = _values(ak.flatten(b[br]), br, SUBRUN)
     # multiwire is stored flat per record; split it back into one array per spill
     mw_sub = {m: (ak.unflatten(ak.flatten(b[SUBRUN + m]), ak.flatten(b[SUBRUN + m + "..length"]))
                   if read_mw else _empty_lists(int(ak.sum(nsp))))
