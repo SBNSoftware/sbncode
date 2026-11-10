@@ -10,7 +10,7 @@ The settings are logged every 15 minutes. IFBeam has them from 2025-10-09 (one r
 day; longer windows fail). Earlier values come from the ACNet data logger (D44, node
 "Backup", read-only, one request per week, >= 1.2 s apart); B_BRRMPL[9] is not logged there.
 A spill gets the last value at or before its time, if that value is less than MAX_AGE old;
-otherwise NaN.
+otherwise NaN (update_flatcafs.py writes it to the CAF as -999).
 
   ./bunch_rotation.py 2025-04-01 2025-04-12      # print the settings changes in a range
 """
