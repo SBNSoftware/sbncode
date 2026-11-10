@@ -10,7 +10,7 @@ copy of each, with the BNB beam-quality result of the full procedure in
 These are the fields of `caf::SRBNBInfo` that the production retrievers fill (Tier 1 and the
 end-of-subrun Tier 1W, `getFOM.h`, `BNBFOMFill.h`). This tool adds the Tier-2 recovery, which
 needs every spill of a data period, and fills them in CAFs made before the retrievers had
-them. Missing values are NaN and `fom_source` is −1. Nothing else in the file changes. A
+them. Missing values are −999 and `fom_source` is −1, as CAFMaker writes them (CAF convention: −999 = set, but invalid; NaN = never set). Flat CAFs updated by earlier versions of this tool hold NaN instead; the readers here take both as missing. Nothing else in the file changes. A
 `TNamed` called `bnb_beam_quality` records the tool, options, definition and date.
 
 Unless `--no-bunch-rotation` is given, the Booster bunch-rotation settings `BRRMPS8` (scale factor, 0 = off), `BRRMPQ1` (frequency, kHz) and `BRRMPL9` (start time, µs) are also set for each spill (`bunch_rotation.py`). They come from IFBeam from 2025-10-09 on, and from the ACNet data logger before that (where `BRRMPL9` is not logged). This needs network access to `dbweb1.fnal.gov` and `www-bd.fnal.gov`. The production retrievers read them only when a bundle holding them is configured (`BunchRotationBundle`).
@@ -51,14 +51,14 @@ Intermediate files go to `<outdir>/bnb_work/`, including the per-spill table `ti
 
 | field | meaning |
 |---|---|
-| `FOM_best` | fraction of the beam on target, in [0, 1]; NaN if none can be formed. Cut on this |
+| `FOM_best` | fraction of the beam on target, in [0, 1]; −999 if none can be formed. Cut on this (`0.98 < FOM_best <= 1`) |
 | `fom_source` | width used: 1/2 fitted M876/M875 profile, 3/4 M876/M875 database width, 5 nominal; −1 none |
 | `fom_status` | bit mask, `sbn::fomstatus` in `getFOM.h` |
 | `tor_used` | intensity used for the FOM [protons]: TOR860, or TOR875 after a TOR860 drop-out |
-| `hpos_tgt`, `hang_tgt`, `vpos_tgt`, `vang_tgt` | beam position [mm] and angle [mrad] at the target center (NaN for a plane that could not be formed) |
-| `tgt_sigx`, `tgt_sigy` | beam width at the target [mm]; NaN: nominal width |
+| `hpos_tgt`, `hang_tgt`, `vpos_tgt`, `vang_tgt` | beam position [mm] and angle [mrad] at the target center (−999 for a plane that could not be formed) |
+| `tgt_sigx`, `tgt_sigy` | beam width at the target [mm]; −999: nominal width |
 | `fom_version` | 1 (algorithm version, as `sbn::FOMVersion`); 0 for a spill not found in the table |
-| `BRRMPS8`, `BRRMPQ1`, `BRRMPL9` | Booster bunch-rotation scale factor (0 = off), frequency [kHz] and start time [µs] in force at the spill; NaN if not available |
+| `BRRMPS8`, `BRRMPQ1`, `BRRMPL9` | Booster bunch-rotation scale factor (0 = off), frequency [kHz] and start time [µs] in force at the spill; −999 if not available |
 
 `fom_status` bits:
 

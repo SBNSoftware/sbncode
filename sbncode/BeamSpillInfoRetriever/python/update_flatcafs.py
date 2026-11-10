@@ -16,7 +16,9 @@ BNB beam-quality result of the full procedure (Tier 1 + Tier 2).
      Also set, unless --no-bunch-rotation: the Booster bunch-rotation settings BRRMPS8,
      BRRMPQ1, BRRMPL9 of each spill, from IFBeam / the ACNet data logger [bunch_rotation.py].
 
-Missing values are NaN (FOM_best, positions, angles, widths: nominal width), fom_source -1.
+Missing values are written as -999 (FOM_best, intensity, positions, angles, widths: -999 =
+nominal width, bunch-rotation settings), fom_source -1, as CAFMaker writes them (CAF
+convention: -999 = set, but invalid; NaN = never set).
 
 Examples
   update_flatcafs.py -d my_sbnd_flatcaf_def -e sbnd --detector sbnd -o updated/ -j 16
@@ -208,6 +210,11 @@ def update_file(src, dst, provenance):
                 tout.SetBranchAddress(br, buf)
             else:
                 tout.Branch(br, buf, leaf)
+    # CAF convention: a missing float value is written as -999 (the tables here use NaN)
+    for v in (vb, vs):
+        for name, code, _ in fields:
+            if code == "F":
+                v[name] = np.where(np.isfinite(v[name]), v[name], -999.0).astype(np.float32)
     for e in range(tin.GetEntries()):
         tin.GetEntry(e)
         lo, hi = off[e], off[e + 1]

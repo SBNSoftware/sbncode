@@ -2,7 +2,6 @@
 #include "sbncode/CAFMaker/FillExposure.h"
 
 #include <cmath>
-#include <limits>
 
 namespace caf
 {
@@ -77,24 +76,26 @@ namespace caf
     single_store.M876BB_spill_time_diff = info.M876BB_spill_time_diff;
     single_store.MMBTBB_spill_time_diff = info.MMBTBB_spill_time_diff;
 
-    // beam-quality result: missing values (-999) become NaN, so that a cut on
-    // FOM_best rejects spills without a FOM
-    auto const orNaN = [](float v)
-      { return (std::isfinite(v) && v != -999.f)? v: std::numeric_limits<float>::quiet_NaN(); };
-    single_store.FOM_best = orNaN(info.FOM_best);
+    // beam-quality result: a value that is missing in the input (-999 or not
+    // finite) is stored as -999, the CAF convention for "set, but invalid"
+    // (NaN is left for data members never set; see caf::SRBNBInfo::setDefault()).
+    // A cut 0.98 < FOM_best <= 1 rejects spills without a FOM.
+    auto const orInvalid = [](float v)
+      { return (std::isfinite(v) && v != -999.f)? v: -999.f; };
+    single_store.FOM_best = orInvalid(info.FOM_best);
     single_store.fom_source = info.fom_source;
     single_store.fom_status = info.fom_status;
-    single_store.tor_used = orNaN(info.tor_used);
-    single_store.hpos_tgt = orNaN(info.hpos_tgt);
-    single_store.hang_tgt = orNaN(info.hang_tgt);
-    single_store.vpos_tgt = orNaN(info.vpos_tgt);
-    single_store.vang_tgt = orNaN(info.vang_tgt);
-    single_store.tgt_sigx = orNaN(info.tgt_sigx);
-    single_store.tgt_sigy = orNaN(info.tgt_sigy);
+    single_store.tor_used = orInvalid(info.tor_used);
+    single_store.hpos_tgt = orInvalid(info.hpos_tgt);
+    single_store.hang_tgt = orInvalid(info.hang_tgt);
+    single_store.vpos_tgt = orInvalid(info.vpos_tgt);
+    single_store.vang_tgt = orInvalid(info.vang_tgt);
+    single_store.tgt_sigx = orInvalid(info.tgt_sigx);
+    single_store.tgt_sigy = orInvalid(info.tgt_sigy);
     single_store.fom_version = info.fom_version;
-    single_store.BRRMPS8 = orNaN(info.BRRMPS8);
-    single_store.BRRMPQ1 = orNaN(info.BRRMPQ1);
-    single_store.BRRMPL9 = orNaN(info.BRRMPL9);
+    single_store.BRRMPS8 = orInvalid(info.BRRMPS8);
+    single_store.BRRMPQ1 = orInvalid(info.BRRMPQ1);
+    single_store.BRRMPL9 = orInvalid(info.BRRMPL9);
     return single_store;
   }
 
