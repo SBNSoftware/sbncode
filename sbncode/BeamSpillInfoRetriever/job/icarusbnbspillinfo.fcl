@@ -16,5 +16,10 @@ icarusbnbspillinfo: {
     raw_data_label: "daq"
     DeviceUsedForTiming: "E:TOR860"
     TriggerDatabaseFile: "triggerDatabase/icarus_triggers.db"
+    MWRMaxTimeDiff: 0.0333 #unit seconds, multiwire readings further than this from the spill are not used (<= 0 disables)
+    ReuseLastBPMOffsets: true #if a BPM offset query fails, use the last valid offset seen in this job
+    ImproveFOM: true #recover the FOM of spills with missing inputs from their neighbours (BNBFOMFill.h)
+    NeighbourMinFOM: 0.998 #neighbour fill only between spills with FOM > 0.998 (closure test, ICARUS Run 2)
+    FillBPMDropouts: true #fill HP875+VP875 drop-outs from the target BPMs + measured spills on both sides
 }
 END_PROLOG
