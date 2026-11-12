@@ -652,6 +652,18 @@ namespace caf
       Comment("Provide a string to label the blip input"), 
       "blipreco"
     };
+
+    Atom<string> QELambdaFRANSLabel {
+      Name("QELambdaFRANSLabel"),
+      Comment("Label of QE Lambda reconstruction."),
+      "FRANSProducer" 
+    };
+
+    Atom<string> QELambdaPIDLabel {
+      Name("QELambdaPIDLabel"),
+      Comment("Label of QE Lambda PID."),
+      "LambdaPID" 
+    };
   };
 }
 
