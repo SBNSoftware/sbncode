@@ -18,7 +18,6 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "lardata/Utilities/AssociationUtil.h"
 
-#include "TDatabasePDG.h"
 
 #include "LArReco/TrackMomentumCalculator.h"
 #include "sbnobj/Common/Reco/RangeP.h"
@@ -67,9 +66,13 @@ sbn::RangePAllPID::RangePAllPID(fhicl::ParameterSet const& p)
     produces<art::Assns<recob::Track, sbn::RangeP>>(names[i]); 
   }
 
-  const TDatabasePDG *PDGTable = TDatabasePDG::Instance();
-  fMuonMass = PDGTable->GetParticle(13)->Mass();
-  fPionMass = PDGTable->GetParticle(211)->Mass();
+  // Masses in GeV, with the values of ROOT's default particle table.  They are constants on purpose:
+  // TDatabasePDG::Instance()->GetParticle() loads that default table into the process-wide database, and
+  // GENIE, which shares the database, then keeps those entries instead of the ones in its own table.
+  // With this module built before the event-weight module, GENIE ReWeight worked with ROOT's resonance
+  // properties (Delta(1232) width 0.120 GeV instead of GENIE's 0.117 GeV).
+  fMuonMass = 0.105658;
+  fPionMass = 0.139570;
 }
 
 void sbn::RangePAllPID::produce(art::Event& e)
