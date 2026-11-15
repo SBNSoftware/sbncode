@@ -1301,24 +1301,32 @@ void sbn::TrackCaloSkimmer::FillTrack(
   fTrack->mcs_sigma3p_2DI2 = mcs2DI2->sigma3P();
   fTrack->mcs_sigma3p_2DC  = mcs2DC->sigma3P();
 
-  fTrack->mcs_pbest_ML_2DI1 = mcs2DI1->bestMomentum_Likelihood();
-  fTrack->mcs_pbest_C2_2DI1 = mcs2DI1->bestMomentum();
-  fTrack->mcs_pbest_ML_2DI2 = mcs2DI2->bestMomentum_Likelihood();
-  fTrack->mcs_pbest_C2_2DI2 = mcs2DI2->bestMomentum();
-  fTrack->mcs_pbest_ML_2DC = mcs2DC->bestMomentum_Likelihood();
-  fTrack->mcs_pbest_C2_2DC = mcs2DC->bestMomentum();
+  fTrack->mcs_pbest_C2_2DI1 = mcs2DI1->bestMomentumC2();
+  fTrack->mcs_error_C2_2DI1 = mcs2DI1->errorMomentumC2();
+  fTrack->mcs_pbest_LL_2DI1 = mcs2DI1->bestMomentumLikelihood();
+  fTrack->mcs_error_LL_2DI1 = mcs2DI1->errorMomentumLikelihood();
 
-  for (size_t ja = 0; ja < mcs2DI1->measuredLinAngles().size(); ja++)  fTrack->mcs_thetal_mea_2DI1.push_back(mcs2DI1->measuredLinAngles().at(ja));
-  for (size_t ja = 0; ja < mcs2DI1->measuredPolyAngles().size(); ja++) fTrack->mcs_thetap_mea_2DI1.push_back(mcs2DI1->measuredPolyAngles().at(ja));
-  for (size_t ja = 0; ja < mcs2DI1->segmentLengths().size(); ja++)     fTrack->mcs_seglens_2DI1.push_back(mcs2DI1->segmentLengths().at(ja));
+  fTrack->mcs_pbest_C2_2DI2 = mcs2DI2->bestMomentumC2();
+  fTrack->mcs_error_C2_2DI2 = mcs2DI2->errorMomentumC2();
+  fTrack->mcs_pbest_LL_2DI2 = mcs2DI2->bestMomentumLikelihood();
+  fTrack->mcs_error_LL_2DI2 = mcs2DI2->errorMomentumLikelihood();
 
-  for (size_t ja = 0; ja < mcs2DI2->measuredLinAngles().size(); ja++)  fTrack->mcs_thetal_mea_2DI2.push_back(mcs2DI2->measuredLinAngles().at(ja));
-  for (size_t ja = 0; ja < mcs2DI2->measuredPolyAngles().size(); ja++) fTrack->mcs_thetap_mea_2DI2.push_back(mcs2DI2->measuredPolyAngles().at(ja));
-  for (size_t ja = 0; ja < mcs2DI2->segmentLengths().size(); ja++)     fTrack->mcs_seglens_2DI2.push_back(mcs2DI2->segmentLengths().at(ja));
+  fTrack->mcs_pbest_C2_2DC = mcs2DC->bestMomentumC2();
+  fTrack->mcs_error_C2_2DC = mcs2DC->errorMomentumC2();
+  fTrack->mcs_pbest_LL_2DC = mcs2DC->bestMomentumLikelihood();
+  fTrack->mcs_error_LL_2DC = mcs2DC->errorMomentumLikelihood();
+
+  for (size_t j = 0; j < mcs2DI1->measuredLinAngles().size(); j++)  fTrack->mcs_thetal_mea_2DI1.push_back(mcs2DI1->measuredLinAngles().at(j));
+  for (size_t j = 0; j < mcs2DI1->measuredPolyAngles().size(); j++) fTrack->mcs_thetap_mea_2DI1.push_back(mcs2DI1->measuredPolyAngles().at(j));
+  for (size_t j = 0; j < mcs2DI1->segmentLengths().size(); j++)     fTrack->mcs_seglens_2DI1.push_back(mcs2DI1->segmentLengths().at(j));
+
+  for (size_t j = 0; j < mcs2DI2->measuredLinAngles().size(); j++)  fTrack->mcs_thetal_mea_2DI2.push_back(mcs2DI2->measuredLinAngles().at(j));
+  for (size_t j = 0; j < mcs2DI2->measuredPolyAngles().size(); j++) fTrack->mcs_thetap_mea_2DI2.push_back(mcs2DI2->measuredPolyAngles().at(j));
+  for (size_t j = 0; j < mcs2DI2->segmentLengths().size(); j++)     fTrack->mcs_seglens_2DI2.push_back(mcs2DI2->segmentLengths().at(j));
   
-  for (size_t ja = 0; ja < mcs2DC->measuredLinAngles().size(); ja++)  fTrack->mcs_thetal_mea_2DC.push_back(mcs2DC->measuredLinAngles().at(ja));
-  for (size_t ja = 0; ja < mcs2DC->measuredPolyAngles().size(); ja++) fTrack->mcs_thetap_mea_2DC.push_back(mcs2DC->measuredPolyAngles().at(ja));
-  for (size_t ja = 0; ja < mcs2DC->segmentLengths().size(); ja++)     fTrack->mcs_seglens_2DC.push_back(mcs2DC->segmentLengths().at(ja));
+  for (size_t j = 0; j < mcs2DC->measuredLinAngles().size(); j++)  fTrack->mcs_thetal_mea_2DC.push_back(mcs2DC->measuredLinAngles().at(j));
+  for (size_t j = 0; j < mcs2DC->measuredPolyAngles().size(); j++) fTrack->mcs_thetap_mea_2DC.push_back(mcs2DC->measuredPolyAngles().at(j));
+  for (size_t j = 0; j < mcs2DC->segmentLengths().size(); j++)     fTrack->mcs_seglens_2DC.push_back(mcs2DC->segmentLengths().at(j));
 
   if(t0Info.hasT0Pandora)
     {
