@@ -29,6 +29,17 @@ namespace caf
             NewBlip.sigmaYZ = CurrentBlip.SigmaYZ;
             NewBlip.dX = CurrentBlip.dX;
             NewBlip.dYZ = CurrentBlip.dYZ;
+            NewBlip.proxPrimVtxDist = CurrentBlip.ProxPrimVtxDist;
+            NewBlip.proxPrimVtxID = CurrentBlip.ProxPrimVtxID;
+            NewBlip.proxVtxDist = CurrentBlip.ProxVtxDist;
+            NewBlip.proxVtxID = CurrentBlip.ProxVtxID;
+            NewBlip.proxNuTrkDist = CurrentBlip.ProxNuTrkDist;
+            NewBlip.proxNuTrkID = CurrentBlip.ProxNuTrkID;
+            NewBlip.proxNuVtxDist = CurrentBlip.ProxNuVtxDist;
+            NewBlip.proxNuVtxID = CurrentBlip.ProxNuVtxID;
+            NewBlip.proxNuPFPVtxDist = CurrentBlip.ProxNuPFPVtxDist;
+            NewBlip.proxNuPFPID = CurrentBlip.ProxNuPFPID;
+            NewBlip.inNuCylinder = CurrentBlip.inNuCylinder;
             if(CurrentBlip.truth.ID >= 0 ) //MC Blip
             {
                 FillMCTruthBlip( CurrentBlip.truth, NewBlip.truthBlip );
@@ -38,6 +49,7 @@ namespace caf
                 FillBlipRelatedHitCluster( CurrentBlip.clusters[iPlane], NewBlip.clusters[iPlane] );
             }
             CAF_Blips.push_back(NewBlip);
+
         }
 
     }
