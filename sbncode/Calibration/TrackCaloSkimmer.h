@@ -46,7 +46,7 @@
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "lardataobj/RecoBase/MCSFitResult.h"
 #include "lardataobj/RawData/RawDigit.h"
-#include "icaruscode/TPC/Tracking/MCS/MCSFitResultGS.h"
+#include "sbnobj/Common/Reco/MCSFitResultGS.h"
 
 #include "larcorealg/GeoAlgo/GeoAlgo.h"
 
