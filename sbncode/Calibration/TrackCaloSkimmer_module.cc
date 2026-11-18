@@ -87,7 +87,7 @@ sbn::TrackCaloSkimmer::TrackCaloSkimmer(fhicl::ParameterSet const& p)
   fSimChannelproducer  = p.get< std::string > ("SimChannelproducer" );
   fRequireT0 = p.get<bool>("RequireT0", false);
   fDoTailFit = p.get<bool>("DoTailFit", true);
-  fVerbose = p.get<bool>("Verbose", true);
+  fVerbose = p.get<bool>("Verbose", false);
   fSilenceMissingDataProducts = p.get<bool>("SilenceMissingDataProducts", false);
   fHitRawDigitsTickCollectWidth = p.get<double>("HitRawDigitsTickCollectWidth", 50.);
   fHitRawDigitsWireCollectWidth = p.get<int>("HitRawDigitsWireCollectWidth", 5);
@@ -348,15 +348,6 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
 
     art::Ptr<recob::Track> trkPtr = thisTrack.at(0);
 
-    geo::Point_t const& pos = trkPtr->LocationAtPoint(0);
-    geo::Point_t point{pos.X(), pos.Y(), pos.Z()};
-    std::size_t cryo = geometry->PositionToCryostatID(point).Cryostat;
-    const char* cryoName = (cryo == 0) ? "EAST" : "WEST";
-    std::cout << " skimmer: event ID = " << e.event()
-              << " track ID = " << trkPtr->ID()
-              << " cryostat = " << cryoName
-              << std::endl;
-
     std::vector<art::Ptr<anab::Calorimetry>> emptyCaloVector;
     const std::vector<art::Ptr<anab::Calorimetry>> &calo = fmCalo.isValid() ? fmCalo.at(trkPtr.key()) : emptyCaloVector;
 
@@ -367,9 +358,6 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
     art::Ptr<recob::MCSFitResultGS> mcsResult2DI2 = MCSresults_2DI2.at(trkPtr.key());
     art::Ptr<recob::MCSFitResultGS> mcsResult2DC  = MCSresults_2DC.at(trkPtr.key());
     art::Ptr<sbn::RangeP> rangeP = rangePs.at(trkPtr.key());
-    std::cout << " range momentum [GeV/c] = " << rangeP->range_p
-              << " track length [cm] = " << trkPtr->Length()
-              << std::endl;
 
     art::FindManyP<recob::SpacePoint> fmtrkHitSPs(trkHits, e, fPFPproducer);
 
@@ -444,7 +432,6 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
         t0CRTHit = time;
         t0CRTHitScore = tag.Distance;
         hasCRTHitT0 = true;
-        std::cout << " track " << trkPtr->ID() << " has CRTT0 = " << t0CRTHit << std::endl;
       }
     }
 
@@ -469,8 +456,6 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
         whicht0 = 3;
         crtMatchingScore = t0CRTSpacePointScore;
       }
-    std::cout << " hasT0 = " << hasT0
-              << " whichT0 = " << whicht0 << std::endl;
 
     T0TimingInfo thisTrackTimingInfo = {t0PFP, t0CRTTrack, t0CRTHit, t0CRTSpacePoint, hasPFPT0, hasCRTTrackT0, hasCRTHitT0, hasCRTSpacePointT0, crtMatchingScore};
 
@@ -531,8 +516,6 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
       if (fVerbose) std::cout << "Track Selected! By tool: " << i_select << std::endl;
       fTree->Fill();
     }
-    std::cout << " select = " << select
-              << " selected = " << i_select << std::endl;
   }
 }
 
@@ -540,8 +523,8 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
 
 // Returns the minimum hit time for hits in either TPC E (TPCE==true)
 // or TPC W (TPCE==false)
-float HitMinTime(const std::vector<sbn::TrackHitInfo> &hits,
-		bool TPCE,
+float HitMinTime(const std::vector<sbn::TrackHitInfo> &hits, 
+		bool TPCE, 
 		sbn::EDet det) {
   double min = -1;
   bool hit_is_TPCE = -1;
@@ -564,7 +547,7 @@ float HitMinTime(const std::vector<sbn::TrackHitInfo> &hits,
 
 // Returns the maximum hit time for hits in either TPC E (TPCE==true)
 // or TPC W (TPCE==false)
-float HitMaxTime(const std::vector<sbn::TrackHitInfo> &hits,
+float HitMaxTime(const std::vector<sbn::TrackHitInfo> &hits, 
 		bool TPCE,
 		sbn::EDet det) {
   double max = -1;
@@ -1129,7 +1112,7 @@ void sbn::TrackCaloSkimmer::FillTrackTruth(const detinfo::DetectorClocksData &cl
 
     for (const art::Ptr<simb::MCParticle> &p_mcp: mcparticles) {
       if (p_mcp->TrackId() == bestmatch.first) {
-        // if (fVerbose) std::cout << "Matched! Track ID: " << p_mcp->TrackId() << " pdg: " << p_mcp->PdgCode() << " process: " << p_mcp->EndProcess() << std::endl;
+        if (fVerbose) std::cout << "Matched! Track ID: " << p_mcp->TrackId() << " pdg: " << p_mcp->PdgCode() << " process: " << p_mcp->EndProcess() << std::endl;
         fTrack->truth.p = TrueParticleInfo(*p_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo, wireReadout);
         fTrack->truth.eff = fTrack->truth.depE / (fTrack->truth.p.plane0VisE + fTrack->truth.p.plane1VisE + fTrack->truth.p.plane2VisE);
 

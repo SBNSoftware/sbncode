@@ -33,7 +33,6 @@ public:
         has_good_t0 = false;
       }
     }
-    std::cout << " has good t0 = " << has_good_t0 << std::endl;
 
     if (!has_good_t0 && fRequireT0) return false;
 
