@@ -179,8 +179,8 @@ private:
     const detinfo::DetectorPropertiesData &dprop,
     const geo::GeometryCore *geo,
     const geo::WireReadoutGeom *wireReadout);
-       
-   void FillDroppedTrackTruth(const detinfo::DetectorClocksData &clock_data,
+
+  void FillDroppedTrackTruth(const detinfo::DetectorClocksData &clock_data,
     const std::vector<art::Ptr<recob::Hit>> &trkHits,
     const std::vector<art::Ptr<simb::MCParticle>> &mcparticles,
     const std::vector<art::Ptr<simb::MCParticle>> &droppedmcparticles,
