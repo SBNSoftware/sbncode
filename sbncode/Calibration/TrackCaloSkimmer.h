@@ -69,7 +69,6 @@
 #include "sbnobj/SBND/CRT/CRTSpacePoint.hh"
 
 #include "ITCSSelectionTool.h"
-#include "sbncode/CAFMaker/RecoUtils/RecoUtils.h" // sbn::ReadoutIDE, sbn::PrepTrueHits()...
 
 namespace sbn {
   class TrackCaloSkimmer;
@@ -171,19 +170,6 @@ private:
   void FillTrackTruth(const detinfo::DetectorClocksData &clock_data,
     const std::vector<art::Ptr<recob::Hit>> &trkHits,
     const std::vector<art::Ptr<simb::MCParticle>> &mcparticles,
-    const std::vector<art::Ptr<simb::MCParticle>> &droppedmcparticles,
-    const std::vector<geo::BoxBoundedGeo> &active_volumes,
-    const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
-    const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map,
-    const std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map,
-    const detinfo::DetectorPropertiesData &dprop,
-    const geo::GeometryCore *geo,
-    const geo::WireReadoutGeom *wireReadout);
-
-  void FillDroppedTrackTruth(const detinfo::DetectorClocksData &clock_data,
-    const std::vector<art::Ptr<recob::Hit>> &trkHits,
-    const std::vector<art::Ptr<simb::MCParticle>> &mcparticles,
-    const std::vector<art::Ptr<simb::MCParticle>> &droppedmcparticles,
     const std::vector<geo::BoxBoundedGeo> &active_volumes,
     const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
     const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map,
@@ -231,7 +217,6 @@ private:
   art::InputTag fHITproducer;
   std::vector<art::InputTag> fRawDigitproducers;
   std::string fG4producer;
-  std::string fG4Droppedproducer;
   std::string fSimChannelproducer;
   bool fRequireT0;
   bool fDoTailFit;

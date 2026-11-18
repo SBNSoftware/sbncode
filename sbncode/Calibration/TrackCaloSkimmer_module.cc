@@ -209,12 +209,6 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
     art::fill_ptr_vector(mcparticles, mcparticle_handle);
   }
 
-  std::vector<art::Ptr<simb::MCParticle>> droppedmcparticles;
-  if (fG4Droppedproducer.size()) {
-    art::ValidHandle<std::vector<simb::MCParticle>> droppedmcparticle_handle = e.getValidHandle<std::vector<simb::MCParticle>>(fG4Droppedproducer);
-    art::fill_ptr_vector(droppedmcparticles, droppedmcparticle_handle);
-  }
-
   std::vector<art::Ptr<sim::SimChannel>> simchannels;
   if (fSimChannelproducer.size()) {
     art::ValidHandle<std::vector<sim::SimChannel>> simchannel_handle = e.getValidHandle<std::vector<sim::SimChannel>>(fSimChannelproducer);
@@ -515,8 +509,7 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
     if (fmCRTHitT0TaggingInfo.isValid()) FillTrackCRTHitInfo(fmCRTHitT0TaggingInfo.at(trkPtr.key()));
 
     // Fill the truth information if configured
-    if (simchannels.size()) FillTrackTruth(clock_data, trkHits, mcparticles, droppedmcparticles, AVs, TPCVols, id_to_ide_map, id_to_truehit_map, dprop, geometry, wireReadout);
-    if (simchannels.size()) FillDroppedTrackTruth(clock_data, trkHits, mcparticles, droppedmcparticles, AVs, TPCVols, id_to_ide_map, id_to_truehit_map, dprop, geometry, wireReadout);
+    if (simchannels.size()) FillTrackTruth(clock_data, trkHits, mcparticles, AVs, TPCVols, id_to_ide_map, id_to_truehit_map, dprop, geometry, wireReadout);
 
     // Save?
     bool select = false;
@@ -1107,7 +1100,6 @@ void sbn::TrackCaloSkimmer::FillTrackEndHits(const geo::GeometryCore *geometry,
 void sbn::TrackCaloSkimmer::FillTrackTruth(const detinfo::DetectorClocksData &clock_data,
     const std::vector<art::Ptr<recob::Hit>> &trkHits,
     const std::vector<art::Ptr<simb::MCParticle>> &mcparticles,
-    const std::vector<art::Ptr<simb::MCParticle>> &droppedmcparticles,
     const std::vector<geo::BoxBoundedGeo> &active_volumes,
     const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
     const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map,
@@ -1151,23 +1143,6 @@ void sbn::TrackCaloSkimmer::FillTrackTruth(const detinfo::DetectorClocksData &cl
             break;
           }
         }
-        std::vector<std::pair<const simb::MCParticle*, float>> ionization_electrons;
-
-        // Now look for ionization electrons from this particle in the dropped list
-        for (const art::Ptr<simb::MCParticle> &c_mcp: droppedmcparticles) {
-
-          if (!(c_mcp->PdgCode() == 11 && c_mcp->Process() == "muIoni")) continue;
-          if (c_mcp->Mother() == p_mcp->TrackId()) {
-            float energy = c_mcp->E(); // in GeV
-            ionization_electrons.emplace_back(c_mcp.get(), energy);
-          }
-        }
-
-        // Sort ionization electrons by energy
-        std::sort(ionization_electrons.begin(), ionization_electrons.end(),
-          [](const auto &a, const auto &b) {
-            return a.second > b.second; // descending order
-          });
 
         break;
       } 
@@ -1628,37 +1603,6 @@ sbn::TrackHitInfo sbn::TrackCaloSkimmer::MakeHit(const recob::Hit &hit,
     hinfo.h.hasSP = false;
   }
   return hinfo;
-}
-
-void sbn::TrackCaloSkimmer::FillDroppedTrackTruth(
-  const detinfo::DetectorClocksData &clock_data,
-  const std::vector<art::Ptr<recob::Hit>> &trkHits,
-  const std::vector<art::Ptr<simb::MCParticle>> &mcparticles,
-  const std::vector<art::Ptr<simb::MCParticle>> &droppedmcparticles,
-  const std::vector<geo::BoxBoundedGeo> &active_volumes,
-  const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
-  const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map,
-  const std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map,
-  const detinfo::DetectorPropertiesData &dprop,
-  const geo::GeometryCore *geo,
-  const geo::WireReadoutGeom *wireReadout) {
-
-  // Lookup the true-particle match -- use utils in CAF
-  std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clock_data, trkHits, true);
-  float total_energy = CAFRecoUtils::TotalHitEnergy(clock_data, trkHits);
-  fTrack->truth.depE = total_energy / 1000. /* MeV -> GeV */;
-
-  // sort highest energy match to lowest
-  std::sort(matches.begin(), matches.end(), [](const auto &a, const auto &b) { return a.second > b.second; } );
-
-  // loop on matches
-  for (unsigned int j = 0; j < matches.size();j ++) {
-    std::pair<int, float> match = matches[j];
-    fTrack->truth.pur = match.second / total_energy;
-    for (const art::Ptr<simb::MCParticle> &p_mcp: droppedmcparticles) {
-      if (p_mcp->TrackId() == match.first) {
-        fTrack->truth.p = TrueParticleInfo(*p_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo, wireReadout);
-        fTrack->truth.eff = fTrack->truth.depE / (fTrack->truth.p.plane0VisE + fTrack->truth.p.plane1VisE + fTrack->truth.p.plane2VisE); } } }
 }
 
 DEFINE_ART_MODULE(sbn::TrackCaloSkimmer)
