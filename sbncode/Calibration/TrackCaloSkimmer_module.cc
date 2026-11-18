@@ -11,6 +11,8 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "TrackCaloSkimmer.h"
+#include "sbnobj/SBND/CRT/CRTTrack.hh"
+#include "sbnanaobj/StandardRecord/SREnums.h"
 
 #include "art/Utilities/make_tool.h"
 
@@ -75,6 +77,11 @@ sbn::TrackCaloSkimmer::TrackCaloSkimmer(fhicl::ParameterSet const& p)
   fCALOproducer = p.get< art::InputTag > ("CALOproducer");
   fTRKproducer  = p.get< art::InputTag > ("TRKproducer" );
   fTRKHMproducer= p.get< art::InputTag   > ("TRKHMproducer", "");
+
+  fMCSproducer2DI1 = p.get< art::InputTag > ("MCSproducer2DI1");
+  fMCSproducer2DI2 = p.get< art::InputTag > ("MCSproducer2DI2");
+  fMCSproducer2DC  = p.get< art::InputTag > ("MCSproducer2DC");
+  fRangeInputtag = p.get< art::InputTag > ("RangeInputtag");
   fHITproducer  = p.get< art::InputTag > ("HITproducer" );
   fG4producer  = p.get< std::string > ("G4producer" );
   fSimChannelproducer  = p.get< std::string > ("SimChannelproducer" );
@@ -259,6 +266,22 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
     }
   }
 
+  //mcs
+  art::ValidHandle<std::vector<recob::MCSFitResultGS>> MCShandle_2DI1 = e.getValidHandle<std::vector<recob::MCSFitResultGS>>(fMCSproducer2DI1);
+  std::vector<art::Ptr<recob::MCSFitResultGS>> MCSresults_2DI1;
+  art::fill_ptr_vector(MCSresults_2DI1, MCShandle_2DI1);
+  art::ValidHandle<std::vector<recob::MCSFitResultGS>> MCShandle_2DI2 = e.getValidHandle<std::vector<recob::MCSFitResultGS>>(fMCSproducer2DI2);
+  std::vector<art::Ptr<recob::MCSFitResultGS>> MCSresults_2DI2;
+  art::fill_ptr_vector(MCSresults_2DI2, MCShandle_2DI2);
+  art::ValidHandle<std::vector<recob::MCSFitResultGS>> MCShandle_2DC = e.getValidHandle<std::vector<recob::MCSFitResultGS>>(fMCSproducer2DC);
+  std::vector<art::Ptr<recob::MCSFitResultGS>> MCSresults_2DC;
+  art::fill_ptr_vector(MCSresults_2DC, MCShandle_2DC);
+
+  //range momentum
+  auto const& range_handle = e.getValidHandle<std::vector<sbn::RangeP>>(fRangeInputtag);
+  std::vector<art::Ptr<sbn::RangeP>> rangePs;
+  art::fill_ptr_vector(rangePs, range_handle);
+
   // The raw digit list is not sorted, so make it into a map on the WireID
   std::map<geo::WireID, art::Ptr<raw::RawDigit>> rawdigits;
   for (const art::Ptr<raw::RawDigit> &d: rawdigitlist) {
@@ -330,6 +353,11 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
 
     std::vector<art::Ptr<recob::Hit>> emptyHitVector;
     const std::vector<art::Ptr<recob::Hit>> &trkHits  = fmtrkHits.isValid() ? fmtrkHits.at(trkPtr.key()) : emptyHitVector;
+
+    art::Ptr<recob::MCSFitResultGS> mcsResult2DI1 = MCSresults_2DI1.at(trkPtr.key());
+    art::Ptr<recob::MCSFitResultGS> mcsResult2DI2 = MCSresults_2DI2.at(trkPtr.key());
+    art::Ptr<recob::MCSFitResultGS> mcsResult2DC  = MCSresults_2DC.at(trkPtr.key());
+    art::Ptr<sbn::RangeP> rangeP = rangePs.at(trkPtr.key());
 
     art::FindManyP<recob::SpacePoint> fmtrkHitSPs(trkHits, e, fPFPproducer);
 
@@ -445,8 +473,18 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
     // Reset other persistent info
     fSnippetCount.clear();
     fWiresToSave.clear();
+
+    std::vector<art::Ptr<recob::MCSFitResultGS>> mcsResults = {
+      mcsResult2DI1, mcsResult2DI2, mcsResult2DC };
+    bool mcsValidityCheck = false;
+    for (const auto& mcs : mcsResults) {
+      if (mcs && mcs->ValidityCheck()) {
+        mcsValidityCheck = true;
+        break; } }
+    if (!mcsValidityCheck) continue;
+
     // Fill the track!
-    FillTrack(*trkPtr, pfp, thisTrackTimingInfo, trkHits, trkHitMetas, trkHitSPs, calo, rawdigits, track_infos, geometry, wireReadout, clock_data, bt, det, dprop);
+    FillTrack(*trkPtr, pfp, thisTrackTimingInfo, trkHits, trkHitMetas, trkHitSPs, calo, mcsResult2DI1, mcsResult2DI2, mcsResult2DC, rangeP, rawdigits, track_infos, geometry, wireReadout, clock_data, bt, det, dprop);
     fTrack->whicht0 = whicht0;
     FillTrackDaughterRays(*trkPtr, pfp, PFParticleList, PFParticleSPs);
 
@@ -1147,6 +1185,10 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
     const std::vector<const recob::TrackHitMeta*> &thms,
     const std::vector<art::Ptr<recob::SpacePoint>> &sps,
     const std::vector<art::Ptr<anab::Calorimetry>> &calo,
+    const art::Ptr<recob::MCSFitResultGS> &mcs2DI1,
+    const art::Ptr<recob::MCSFitResultGS> &mcs2DI2,
+    const art::Ptr<recob::MCSFitResultGS> &mcs2DC,
+    const art::Ptr<sbn::RangeP> &rangeP,
     const std::map<geo::WireID, art::Ptr<raw::RawDigit>> &rawdigits,
     const std::vector<GlobalTrackInfo> &tracks,
     const geo::GeometryCore *geo,
@@ -1174,6 +1216,39 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
   fTrack->dir.x = track.StartDirection().X();
   fTrack->dir.y = track.StartDirection().Y();
   fTrack->dir.z = track.StartDirection().Z(); 
+
+  fTrack->range_p = rangeP->range_p;
+
+  fTrack->mcs_sigma3p_2DI1 = mcs2DI1->sigma3P();
+  fTrack->mcs_sigma3p_2DI2 = mcs2DI2->sigma3P();
+  fTrack->mcs_sigma3p_2DC  = mcs2DC->sigma3P();
+
+  fTrack->mcs_pbest_C2_2DI1 = mcs2DI1->bestMomentumC2();
+  fTrack->mcs_error_C2_2DI1 = mcs2DI1->errorMomentumC2();
+  fTrack->mcs_pbest_LL_2DI1 = mcs2DI1->bestMomentumLikelihood();
+  fTrack->mcs_error_LL_2DI1 = mcs2DI1->errorMomentumLikelihood();
+
+  fTrack->mcs_pbest_C2_2DI2 = mcs2DI2->bestMomentumC2();
+  fTrack->mcs_error_C2_2DI2 = mcs2DI2->errorMomentumC2();
+  fTrack->mcs_pbest_LL_2DI2 = mcs2DI2->bestMomentumLikelihood();
+  fTrack->mcs_error_LL_2DI2 = mcs2DI2->errorMomentumLikelihood();
+
+  fTrack->mcs_pbest_C2_2DC = mcs2DC->bestMomentumC2();
+  fTrack->mcs_error_C2_2DC = mcs2DC->errorMomentumC2();
+  fTrack->mcs_pbest_LL_2DC = mcs2DC->bestMomentumLikelihood();
+  fTrack->mcs_error_LL_2DC = mcs2DC->errorMomentumLikelihood();
+
+  for (size_t j = 0; j < mcs2DI1->measuredLinAngles().size(); j++)  fTrack->mcs_thetal_mea_2DI1.push_back(mcs2DI1->measuredLinAngles().at(j));
+  for (size_t j = 0; j < mcs2DI1->measuredPolyAngles().size(); j++) fTrack->mcs_thetap_mea_2DI1.push_back(mcs2DI1->measuredPolyAngles().at(j));
+  for (size_t j = 0; j < mcs2DI1->segmentLengths().size(); j++)     fTrack->mcs_seglens_2DI1.push_back(mcs2DI1->segmentLengths().at(j));
+
+  for (size_t j = 0; j < mcs2DI2->measuredLinAngles().size(); j++)  fTrack->mcs_thetal_mea_2DI2.push_back(mcs2DI2->measuredLinAngles().at(j));
+  for (size_t j = 0; j < mcs2DI2->measuredPolyAngles().size(); j++) fTrack->mcs_thetap_mea_2DI2.push_back(mcs2DI2->measuredPolyAngles().at(j));
+  for (size_t j = 0; j < mcs2DI2->segmentLengths().size(); j++)     fTrack->mcs_seglens_2DI2.push_back(mcs2DI2->segmentLengths().at(j));
+
+  for (size_t j = 0; j < mcs2DC->measuredLinAngles().size(); j++)  fTrack->mcs_thetal_mea_2DC.push_back(mcs2DC->measuredLinAngles().at(j));
+  for (size_t j = 0; j < mcs2DC->measuredPolyAngles().size(); j++) fTrack->mcs_thetap_mea_2DC.push_back(mcs2DC->measuredPolyAngles().at(j));
+  for (size_t j = 0; j < mcs2DC->segmentLengths().size(); j++)     fTrack->mcs_seglens_2DC.push_back(mcs2DC->segmentLengths().at(j));
 
   if(t0Info.hasT0Pandora)
     {

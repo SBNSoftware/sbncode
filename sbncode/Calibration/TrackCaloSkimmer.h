@@ -46,6 +46,7 @@
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "lardataobj/RecoBase/MCSFitResult.h"
 #include "lardataobj/RawData/RawDigit.h"
+#include "sbnobj/Common/Reco/MCSFitResultGS.h"
 
 #include "larcorealg/GeoAlgo/GeoAlgo.h"
 
@@ -61,6 +62,7 @@
 #include "larsim/MCCheater/ParticleInventoryService.h"
 
 #include "sbnobj/Common/Calibration/TrackCaloSkimmerObj.h"
+#include "sbnobj/Common/Reco/RangeP.h"
 #include "sbnobj/Common/CRT/CRTHitT0TaggingInfo.hh"
 #include "sbnobj/Common/CRT/CRTHitT0TaggingTruthInfo.hh"
 #include "sbnobj/SBND/CRT/CRTTrack.hh"
@@ -140,6 +142,10 @@ private:
     const std::vector<const recob::TrackHitMeta*> &thms,
     const std::vector<art::Ptr<recob::SpacePoint>> &sps,
     const std::vector<art::Ptr<anab::Calorimetry>> &calo,
+    const art::Ptr<recob::MCSFitResultGS> &mcs2DI1,
+    const art::Ptr<recob::MCSFitResultGS> &mcs2DI2,
+    const art::Ptr<recob::MCSFitResultGS> &mcs2DC,
+    const art::Ptr<sbn::RangeP> &range,
     const std::map<geo::WireID, art::Ptr<raw::RawDigit>> &rawdigits,
     const std::vector<GlobalTrackInfo> &tracks,
     const geo::GeometryCore *geo,
@@ -195,6 +201,12 @@ private:
 
   // tags
   art::InputTag fPFPproducer;
+
+  art::InputTag fMCSproducer2DI1;
+  art::InputTag fMCSproducer2DI2;
+  art::InputTag fMCSproducer2DC;
+  art::InputTag fRangeInputtag;
+
   art::InputTag fPFPT0producer;
   art::InputTag fCRTTrackT0producer;
   art::InputTag fCRTHitT0producer;
