@@ -2,6 +2,7 @@
   
 void caf::FillFRANSLambda( const qelambda::QELambdaReco LAr_QELambdaRecoProducts, caf::SRQELambda& CAF_QELambdaReco)
 {
+
   CAF_QELambdaReco.SliceId = LAr_QELambdaRecoProducts.SliceId;
 
   CAF_QELambdaReco.FransNUnassocOrigins       = LAr_QELambdaRecoProducts.FransNUnassocOrigins;
