@@ -21,6 +21,7 @@
 #include "sbncode/CAFMaker/FillTrigger.h"
 #include "sbncode/CAFMaker/Utils.h"
 #include "sbncode/CAFMaker/FillBlip.h"
+#include "sbncode/CAFMaker/FillQELambda.h"
 
 // C/C++ includes
 #include <fenv.h>
@@ -2113,6 +2114,19 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
   }
 
+  // Fill QE Lambda info
+  caf::SRQELambda srqelambda;
+  art::Handle<qelambda::QELambdaReco> qeLambdaReco_handle;
+  art::Handle<qelambda::QELambdaPID> qeLambdaPID_handle;
+  if(evt.getByLabel(fParams.QELambdaFRANSLabel(), qeLambdaReco_handle))
+  {
+    FillFRANSLambda(*qeLambdaReco_handle, srqelambda);
+  }
+  if(evt.getByLabel(fParams.QELambdaPIDLabel(), qeLambdaPID_handle))
+  {
+    FillLambdaPID(*qeLambdaPID_handle, srqelambda);
+  }
+
   // nu graph
   std::vector< art::Handle<std::vector<unsigned int>> > ng2_slice_hit_map_handle(pandora_tag_suffixes.size());
   std::vector< art::Handle<std::vector<anab::FeatureVector<1>>> > ng2_filter_handle(pandora_tag_suffixes.size());
@@ -2781,6 +2795,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.sbnd_frames      = srsbndframeshiftinfo;
   rec.sbnd_timings     = srsbndtiminginfo;
   rec.soft_trig        = srsbndsofttrig; 
+  rec.qelambda         = srqelambda;
 
   if (fParams.FillTrueParticles()) {
     rec.true_particles  = true_particles;
