@@ -1,0 +1,8 @@
+# Python >= 3.9, in a virtual environment (not provided by the art/UPS release environment).
+numpy>=1.21
+pandas>=1.3
+awkward>=2.0
+uproot>=5.0
+numba>=0.57              # bnb_fom_fast.py; fom_fixups.py and neighbor_fill.py need it
+# ROOT with PyROOT (not pip): update_flatcafs.py writes the updated flat CAFs with it
+# optional, for root:// streaming when /pnfs is not mounted: fsspec-xrootd
