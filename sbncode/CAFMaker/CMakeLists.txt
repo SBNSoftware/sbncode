@@ -23,6 +23,7 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   ROOT::EG
                   CLHEP::Random
                   caf_RecoUtils
+                  dk2nu::Tree
                   lardataobj::AnalysisBase
                   lardataobj::RecoBase
                   lardataobj::Simulation
