@@ -170,13 +170,10 @@ bool NCDeltaRadiative::filter(art::Event & e) {
     std::vector<size_t> in_nucleus_photons;
     for(size_t const s : exiting_photon_parents) {
       simb::MCParticle const & mcp = mct.GetParticle(s);
-    //CHEKC hardcode, TPC filter:
-    if(abs(mcp.Vx())>210 ||  abs(mcp.Vy())>210||mcp.Vz()>510 || mcp.Vz()<-1){
-      std::cout<<"OUTSIDE TPC x y z ="<<mcp.Vx()<<" "<<mcp.Vy()<<" "<<mcp.Vz()<<std::endl;
-      return false;
-    }
+    // Require parent vertex inside TPC.
+    if(abs(mcp.Vx())>210 ||  abs(mcp.Vy())>210||mcp.Vz()>510 || mcp.Vz()<-1) continue;
     if(abs(mcp.PdgCode()) == 2114 || abs(mcp.PdgCode()) == 2214) {
-  if(ftree) FillTree(e, i, mcp.PdgCode(), true);
+  if(ftree) FillTree(e, i, s, true);
   return true;
       }
       else if(mcp.PdgCode() == 22) {

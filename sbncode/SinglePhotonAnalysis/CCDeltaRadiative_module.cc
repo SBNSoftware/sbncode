@@ -180,10 +180,7 @@ bool CCDeltaRadiative::filter(art::Event & e) {
     for(size_t const s : exiting_photon_parents) {
       simb::MCParticle const & mcp = mct.GetParticle(s);
       // Require parent vertex inside TPC.
-      if(std::abs(mcp.Vx()) > 210 || std::abs(mcp.Vy()) > 210 || mcp.Vz() > 510 || mcp.Vz() < -1) {
-        std::cout << "OUTSIDE TPC x y z =" << mcp.Vx() << " " << mcp.Vy() << " " << mcp.Vz() << std::endl;
-        return false;
-      }
+      if(std::abs(mcp.Vx()) > 210 || std::abs(mcp.Vy()) > 210 || mcp.Vz() > 510 || mcp.Vz() < -1) continue;
       if(isDelta(mcp.PdgCode())) {
         if(ftree) FillTree(e, i, s, true);
         return true;
