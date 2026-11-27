@@ -10,6 +10,7 @@
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
 #include "sbncode/BeamSpillInfoRetriever/POTTools.h"
 #include "sbncode/BeamSpillInfoRetriever/getFOM.h"
+#include "sbncode/BeamSpillInfoRetriever/BNBFOMFill.h"
 
 namespace sbn {
   class SBNDBNBZEROBIASRetriever;
@@ -40,9 +41,14 @@ private:
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp_mwr;
   sbn::MWRData mwrdata;
   art::ServiceHandle<ifbeam_ns::IFBeam> ifbeam_handle;
-  static constexpr double MWRtoroidDelay = -0.035; ///< the same time point is measured _t_ by MWR and _t + MWRtoroidDelay`_ by the toroid [ms]
+  static constexpr double MWRtoroidDelay = -0.035; ///< the same time point is measured _t_ by MWR and _t + MWRtoroidDelay`_ by the toroid [s]
+  double fMWRMaxTimeDiff; ///< largest accepted multiwire-spill time difference [s]
+  bool fReuseLastBPMOffsets; ///< whether to fill missing BPM offsets from fOffsetCache
+  mutable sbn::pot::BPMOffsetCache_t fOffsetCache; ///< last valid BPM offsets seen
   std::vector< sbn::BNBSpillInfo > fOutbeamInfos;
   std::vector< sbn::BNBSpillInfo > fOutbeamInfosTotal;
+  bool fImproveFOM; ///< whether to run sbn::improveBNBqualityFOMs() on the subrun spills
+  sbn::BNBFOMFillConfig fFOMFillConfig; ///< its configuration
 
   sbn::pot::TriggerInfo_t extractTriggerInfo(art::Event const& e) const;
   void matchMultiWireData(
@@ -59,6 +65,8 @@ sbn::SBNDBNBZEROBIASRetriever::SBNDBNBZEROBIASRetriever(fhicl::ParameterSet cons
   fTimePad = params.get<double>("TimePadding");
   fDeviceUsedForTiming = params.get<std::string>("DeviceUsedForTiming");
   fBESOffset = params.get<double>("BESOffset");
+  fMWRMaxTimeDiff = params.get<double>("MWRMaxTimeDiff", 0.0333);
+  fReuseLastBPMOffsets = params.get<bool>("ReuseLastBPMOffsets", true);
   const double timeWindow = std::stod(params.get<std::string>("TimeWindow"));
   bfp = ifbeam_handle->getBeamFolder(params.get<std::string>("Bundle"), params.get<std::string>("URL"), timeWindow);
   bfp->set_epsilon(0.02);
@@ -74,6 +82,10 @@ sbn::SBNDBNBZEROBIASRetriever::SBNDBNBZEROBIASRetriever(fhicl::ParameterSet cons
   TotalBeamSpills = 0;
   produces< std::vector< sbn::BNBSpillInfo >, art::InEvent >();
   produces< std::vector< sbn::BNBSpillInfo >, art::InSubRun >();
+  produces< std::vector< unsigned int >, art::InSubRun >("fomStatus");
+  fImproveFOM = params.get<bool>("ImproveFOM", true);
+  fFOMFillConfig.nbMinFOM = params.get<double>("NeighbourMinFOM", -1.);
+  fFOMFillConfig.burstFill = params.get<bool>("FillBPMDropouts", false);
 }
 
 void sbn::SBNDBNBZEROBIASRetriever::produce(art::Event & e)
@@ -165,14 +177,15 @@ void sbn::SBNDBNBZEROBIASRetriever::matchMultiWireData(
   // We'll keep track of how many of these spills match to our 
   // DAQ trigger times
   int spills_removed = 0;
-  std::vector<int> matched_MWR;
-  matched_MWR.resize(3);
 
-  // Iterating through each of the beamline times
- 
+  // Pick the latest spill in the window (closest before the current trigger).
+  // Fixed: the broken-clock check tested times_temps[i] (the previous best,
+  // initially entry 0) instead of the candidate times_temps[k]; and when no
+  // spill qualified, entry 0 (out of range for an empty list) was used anyway.
   double best_diff = 10000000000.0; 
   double diff; 
   size_t i = 0;
+  bool found = false;
 
   for (size_t k = 0; k < times_temps.size(); k++){
     diff = (triggerInfo.t_current_event + fTimePad) - times_temps[k];// diff is greater than zero!
@@ -184,50 +197,29 @@ void sbn::SBNDBNBZEROBIASRetriever::matchMultiWireData(
         spills_removed++; 
         continue;}
 
-      if(sbn::pot::BrokenClock(times_temps[i], bfp)){
+      if(sbn::pot::BrokenClock(times_temps[k], bfp)){
         continue;
       }
 
       best_diff = diff; 
       i = k;
+      found = true;
     }
   }
 
-  for(int dev = 0; dev < int(MWR_times.size()); dev++){
-    //Loop through the multiwire times:
-    double Tdiff = 1000000000.;
-    matched_MWR[dev] = 0;
+  if (!found) {
+    mf::LogDebug("SBNDBNBZEROBIASRetriever") << "matchMultiWireData:: no spill found in the window, skipping event " << eventID;
+    return;
+  }
 
-    for(int mwrt = 0;  mwrt < int(MWR_times[dev].size()); mwrt++){
-      //found a candidate match! 
-      if(fabs((MWR_times[dev][mwrt] - times_temps[i])) >= Tdiff){continue;}
-	
-      bool best_match = true;
-	  
-      for (size_t j = 0; j < times_temps.size(); j++) {
-        //Check for a better match...
-        if( j == i) continue;
-        if(times_temps[j] > (triggerInfo.t_current_event+fTimePad)){continue;}
-	if(times_temps[j] <= (triggerInfo.t_previous_event+fTimePad)){continue;}
-	  
-	//is there a better match later in the spill sequence
-	if(fabs((MWR_times[dev][mwrt] - times_temps[j])) < 
-	  fabs((MWR_times[dev][mwrt] - times_temps[i]))){
-	  //we can have patience...
-	  best_match = false;
-	  break;
-	}	     
-      }//end better match check
-	
-      //Verified best match! 
-      if(best_match == true){
-        matched_MWR[dev] = mwrt;
-	Tdiff = fabs((MWR_times[dev][mwrt] - times_temps[i]));
-      }	
-    }//end loop over MWR times 
-  }//end loop over MWR devices
+  // Associate one reading of each multiwire device to this spill (-1: none)
+  std::vector<int> const matched_MWR = sbn::pot::matchMWRToSpill(
+    MWR_times, times_temps, i,
+    triggerInfo.t_previous_event+fTimePad, triggerInfo.t_current_event+fTimePad,
+    fMWRMaxTimeDiff);
     
-  sbn::BNBSpillInfo spillInfo = makeBNBSpillInfo(eventID, times_temps[i], MWRdata, matched_MWR, bfp, offsets, vp873);
+  sbn::BNBSpillInfo spillInfo = makeBNBSpillInfo(eventID, times_temps[i], MWRdata, matched_MWR, bfp, offsets, vp873,
+                                                 fReuseLastBPMOffsets? &fOffsetCache: nullptr);
   std::tuple<float, float, float> allFOM = sbn::getBNBqualityFOM(spillInfo);
   spillInfo.FOM = std::get<0>(allFOM);
   spillInfo.PreFitFOM = std::get<1>(allFOM);
@@ -249,6 +241,13 @@ void sbn::SBNDBNBZEROBIASRetriever::endSubRun(art::SubRun& sr)
 {
   mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "Total number of DAQ Spills : " << TotalBeamSpills << std::endl;
   mf::LogDebug("SBNDBNBZEROBIASRetriever")<< "Total number of Selected Spills : " << fOutbeamInfosTotal.size() << std::endl;
+  // Beam-quality status of each spill, and the FOM of spills with missing
+  // inputs from their neighbours (empty multiwire, BPM gaps, 875 drop-outs).
+  auto status = std::make_unique< std::vector<unsigned int> >();
+  if (fImproveFOM) *status = sbn::improveBNBqualityFOMs(fOutbeamInfosTotal, fFOMFillConfig);
+  else for (sbn::BNBSpillInfo const& info: fOutbeamInfosTotal) status->push_back(sbn::getBNBBeamState(info).status);
+  sr.put(std::move(status), "fomStatus", art::subRunFragment());
+
   auto p =  std::make_unique< std::vector< sbn::BNBSpillInfo > >();
   std::swap(*p, fOutbeamInfosTotal);
   sr.put(std::move(p), art::subRunFragment());

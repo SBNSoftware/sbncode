@@ -89,7 +89,7 @@ namespace sbn::pot{
   }
 
   sbn::BNBSpillInfo makeBNBSpillInfo
-  (art::EventID const& eventID, double time, MWRdata_t const& MWRdata, std::vector<int> const& matched_MWR, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp,  const std::unique_ptr<ifbeam_ns::BeamFolder> & offsets,const  std::unique_ptr<ifbeam_ns::BeamFolder> & vp873)
+  (art::EventID const& eventID, double time, MWRdata_t const& MWRdata, std::vector<int> const& matched_MWR, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp,  const std::unique_ptr<ifbeam_ns::BeamFolder> & offsets,const  std::unique_ptr<ifbeam_ns::BeamFolder> & vp873, BPMOffsetCache_t* offsetCache)
   {
     
     auto const& [ MWR_times, unpacked_MWR ] = MWRdata; // alias
@@ -164,13 +164,27 @@ namespace sbn::pot{
     try{bfp->GetNamedData(time, "E:M876HM",&M876HM);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
     try{bfp->GetNamedData(time, "E:M876VM",&M876VM);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";} 
 
-    try{offsets->GetNamedData(time, "E_VP873S",&VP873Offset);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-    try{offsets->GetNamedData(time, "E_HP875S",&HP875Offset);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-    try{offsets->GetNamedData(time, "E_VP875S",&VP875Offset);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-    try{offsets->GetNamedData(time, "E_HPTG1S",&HPTG1Offset);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-    try{offsets->GetNamedData(time, "E_HPTG2S",&HPTG2Offset);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-    try{offsets->GetNamedData(time, "E_VPTG1S",&VPTG1Offset);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
-    try{offsets->GetNamedData(time, "E_VPTG2S",&VPTG2Offset);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+    // BPM offsets are settings that change rarely; the query (epsilon of a few
+    // minutes) does fail at times, which used to leave -999 and cost the spill
+    // its FOM. With a cache, fall back to the last valid value.
+    auto getOffset = [&](std::string const& name, double& value) {
+      try{offsets->GetNamedData(time, name.c_str(), &value);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+      if (!offsetCache) return;
+      if (value != -999) {
+        (*offsetCache)[name] = value;
+      }
+      else if (auto const it = offsetCache->find(name); it != offsetCache->end()) {
+        value = it->second;
+        mf::LogDebug("BNBRetriever") << "At time : " << time << " " << name << " missing, using last valid value " << value;
+      }
+    };
+    getOffset("E_VP873S", VP873Offset);
+    getOffset("E_HP875S", HP875Offset);
+    getOffset("E_VP875S", VP875Offset);
+    getOffset("E_HPTG1S", HPTG1Offset);
+    getOffset("E_HPTG2S", HPTG2Offset);
+    getOffset("E_VPTG1S", VPTG1Offset);
+    getOffset("E_VPTG2S", VPTG2Offset);
 
     //crunch the times 
     unsigned long int time_closest_int = (int) TOR860_time;
@@ -214,37 +228,25 @@ namespace sbn::pot{
     beamInfo.FOM = FOM;
 
     
-    for(auto const& MWRdata: unpacked_MWR){
-      std::ignore = MWRdata;
-      assert(!MWRdata.empty());
-    }
-  
-    if(unpacked_MWR[0].empty()){
-      beamInfo.M875BB.clear();
-      beamInfo.M875BB_spill_time_diff = -999;//units in seconds
-    }
-    else{
-      beamInfo.M875BB = unpacked_MWR[0][matched_MWR[0]];
-      beamInfo.M875BB_spill_time_diff = (MWR_times[0][matched_MWR[0]] - time);
-    }
-  
-   if(unpacked_MWR[1].empty()){
-      beamInfo.M876BB.clear();
-      beamInfo.M876BB_spill_time_diff = -999;//units in seconds
-   }
-   else{
-     beamInfo.M876BB = unpacked_MWR[1][matched_MWR[1]];
-     beamInfo.M876BB_spill_time_diff = (MWR_times[1][matched_MWR[1]] - time);
-   }
-  
-   if(unpacked_MWR[2].empty()){
-      beamInfo.MMBTBB.clear();
-      beamInfo.MMBTBB_spill_time_diff = -999;//units in seconds
-    }
-   else{
-     beamInfo.MMBTBB = unpacked_MWR[2][matched_MWR[2]];
-     beamInfo.MMBTBB_spill_time_diff = (MWR_times[2][matched_MWR[2]] - time);
-   }
+    // A device has no reading for this spill if it reported nothing at all or
+    // if no reading could be associated with this spill (matched index -1).
+    // (The previous `assert(!MWRdata.empty())` on every device contradicted the
+    // handling of empty devices below and would abort debug builds.)
+    auto fillMWR = [&](std::size_t dev, auto& profile, auto& timeDiff) {
+      int const idx = (dev < matched_MWR.size())? matched_MWR[dev]: -1;
+      if (unpacked_MWR[dev].empty() || idx < 0 || std::size_t(idx) >= unpacked_MWR[dev].size()) {
+        profile.clear();
+        timeDiff = -999; //units in seconds
+      }
+      else {
+        profile = unpacked_MWR[dev][idx];
+        timeDiff = MWR_times[dev][idx] - time;
+      }
+    };
+    fillMWR(0, beamInfo.M875BB, beamInfo.M875BB_spill_time_diff);
+    fillMWR(1, beamInfo.M876BB, beamInfo.M876BB_spill_time_diff);
+    fillMWR(2, beamInfo.MMBTBB, beamInfo.MMBTBB_spill_time_diff);
+
     // We do not write these to the art::Events because 
     // we can filter events but want to keep all the POT 
     // information, so we'll write it to the SubRun
@@ -256,6 +258,23 @@ namespace sbn::pot{
     //}
     
     return beamInfo;
+  }
+
+  bool fillMissingBPMOffsets(sbn::BNBSpillInfo& info, BPMOffsetCache_t const& cache)
+  {
+    bool filled = false;
+    auto fill = [&](char const* name, auto& value) {
+      if (value != -999) return;
+      if (auto const it = cache.find(name); it != cache.end()) { value = it->second; filled = true; }
+    };
+    fill("E_VP873S", info.VP873Offset);
+    fill("E_HP875S", info.HP875Offset);
+    fill("E_VP875S", info.VP875Offset);
+    fill("E_HPTG1S", info.HPTG1Offset);
+    fill("E_HPTG2S", info.HPTG2Offset);
+    fill("E_VPTG1S", info.VPTG1Offset);
+    fill("E_VPTG2S", info.VPTG2Offset);
+    return filled;
   }
 
   bool BrokenClock(double time, std::unique_ptr<ifbeam_ns::BeamFolder> const& bfp)

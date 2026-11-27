@@ -14,6 +14,11 @@ sbndbnbspillinfo: {
     TimeWindow: "700" #seconds
     MWR_TimeWindow: "700" #seconds
     DeviceUsedForTiming: "E:TOR860"
+    MWRMaxTimeDiff: 0.0333 #unit seconds, multiwire readings further than this from the spill are not used (<= 0 disables)
+    ReuseLastBPMOffsets: true #if a BPM offset query fails, use the last valid offset seen in this job
+    ImproveFOM: true #recover the FOM of spills with missing inputs from their neighbours (BNBFOMFill.h)
+    NeighbourMinFOM: -1 #no FOM requirement on the neighbours (SBND closure test: 43 bad spills in 909k)
+    FillBPMDropouts: false #875 drop-outs in SBND are single spills, covered by the neighbour fill
 }
 
 END_PROLOG
