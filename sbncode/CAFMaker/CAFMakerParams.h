@@ -201,6 +201,15 @@ namespace caf
       false // default is false; set to true if you want SRHits filled
     };
 
+    Atom<bool> FillUnassociatedHits {
+      Name("FillUnassociatedHits"),
+      Comment("If FillHits, also fill slice hits that have no PFParticle/SpacePoint "
+              "association, leaving spacepoint.pfpID = -1. Needed for second-shower and "
+              "isolation studies, which work from the hits Pandora left unclustered. "
+              "Increases the per-slice hit count substantially."),
+      false // default is false; preserves the historical FillHits behaviour
+    };
+
     Atom<string> HitLabel {
       Name("HitLabel"),
       Comment("Base label of the TPC Hit producer."),

@@ -1296,8 +1296,6 @@ namespace caf
 
   void FillHitVars(const recob::Hit& hit,
                    unsigned producer,
-                   const recob::SpacePoint& spacepoint,
-                   const recob::PFParticle& particle,
                    caf::SRHit& srhit,
                    bool allowEmpty)
   {
@@ -1314,6 +1312,20 @@ namespace caf
     srhit.tpcID = wire.TPC;
     srhit.planeID = wire.Plane;
     srhit.wireID = wire.Wire;
+
+    // setDefault() leaves spacepoint.pfpID and spacepoint.ID at -1, which is
+    // the "no PFP" state SRSpacePoint already documents.
+  }
+
+  void FillHitVars(const recob::Hit& hit,
+                   unsigned producer,
+                   const recob::SpacePoint& spacepoint,
+                   const recob::PFParticle& particle,
+                   caf::SRHit& srhit,
+                   bool allowEmpty)
+  {
+    FillHitVars(hit, producer, srhit, allowEmpty);
+
     srhit.spacepoint.XYZ = SRVector3D (spacepoint.XYZ());
     srhit.spacepoint.chisq = spacepoint.Chisq();
     srhit.spacepoint.pfpID = particle.Self();
