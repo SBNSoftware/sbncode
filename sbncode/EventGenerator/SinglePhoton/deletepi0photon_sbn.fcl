@@ -1,0 +1,39 @@
+# Configuration for sbn::DeletePi0Photon (DeletePi0Photon_module.cc).
+#
+# Run directly after GENIEGen in the gen stage. Relabel the GENIE module as
+# "rawgenerator", give this module the "generator" label, and drop
+# *_rawgenerator_*_* on output, e.g.:
+#
+#   physics.producers.rawgenerator: @local::physics.producers.generator
+#   physics.producers.generator:    @erase
+#   physics.filters.generator:      @local::sbn_deletepi0photon
+#   physics.simulate:               [ rns, rawgenerator, generator ]
+#   outputs.out1.SelectEvents:      [ simulate ]
+#   outputs.out1.outputCommands:    [ "keep *", "drop *_rawgenerator_*_*" ]
+#
+# For SBND see prodgenie_nu_singleinteraction_tpc_del1g_sbnd.fcl in sbndcode.
+#
+# The drop is required: larg4Main simulates every MCTruth collection in the
+# event unless inputCollections is set.
+
+BEGIN_PROLOG
+
+sbn_deletepi0photon:
+{
+  module_type:          "DeletePi0Photon"
+  InputLabel:           "rawgenerator"
+
+  DecayPi0s:            true   # decay status-1 pi0s -> gamma gamma (no Dalitz)
+  DeletePhoton:         true   # delete one status-1 photon at random
+  OnlyDeletePi0Photons: true   # delete and count (RequiredNPhotons) only photons whose mother is a pi0;
+                               # false = any final-state photon, as in the MicroBooNE sample. Tunes with
+                               # nuclear de-excitation (e.g. AR25) produce extra MeV-scale photons.
+
+  RequiredNPhotons:     1      # keep events with exactly this many photons (see above); -1 keeps all
+  ForwardDk2Nu:         false  # MUST be true for dk2nu fluxes (e.g. SBND G4BNB); the module throws otherwise
+  Verbose:              false
+
+  # Seed: <optional; otherwise from NuRandomService>
+}
+
+END_PROLOG
